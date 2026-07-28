@@ -10,6 +10,9 @@
 #define COLOUR_LT_GREEN 0x74d07du
 #define COLOUR_BLUE     0x5955e0u
 #define COLOUR_LT_BLUE  0x8076f1u
+#define COLOUR_DK_RED   0xb95e51u
+#define COLOUR_LT_RED   0xff897du
+#define COLOUR_WHITE    0xffffffu
 
 static u32 pixel(const MsxVdp *vdp, int x, int y) {
     return vdp->pixels[y * MSX1_VIDEO_W + x];
@@ -276,7 +279,8 @@ static void test_sprite_modes_and_display_gating(void) {
     set_pattern(&vdp, 0, 0, 0x80);
     set_sprite(&vdp, 0, 9, 20, 0, 2);
     terminate_sprites(&vdp, 1);
-    vdp.registers[1] = 0x48; /* Graphics II */
+    vdp.registers[0] = 0x02; /* Graphics II */
+    vdp.registers[1] = 0x40;
     vdp_render(&vdp);
     assert(pixel(&vdp, 20, 10) == COLOUR_GREEN);
 
@@ -284,7 +288,7 @@ static void test_sprite_modes_and_display_gating(void) {
     set_pattern(&vdp, 0, 0, 0x80);
     set_sprite(&vdp, 0, 9, 20, 0, 2);
     terminate_sprites(&vdp, 1);
-    vdp.registers[0] = 0x02; /* Multicolour */
+    vdp.registers[1] = 0x48; /* Multicolour */
     vdp_render(&vdp);
     assert(pixel(&vdp, 20, 10) == COLOUR_GREEN);
 
@@ -307,6 +311,67 @@ static void test_sprite_modes_and_display_gating(void) {
     assert(!(vdp.status & 0x60));
 }
 
+static void test_graphics_2_and_multicolour_mode_bits(void) {
+    MsxVdp vdp;
+
+    /*
+     * Standard Graphics II layout: name table at 0x1800, pattern table at
+     * 0x0000, and colour table at 0x2000. M3 is R0 bit 1.
+     */
+    vdp_init(&vdp);
+    vdp.registers[0] = 0x02;
+    vdp.registers[1] = 0x40;
+    vdp.registers[2] = 0x06;
+    vdp.registers[3] = 0xff;
+    vdp.registers[4] = 0x03;
+    vdp.registers[7] = 0x01;
+    vdp.vram[0x1800] = 0;
+    vdp.vram[0x0000] = 0x80;
+    vdp.vram[0x2000] = 0xf1;
+    vdp.vram[SPRITE_ATTRIBUTE_BASE] = 0xd0;
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 0, 0) == COLOUR_WHITE);
+    assert(pixel(&vdp, 1, 0) == COLOUR_BACKDROP);
+
+    /*
+     * In Multicolour, M2 is R1 bit 3 and each pattern byte supplies two
+     * four-pixel colour blocks.
+     */
+    vdp_init(&vdp);
+    vdp.registers[1] = 0x48;
+    vdp.registers[2] = 0x06;
+    vdp.registers[4] = 0x00;
+    vdp.registers[7] = 0x01;
+    vdp.vram[0x1800] = 0;
+    vdp.vram[0x0000] = 0xf6;
+    vdp.vram[SPRITE_ATTRIBUTE_BASE] = 0xd0;
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 0, 0) == COLOUR_WHITE);
+    assert(pixel(&vdp, 3, 0) == COLOUR_WHITE);
+    assert(pixel(&vdp, 4, 0) == COLOUR_DK_RED);
+    assert(pixel(&vdp, 7, 0) == COLOUR_DK_RED);
+}
+
+static void test_backdrop_and_text_background_colours(void) {
+    MsxVdp vdp;
+
+    /* A blanked display is entirely the R7 backdrop colour. */
+    vdp_init(&vdp);
+    vdp.registers[7] = 0x04;
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 0, 0) == COLOUR_BLUE);
+    assert(pixel(&vdp, 255, 191) == COLOUR_BLUE);
+
+    /* In Text mode the low nibble of R7 supplies the background colour. */
+    vdp.registers[1] = 0x50;
+    vdp.registers[7] = 0x1f;
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 8, 0) == COLOUR_WHITE);
+    vdp.registers[7] = 0x19;
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 8, 0) == COLOUR_LT_RED);
+}
+
 int main(void) {
     test_basic_position_wrap_and_terminator();
     test_priority_transparency_and_collision();
@@ -316,5 +381,7 @@ int main(void) {
     test_first_overflow_is_scanline_ordered();
     test_status_latching_and_vblank();
     test_sprite_modes_and_display_gating();
+    test_graphics_2_and_multicolour_mode_bits();
+    test_backdrop_and_text_background_colours();
     return 0;
 }

@@ -178,12 +178,33 @@ static void track_led_mouse(Display *display, SDL_WindowID window_id,
 
 static void draw_debug(const Config *config, const MsxMachine *msx,
                        Display *display) {
-    char text[128];
+    static Uint64 last_ns;
+    static float fps_smooth;
+    static unsigned fps_samples;
+    char text[160];
+    Uint64 now;
 
-    if (!config->debug)
+    if (!config->debug) {
+        last_ns = 0;
+        fps_smooth = 0.0f;
+        fps_samples = 0;
         return;
+    }
+
+    now = SDL_GetTicksNS();
+    if (last_ns && now > last_ns) {
+        float fps = 1000000000.0f / (float)(now - last_ns);
+        if (!fps_samples)
+            fps_smooth = fps;
+        else
+            fps_smooth = fps_smooth * 0.95f + fps * 0.05f;
+        ++fps_samples;
+    }
+    last_ns = now;
+
     snprintf(text, sizeof(text),
-             "DBG frame=%llu PC=%04X slot=%02X cycles=%llu",
+             "DBG %.1f/%d fps frame=%llu PC=%04X slot=%02X cycles=%llu",
+             (double)fps_smooth, msx->frame_hz,
              (unsigned long long)msx->frame, msx->cpu.pc,
              msx->primary_slot,
              (unsigned long long)msx->cycles);
@@ -217,7 +238,9 @@ int main(int argc, char **argv) {
     SDL_WindowID window_id;
     bool running = true;
     int host_frame = 0;
-    Uint64 next_tick;
+    Uint64 next_frame_ns;
+    unsigned frame_ns_remainder = 0;
+    int paced_frame_hz;
     int cli_result = parse_cli(argc, argv, &cli);
 
     if (cli_result != 0)
@@ -290,7 +313,8 @@ int main(int argc, char **argv) {
     else
         printf("No BIOS loaded; use --bios PATH (and --logo PATH for C-BIOS)\n");
 
-    next_tick = SDL_GetTicks();
+    next_frame_ns = SDL_GetTicksNS();
+    paced_frame_hz = msx.frame_hz;
     while (running) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
@@ -402,14 +426,32 @@ int main(int argc, char **argv) {
         if (cli.exit_after >= 0 && host_frame >= cli.exit_after)
             running = false;
         if (!cli.unthrottled) {
-            Uint64 frame_ms = (Uint64)(1000 / msx.frame_hz);
+            Uint64 frame_numerator;
+            Uint64 frame_ns;
             Uint64 now;
-            next_tick += frame_ms;
-            now = SDL_GetTicks();
-            if (now < next_tick)
-                SDL_Delay((Uint32)(next_tick - now));
-            else
-                next_tick = now;
+
+            if (paced_frame_hz != msx.frame_hz) {
+                next_frame_ns = SDL_GetTicksNS();
+                frame_ns_remainder = 0;
+                paced_frame_hz = msx.frame_hz;
+            }
+            frame_numerator = 1000000000ULL + frame_ns_remainder;
+            frame_ns = frame_numerator / (unsigned)msx.frame_hz;
+            frame_ns_remainder =
+                (unsigned)(frame_numerator % (unsigned)msx.frame_hz);
+            next_frame_ns += frame_ns;
+            now = SDL_GetTicksNS();
+            if (now < next_frame_ns)
+                SDL_DelayNS(next_frame_ns - now);
+            else if (now > next_frame_ns + frame_ns * 3) {
+                /*
+                 * Preserve cadence across an occasional late frame, but do
+                 * not try to catch up after a debugger stop or long host
+                 * stall.
+                 */
+                next_frame_ns = now;
+                frame_ns_remainder = 0;
+            }
         }
         ++host_frame;
     }

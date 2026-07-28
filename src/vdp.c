@@ -348,12 +348,16 @@ void vdp_render(MsxVdp *vdp) {
 
     if (!(vdp->registers[1] & 0x40))
         return;
+    /*
+     * TMS9918A mode bits are M1=R1.4, M2=R1.3, and M3=R0.1.
+     * M2 selects Multicolour while the later M3 bit selects Graphics II.
+     */
     if (vdp->registers[1] & 0x10) {
         render_text(vdp);
         return;
-    } else if (vdp->registers[1] & 0x08)
+    } else if (vdp->registers[0] & 0x02)
         render_graphics_2(vdp);
-    else if (vdp->registers[0] & 0x02)
+    else if (vdp->registers[1] & 0x08)
         render_multicolour(vdp);
     else
         render_graphics_1(vdp);

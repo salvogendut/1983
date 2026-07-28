@@ -139,6 +139,16 @@ cartridges will not yet run correctly. C-BIOS itself runs cartridge software
 but does not provide MSX BASIC, cassette, or disk services. Use a legitimately
 obtained vendor BIOS/BASIC image when those paths become implemented.
 
+The local `ROMS/` directory is ignored by Git and is available as a convenient
+place for user-supplied firmware, cartridges, and diagnostic images. Its
+contents must never be added to the repository.
+
+Match the video standard to the software when possible. European MSX software
+normally expects PAL at 50 Hz, while Japanese software normally expects NTSC
+at 60 Hz. Select it with `--region pal|ntsc` or with **Video standard** in the
+F9 overlay. A title run at the wrong rate can have correctly pitched PSG audio
+but visibly slower or faster movement.
+
 The current command line deliberately uses explicit firmware paths. The
 planned Philips NMS 8250 profile will first search the user's existing
 openMSX ROM pool at `~/.openMSX/share/systemroms`, then any configured
