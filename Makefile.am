@@ -3,6 +3,7 @@ bin_PROGRAMS = 1983
 1983_SOURCES = \
 	src/config.c \
 	src/display.c \
+	src/kbd.c \
 	src/leds.c \
 	src/main.c \
 	src/msx.c \
@@ -15,6 +16,7 @@ bin_PROGRAMS = 1983
 noinst_HEADERS = \
 	src/config.h \
 	src/display.h \
+	src/kbd.h \
 	src/leds.h \
 	src/msx.h \
 	src/notify.h \
@@ -35,11 +37,16 @@ icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 
 CLEANFILES = icons/1983-rc.o
 
-check_PROGRAMS = test-msx
+check_PROGRAMS = test-msx test-kbd
 TESTS = $(check_PROGRAMS)
 test_msx_SOURCES = tests/test_msx.c src/msx.c src/vdp.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+
+test_kbd_SOURCES = tests/test_kbd.c src/kbd.c src/msx.c src/vdp.c src/z80.c
+test_kbd_CPPFLAGS = -I$(top_srcdir)/src
+test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
+test_kbd_LDADD = $(SDL3_LIBS)
 
 desktopdir         = $(datadir)/applications
 dist_desktop_DATA  = io.github.salvogendut.Emulator1983.desktop

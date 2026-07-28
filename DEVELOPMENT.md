@@ -11,14 +11,16 @@ hardware specification.
 | `src/main.c` | Process lifetime, command line, SDL event loop, and shared function-key bindings |
 | `src/config.*` | Defaults, normalization, persistent settings, and platform-specific configuration path |
 | `src/display.*` | SDL window and renderer, fixed logical canvas, framebuffer presentation, footer, and screenshots |
+| `src/kbd.*` | SDL scancode translation and shared frontend/guest function-key routing |
 | `src/overlay.*` | F9 options workflow and live application of frontend and machine-profile settings |
 | `src/leds.*` | Shared bottom status strip and MSX-specific indicator definitions |
 | `src/notify.*` | On-screen and console notifications |
 | `src/ui.*` | Small renderer primitives used by the frontend |
-| `src/msx.*` | Machine profiles, slot-aware memory and I/O bus, ROM loading, and frame scheduler |
+| `src/msx.*` | Machine profiles, slot-aware memory and I/O bus, active-low keyboard matrix, ROM loading, and frame scheduler |
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
 | `src/vdp.*` | Initial TMS9918/TMS9929 ports, state, interrupts, and pattern-mode renderer |
 | `tests/test_msx.c` | Profiles, slots, CPU execution, VDP ports/rendering, and optional C-BIOS boot checks |
+| `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
 
 Frontend modules may inspect summarized machine state for presentation, but
 guest hardware should not depend on SDL. Keeping that direction of dependency
@@ -66,8 +68,8 @@ relationships:
 
 - The address space is four 16 KB pages. PPI port A at `0xA8` selects one of
   four primary slots independently for each page.
-- Ports `0xA9` through `0xAB` provide the keyboard/cassette PPI paths and PPI
-  control.
+- PPI port B at `0xA9` reads the active-low keyboard row selected by the low
+  nibble of port C at `0xAA`; `0xAB` provides bit set/reset control.
 - The TMS9918-family and V9938 use the standard `0x98`/`0x99` data and control
   ports; the V9938 additionally exposes its MSX2 command and palette paths.
 - The AY-compatible PSG uses the standard `0xA0` through `0xA2` register,
@@ -79,9 +81,26 @@ relationships:
 - The MSX2 RTC is selected and accessed through ports `0xB4` and `0xB5`.
 
 These notes were cross-checked against the openMSX 21.0 machine definitions
-and CPU-interface implementation. The primary-slot, PPI register, VDP-port,
-and PSG-register surfaces above are now present; secondary slots, a keyboard
-matrix, mapper registers, the RTC, and accurate peripheral timing are not.
+and CPU/input implementations. The primary-slot, complete international
+keyboard matrix, PPI register, VDP-port, and PSG-register surfaces above are
+now present; secondary slots, alternate national keyboard matrices, mapper
+registers, the RTC, and accurate peripheral timing are not.
+
+## Keyboard input
+
+The machine core owns eleven active-low row bytes and per-position reference
+counts. This keeps the hardware path independent of SDL and lets two physical
+host keys that share a matrix position—most notably left and right Shift—be
+released independently. The SDL adapter uses physical scancodes and the
+standard international matrix transcribed from openMSX 21.0.
+
+Unmodified function keys belong to the sibling frontend. Shift+F1 through
+Shift+F5 reach the MSX function keys, while Shift+F7 and Shift+F8 produce
+SELECT and STOP. The adapter temporarily removes host Shift from the matrix
+for those chords. Focus loss, overlay entry, and machine reset clear both host
+tracking and the guest matrix to prevent stuck keys. The generic machine
+currently provides idealized simultaneous-key rollover rather than
+model-specific electrical ghosting.
 
 ## Near-term implementation order
 
@@ -90,15 +109,14 @@ PPI slot selection, external firmware loading, and a repeatable C-BIOS/VDP
 checkpoint—are now represented in code and focused tests. The next sequence
 is:
 
-1. Add host keyboard events and the 11-row MSX keyboard matrix.
-2. Complete TMS9918/TMS9929 sprites, collision/status flags, and scanline
+1. Complete TMS9918/TMS9929 sprites, collision/status flags, and scanline
    timing.
-3. Add AY-compatible PSG audio while preserving the existing register surface.
-4. Add ASCII8/ASCII16, Konami, and Konami SCC cartridge mappers with explicit
+2. Add AY-compatible PSG audio while preserving the existing register surface.
+3. Add ASCII8/ASCII16, Konami, and Konami SCC cartridge mappers with explicit
    override hooks.
-5. Reach a deterministic BASIC prompt with a user-supplied BIOS/BASIC set.
-6. Add joystick input, cassette loading, and a small redistributable MSX1
-   compatibility corpus.
+4. Reach a deterministic BASIC prompt with a user-supplied BIOS/BASIC set.
+5. Add joystick input, cassette loading, alternate national keyboard layouts,
+   and a small redistributable MSX1 compatibility corpus.
 
 The firmware decision is to support both C-BIOS and user-supplied BIOS/BASIC
 sets with clearly different capabilities. C-BIOS is the redistributable

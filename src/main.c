@@ -7,6 +7,7 @@
 
 #include "config.h"
 #include "display.h"
+#include "kbd.h"
 #include "leds.h"
 #include "msx.h"
 #include "notify.h"
@@ -208,6 +209,7 @@ int main(int argc, char **argv) {
     Cli cli;
     Config config;
     MsxMachine msx;
+    KbdHost keyboard;
     static Display display;
     Overlay overlay;
     SDL_WindowID window_id;
@@ -238,6 +240,7 @@ int main(int argc, char **argv) {
     }
 
     msx_init(&msx, config.model, config.region, config.memory_kb);
+    kbd_init(&keyboard);
     if (cli.bios_path && msx_load_bios(&msx, cli.bios_path) < 0) {
         fprintf(stderr, "cannot load 32 KB BIOS ROM: %s\n", cli.bios_path);
         return 1;
@@ -273,6 +276,8 @@ int main(int argc, char **argv) {
            msx.profile->name, msx_region_name(msx.region),
            msx.ram_kb, msx.profile->vram_kb, msx_vdp_name(&msx));
     printf("F4 screenshot, F5 reset, F9 options, F11 fullscreen, F12 quit\n");
+    printf("Shift+F1..F5 = MSX F1..F5, Shift+F7 = SELECT, "
+           "Shift+F8 = STOP\n");
     if (msx_can_boot(&msx))
         printf("BIOS loaded%s%s\n",
                msx.logo_loaded ? ", logo ROM loaded" : "",
@@ -284,7 +289,14 @@ int main(int argc, char **argv) {
     while (running) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
+            bool overlay_was_visible = overlay.visible;
+
+            if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST &&
+                event.window.windowID == window_id)
+                kbd_release_all(&keyboard, &msx);
             if (overlay_handle_event(&overlay, &event)) {
+                if (!overlay_was_visible && overlay.visible)
+                    kbd_release_all(&keyboard, &msx);
                 if (overlay.visible)
                     leds_set_mouse_position(0.0f, 0.0f, false);
                 continue;
@@ -294,7 +306,14 @@ int main(int argc, char **argv) {
                 running = false;
                 continue;
             }
+            if (event.type == SDL_EVENT_KEY_UP) {
+                kbd_handle(&keyboard, &msx, &event.key);
+                continue;
+            }
             if (event.type != SDL_EVENT_KEY_DOWN)
+                continue;
+
+            if (kbd_handle_guest_function(&keyboard, &msx, &event.key))
                 continue;
 
             if ((event.key.mod & SDL_KMOD_CTRL) && !display.fullscreen) {
@@ -328,6 +347,7 @@ int main(int argc, char **argv) {
                     break;
                 }
                 case SDLK_F5:
+                    kbd_release_all(&keyboard, &msx);
                     msx_reset(&msx);
                     leds_set_state(LED_CAPS, false);
                     leds_set_state(LED_KANA, false);
@@ -351,6 +371,7 @@ int main(int argc, char **argv) {
                     notify_post(msx.paused ? "Paused" : "Running");
                     break;
                 default:
+                    kbd_handle(&keyboard, &msx, &event.key);
                     break;
             }
         }

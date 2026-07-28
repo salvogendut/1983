@@ -19,8 +19,9 @@ available on as many SDL3-supported systems as practical.
 > **Project status:** the first executable MSX1 slice is in place. It runs the
 > sibling Z80 core against a primary-slot bus, boots C-BIOS, accepts plain ROM
 > cartridges, and renders the character/pattern modes needed by the initial
-> firmware checkpoint. Keyboard input, sprites, audio output, cartridge
-> mappers, storage, and MSX2 execution are still to come.
+> firmware checkpoint. The standard international MSX keyboard matrix is
+> connected to SDL input. Sprites, audio output, cartridge mappers, storage,
+> and MSX2 execution are still to come.
 
 ## Current implementation
 
@@ -41,8 +42,11 @@ available on as many SDL3-supported systems as practical.
 - TMS9918/TMS9929 VRAM data/control ports, register and status behaviour,
   vertical interrupts, and MSX1 Text, Graphics I, Graphics II, and Multicolour
   rendering.
-- Minimal PPI, keyboard-matrix, and PSG register surfaces sufficient for the
-  firmware boot path. Host keys and audio generation are not connected yet.
+- Complete 11-row international MSX keyboard matrix through PPI ports
+  `0xA9`/`0xAA`, including modifiers, function and editing keys, the numeric
+  keypad, simultaneous-key rollover, host-key aliases, and focus-loss cleanup.
+- Minimal cassette-PPI and PSG register surfaces sufficient for the firmware
+  boot path. Audio generation is not connected yet.
 - Explicit `--bios`, `--logo`, and `--cart` loaders, plus a deterministic
   180-frame C-BIOS checkpoint below SDL.
 - Reserved firmware, Nextor-kernel, Sunrise IDE, and raw hard-disk surfaces,
@@ -84,6 +88,21 @@ Useful development invocations include:
 ./1983 --headless --unthrottled --exit-after 10
 ./1983 --help
 ```
+
+### Keyboard
+
+SDL scancodes map positionally onto the standard international MSX keyboard.
+Left or right Shift produces MSX Shift, left Ctrl produces CTRL, left Alt
+produces GRAPH, right Alt produces CODE, and right Ctrl produces the
+ACC/dead-key position. The editing keys, arrows, and numeric keypad map to
+their corresponding MSX matrix positions; keypad Enter follows the common
+MSX keypad-comma convention.
+
+Unmodified function keys remain available to the shared emulator interface.
+Use Shift+F1 through Shift+F5 for the MSX function keys, Shift+F7 for SELECT,
+and Shift+F8 for STOP. The host Shift used for these chords is suppressed
+from the guest matrix, so the MSX receives the intended key by itself. Opening
+the overlay or moving focus away from the window releases every guest key.
 
 ### Booting C-BIOS
 
@@ -181,7 +200,7 @@ currently supported settings.
 | Cartridges | Plain ROMs and common ASCII, Konami, and Konami SCC mapper families, with mapper override controls |
 | Cassette | CAS images and the standard BIOS cassette path |
 | Disk | DSK images, common MSX disk-ROM behaviour, Sunrise ATA-IDE, Nextor-compatible block storage, guest writes, and multiple drives |
-| Input | MSX keyboard matrix, joysticks, mouse, and host clipboard paste |
+| Input | International MSX keyboard matrix implemented; joysticks, mouse, alternate national layouts, and host clipboard paste planned |
 | MSX2 hardware | RAM memory mapper, real-time clock, and model-appropriate firmware configuration |
 | Tools | Debugger and disassembler, screenshots, snapshots, headless execution, and deterministic automation |
 
@@ -212,10 +231,9 @@ does not silently break another.
    bus, PPI slot control, firmware/plain-cartridge loading, and the initial
    TMS9918/TMS9929 video path. C-BIOS now reaches a deterministic boot
    checkpoint and launches a test cartridge.
-3. Complete TMS9918/TMS9929 sprites and timing, connect the keyboard matrix,
-   generate PSG audio, add common cartridge mappers, cassette support,
-   joysticks, a supplied BIOS/BASIC checkpoint, and an MSX1 compatibility
-   suite.
+3. Complete TMS9918/TMS9929 sprites and timing, generate PSG audio, add common
+   cartridge mappers, cassette support, joysticks, alternate national keyboard
+   layouts, a supplied BIOS/BASIC checkpoint, and an MSX1 compatibility suite.
 4. Implement the V9938, MSX2 secondary slots, memory mapper, RTC, and
    representative MSX2 machine profiles; then boot Nextor through a Sunrise
    ATA-IDE cartridge and raw hard-disk image.

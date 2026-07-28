@@ -1,6 +1,7 @@
 /1983
 /1983-*.tar.gz
 /test-msx
+/test-kbd
 /Makefile
 /config.log
 /config.status

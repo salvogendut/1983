@@ -12,6 +12,8 @@
 #define MSX_LOGO_SIZE 0x4000u
 #define MSX_RAM_MAX_SIZE 0x10000u
 #define MSX_CART_MAX_SIZE 0x10000u
+#define MSX_KEYBOARD_ROWS 11u
+#define MSX_KEYBOARD_COLUMNS 8u
 
 typedef enum {
     MSX_MODEL_GENERIC_MSX1 = 0,
@@ -70,6 +72,8 @@ typedef struct {
     bool cartridge_loaded;
 
     u8 ppi_port_c;
+    u8 keyboard_rows[MSX_KEYBOARD_ROWS];
+    u8 keyboard_refs[MSX_KEYBOARD_ROWS][MSX_KEYBOARD_COLUMNS];
     u8 psg_register;
     u8 psg[16];
 
@@ -98,6 +102,11 @@ u8   msx_memory_read(MsxMachine *msx, u16 address);
 void msx_memory_write(MsxMachine *msx, u16 address, u8 value);
 u8   msx_io_read(MsxMachine *msx, u16 port);
 void msx_io_write(MsxMachine *msx, u16 port, u8 value);
+
+void msx_keyboard_clear(MsxMachine *msx);
+void msx_keyboard_press(MsxMachine *msx, unsigned row, unsigned column);
+void msx_keyboard_release(MsxMachine *msx, unsigned row, unsigned column);
+u8   msx_keyboard_read_row(const MsxMachine *msx, unsigned row);
 
 int msx_install_bios(MsxMachine *msx, const u8 *data, size_t size);
 int msx_install_logo(MsxMachine *msx, const u8 *data, size_t size);

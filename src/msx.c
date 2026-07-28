@@ -29,6 +29,44 @@ static const MsxProfile profiles[MSX_MODEL_COUNT] = {
 static const int msx1_ram_sizes[] = { 16, 32, 64 };
 static const int msx2_ram_sizes[] = { 64, 128, 256, 512, 1024, 2048, 4096 };
 
+void msx_keyboard_clear(MsxMachine *msx) {
+    if (!msx)
+        return;
+    memset(msx->keyboard_rows, 0xff, sizeof(msx->keyboard_rows));
+    memset(msx->keyboard_refs, 0, sizeof(msx->keyboard_refs));
+}
+
+void msx_keyboard_press(MsxMachine *msx, unsigned row, unsigned column) {
+    u8 *refs;
+
+    if (!msx || row >= MSX_KEYBOARD_ROWS ||
+        column >= MSX_KEYBOARD_COLUMNS)
+        return;
+    refs = &msx->keyboard_refs[row][column];
+    if (*refs != 0xff)
+        ++*refs;
+    msx->keyboard_rows[row] &= (u8)~(1u << column);
+}
+
+void msx_keyboard_release(MsxMachine *msx, unsigned row, unsigned column) {
+    u8 *refs;
+
+    if (!msx || row >= MSX_KEYBOARD_ROWS ||
+        column >= MSX_KEYBOARD_COLUMNS)
+        return;
+    refs = &msx->keyboard_refs[row][column];
+    if (*refs)
+        --*refs;
+    if (!*refs)
+        msx->keyboard_rows[row] |= (u8)(1u << column);
+}
+
+u8 msx_keyboard_read_row(const MsxMachine *msx, unsigned row) {
+    if (!msx || row >= MSX_KEYBOARD_ROWS)
+        return 0xff;
+    return msx->keyboard_rows[row];
+}
+
 static u8 bus_memory_read(void *context, u16 address) {
     return msx_memory_read(context, address);
 }
@@ -119,6 +157,7 @@ void msx_reset(MsxMachine *msx) {
     msx->caps_led = false;
     msx->kana_led = false;
     msx->ppi_port_c = 0xff;
+    msx_keyboard_clear(msx);
     msx->psg_register = 0;
     memset(msx->psg, 0, sizeof(msx->psg));
     memset(msx->ram, 0, sizeof(msx->ram));
@@ -260,8 +299,7 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
         case 0xa8:
             return msx->primary_slot;
         case 0xa9:
-            /* No host keyboard matrix is wired yet. */
-            return 0xff;
+            return msx_keyboard_read_row(msx, msx->ppi_port_c & 0x0f);
         case 0xaa:
             return msx->ppi_port_c;
         default:

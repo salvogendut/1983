@@ -39,6 +39,10 @@ static void test_slot_bus_and_cpu(void) {
             0xd3, 0xa8,       /* OUT (A8),A */
             0x3e, 0x5a,       /* LD A,5A */
             0x32, 0x00, 0xc0, /* LD (C000),A */
+            0x3e, 0xf2,       /* select keyboard row 2 */
+            0xd3, 0xaa,       /* OUT (AA),A */
+            0xdb, 0xa9,       /* IN A,(A9) */
+            0x32, 0x01, 0xc0, /* LD (C001),A */
             0x76,             /* HALT */
         };
         memcpy(bios, program, sizeof(program));
@@ -49,11 +53,13 @@ static void test_slot_bus_and_cpu(void) {
     assert(msx_can_boot(msx));
     assert(msx_memory_read(msx, 0) == 0x3e);
     assert(msx_memory_read(msx, 0xc000) == 0xff);
+    msx_keyboard_press(msx, 2, 6); /* A */
 
     msx_run_frame(msx);
     assert(msx->frame == 1);
     assert(msx->primary_slot == 0xc0);
     assert(msx->ram[0xc000] == 0x5a);
+    assert(msx->ram[0xc001] == 0xbf);
     assert(msx->cpu.halted);
     assert(msx->cycles >= MSX_CPU_HZ / 50);
     assert(msx->instructions > 5);
@@ -61,6 +67,7 @@ static void test_slot_bus_and_cpu(void) {
     msx_reset(msx);
     assert(msx_can_boot(msx));
     assert(msx->ram[0xc000] == 0);
+    assert(msx_keyboard_read_row(msx, 2) == 0xff);
     assert(msx->cpu.pc == 0);
 
     memset(cartridge, 0xff, sizeof(cartridge));
@@ -104,6 +111,44 @@ static void test_vdp_ports_and_renderer(void) {
     assert(vdp.pixels[1] == 0x3eb849);
     assert(vdp_read_status(&vdp) & 0x80);
     assert(!vdp.irq);
+}
+
+static void test_keyboard_matrix_and_ppi(void) {
+    MsxMachine msx;
+
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    for (unsigned row = 0; row < MSX_KEYBOARD_ROWS; ++row)
+        assert(msx_keyboard_read_row(&msx, row) == 0xff);
+    assert(msx_keyboard_read_row(&msx, MSX_KEYBOARD_ROWS) == 0xff);
+
+    msx_keyboard_press(&msx, 2, 6); /* A */
+    msx_keyboard_press(&msx, 2, 7); /* B */
+    msx_io_write(&msx, 0xaa, 0xf2);
+    assert(msx_io_read(&msx, 0xa9) == 0x3f);
+
+    /* Reference counts keep a shared matrix position down until every
+     * physical host alias has been released. */
+    msx_keyboard_press(&msx, 6, 0);
+    msx_keyboard_press(&msx, 6, 0);
+    msx_io_write(&msx, 0xaa, 0xf6);
+    assert(msx_io_read(&msx, 0xa9) == 0xfe);
+    msx_keyboard_release(&msx, 6, 0);
+    assert(msx_io_read(&msx, 0xa9) == 0xfe);
+    msx_keyboard_release(&msx, 6, 0);
+    assert(msx_io_read(&msx, 0xa9) == 0xff);
+
+    /* PPI bit set/reset operations on port C also change the row select. */
+    msx_io_write(&msx, 0xaa, 0xf0);
+    assert(msx_io_read(&msx, 0xa9) == 0xff);
+    msx_io_write(&msx, 0xab, 0x01); /* set port-C bit 0: row 1 */
+    msx_keyboard_press(&msx, 1, 3);
+    assert(msx_io_read(&msx, 0xa9) == 0xf7);
+    msx_io_write(&msx, 0xaa, 0xfb);
+    assert(msx_io_read(&msx, 0xa9) == 0xff);
+
+    msx_keyboard_clear(&msx);
+    for (unsigned row = 0; row < MSX_KEYBOARD_ROWS; ++row)
+        assert(msx_keyboard_read_row(&msx, row) == 0xff);
 }
 
 static void test_cbios_checkpoint_if_available(void) {
@@ -212,6 +257,7 @@ int main(void) {
 
     test_slot_bus_and_cpu();
     test_vdp_ports_and_renderer();
+    test_keyboard_matrix_and_ppi();
     test_cbios_checkpoint_if_available();
     return 0;
 }
