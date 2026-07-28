@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 #include "psg.h"
+#include "rtc.h"
 #include "types.h"
 #include "vdp.h"
 #include "z80.h"
@@ -68,6 +69,7 @@ typedef struct {
     Z80Bus bus;
     MsxVdp vdp;
     Psg    psg;
+    MsxRtc rtc;
 
     u8 bios[MSX_BIOS_SIZE];
     u8 logo[MSX_LOGO_SIZE];

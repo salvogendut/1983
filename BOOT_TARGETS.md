@@ -107,8 +107,9 @@ Development tests advance through explicit checkpoints:
 3. **In progress:** the supplied NMS 8250 BIOS, MSX2 sub-ROM, and disk ROM
    load into the expanded-slot layout, the internal mapper is accessible,
    and the CPU-visible V9938 register/palette/128 KB VRAM interface is in
-   place; implement the remaining RTC and video behaviour needed to reach a
-   visible firmware checkpoint.
+   place. The RP-5C01 RTC now lets firmware enable an MSX2 bitmap mode and
+   initialize 32 KiB of VRAM; implement V9938 commands and bitmap rendering
+   to turn that state into a visible firmware checkpoint.
 4. Enumerate the external 512 KB mapper and an empty Sunrise IDE device from
    the Nextor kernel ROM.
 5. Read a partitioned raw disk and reach the BASIC fallback when the system

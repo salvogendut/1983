@@ -4,6 +4,7 @@
 /test-kbd
 /test-vdp
 /test-psg
+/test-rtc
 /Makefile
 /config.log
 /config.status

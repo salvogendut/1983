@@ -225,6 +225,33 @@ static void test_msx2_vdp_extended_ports(void) {
     assert(msx.vdp.vram[0] == 0xa5);
 }
 
+static void test_rtc_ports_and_reset_persistence(void) {
+    MsxMachine msx;
+
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    msx_io_write(&msx, 0xb4, 13);
+    msx_io_write(&msx, 0xb5, 2);
+    assert(msx_io_read(&msx, 0xb4) == 0xff);
+    assert(msx_io_read(&msx, 0xb5) == 0xff);
+
+    msx_configure(&msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
+    msx_io_write(&msx, 0xb4, 13);
+    assert(msx_io_read(&msx, 0xb4) == 0xff);
+    assert(msx_io_read(&msx, 0xb5) == 0xf8);
+
+    msx_io_write(&msx, 0xb5, 2); /* CMOS RAM block 2 */
+    msx_io_write(&msx, 0xb4, 4);
+    msx_io_write(&msx, 0xb5, 0xbe);
+    assert(msx_io_read(&msx, 0xb5) == 0xfe);
+
+    msx_reset(&msx);
+    msx_io_write(&msx, 0xb4, 13);
+    assert(msx_io_read(&msx, 0xb5) == 0xf8);
+    msx_io_write(&msx, 0xb5, 2);
+    msx_io_write(&msx, 0xb4, 4);
+    assert(msx_io_read(&msx, 0xb5) == 0xfe);
+}
+
 static void test_keyboard_matrix_and_ppi(void) {
     MsxMachine msx;
 
@@ -429,7 +456,7 @@ static void test_nms8250_checkpoint_if_available(void) {
             "NMS 8250 checkpoint: frame=%llu PC=%04X SP=%04X slot=%02X "
             "subslot=%02X mapper=%02X,%02X,%02X,%02X "
             "cycles=%llu instructions=%llu VRAM=%zu "
-            "R0=%02X R1=%02X R9=%02X R14=%02X\n",
+            "R0=%02X R1=%02X R9=%02X R14=%02X CMD=%02X\n",
             (unsigned long long)msx->frame, msx->cpu.pc, msx->cpu.sp,
             msx->primary_slot, msx->secondary_slot[3],
             msx->mapper_segment[0], msx->mapper_segment[1],
@@ -437,7 +464,8 @@ static void test_nms8250_checkpoint_if_available(void) {
             (unsigned long long)msx->cycles,
             (unsigned long long)msx->instructions, nonzero_vram,
             msx->vdp.registers[0], msx->vdp.registers[1],
-            msx->vdp.registers[9], msx->vdp.registers[14]);
+            msx->vdp.registers[9], msx->vdp.registers[14],
+            msx->vdp.registers[46]);
     assert(msx->frame == 200);
     assert(msx->bios_loaded);
     assert(msx->subrom_loaded);
@@ -451,6 +479,9 @@ static void test_nms8250_checkpoint_if_available(void) {
     assert(msx->instructions > 1000000);
     assert(msx->vdp.type == MSX_VDP_V9938);
     assert(msx->vdp.registers[9] == 0x02);
+    assert(nonzero_vram > 0);
+    assert(msx->vdp.registers[0] == 0x08);
+    assert(msx->vdp.registers[1] == 0x60);
     free(msx);
 }
 
@@ -490,6 +521,7 @@ int main(void) {
     test_msx2_expanded_slots_and_firmware();
     test_vdp_ports_and_renderer();
     test_msx2_vdp_extended_ports();
+    test_rtc_ports_and_reset_persistence();
     test_keyboard_matrix_and_ppi();
     test_psg_ports_and_cycle_timed_audio();
     test_cbios_checkpoint_if_available();

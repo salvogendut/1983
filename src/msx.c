@@ -94,6 +94,8 @@ static void advance_machine(MsxMachine *msx, int cycles) {
         return;
 
     msx->cycles += (unsigned)cycles;
+    if (msx->profile && msx->profile->rtc)
+        rtc_advance(&msx->rtc, (unsigned)cycles, MSX_CPU_HZ);
     msx->audio_sample_cycles +=
         (u64)(unsigned)cycles * MSX_AUDIO_SAMPLE_RATE;
     while (msx->audio_sample_cycles >= MSX_CPU_HZ) {
@@ -194,6 +196,7 @@ void msx_reset(MsxMachine *msx) {
     msx->ppi_port_c = 0xff;
     msx_keyboard_clear(msx);
     psg_reset(&msx->psg);
+    rtc_reset(&msx->rtc);
     /*
      * Standard MSX wiring treats PSG port A as input and port B as output,
      * even on engines which ignore software attempts to reverse them.
@@ -235,6 +238,7 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     z80_init(&msx->cpu);
     vdp_init(&msx->vdp);
     psg_init(&msx->psg, PSG_VARIANT_AY8910);
+    rtc_init(&msx->rtc);
     msx->bus.mem_read = bus_memory_read;
     msx->bus.mem_write = bus_memory_write;
     msx->bus.io_read = bus_io_read;
@@ -439,6 +443,12 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
             return msx_keyboard_read_row(msx, msx->ppi_port_c & 0x0f);
         case 0xaa:
             return msx->ppi_port_c;
+        case 0xb4:
+            break;
+        case 0xb5:
+            if (msx->profile->rtc)
+                return rtc_read_data(&msx->rtc) | 0xf0;
+            break;
         case 0xfc:
         case 0xfd:
         case 0xfe:
@@ -506,6 +516,14 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
                     msx->ppi_port_c &= (u8)~mask;
                 msx->caps_led = !(msx->ppi_port_c & 0x40);
             }
+            break;
+        case 0xb4:
+            if (msx->profile->rtc)
+                rtc_select(&msx->rtc, value);
+            break;
+        case 0xb5:
+            if (msx->profile->rtc)
+                rtc_write_data(&msx->rtc, value);
             break;
         case 0xfc:
         case 0xfd:

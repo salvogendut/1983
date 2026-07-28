@@ -25,9 +25,9 @@ available on as many SDL3-supported systems as practical.
 > machine slice loads separate BIOS, Sub-ROM, and disk-ROM images and models
 > the NMS 8250 expanded slot and internal mapper layout. Its V9938 foundation
 > implements the CPU-visible registers, status selection, programmable
-> palette, indirect-register port, and 128 KB VRAM interface. V9938 bitmap
-> rendering and commands, cartridge mappers, and storage devices are still to
-> come.
+> palette, indirect-register port, and 128 KB VRAM interface. The MSX2
+> RP-5C01 RTC ports and banked CMOS are also connected. V9938 bitmap rendering
+> and commands, cartridge mappers, and storage devices are still to come.
 
 ## Current implementation
 
@@ -51,6 +51,9 @@ available on as many SDL3-supported systems as practical.
   mapper RAM in slot 2, and the disk ROM in slot 3/page 1.
 - MSX2 internal memory-mapper segment registers at ports `0xFC` through
   `0xFF`, currently backed by up to 128 KB.
+- RP-5C01-compatible MSX2 RTC latch/data ports at `0xB4`/`0xB5`, four
+  register banks with hardware masks and reset-persistent CMOS, control/reset
+  registers, host-time initialization, and emulated-time calendar advancement.
 - TMS9918/TMS9929 VRAM data/control ports, register and status behaviour,
   vertical interrupts, and MSX1 Text, Graphics I, Graphics II, and Multicolour
   rendering.
@@ -179,11 +182,12 @@ slot and mapper foundation:
   --disk-rom ROMS/nms8250_disk.rom
 ```
 
-These options reproduce the firmware placement of the real machine. The
-firmware now reaches the expanded-slot/mapper checkpoint and programs V9938
-R9 for PAL timing without corrupting R1, but a visible MSX2 boot is not
-expected yet. V9938 bitmap rendering and commands, the WD2793 controller
-behind the disk ROM, and the RTC remain to be implemented.
+These options reproduce the firmware placement of the real machine. With the
+RTC present, the firmware now progresses through its Sub-ROM initialization,
+programs the V9938 for PAL, enables its MSX2 bitmap display, and initializes
+32 KiB of VRAM. A correct visible MSX2 boot is not expected yet because V9938
+bitmap rendering and commands remain to be implemented. The WD2793 controller
+behind the disk ROM is also still absent.
 The corresponding optional firmware checkpoint is:
 
 ```sh
@@ -272,7 +276,7 @@ currently supported settings.
 | Cassette | CAS images and the standard BIOS cassette path |
 | Disk | DSK images, common MSX disk-ROM behaviour, Sunrise ATA-IDE, Nextor-compatible block storage, guest writes, and multiple drives |
 | Input | International MSX keyboard matrix implemented; joysticks, mouse, alternate national layouts, and host clipboard paste planned |
-| MSX2 hardware | RAM memory mapper, real-time clock, and model-appropriate firmware configuration |
+| MSX2 hardware | Internal RAM mapper and RP-5C01 RTC implemented; persistent CMOS files, additional mapper devices, and complete model firmware configuration planned |
 | Tools | Debugger and disassembler, screenshots, snapshots, headless execution, and deterministic automation |
 
 The first compatibility target is standard MSX1 software. The first
@@ -306,9 +310,9 @@ does not silently break another.
 3. Refine TMS9918/TMS9929 timing, add common cartridge mappers, cassette
    support, joysticks, alternate national keyboard layouts, a supplied
    BIOS/BASIC checkpoint, and an MSX1 compatibility suite.
-4. Complete the V9938 bitmap/display engine and commands, RTC, multiple
-   memory mappers, and the Philips NMS 8250 reference profile. The V9938
-   CPU interface, MSX2 secondary slots, and internal mapper are in place.
+4. Complete the V9938 bitmap/display engine and commands, multiple memory
+   mappers, and the Philips NMS 8250 reference profile. The V9938 CPU
+   interface, MSX2 secondary slots, internal mapper, and RTC are in place.
    Then boot its user-supplied Nextor 2.1.1 Sunrise IDE ROM and the same raw
    hard-disk image used by `../geobench/tools/run_msx.sh`.
 5. Add commonly required sound and cartridge extensions, improve timing
