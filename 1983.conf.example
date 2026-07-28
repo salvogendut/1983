@@ -1,0 +1,26 @@
+# 1983 - generic MSX / MSX2 emulator
+# This is the initial frontend-scaffold configuration.
+
+[machine]
+model = msx1
+region = pal
+memory_kb = 64
+
+[display]
+scale = 1
+fullscreen = false
+smoothing = false
+real_crt = false
+crt_scanlines = 35
+
+[extensions]
+second_drive = false
+sunrise_ide = false
+scc = false
+msx_music = false
+kanji_rom = false
+
+[advanced]
+tinker = false
+debug = false
+notifications = screen
