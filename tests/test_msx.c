@@ -84,6 +84,86 @@ static void test_slot_bus_and_cpu(void) {
     free(msx);
 }
 
+static void test_msx2_expanded_slots_and_firmware(void) {
+    MsxMachine *msx = malloc(sizeof(*msx));
+    u8 subrom[MSX_SUBROM_SIZE];
+    u8 disk_rom[MSX_DISK_ROM_SIZE];
+
+    assert(msx);
+    for (size_t i = 0; i < sizeof(subrom); ++i)
+        subrom[i] = (u8)(i ^ 0x5a);
+    for (size_t i = 0; i < sizeof(disk_rom); ++i)
+        disk_rom[i] = (u8)(i ^ 0xa5);
+
+    msx_init(msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
+    assert(msx_install_subrom(msx, subrom, sizeof(subrom)) == 0);
+    assert(msx_install_disk_rom(msx, disk_rom, sizeof(disk_rom)) == 0);
+    assert(msx->subrom_loaded);
+    assert(msx->disk_rom_loaded);
+    assert(msx_install_subrom(msx, subrom, sizeof(subrom) - 1) < 0);
+    assert(msx_install_disk_rom(msx, disk_rom, sizeof(disk_rom) - 1) < 0);
+
+    /* NMS 8250 primary slot 3 is expanded. Its reset selection exposes
+     * secondary slot 0, where the 16 KB Sub-ROM is mirrored on every page. */
+    msx_io_write(msx, 0xa8, 0xff);
+    assert(msx_memory_read(msx, 0x0000) == subrom[0]);
+    assert(msx_memory_read(msx, 0x4123) == subrom[0x0123]);
+    assert(msx_memory_read(msx, 0x9234) == subrom[0x1234]);
+    assert(msx_memory_read(msx, 0xffff) == 0xff);
+
+    /*
+     * Select Sub-ROM, disk ROM, Sub-ROM, and mapper RAM for pages 0..3.
+     * The expanded-slot register reads back inverted and supersedes the
+     * underlying device at address FFFF.
+     */
+    msx_memory_write(msx, 0xffff, 0x8c);
+    assert(msx->secondary_slot[3] == 0x8c);
+    assert(msx_memory_read(msx, 0xffff) == 0x73);
+    assert(msx_memory_read(msx, 0x0000) == subrom[0]);
+    assert(msx_memory_read(msx, 0x4000) == disk_rom[0]);
+    assert(msx_memory_read(msx, 0x7fff) == disk_rom[0x3fff]);
+    assert(msx_memory_read(msx, 0x8000) == subrom[0]);
+    msx_memory_write(msx, 0xc000, 0x44);
+    assert(msx_memory_read(msx, 0xc000) == 0x44);
+
+    /* The disk ROM is only visible in page 1 of secondary slot 3. */
+    msx_memory_write(msx, 0xffff, 0x8f);
+    assert(msx_memory_read(msx, 0x0000) == 0xff);
+    assert(msx_memory_read(msx, 0x4000) == disk_rom[0]);
+
+    /* Mapper ports FC..FF select one 16 KB segment for each CPU page. */
+    msx_memory_write(msx, 0xffff, 0xaa);
+    msx_io_write(msx, 0xfc, 0);
+    msx_io_write(msx, 0xfd, 1);
+    msx_io_write(msx, 0xfe, 2);
+    msx_io_write(msx, 0xff, 3);
+    assert(msx_io_read(msx, 0xfc) == 0xf8);
+    assert(msx_io_read(msx, 0xfd) == 0xf9);
+    assert(msx_io_read(msx, 0xfe) == 0xfa);
+    assert(msx_io_read(msx, 0xff) == 0xfb);
+    msx_memory_write(msx, 0x0000, 0x10);
+    msx_memory_write(msx, 0x4000, 0x21);
+    msx_memory_write(msx, 0x8000, 0x32);
+    msx_memory_write(msx, 0xc000, 0x43);
+    assert(msx->ram[0x0000] == 0x10);
+    assert(msx->ram[0x4000] == 0x21);
+    assert(msx->ram[0x8000] == 0x32);
+    assert(msx->ram[0xc000] == 0x43);
+
+    msx_io_write(msx, 0xfc, 0xff);
+    assert(msx_io_read(msx, 0xfc) == 0xff);
+    msx_memory_write(msx, 0x0000, 0x77);
+    assert(msx->ram[0x1c000] == 0x77);
+
+    msx_reset(msx);
+    assert(msx->subrom_loaded);
+    assert(msx->disk_rom_loaded);
+    assert(msx->secondary_slot[3] == 0);
+    assert(msx->mapper_segment[0] == 0);
+    assert(msx->ram[0x1c000] == 0);
+    free(msx);
+}
+
 static void test_vdp_ports_and_renderer(void) {
     MsxVdp vdp;
 
@@ -284,6 +364,55 @@ static void test_cbios_checkpoint_if_available(void) {
     free(msx);
 }
 
+static void test_nms8250_checkpoint_if_available(void) {
+    const char *directory = getenv("MSX_NMS8250_DIR");
+    MsxMachine *msx;
+    char bios_path[4096];
+    char subrom_path[4096];
+    char disk_rom_path[4096];
+
+    if (!directory || !directory[0])
+        return;
+    snprintf(bios_path, sizeof(bios_path),
+             "%s/nms8250_basic-bios2.rom", directory);
+    snprintf(subrom_path, sizeof(subrom_path),
+             "%s/nms8250_msx2sub.rom", directory);
+    snprintf(disk_rom_path, sizeof(disk_rom_path),
+             "%s/nms8250_disk.rom", directory);
+
+    msx = malloc(sizeof(*msx));
+    assert(msx);
+    msx_init(msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
+    assert(msx_load_bios(msx, bios_path) == 0);
+    assert(msx_load_subrom(msx, subrom_path) == 0);
+    assert(msx_load_disk_rom(msx, disk_rom_path) == 0);
+    for (int frame = 0; frame < 200; ++frame)
+        msx_run_frame(msx);
+
+    fprintf(stderr,
+            "NMS 8250 checkpoint: frame=%llu PC=%04X SP=%04X slot=%02X "
+            "subslot=%02X mapper=%02X,%02X,%02X,%02X "
+            "cycles=%llu instructions=%llu\n",
+            (unsigned long long)msx->frame, msx->cpu.pc, msx->cpu.sp,
+            msx->primary_slot, msx->secondary_slot[3],
+            msx->mapper_segment[0], msx->mapper_segment[1],
+            msx->mapper_segment[2], msx->mapper_segment[3],
+            (unsigned long long)msx->cycles,
+            (unsigned long long)msx->instructions);
+    assert(msx->frame == 200);
+    assert(msx->bios_loaded);
+    assert(msx->subrom_loaded);
+    assert(msx->disk_rom_loaded);
+    assert(msx->primary_slot == 0xf3);
+    assert(msx->secondary_slot[3] == 0xa0);
+    assert(msx->mapper_segment[0] == 3);
+    assert(msx->mapper_segment[1] == 2);
+    assert(msx->mapper_segment[2] == 1);
+    assert(msx->mapper_segment[3] == 0);
+    assert(msx->instructions > 1000000);
+    free(msx);
+}
+
 int main(void) {
     MsxMachine msx;
 
@@ -314,12 +443,14 @@ int main(void) {
 
     assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX1, 64, 1) == 16);
     assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX1, 16, -1) == 64);
-    assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX2, 128, 1) == 256);
+    assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX2, 128, 1) == 64);
 
     test_slot_bus_and_cpu();
+    test_msx2_expanded_slots_and_firmware();
     test_vdp_ports_and_renderer();
     test_keyboard_matrix_and_ppi();
     test_psg_ports_and_cycle_timed_audio();
     test_cbios_checkpoint_if_available();
+    test_nms8250_checkpoint_if_available();
     return 0;
 }

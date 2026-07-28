@@ -59,19 +59,21 @@ vendor machine:
 | RAM mapper | No | Yes |
 | RTC | No | Yes |
 
-The current executable layout follows the C-BIOS MSX1 machine definition:
-slot 0 contains a 32 KB main ROM and optional 16 KB logo ROM, slot 1 contains
-one external plain cartridge, slot 2 is open, and slot 3 contains RAM. Future
-vendor and firmware layouts should become data-driven rather than
+The MSX1 executable layout follows the C-BIOS machine definition: slot 0
+contains a 32 KB main ROM and optional 16 KB logo ROM, slot 1 contains one
+external plain cartridge, slot 2 is open, and slot 3 contains RAM. Vendor and
+firmware layouts should eventually become data-driven rather than
 accumulating model checks throughout device code.
 
-The first concrete MSX2 layout will match the Philips NMS 8250 used by
+The first concrete MSX2 layout matches the Philips NMS 8250 used by
 `../geobench/tools/run_msx.sh`: BIOS/BASIC in primary slot 0, external
 primary slots 1 and 2, and expanded primary slot 3 containing the MSX2
-sub-ROM, the 128 KB internal mapper, and the built-in disk controller. The
-GeoBench configuration then adds independent SunriseIDE/Nextor and 512 KB
-memory-mapper extensions. These are two mapper devices, not one combined RAM
-allocation. Firmware discovery will reuse the recursive
+sub-ROM in secondary slot 0, the 128 KB internal mapper in slot 2, and the
+built-in disk ROM in slot 3/page 1. The expanded-slot register and mapper
+ports are implemented; the V9938, WD2793 controller, and RTC are not. The
+GeoBench configuration will then add independent SunriseIDE/Nextor and
+512 KB memory-mapper extensions. These are two mapper devices, not one
+combined RAM allocation. Firmware discovery will reuse the recursive
 `~/.openMSX/share/systemroms` pool and match the pinned hashes documented in
 `BOOT_TARGETS.md`; no machine ROM belongs in the repository.
 
@@ -97,8 +99,9 @@ relationships:
 These notes were cross-checked against the openMSX 21.0 machine definitions
 and CPU/input implementations. The primary-slot, complete international
 keyboard matrix, PPI register, VDP-port, and PSG-register surfaces above are
-now present; secondary slots, alternate national keyboard matrices, mapper
-registers, the RTC, joystick/mouse PSG inputs, and accurate VDP timing are not.
+now present. The NMS 8250 secondary slots and internal mapper registers are
+also present; alternate national keyboard matrices, the RTC, joystick/mouse
+PSG inputs, and accurate VDP timing are not.
 
 ## Keyboard input
 
@@ -204,8 +207,15 @@ Run the pinned C-BIOS checkpoint when C-BIOS 0.29 is available:
 MSX_CBIOS_DIR=/path/to/cbios make check
 ```
 
-The optional test runs 180 NTSC frames to a stable no-cartridge state, then
+Run the in-progress Philips NMS 8250 firmware checkpoint with:
+
+```sh
+MSX_NMS8250_DIR=/path/to/nms8250-roms make check
+```
+
+The C-BIOS test runs 180 NTSC frames to a stable no-cartridge state, then
 resets and verifies that C-BIOS discovers and launches a synthetic plain ROM
-cartridge. Keep deterministic tests below SDL first; reserve rendered-frame
-and end-to-end tests for interactions that cannot be proved reliably at the
-component boundary.
+cartridge. The NMS 8250 test currently verifies firmware loading, expanded
+slot discovery, and mapper setup after 200 PAL frames. Keep deterministic
+tests below SDL first; reserve rendered-frame and end-to-end tests for
+interactions that cannot be proved reliably at the component boundary.

@@ -14,7 +14,9 @@
 #define MSX_AUDIO_FRAME_CAPACITY 1024u
 #define MSX_BIOS_SIZE 0x8000u
 #define MSX_LOGO_SIZE 0x4000u
-#define MSX_RAM_MAX_SIZE 0x10000u
+#define MSX_SUBROM_SIZE 0x4000u
+#define MSX_DISK_ROM_SIZE 0x4000u
+#define MSX_RAM_MAX_SIZE 0x20000u
 #define MSX_CART_MAX_SIZE 0x10000u
 #define MSX_KEYBOARD_ROWS 11u
 #define MSX_KEYBOARD_COLUMNS 8u
@@ -69,12 +71,16 @@ typedef struct {
 
     u8 bios[MSX_BIOS_SIZE];
     u8 logo[MSX_LOGO_SIZE];
+    u8 subrom[MSX_SUBROM_SIZE];
+    u8 disk_rom[MSX_DISK_ROM_SIZE];
     u8 ram[MSX_RAM_MAX_SIZE];
     u8 cartridge[MSX_CART_MAX_SIZE];
     size_t cartridge_size;
     u16 cartridge_base;
     bool bios_loaded;
     bool logo_loaded;
+    bool subrom_loaded;
+    bool disk_rom_loaded;
     bool cartridge_loaded;
 
     u8 ppi_port_c;
@@ -119,8 +125,12 @@ u8   msx_keyboard_read_row(const MsxMachine *msx, unsigned row);
 
 int msx_install_bios(MsxMachine *msx, const u8 *data, size_t size);
 int msx_install_logo(MsxMachine *msx, const u8 *data, size_t size);
+int msx_install_subrom(MsxMachine *msx, const u8 *data, size_t size);
+int msx_install_disk_rom(MsxMachine *msx, const u8 *data, size_t size);
 int msx_install_cartridge(MsxMachine *msx, const u8 *data, size_t size);
 int msx_load_bios(MsxMachine *msx, const char *path);
 int msx_load_logo(MsxMachine *msx, const char *path);
+int msx_load_subrom(MsxMachine *msx, const char *path);
+int msx_load_disk_rom(MsxMachine *msx, const char *path);
 int msx_load_cartridge(MsxMachine *msx, const char *path);
 bool msx_can_boot(const MsxMachine *msx);

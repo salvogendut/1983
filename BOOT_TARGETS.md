@@ -102,8 +102,10 @@ Development tests advance through explicit checkpoints:
    `SP=F300`, primary-slot register `F0`, and 5,692 non-zero VRAM bytes. The
    same test then verifies C-BIOS launching a synthetic plain cartridge.
 2. Execute a supplied MSX1 BIOS and reach the BASIC prompt.
-3. Execute the supplied NMS 8250 BIOS and MSX2 sub-ROM with the internal
-   mapper, expanded slots, V9938, and RTC.
+3. **In progress:** the supplied NMS 8250 BIOS, MSX2 sub-ROM, and disk ROM
+   load into the expanded-slot layout and the internal mapper is accessible;
+   implement enough V9938 and RTC behaviour to reach a visible firmware
+   checkpoint.
 4. Enumerate the external 512 KB mapper and an empty Sunrise IDE device from
    the Nextor kernel ROM.
 5. Read a partitioned raw disk and reach the BASIC fallback when the system

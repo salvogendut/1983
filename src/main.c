@@ -23,6 +23,8 @@ typedef struct {
     const char *config_path;
     const char *bios_path;
     const char *logo_path;
+    const char *subrom_path;
+    const char *disk_rom_path;
     const char *cartridge_path;
     int model;
     int region;
@@ -40,6 +42,8 @@ static const char *usage =
     "  --region pal|ntsc   override the configured video standard\n"
     "  --bios PATH         load a 32 KB MSX BIOS ROM\n"
     "  --logo PATH         load a 16 KB C-BIOS logo ROM in slot 0/page 2\n"
+    "  --subrom PATH       load a 16 KB MSX2 Sub-ROM in slot 3-0\n"
+    "  --disk-rom PATH     load a 16 KB disk ROM in slot 3-3/page 1\n"
     "  --cart PATH         load a plain cartridge ROM in primary slot 1\n"
     "  --scale N           initial window scale (1 through 4)\n"
     "  --headless          use SDL's offscreen video backend\n"
@@ -117,6 +121,8 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--region") == 0 ||
              strcmp(argument, "--bios") == 0 ||
              strcmp(argument, "--logo") == 0 ||
+             strcmp(argument, "--subrom") == 0 ||
+             strcmp(argument, "--disk-rom") == 0 ||
              strcmp(argument, "--cart") == 0 ||
              strcmp(argument, "--scale") == 0 ||
              strcmp(argument, "--exit-after") == 0) &&
@@ -130,6 +136,10 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->bios_path = argv[++i];
         } else if (strcmp(argument, "--logo") == 0) {
             cli->logo_path = argv[++i];
+        } else if (strcmp(argument, "--subrom") == 0) {
+            cli->subrom_path = argv[++i];
+        } else if (strcmp(argument, "--disk-rom") == 0) {
+            cli->disk_rom_path = argv[++i];
         } else if (strcmp(argument, "--cart") == 0) {
             cli->cartridge_path = argv[++i];
         } else if (strcmp(argument, "--model") == 0) {
@@ -274,6 +284,17 @@ int main(int argc, char **argv) {
         fprintf(stderr, "cannot load 16 KB logo ROM: %s\n", cli.logo_path);
         return 1;
     }
+    if (cli.subrom_path && msx_load_subrom(&msx, cli.subrom_path) < 0) {
+        fprintf(stderr, "cannot load 16 KB MSX2 Sub-ROM: %s\n",
+                cli.subrom_path);
+        return 1;
+    }
+    if (cli.disk_rom_path &&
+        msx_load_disk_rom(&msx, cli.disk_rom_path) < 0) {
+        fprintf(stderr, "cannot load 16 KB disk ROM: %s\n",
+                cli.disk_rom_path);
+        return 1;
+    }
     if (cli.cartridge_path &&
         msx_load_cartridge(&msx, cli.cartridge_path) < 0) {
         fprintf(stderr, "cannot load cartridge ROM: %s\n",
@@ -307,8 +328,10 @@ int main(int argc, char **argv) {
     printf("Shift+F1..F5 = MSX F1..F5, Shift+F7 = SELECT, "
            "Shift+F8 = STOP\n");
     if (msx_can_boot(&msx))
-        printf("BIOS loaded%s%s\n",
+        printf("BIOS loaded%s%s%s%s\n",
                msx.logo_loaded ? ", logo ROM loaded" : "",
+               msx.subrom_loaded ? ", Sub-ROM loaded" : "",
+               msx.disk_rom_loaded ? ", disk ROM loaded" : "",
                msx.cartridge_loaded ? ", cartridge loaded" : "");
     else
         printf("No BIOS loaded; use --bios PATH (and --logo PATH for C-BIOS)\n");
@@ -465,10 +488,14 @@ int main(int argc, char **argv) {
             if (msx.vdp.vram[i])
                 ++nonzero_vram;
         printf("state frame=%llu pc=%04X sp=%04X slot=%02X "
+               "subslot=%02X mapper=%02X,%02X,%02X,%02X "
                "cycles=%llu instructions=%llu vram_nonzero=%zu "
                "vdp_r0=%02X vdp_r1=%02X\n",
                (unsigned long long)msx.frame, msx.cpu.pc, msx.cpu.sp,
-               msx.primary_slot, (unsigned long long)msx.cycles,
+               msx.primary_slot, msx.secondary_slot[3],
+               msx.mapper_segment[0], msx.mapper_segment[1],
+               msx.mapper_segment[2], msx.mapper_segment[3],
+               (unsigned long long)msx.cycles,
                (unsigned long long)msx.instructions, nonzero_vram,
                msx.vdp.registers[0], msx.vdp.registers[1]);
     }

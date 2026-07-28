@@ -29,7 +29,11 @@ static const MsxProfile profiles[MSX_MODEL_COUNT] = {
 };
 
 static const int msx1_ram_sizes[] = { 16, 32, 64 };
-static const int msx2_ram_sizes[] = { 64, 128, 256, 512, 1024, 2048, 4096 };
+/*
+ * The first concrete MSX2 profile is the NMS 8250 and therefore exposes its
+ * 128 KB internal mapper. Larger external mappers will be separate devices.
+ */
+static const int msx2_ram_sizes[] = { 64, 128 };
 
 void msx_keyboard_clear(MsxMachine *msx) {
     if (!msx)
@@ -277,12 +281,70 @@ static unsigned selected_slot(const MsxMachine *msx, u16 address) {
     return (msx->primary_slot >> (page * 2)) & 3;
 }
 
+static bool slot_is_expanded(const MsxMachine *msx, unsigned primary) {
+    return msx->profile->expanded_slots && primary == 3;
+}
+
+static unsigned selected_subslot(const MsxMachine *msx, unsigned primary,
+                                 u16 address) {
+    unsigned page = address >> 14;
+    return (msx->secondary_slot[primary] >> (page * 2)) & 3;
+}
+
+static size_t mapper_ram_size(const MsxMachine *msx) {
+    size_t size = (size_t)msx->ram_kb * 1024;
+
+    if (size > MSX_RAM_MAX_SIZE)
+        size = MSX_RAM_MAX_SIZE;
+    return size;
+}
+
+static u8 mapper_segment_mask(const MsxMachine *msx) {
+    size_t segments = mapper_ram_size(msx) / 0x4000;
+
+    return segments ? (u8)(segments - 1) : 0;
+}
+
+static size_t mapper_address(const MsxMachine *msx, u16 address) {
+    unsigned page = address >> 14;
+    u8 segment = msx->mapper_segment[page] &
+                 mapper_segment_mask(msx);
+
+    return (size_t)segment * 0x4000 + (address & 0x3fff);
+}
+
+static u8 read_plain_ram(const MsxMachine *msx, u16 address) {
+    size_t ram_size = (size_t)msx->ram_kb * 1024;
+    size_t ram_base;
+
+    if (ram_size > 0x10000)
+        ram_size = 0x10000;
+    ram_base = 0x10000 - ram_size;
+    return address >= ram_base ? msx->ram[address] : 0xff;
+}
+
+static void write_plain_ram(MsxMachine *msx, u16 address, u8 value) {
+    size_t ram_size = (size_t)msx->ram_kb * 1024;
+    size_t ram_base;
+
+    if (ram_size > 0x10000)
+        ram_size = 0x10000;
+    ram_base = 0x10000 - ram_size;
+    if (address >= ram_base)
+        msx->ram[address] = value;
+}
+
 u8 msx_memory_read(MsxMachine *msx, u16 address) {
     size_t offset;
+    unsigned primary;
 
     if (!msx)
         return 0xff;
-    switch (selected_slot(msx, address)) {
+    primary = selected_slot(msx, address);
+    if (address == 0xffff && slot_is_expanded(msx, primary))
+        return msx->secondary_slot[primary] ^ 0xff;
+
+    switch (primary) {
         case 0:
             if (address < MSX_BIOS_SIZE && msx->bios_loaded)
                 return msx->bios[address];
@@ -298,13 +360,18 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
             }
             break;
         case 3: {
-            size_t ram_size = (size_t)msx->ram_kb * 1024;
-            size_t ram_base;
-            if (ram_size > MSX_RAM_MAX_SIZE)
-                ram_size = MSX_RAM_MAX_SIZE;
-            ram_base = MSX_RAM_MAX_SIZE - ram_size;
-            if (address >= ram_base)
-                return msx->ram[address];
+            unsigned secondary;
+
+            if (!slot_is_expanded(msx, primary))
+                return read_plain_ram(msx, address);
+            secondary = selected_subslot(msx, primary, address);
+            if (secondary == 0 && msx->subrom_loaded)
+                return msx->subrom[address & 0x3fff];
+            if (secondary == 2 && msx->profile->memory_mapper)
+                return msx->ram[mapper_address(msx, address)];
+            if (secondary == 3 && msx->disk_rom_loaded &&
+                address >= 0x4000 && address < 0x8000)
+                return msx->disk_rom[address - 0x4000];
             break;
         }
         default:
@@ -314,17 +381,25 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
 }
 
 void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
-    size_t ram_size;
-    size_t ram_base;
+    unsigned primary;
+    unsigned secondary;
 
-    if (!msx || selected_slot(msx, address) != 3)
+    if (!msx)
         return;
-    ram_size = (size_t)msx->ram_kb * 1024;
-    if (ram_size > MSX_RAM_MAX_SIZE)
-        ram_size = MSX_RAM_MAX_SIZE;
-    ram_base = MSX_RAM_MAX_SIZE - ram_size;
-    if (address >= ram_base)
-        msx->ram[address] = value;
+    primary = selected_slot(msx, address);
+    if (address == 0xffff && slot_is_expanded(msx, primary)) {
+        msx->secondary_slot[primary] = value;
+        return;
+    }
+    if (primary != 3)
+        return;
+    if (!slot_is_expanded(msx, primary)) {
+        write_plain_ram(msx, address, value);
+        return;
+    }
+    secondary = selected_subslot(msx, primary, address);
+    if (secondary == 2 && msx->profile->memory_mapper)
+        msx->ram[mapper_address(msx, address)] = value;
 }
 
 u8 msx_io_read(MsxMachine *msx, u16 port) {
@@ -353,9 +428,18 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
             return msx_keyboard_read_row(msx, msx->ppi_port_c & 0x0f);
         case 0xaa:
             return msx->ppi_port_c;
+        case 0xfc:
+        case 0xfd:
+        case 0xfe:
+        case 0xff:
+            if (msx->profile->memory_mapper)
+                return msx->mapper_segment[low & 3] |
+                       (u8)~mapper_segment_mask(msx);
+            break;
         default:
-            return 0xff;
+            break;
     }
+    return 0xff;
 }
 
 void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
@@ -400,6 +484,14 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
                 msx->caps_led = !(msx->ppi_port_c & 0x40);
             }
             break;
+        case 0xfc:
+        case 0xfd:
+        case 0xfe:
+        case 0xff:
+            if (msx->profile->memory_mapper)
+                msx->mapper_segment[low & 3] =
+                    value & mapper_segment_mask(msx);
+            break;
         default:
             break;
     }
@@ -419,6 +511,24 @@ int msx_install_logo(MsxMachine *msx, const u8 *data, size_t size) {
         return -1;
     memcpy(msx->logo, data, size);
     msx->logo_loaded = true;
+    return 0;
+}
+
+int msx_install_subrom(MsxMachine *msx, const u8 *data, size_t size) {
+    if (!msx || !data || size != MSX_SUBROM_SIZE)
+        return -1;
+    memcpy(msx->subrom, data, size);
+    msx->subrom_loaded = true;
+    msx_reset(msx);
+    return 0;
+}
+
+int msx_install_disk_rom(MsxMachine *msx, const u8 *data, size_t size) {
+    if (!msx || !data || size != MSX_DISK_ROM_SIZE)
+        return -1;
+    memcpy(msx->disk_rom, data, size);
+    msx->disk_rom_loaded = true;
+    msx_reset(msx);
     return 0;
 }
 
@@ -496,6 +606,14 @@ int msx_load_bios(MsxMachine *msx, const char *path) {
 
 int msx_load_logo(MsxMachine *msx, const char *path) {
     return load_rom(msx, path, MSX_LOGO_SIZE, msx_install_logo);
+}
+
+int msx_load_subrom(MsxMachine *msx, const char *path) {
+    return load_rom(msx, path, MSX_SUBROM_SIZE, msx_install_subrom);
+}
+
+int msx_load_disk_rom(MsxMachine *msx, const char *path) {
+    return load_rom(msx, path, MSX_DISK_ROM_SIZE, msx_install_disk_rom);
 }
 
 int msx_load_cartridge(MsxMachine *msx, const char *path) {

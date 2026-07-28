@@ -21,8 +21,10 @@ available on as many SDL3-supported systems as practical.
 > cartridges, and renders the character/pattern modes needed by the initial
 > firmware checkpoint. The standard international MSX keyboard matrix is
 > connected to SDL input, and the TMS9918-family sprite engine is implemented.
-> Its built-in AY/YM PSG now produces cycle-timed SDL3 audio. Cartridge
-> mappers, storage, and MSX2 execution are still to come.
+> Its built-in AY/YM PSG now produces cycle-timed SDL3 audio. The first MSX2
+> machine slice loads separate BIOS, Sub-ROM, and disk-ROM images and models
+> the NMS 8250 expanded slot and internal mapper layout. V9938 video,
+> cartridge mappers, and storage devices are still to come.
 
 ## Current implementation
 
@@ -40,7 +42,12 @@ available on as many SDL3-supported systems as practical.
   sibling projects behind machine-owned memory and I/O callbacks.
 - Four 16 KB pages selected between four primary slots through PPI port
   `0xA8`: firmware and C-BIOS logo ROMs in slot 0, a plain cartridge in slot
-  1, an open slot 2, and up to 64 KB of RAM in slot 3.
+  1, an open slot 2, and RAM or the MSX2 expanded devices in slot 3.
+- NMS 8250-style expanded primary slot 3, including its inverted secondary
+  slot register at `0xFFFF`, a mirrored Sub-ROM in secondary slot 0, internal
+  mapper RAM in slot 2, and the disk ROM in slot 3/page 1.
+- MSX2 internal memory-mapper segment registers at ports `0xFC` through
+  `0xFF`, currently backed by up to 128 KB.
 - TMS9918/TMS9929 VRAM data/control ports, register and status behaviour,
   vertical interrupts, and MSX1 Text, Graphics I, Graphics II, and Multicolour
   rendering.
@@ -56,10 +63,10 @@ available on as many SDL3-supported systems as practical.
 - Standard PSG port directions, international-layout and empty-cassette input
   defaults, and Kana LED output. Joystick and mouse signals are not connected
   yet.
-- Explicit `--bios`, `--logo`, and `--cart` loaders, plus a deterministic
-  180-frame C-BIOS checkpoint below SDL.
-- Reserved firmware, Nextor-kernel, Sunrise IDE, and raw hard-disk surfaces,
-  clearly identified as unimplemented device and loader stubs.
+- Explicit `--bios`, `--logo`, `--subrom`, `--disk-rom`, and `--cart`
+  loaders, plus a deterministic 180-frame C-BIOS checkpoint below SDL.
+- Reserved Nextor-kernel, Sunrise IDE, and raw hard-disk surfaces, clearly
+  identified as unimplemented device and loader stubs.
 - On-screen and console notifications, screenshots, pause, reset, and
   placeholders for capture and monitor tools.
 - Generic MSX1 and MSX2 profiles that establish the VDP, slot, memory
@@ -149,6 +156,27 @@ at 60 Hz. Select it with `--region pal|ntsc` or with **Video standard** in the
 F9 overlay. A title run at the wrong rate can have correctly pitched PSG audio
 but visibly slower or faster movement.
 
+### Trying the MSX2 firmware layout
+
+The user-supplied Philips NMS 8250 firmware set can exercise the new expanded
+slot and mapper foundation:
+
+```sh
+./1983 --model msx2 --region pal \
+  --bios ROMS/nms8250_basic-bios2.rom \
+  --subrom ROMS/nms8250_msx2sub.rom \
+  --disk-rom ROMS/nms8250_disk.rom
+```
+
+These options reproduce the firmware placement of the real machine. A visible
+MSX2 boot is not expected yet: V9938 registers and video modes, the WD2793
+controller behind the disk ROM, and the RTC remain to be implemented.
+The corresponding optional firmware checkpoint is:
+
+```sh
+MSX_NMS8250_DIR=ROMS make check
+```
+
 The current command line deliberately uses explicit firmware paths. The
 planned Philips NMS 8250 profile will first search the user's existing
 openMSX ROM pool at `~/.openMSX/share/systemroms`, then any configured
@@ -223,7 +251,7 @@ currently supported settings.
 | Area | Intended support |
 |------|------------------|
 | CPU | Z80 instruction set, interrupts, and cycle-aware execution (initial core integrated) |
-| Machine architecture | Primary slots and linear ROM/RAM devices implemented; secondary slots and memory mappers planned |
+| Machine architecture | Primary slots and linear ROM/RAM devices implemented; NMS 8250 secondary slots and internal 128 KB mapper implemented |
 | MSX video | TMS9918-family pattern modes, sprite mode 1, status flags, limits, collisions, and interrupts implemented; cycle-level timing refinement planned |
 | MSX2 video | V9938 display modes, palettes, sprites, scrolling, expanded VRAM, and interrupts |
 | Audio | AY-3-8910/YM2149 PSG tone, noise, envelopes, DAC output, and SDL3 playback implemented; SCC and MSX-MUSIC planned as compatibility extensions |
