@@ -20,8 +20,9 @@ available on as many SDL3-supported systems as practical.
 > sibling Z80 core against a primary-slot bus, boots C-BIOS, accepts plain ROM
 > cartridges, and renders the character/pattern modes needed by the initial
 > firmware checkpoint. The standard international MSX keyboard matrix is
-> connected to SDL input. Sprites, audio output, cartridge mappers, storage,
-> and MSX2 execution are still to come.
+> connected to SDL input, and the TMS9918-family sprite engine is implemented.
+> Audio output, cartridge mappers, storage, and MSX2 execution are still to
+> come.
 
 ## Current implementation
 
@@ -42,6 +43,9 @@ available on as many SDL3-supported systems as practical.
 - TMS9918/TMS9929 VRAM data/control ports, register and status behaviour,
   vertical interrupts, and MSX1 Text, Graphics I, Graphics II, and Multicolour
   rendering.
+- TMS9918/TMS9929 sprite-mode-1 rendering with 8x8 and 16x16 patterns,
+  magnification, early clock, priority, transparency, Y wrapping, the
+  four-sprites-per-line limit, fifth-sprite index, and collision status.
 - Complete 11-row international MSX keyboard matrix through PPI ports
   `0xA9`/`0xAA`, including modifiers, function and editing keys, the numeric
   keypad, simultaneous-key rollover, host-key aliases, and focus-loss cleanup.
@@ -130,6 +134,16 @@ cartridges will not yet run correctly. C-BIOS itself runs cartridge software
 but does not provide MSX BASIC, cassette, or disk services. Use a legitimately
 obtained vendor BIOS/BASIC image when those paths become implemented.
 
+The current command line deliberately uses explicit firmware paths. The
+planned Philips NMS 8250 profile will first search the user's existing
+openMSX ROM pool at `~/.openMSX/share/systemroms`, then any configured
+additional roots. It will search recursively, identify known ROM contents
+primarily by checksum rather than filename, and report missing profile
+components clearly. Vendor system ROMs will remain user-provided and will
+not be copied into this repository.
+This follows the practical and legal separation described by the
+[openMSX system-ROM guide](https://openmsx.org/manual/setup.html#systemroms).
+
 The reproducible headless firmware checkpoint is:
 
 ```sh
@@ -194,7 +208,7 @@ currently supported settings.
 |------|------------------|
 | CPU | Z80 instruction set, interrupts, and cycle-aware execution (initial core integrated) |
 | Machine architecture | Primary slots and linear ROM/RAM devices implemented; secondary slots and memory mappers planned |
-| MSX video | TMS9918-family pattern modes, status flags, and interrupts implemented; sprites and timing refinement planned |
+| MSX video | TMS9918-family pattern modes, sprite mode 1, status flags, limits, collisions, and interrupts implemented; cycle-level timing refinement planned |
 | MSX2 video | V9938 display modes, palettes, sprites, scrolling, expanded VRAM, and interrupts |
 | Audio | AY-3-8910-compatible PSG, with SCC and MSX-MUSIC as compatibility extensions |
 | Cartridges | Plain ROMs and common ASCII, Konami, and Konami SCC mapper families, with mapper override controls |
@@ -205,10 +219,11 @@ currently supported settings.
 | Tools | Debugger and disassembler, screenshots, snapshots, headless execution, and deterministic automation |
 
 The first compatibility target is standard MSX1 software. The first
-mass-storage boot target is Nextor on the generic MSX2 profile through an
-emulated Sunrise ATA-IDE cartridge. MSX2+ and MSX turbo R are not part of the
-initial scope, although the design should leave room for later machine
-generations.
+mass-storage boot target matches GeoBench's openMSX setup: a PAL Philips
+NMS 8250 with its internal 128 KB mapper, a separate 512 KB mapper
+extension, and Nextor 2.1.1 through an emulated Sunrise ATA-IDE cartridge.
+MSX2+ and MSX turbo R are not part of the initial scope, although the design
+should leave room for later machine generations.
 
 ## Compatibility approach
 
@@ -231,12 +246,13 @@ does not silently break another.
    bus, PPI slot control, firmware/plain-cartridge loading, and the initial
    TMS9918/TMS9929 video path. C-BIOS now reaches a deterministic boot
    checkpoint and launches a test cartridge.
-3. Complete TMS9918/TMS9929 sprites and timing, generate PSG audio, add common
-   cartridge mappers, cassette support, joysticks, alternate national keyboard
-   layouts, a supplied BIOS/BASIC checkpoint, and an MSX1 compatibility suite.
-4. Implement the V9938, MSX2 secondary slots, memory mapper, RTC, and
-   representative MSX2 machine profiles; then boot Nextor through a Sunrise
-   ATA-IDE cartridge and raw hard-disk image.
+3. Refine TMS9918/TMS9929 timing, generate PSG audio, add common cartridge
+   mappers, cassette support, joysticks, alternate national keyboard layouts,
+   a supplied BIOS/BASIC checkpoint, and an MSX1 compatibility suite.
+4. Implement the V9938, MSX2 secondary slots, multiple memory mappers, RTC,
+   and the Philips NMS 8250 reference profile; then boot its user-supplied
+   Nextor 2.1.1 Sunrise IDE ROM and the same raw hard-disk image used by
+   `../geobench/tools/run_msx.sh`.
 5. Add commonly required sound and cartridge extensions, improve timing
    accuracy, and expand regression coverage.
 6. Package tested releases for the host platforms supported by 1984 and 1985.

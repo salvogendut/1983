@@ -93,7 +93,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = 1983$(EXEEXT)
-check_PROGRAMS = test-msx$(EXEEXT) test-kbd$(EXEEXT)
+check_PROGRAMS = test-msx$(EXEEXT) test-kbd$(EXEEXT) test-vdp$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -141,6 +141,12 @@ test_msx_OBJECTS = $(am_test_msx_OBJECTS)
 test_msx_LDADD = $(LDADD)
 test_msx_LINK = $(CCLD) $(test_msx_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_test_vdp_OBJECTS = tests/test_vdp-test_vdp.$(OBJEXT) \
+	src/test_vdp-vdp.$(OBJEXT)
+test_vdp_OBJECTS = $(am_test_vdp_OBJECTS)
+test_vdp_LDADD = $(LDADD)
+test_vdp_LINK = $(CCLD) $(test_vdp_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -165,9 +171,10 @@ am__depfiles_remade = src/$(DEPDIR)/1983-config.Po \
 	src/$(DEPDIR)/test_kbd-kbd.Po src/$(DEPDIR)/test_kbd-msx.Po \
 	src/$(DEPDIR)/test_kbd-vdp.Po src/$(DEPDIR)/test_kbd-z80.Po \
 	src/$(DEPDIR)/test_msx-msx.Po src/$(DEPDIR)/test_msx-vdp.Po \
-	src/$(DEPDIR)/test_msx-z80.Po \
+	src/$(DEPDIR)/test_msx-z80.Po src/$(DEPDIR)/test_vdp-vdp.Po \
 	tests/$(DEPDIR)/test_kbd-test_kbd.Po \
-	tests/$(DEPDIR)/test_msx-test_msx.Po
+	tests/$(DEPDIR)/test_msx-test_msx.Po \
+	tests/$(DEPDIR)/test_vdp-test_vdp.Po
 am__mv = mv -f
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -185,8 +192,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(1983_SOURCES) $(test_kbd_SOURCES) $(test_msx_SOURCES)
-DIST_SOURCES = $(1983_SOURCES) $(test_kbd_SOURCES) $(test_msx_SOURCES)
+SOURCES = $(1983_SOURCES) $(test_kbd_SOURCES) $(test_msx_SOURCES) \
+	$(test_vdp_SOURCES)
+DIST_SOURCES = $(1983_SOURCES) $(test_kbd_SOURCES) $(test_msx_SOURCES) \
+	$(test_vdp_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -601,6 +610,9 @@ test_kbd_SOURCES = tests/test_kbd.c src/kbd.c src/msx.c src/vdp.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
+test_vdp_SOURCES = tests/test_vdp.c src/vdp.c
+test_vdp_CPPFLAGS = -I$(top_srcdir)/src
+test_vdp_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 desktopdir = $(datadir)/applications
 dist_desktop_DATA = io.github.salvogendut.Emulator1983.desktop
 metainfodir = $(datadir)/metainfo
@@ -776,6 +788,14 @@ src/test_msx-z80.$(OBJEXT): src/$(am__dirstamp) \
 test-msx$(EXEEXT): $(test_msx_OBJECTS) $(test_msx_DEPENDENCIES) $(EXTRA_test_msx_DEPENDENCIES) 
 	@rm -f test-msx$(EXEEXT)
 	$(AM_V_CCLD)$(test_msx_LINK) $(test_msx_OBJECTS) $(test_msx_LDADD) $(LIBS)
+tests/test_vdp-test_vdp.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_vdp-vdp.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-vdp$(EXEEXT): $(test_vdp_OBJECTS) $(test_vdp_DEPENDENCIES) $(EXTRA_test_vdp_DEPENDENCIES)
+	@rm -f test-vdp$(EXEEXT)
+	$(AM_V_CCLD)$(test_vdp_LINK) $(test_vdp_OBJECTS) $(test_vdp_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -803,8 +823,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-z80.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_vdp-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_kbd-test_kbd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_msx-test_msx.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_vdp-test_vdp.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -1107,6 +1129,34 @@ src/test_msx-z80.obj: src/z80.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/z80.c' object='src/test_msx-z80.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
+
+tests/test_vdp-test_vdp.o: tests/test_vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -MT tests/test_vdp-test_vdp.o -MD -MP -MF tests/$(DEPDIR)/test_vdp-test_vdp.Tpo -c -o tests/test_vdp-test_vdp.o `test -f 'tests/test_vdp.c' || echo '$(srcdir)/'`tests/test_vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_vdp-test_vdp.Tpo tests/$(DEPDIR)/test_vdp-test_vdp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_vdp.c' object='tests/test_vdp-test_vdp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -c -o tests/test_vdp-test_vdp.o `test -f 'tests/test_vdp.c' || echo '$(srcdir)/'`tests/test_vdp.c
+
+tests/test_vdp-test_vdp.obj: tests/test_vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -MT tests/test_vdp-test_vdp.obj -MD -MP -MF tests/$(DEPDIR)/test_vdp-test_vdp.Tpo -c -o tests/test_vdp-test_vdp.obj `if test -f 'tests/test_vdp.c'; then $(CYGPATH_W) 'tests/test_vdp.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_vdp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_vdp-test_vdp.Tpo tests/$(DEPDIR)/test_vdp-test_vdp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_vdp.c' object='tests/test_vdp-test_vdp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -c -o tests/test_vdp-test_vdp.obj `if test -f 'tests/test_vdp.c'; then $(CYGPATH_W) 'tests/test_vdp.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_vdp.c'; fi`
+
+src/test_vdp-vdp.o: src/vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -MT src/test_vdp-vdp.o -MD -MP -MF src/$(DEPDIR)/test_vdp-vdp.Tpo -c -o src/test_vdp-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_vdp-vdp.Tpo src/$(DEPDIR)/test_vdp-vdp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/vdp.c' object='src/test_vdp-vdp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -c -o src/test_vdp-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
+
+src/test_vdp-vdp.obj: src/vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -MT src/test_vdp-vdp.obj -MD -MP -MF src/$(DEPDIR)/test_vdp-vdp.Tpo -c -o src/test_vdp-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_vdp-vdp.Tpo src/$(DEPDIR)/test_vdp-vdp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/vdp.c' object='src/test_vdp-vdp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -c -o src/test_vdp-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
 install-dist_desktopDATA: $(dist_desktop_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(dist_desktop_DATA)'; test -n "$(desktopdir)" || list=; \
@@ -1536,6 +1586,13 @@ test-kbd.log: test-kbd$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-vdp.log: test-vdp$(EXEEXT)
+	@p='test-vdp$(EXEEXT)'; \
+	b='test-vdp'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -1801,8 +1858,10 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
 	-rm -f src/$(DEPDIR)/test_msx-vdp.Po
 	-rm -f src/$(DEPDIR)/test_msx-z80.Po
+	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po
 	-rm -f tests/$(DEPDIR)/test_msx-test_msx.Po
+	-rm -f tests/$(DEPDIR)/test_vdp-test_vdp.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1872,8 +1931,10 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
 	-rm -f src/$(DEPDIR)/test_msx-vdp.Po
 	-rm -f src/$(DEPDIR)/test_msx-z80.Po
+	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po
 	-rm -f tests/$(DEPDIR)/test_msx-test_msx.Po
+	-rm -f tests/$(DEPDIR)/test_vdp-test_vdp.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

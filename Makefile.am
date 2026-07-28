@@ -37,7 +37,7 @@ icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 
 CLEANFILES = icons/1983-rc.o
 
-check_PROGRAMS = test-msx test-kbd
+check_PROGRAMS = test-msx test-kbd test-vdp
 TESTS = $(check_PROGRAMS)
 test_msx_SOURCES = tests/test_msx.c src/msx.c src/vdp.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
@@ -47,6 +47,10 @@ test_kbd_SOURCES = tests/test_kbd.c src/kbd.c src/msx.c src/vdp.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
+
+test_vdp_SOURCES = tests/test_vdp.c src/vdp.c
+test_vdp_CPPFLAGS = -I$(top_srcdir)/src
+test_vdp_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
 desktopdir         = $(datadir)/applications
 dist_desktop_DATA  = io.github.salvogendut.Emulator1983.desktop

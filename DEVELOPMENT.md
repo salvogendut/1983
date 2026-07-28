@@ -18,9 +18,10 @@ hardware specification.
 | `src/ui.*` | Small renderer primitives used by the frontend |
 | `src/msx.*` | Machine profiles, slot-aware memory and I/O bus, active-low keyboard matrix, ROM loading, and frame scheduler |
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
-| `src/vdp.*` | Initial TMS9918/TMS9929 ports, state, interrupts, and pattern-mode renderer |
+| `src/vdp.*` | TMS9918/TMS9929 ports, state, interrupts, pattern modes, and sprite-mode-1 renderer |
 | `tests/test_msx.c` | Profiles, slots, CPU execution, VDP ports/rendering, and optional C-BIOS boot checks |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
+| `tests/test_vdp.c` | Sprite size, magnification, priority, clipping, scanline limit, collision, and status-latch checks |
 
 Frontend modules may inspect summarized machine state for presentation, but
 guest hardware should not depend on SDL. Keeping that direction of dependency
@@ -60,6 +61,16 @@ slot 0 contains a 32 KB main ROM and optional 16 KB logo ROM, slot 1 contains
 one external plain cartridge, slot 2 is open, and slot 3 contains RAM. Future
 vendor and firmware layouts should become data-driven rather than
 accumulating model checks throughout device code.
+
+The first concrete MSX2 layout will match the Philips NMS 8250 used by
+`../geobench/tools/run_msx.sh`: BIOS/BASIC in primary slot 0, external
+primary slots 1 and 2, and expanded primary slot 3 containing the MSX2
+sub-ROM, the 128 KB internal mapper, and the built-in disk controller. The
+GeoBench configuration then adds independent SunriseIDE/Nextor and 512 KB
+memory-mapper extensions. These are two mapper devices, not one combined RAM
+allocation. Firmware discovery will reuse the recursive
+`~/.openMSX/share/systemroms` pool and match the pinned hashes documented in
+`BOOT_TARGETS.md`; no machine ROM belongs in the repository.
 
 ## Bus and port assumptions
 
@@ -102,6 +113,19 @@ tracking and the guest matrix to prevent stuck keys. The generic machine
 currently provides idealized simultaneous-key rollover rather than
 model-specific electrical ghosting.
 
+## TMS9918-family sprites
+
+Sprite mode 1 evaluates the 32-entry attribute table in index order for every
+visible scanline. It implements the four-sprite limit, lower-index priority,
+the fifth-sprite number, collision latching, transparent color zero, early
+clock, 8x8/16x16 patterns, magnification, the one-line Y offset, 8-bit vertical
+wrap, and the `0xD0` list terminator. Pattern dots with color zero remain
+collision-active on the MSX1 VDP even though they do not draw.
+
+This is scanline-aware evaluation of the VRAM state at the frame boundary.
+Cycle-level changes to sprite attributes, patterns, display enable, or VDP
+registers during an active scanline are not timed yet.
+
 ## Near-term implementation order
 
 The first five implementation steps—sibling Z80 integration, primary slots,
@@ -109,27 +133,28 @@ PPI slot selection, external firmware loading, and a repeatable C-BIOS/VDP
 checkpoint—are now represented in code and focused tests. The next sequence
 is:
 
-1. Complete TMS9918/TMS9929 sprites, collision/status flags, and scanline
-   timing.
-2. Add AY-compatible PSG audio while preserving the existing register surface.
-3. Add ASCII8/ASCII16, Konami, and Konami SCC cartridge mappers with explicit
+1. Add AY-compatible PSG audio while preserving the existing register surface.
+2. Add ASCII8/ASCII16, Konami, and Konami SCC cartridge mappers with explicit
    override hooks.
-4. Reach a deterministic BASIC prompt with a user-supplied BIOS/BASIC set.
-5. Add joystick input, cassette loading, alternate national keyboard layouts,
+3. Reach a deterministic BASIC prompt with a user-supplied BIOS/BASIC set.
+4. Add joystick input, cassette loading, alternate national keyboard layouts,
    and a small redistributable MSX1 compatibility corpus.
+5. Refine VDP timing so mid-frame register and VRAM changes take effect on
+   the correct scanline.
 
 The firmware decision is to support both C-BIOS and user-supplied BIOS/BASIC
 sets with clearly different capabilities. C-BIOS is the redistributable
 cartridge-oriented default; supplied firmware is the full BASIC and peripheral
 compatibility path.
 
-The first mass-storage boot milestone is Nextor 2.1.x on a generic MSX2 with a
-128 KB memory mapper and Sunrise ATA-IDE cartridge. The Sunrise wrapper should
-be implemented independently from the ATA task-file backend. The compact ATA
+The first mass-storage boot milestone matches the GeoBench setup: Nextor
+2.1.1 on a PAL Philips NMS 8250 with its internal 128 KB mapper, an external
+512 KB mapper, and a Sunrise ATA-IDE cartridge. The Sunrise wrapper should be
+implemented independently from the ATA task-file backend. The compact ATA
 backend in the 1984 sibling can be adapted and tested in isolation, while the
 Sunrise memory map and bank-control behaviour are cross-checked against
-openMSX. See [`BOOT_TARGETS.md`](BOOT_TARGETS.md) for the boot matrix and
-licensing boundaries.
+openMSX. See [`BOOT_TARGETS.md`](BOOT_TARGETS.md) for the pinned ROM hashes,
+boot matrix, and licensing boundaries.
 
 ## Verification
 

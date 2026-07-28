@@ -31,6 +31,129 @@ static void put_pixel(MsxVdp *vdp, int x, int y, u8 colour) {
         palette[visible_colour(vdp, colour)];
 }
 
+typedef struct {
+    int x;
+    u16 pattern;
+    u8 colour;
+} SpriteLine;
+
+static u16 sprite_pattern_line(const MsxVdp *vdp, u8 pattern_number,
+                               int size, unsigned line) {
+    u16 pattern_base = (u16)(vdp->registers[6] & 0x07) << 11;
+    unsigned left_pattern;
+    unsigned row = line & 7;
+    u16 bits;
+
+    if (size == 16)
+        pattern_number &= 0xfc;
+    left_pattern = pattern_number + (line >= 8 ? 1u : 0u);
+    bits = (u16)vdp->vram[wrap_address(
+        pattern_base + left_pattern * 8 + row)] << 8;
+    if (size == 16) {
+        bits |= vdp->vram[wrap_address(
+            pattern_base + (left_pattern + 2) * 8 + row)];
+    }
+    return bits;
+}
+
+static void update_sprite_status(MsxVdp *vdp, int fifth_sprite,
+                                 unsigned last_sprite, bool collision) {
+    u8 status = vdp->status;
+
+    if (fifth_sprite >= 0) {
+        /*
+         * On TMS9918-family VDPs, fifth-sprite detection only latches while
+         * both the vertical-blank and fifth-sprite flags are clear.
+         */
+        if (!(status & 0xc0))
+            status = (status & 0xa0) | 0x40 | (u8)fifth_sprite;
+    } else if (!(status & 0x40)) {
+        status = (status & 0xa0) | (u8)(last_sprite & 0x1f);
+    }
+    if (collision)
+        status |= 0x20;
+    vdp->status = status;
+}
+
+static void render_sprites(MsxVdp *vdp) {
+    u16 attribute_base = (u16)(vdp->registers[5] & 0x7f) << 7;
+    int size = vdp->registers[1] & 0x02 ? 16 : 8;
+    int scale = vdp->registers[1] & 0x01 ? 2 : 1;
+    int effective_size = size * scale;
+    unsigned sprite_end = 0;
+    unsigned last_sprite;
+    int fifth_sprite = -1;
+    bool collision = false;
+
+    while (sprite_end < 32 &&
+           vdp->vram[wrap_address(attribute_base + sprite_end * 4)] != 0xd0)
+        ++sprite_end;
+    last_sprite = sprite_end < 32 ? sprite_end : 31;
+
+    for (int y = 0; y < MSX1_VIDEO_H; ++y) {
+        SpriteLine visible[4];
+        unsigned visible_count = 0;
+        bool occupied[MSX1_VIDEO_W] = { false };
+        bool coloured[MSX1_VIDEO_W] = { false };
+
+        for (unsigned sprite = 0; sprite < sprite_end; ++sprite) {
+            u16 offset = wrap_address(attribute_base + sprite * 4);
+            u8 raw_y = vdp->vram[offset];
+            unsigned top = ((unsigned)raw_y + 1) & 0xff;
+            unsigned sprite_line = ((unsigned)y + 256 - top) & 0xff;
+            u8 colour_attribute;
+
+            if (sprite_line >= (unsigned)effective_size)
+                continue;
+            if (visible_count == 4) {
+                if (fifth_sprite < 0)
+                    fifth_sprite = (int)sprite;
+                continue;
+            }
+
+            colour_attribute = vdp->vram[wrap_address(offset + 3)];
+            visible[visible_count].x =
+                vdp->vram[wrap_address(offset + 1)]
+                - (colour_attribute & 0x80 ? 32 : 0);
+            visible[visible_count].pattern = sprite_pattern_line(
+                vdp, vdp->vram[wrap_address(offset + 2)], size,
+                sprite_line / (unsigned)scale);
+            visible[visible_count].colour = colour_attribute & 0x0f;
+            ++visible_count;
+        }
+
+        /*
+         * Attribute order is sprite priority order. Drawing from low to high
+         * and remembering coloured pixels prevents a lower-priority sprite
+         * from overwriting a higher-priority one. Transparent sprite pixels
+         * do not hide later sprites, but their pattern dots still collide.
+         */
+        for (unsigned sprite = 0; sprite < visible_count; ++sprite) {
+            const SpriteLine *line = &visible[sprite];
+            for (int source_x = 0; source_x < size; ++source_x) {
+                if (!(line->pattern & (0x8000u >> source_x)))
+                    continue;
+                for (int magnified_x = 0; magnified_x < scale;
+                     ++magnified_x) {
+                    int x = line->x + source_x * scale + magnified_x;
+                    if ((unsigned)x >= MSX1_VIDEO_W)
+                        continue;
+                    if (occupied[x])
+                        collision = true;
+                    occupied[x] = true;
+                    if (line->colour && !coloured[x]) {
+                        vdp->pixels[y * MSX1_VIDEO_W + x] =
+                            palette[line->colour];
+                        coloured[x] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    update_sprite_status(vdp, fifth_sprite, last_sprite, collision);
+}
+
 void vdp_reset(MsxVdp *vdp) {
     if (!vdp)
         return;
@@ -114,10 +237,14 @@ void vdp_write_control(MsxVdp *vdp, u8 value) {
 void vdp_end_frame(MsxVdp *vdp) {
     if (!vdp)
         return;
+    /*
+     * Sprite evaluation takes place during the visible scanlines, before
+     * vertical blank raises the F flag.
+     */
+    vdp_render(vdp);
     vdp->status |= 0x80;
     if (vdp->registers[1] & 0x20)
         vdp->irq = true;
-    vdp_render(vdp);
 }
 
 static void render_graphics_1(MsxVdp *vdp) {
@@ -221,12 +348,14 @@ void vdp_render(MsxVdp *vdp) {
 
     if (!(vdp->registers[1] & 0x40))
         return;
-    if (vdp->registers[1] & 0x10)
+    if (vdp->registers[1] & 0x10) {
         render_text(vdp);
-    else if (vdp->registers[1] & 0x08)
+        return;
+    } else if (vdp->registers[1] & 0x08)
         render_graphics_2(vdp);
     else if (vdp->registers[0] & 0x02)
         render_multicolour(vdp);
     else
         render_graphics_1(vdp);
+    render_sprites(vdp);
 }

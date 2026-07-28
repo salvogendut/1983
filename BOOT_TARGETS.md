@@ -12,41 +12,86 @@ The implementation will support these complementary paths:
 |------|---------|---------------------|
 | C-BIOS | Redistributable out-of-box firmware for cartridge software | Useful for early Z80, slot, VDP, input, and cartridge tests; no BASIC, cassette, or disk support |
 | User-supplied MSX BIOS/BASIC | Representative real-machine behaviour | Required for BASIC and for broad software and peripheral compatibility |
-| Nextor | Disk operating system for machines with a supported storage controller | First mass-storage boot target on the generic MSX2 profile |
+| Nextor | Disk operating system for machines with a supported storage controller | First mass-storage boot target on the GeoBench NMS 8250 profile |
 
 C-BIOS and a vendor-compatible BIOS/BASIC set are alternatives at the machine
 firmware layer. Nextor is not a replacement for that layer: it is a disk
 operating system, supplied as a kernel ROM plus files on a guest volume.
 
-## First Nextor target
+## GeoBench MSX2 reference target
 
-The initial target is:
+The first Nextor target deliberately matches
+`../geobench/tools/run_msx.sh`, so GeoBench can be compared between 1983,
+openMSX, and physical MSX2 hardware without changing its guest disk:
 
-- Generic MSX2 with at least 128 KB of mapped RAM;
-- user-supplied BIOS/BASIC and MSX2 extension ROMs;
-- an emulated Sunrise ATA-IDE cartridge;
-- the unmodified official Nextor 2.1.4 Sunrise IDE kernel ROM;
-- a raw IDE disk image with 512-byte sectors;
-- a FAT12 or FAT16 boot volume containing `NEXTOR.SYS` and `COMMAND2.COM`.
+- Philips NMS 8250, PAL, with its real expanded-slot layout;
+- Z80 at 3,579,545 Hz and a V9938 with 128 KB of VRAM;
+- the machine's 128 KB internal memory mapper;
+- a separate 512 KB external memory-mapper extension by default;
+- an emulated Sunrise ATA-IDE cartridge with the unmodified official Nextor
+  2.1.1 Sunrise IDE kernel ROM;
+- a raw IDE hard-disk image with 512-byte sectors, normally GeoBench's
+  32 MiB `QA/GBMSX.IMG`;
+- a FAT16 boot volume containing `NEXTOR.SYS`, `COMMAND2.COM`, and GeoBench.
+
+The 512 KB expansion must remain a separate mapper device rather than being
+folded into a fictitious 640 KB mapper. The stock 128 KB configuration will
+also be testable: it is useful for exposing memory-pressure failures, while
+the expansion is the normal GeoBench configuration.
+
+The equivalent independent-reference launch is:
+
+```sh
+openmsx -machine Philips_NMS_8250 \
+  -ext SunriseIDE_Nextor -ext ram512k -ext unapinet \
+  -hda /path/to/GBMSX.IMG
+```
+
+This is the GeoBench launcher's default. Its `MSX_RAM=stock` mode omits
+`ram512k`, and `MSX_UNAPI=0` omits `unapinet`. The networking extension is
+not required for the first disk-boot checkpoint; it will become an optional
+device once the base machine and storage path are deterministic.
 
 Nextor can run on MSX1 and can fall back to MSX-DOS 1 mode, but its normal
 MSX-DOS 2-compatible mode requires at least 128 KB in the largest memory
 mapper. A 64 KB machine can reach an MSX-DOS 1 command prompt when the
 corresponding MSX-DOS 1 system files are available. These paths will come
-after the deterministic generic MSX2 checkpoint.
+after the NMS 8250 checkpoint.
 
-The Sunrise cartridge is the first controller because official Nextor
-releases provide a matching kernel ROM, the Nextor getting-started guide uses
-it as the emulator example, openMSX provides a useful independent hardware
-reference, and the 1984 sibling already contains a small ATA/LBA backend that
-can be adapted behind an MSX-specific Sunrise register wrapper.
+The Sunrise cartridge is the first controller because it is already used by
+GeoBench, official Nextor releases provide a matching kernel ROM, openMSX
+provides a useful independent hardware reference, and the 1984 sibling
+already contains a small ATA/LBA backend that can be adapted behind an
+MSX-specific Sunrise register wrapper.
 
-The first reproducible fixture is
-`Nextor-2.1.4.SunriseIDE.ROM` (SHA-256
-`4eafcd3a4918da7da98559b2b598d430521d35857f1bf0d2ba6619f8e71c05b2`).
-This is the standard Sunrise hardware variant rather than the blueMSX-specific
-variant. Updating the fixture is a deliberate compatibility-test change, not
-an automatic download of whatever release happens to be newest.
+### Local system ROM contract
+
+1983 will reuse ROMs from the user's openMSX setup without copying them into
+the source tree. On Unix-like systems the first search root will be
+`~/.openMSX/share/systemroms`; configured additional roots and explicit file
+overrides will take precedence. Search roots will be recursive, and known
+components will be selected by checksum rather than depending on their
+filenames.
+
+The pinned reference set is:
+
+| Component | Size | SHA-1 |
+|-----------|-----:|-------|
+| NMS 8250 BIOS + BASIC | 32 KiB | `6103b39f1e38d1aa2d84b1c3219c44f1abb5436e` |
+| NMS 8250 MSX2 sub-ROM | 16 KiB | `5c1f9c7fb655e43d38e5dd1fcc6b942b2ff68b02` |
+| NMS 8250 disk ROM v1.08 | 16 KiB | `dab3e6f36843392665b71b04178aadd8762c6589` |
+| Nextor 2.1.1 Sunrise IDE kernel | 128 KiB | `dca824d7b0ddf25c6e87a8098e97ab7489725f57` |
+
+The filenames suggested by openMSX are
+`nms8250_basic-bios2.rom`, `nms8250_msx2sub.rom`,
+`nms8250_disk.rom`, and `Nextor-2.1.1.SunriseIDE.ROM`, but names
+are only hints. A missing-ROM diagnostic must identify the component and
+expected checksums and must never silently substitute an incompatible image.
+
+Neither the Philips ROMs nor the Nextor ROM are committed to this repository.
+The GeoBench hard-disk image and its MSX-DOS/Nextor files also remain external
+test inputs. A newer Nextor kernel can be added as a separate compatibility
+fixture; it must not silently change this reproducible reference profile.
 
 ## Boot checkpoints
 
@@ -57,9 +102,10 @@ Development tests advance through explicit checkpoints:
    `SP=F300`, primary-slot register `F0`, and 5,692 non-zero VRAM bytes. The
    same test then verifies C-BIOS launching a synthetic plain cartridge.
 2. Execute a supplied MSX1 BIOS and reach the BASIC prompt.
-3. Execute a supplied MSX2 BIOS and extension ROM with a working memory
-   mapper.
-4. Enumerate an empty Sunrise IDE device from the Nextor kernel ROM.
+3. Execute the supplied NMS 8250 BIOS and MSX2 sub-ROM with the internal
+   mapper, expanded slots, V9938, and RTC.
+4. Enumerate the external 512 KB mapper and an empty Sunrise IDE device from
+   the Nextor kernel ROM.
 5. Read a partitioned raw disk and reach the BASIC fallback when the system
    files are absent.
 6. Load `NEXTOR.SYS` and `COMMAND2.COM` and reach a deterministic command
@@ -80,16 +126,19 @@ and `cbios_logo_msx1.rom` with SHA-256
 
 The frontend reserves independent selectors for:
 
-- the machine firmware set;
+- the machine profile and its firmware components;
+- recursive system-ROM search roots;
 - cartridge slots;
 - floppy and cassette media;
 - the Nextor kernel ROM;
 - the Sunrise IDE raw hard-disk image.
 
 Selecting the Sunrise extension must not silently replace a cartridge or
-firmware image. The slot profile will explicitly describe where each ROM and
-device is mapped. Writable hard-disk images must be opened conservatively and
-write activity must drive the IDE status LED.
+firmware image. The NMS 8250 profile will explicitly reproduce slot 0
+BIOS/BASIC, expanded primary slot 3 with the MSX2 sub-ROM, internal mapper,
+and disk controller, plus separately allocated external mapper and Sunrise
+devices. Writable hard-disk images must be opened conservatively and write
+activity must drive the IDE status LED.
 
 ## Distribution and licensing
 
@@ -113,3 +162,4 @@ The authoritative sources are:
 
 - <https://cbios.sourceforge.net/>
 - <https://github.com/Konamiman/Nextor>
+- <https://openmsx.org/manual/setup.html#systemroms>
