@@ -2,6 +2,7 @@ bin_PROGRAMS = 1983
 
 1983_SOURCES = \
 	src/config.c \
+	src/audio.c \
 	src/display.c \
 	src/kbd.c \
 	src/leds.c \
@@ -9,18 +10,21 @@ bin_PROGRAMS = 1983
 	src/msx.c \
 	src/notify.c \
 	src/overlay.c \
+	src/psg.c \
 	src/ui.c \
 	src/vdp.c \
 	src/z80.c
 
 noinst_HEADERS = \
 	src/config.h \
+	src/audio.h \
 	src/display.h \
 	src/kbd.h \
 	src/leds.h \
 	src/msx.h \
 	src/notify.h \
 	src/overlay.h \
+	src/psg.h \
 	src/types.h \
 	src/ui.h \
 	src/vdp.h \
@@ -37,13 +41,13 @@ icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 
 CLEANFILES = icons/1983-rc.o
 
-check_PROGRAMS = test-msx test-kbd test-vdp
+check_PROGRAMS = test-msx test-kbd test-vdp test-psg
 TESTS = $(check_PROGRAMS)
-test_msx_SOURCES = tests/test_msx.c src/msx.c src/vdp.c src/z80.c
+test_msx_SOURCES = tests/test_msx.c src/msx.c src/psg.c src/vdp.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_kbd_SOURCES = tests/test_kbd.c src/kbd.c src/msx.c src/vdp.c src/z80.c
+test_kbd_SOURCES = tests/test_kbd.c src/kbd.c src/msx.c src/psg.c src/vdp.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
@@ -51,6 +55,10 @@ test_kbd_LDADD = $(SDL3_LIBS)
 test_vdp_SOURCES = tests/test_vdp.c src/vdp.c
 test_vdp_CPPFLAGS = -I$(top_srcdir)/src
 test_vdp_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+
+test_psg_SOURCES = tests/test_psg.c src/psg.c
+test_psg_CPPFLAGS = -I$(top_srcdir)/src
+test_psg_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
 desktopdir         = $(datadir)/applications
 dist_desktop_DATA  = io.github.salvogendut.Emulator1983.desktop

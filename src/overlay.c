@@ -20,6 +20,7 @@ static const char *section_name(OverlaySection section) {
     switch (section) {
         case OVERLAY_GENERAL:    return "General";
         case OVERLAY_MEDIA:      return "Media";
+        case OVERLAY_AUDIO:      return "Audio";
         case OVERLAY_EXTENSIONS: return "Extensions";
         case OVERLAY_ADVANCED:   return "Advanced";
         case OVERLAY_SECTION_COUNT: break;
@@ -36,6 +37,7 @@ static int section_rows(OverlaySection section) {
     switch (section) {
         case OVERLAY_GENERAL:    return 5;
         case OVERLAY_MEDIA:      return 8;
+        case OVERLAY_AUDIO:      return 1;
         case OVERLAY_EXTENSIONS: return 5;
         case OVERLAY_ADVANCED:   return 6;
         case OVERLAY_SECTION_COUNT: break;
@@ -109,6 +111,10 @@ static void item_text(const Overlay *overlay, int row,
                 case 7: snprintf(label, label_size, "IDE hard disk"); break;
             }
             snprintf(value, value_size, "[not mounted - loader planned]");
+            break;
+        case OVERLAY_AUDIO:
+            snprintf(label, label_size, "PSG volume");
+            snprintf(value, value_size, "%d%%", config->audio_volume);
             break;
         case OVERLAY_EXTENSIONS:
             switch (row) {
@@ -211,6 +217,7 @@ static void apply_config(Overlay *overlay) {
     display_set_smoothing(overlay->display, config->smoothing);
     display_set_crt(overlay->display, config->real_crt,
                     config->crt_scanlines);
+    psg_set_volume(&msx->psg, config->audio_volume);
     notify_set_mode(config->notifications);
     configure_leds(config, msx);
 }
@@ -293,6 +300,11 @@ static void activate_item(Overlay *overlay) {
                         media[overlay->row]);
             return;
         }
+        case OVERLAY_AUDIO:
+            config->audio_volume += 10;
+            if (config->audio_volume > 100)
+                config->audio_volume = 0;
+            break;
         case OVERLAY_EXTENSIONS:
             switch (overlay->row) {
                 case 0: config->second_drive = !config->second_drive; break;
@@ -405,6 +417,8 @@ static const char *section_hint(OverlaySection section) {
             return "Machine changes reset the current scaffold state.";
         case OVERLAY_MEDIA:
             return "Media rows reserve the shared loader workflow.";
+        case OVERLAY_AUDIO:
+            return "Volume zero mutes the built-in PSG.";
         case OVERLAY_EXTENSIONS:
             return "Extension switches are UI/config stubs, not emulated devices.";
         case OVERLAY_ADVANCED:

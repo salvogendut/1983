@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "audio.h"
 #include "config.h"
 #include "display.h"
 #include "kbd.h"
@@ -211,6 +212,7 @@ int main(int argc, char **argv) {
     MsxMachine msx;
     KbdHost keyboard;
     static Display display;
+    AudioOutput audio;
     Overlay overlay;
     SDL_WindowID window_id;
     bool running = true;
@@ -259,6 +261,7 @@ int main(int argc, char **argv) {
         display_quit(&display);
         return 1;
     }
+    audio_output_init(&audio, !cli.headless && !cli.unthrottled);
     window_id = SDL_GetWindowID(display.window);
 
     notify_init();
@@ -272,9 +275,11 @@ int main(int argc, char **argv) {
 
     printf("1983 - MSX / MSX2 emulator (git %s)\n",
            PROG_GIT_COMMIT);
-    printf("%s, %s, %d KB RAM, %d KB VRAM, %s\n",
+    printf("%s, %s, %d KB RAM, %d KB VRAM, %s, %s PSG\n",
            msx.profile->name, msx_region_name(msx.region),
-           msx.ram_kb, msx.profile->vram_kb, msx_vdp_name(&msx));
+           msx.ram_kb, msx.profile->vram_kb, msx_vdp_name(&msx),
+           msx.profile->psg_variant == PSG_VARIANT_YM2149
+           ? "YM2149" : "AY-3-8910");
     printf("F4 screenshot, F5 reset, F9 options, F11 fullscreen, F12 quit\n");
     printf("Shift+F1..F5 = MSX F1..F5, Shift+F7 = SELECT, "
            "Shift+F8 = STOP\n");
@@ -349,6 +354,8 @@ int main(int argc, char **argv) {
                 case SDLK_F5:
                     kbd_release_all(&keyboard, &msx);
                     msx_reset(&msx);
+                    psg_set_volume(&msx.psg, config.audio_volume);
+                    audio_output_clear(&audio);
                     leds_set_state(LED_CAPS, false);
                     leds_set_state(LED_KANA, false);
                     notify_post("Machine reset");
@@ -368,6 +375,8 @@ int main(int argc, char **argv) {
                     break;
                 case SDLK_PAUSE:
                     msx.paused = !msx.paused;
+                    if (msx.paused)
+                        audio_output_clear(&audio);
                     notify_post(msx.paused ? "Paused" : "Running");
                     break;
                 default:
@@ -377,6 +386,8 @@ int main(int argc, char **argv) {
         }
 
         msx_run_frame(&msx);
+        audio_output_submit(&audio, msx.audio_samples,
+                            msx.audio_sample_count);
         leds_set_state(LED_CAPS, msx.caps_led);
         leds_set_state(LED_KANA, msx.kana_led);
         notify_tick(1000 / msx.frame_hz);
@@ -419,6 +430,7 @@ int main(int argc, char **argv) {
                (unsigned long long)msx.instructions, nonzero_vram,
                msx.vdp.registers[0], msx.vdp.registers[1]);
     }
+    audio_output_quit(&audio);
     display_quit(&display);
     return 0;
 }

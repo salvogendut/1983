@@ -21,8 +21,8 @@ available on as many SDL3-supported systems as practical.
 > cartridges, and renders the character/pattern modes needed by the initial
 > firmware checkpoint. The standard international MSX keyboard matrix is
 > connected to SDL input, and the TMS9918-family sprite engine is implemented.
-> Audio output, cartridge mappers, storage, and MSX2 execution are still to
-> come.
+> Its built-in AY/YM PSG now produces cycle-timed SDL3 audio. Cartridge
+> mappers, storage, and MSX2 execution are still to come.
 
 ## Current implementation
 
@@ -31,7 +31,8 @@ available on as many SDL3-supported systems as practical.
   sizes and a multi-resolution Windows executable icon.
 - Resizable 640x480 guest display with a footer, LED bar, fullscreen and
   integer window scaling.
-- F9 options overlay with General, Media, Extensions, and Advanced sections.
+- F9 options overlay with General, Media, Audio, Extensions, and Advanced
+  sections.
 - Persistent generic MSX1/MSX2, PAL/NTSC, RAM, display, extension, and
   notification settings.
 - Power, Caps, Kana, drive, and cassette LEDs with hover descriptions.
@@ -49,8 +50,12 @@ available on as many SDL3-supported systems as practical.
 - Complete 11-row international MSX keyboard matrix through PPI ports
   `0xA9`/`0xAA`, including modifiers, function and editing keys, the numeric
   keypad, simultaneous-key rollover, host-key aliases, and focus-loss cleanup.
-- Minimal cassette-PPI and PSG register surfaces sufficient for the firmware
-  boot path. Audio generation is not connected yet.
+- AY-3-8910 and YM2149 PSG variants with tone, noise, all envelope shapes,
+  mixer and volume-register DAC behaviour, driven at MSX bus timing and
+  rendered as filtered 44.1 kHz mono audio through SDL3.
+- Standard PSG port directions, international-layout and empty-cassette input
+  defaults, and Kana LED output. Joystick and mouse signals are not connected
+  yet.
 - Explicit `--bios`, `--logo`, and `--cart` loaders, plus a deterministic
   180-frame C-BIOS checkpoint below SDL.
 - Reserved firmware, Nextor-kernel, Sunrise IDE, and raw hard-disk surfaces,
@@ -179,7 +184,8 @@ MSX_CBIOS_DIR=/path/to/cbios make check
 Inside the overlay, Left and Right change section, Up and Down select a row,
 Enter changes the selected setting, F9 applies and saves, and Escape offers to
 save or discard modified settings. The Advanced section appears after enabling
-General > Tinker.
+General > Tinker. The Audio section controls PSG volume in ten-percent steps;
+zero mutes the output.
 
 Configuration is saved to `~/.config/1983/1983.conf` on Unix-like systems and
 under the user's application-data directory on Windows. Pass `--config PATH`
@@ -210,7 +216,7 @@ currently supported settings.
 | Machine architecture | Primary slots and linear ROM/RAM devices implemented; secondary slots and memory mappers planned |
 | MSX video | TMS9918-family pattern modes, sprite mode 1, status flags, limits, collisions, and interrupts implemented; cycle-level timing refinement planned |
 | MSX2 video | V9938 display modes, palettes, sprites, scrolling, expanded VRAM, and interrupts |
-| Audio | AY-3-8910-compatible PSG, with SCC and MSX-MUSIC as compatibility extensions |
+| Audio | AY-3-8910/YM2149 PSG tone, noise, envelopes, DAC output, and SDL3 playback implemented; SCC and MSX-MUSIC planned as compatibility extensions |
 | Cartridges | Plain ROMs and common ASCII, Konami, and Konami SCC mapper families, with mapper override controls |
 | Cassette | CAS images and the standard BIOS cassette path |
 | Disk | DSK images, common MSX disk-ROM behaviour, Sunrise ATA-IDE, Nextor-compatible block storage, guest writes, and multiple drives |
@@ -246,9 +252,9 @@ does not silently break another.
    bus, PPI slot control, firmware/plain-cartridge loading, and the initial
    TMS9918/TMS9929 video path. C-BIOS now reaches a deterministic boot
    checkpoint and launches a test cartridge.
-3. Refine TMS9918/TMS9929 timing, generate PSG audio, add common cartridge
-   mappers, cassette support, joysticks, alternate national keyboard layouts,
-   a supplied BIOS/BASIC checkpoint, and an MSX1 compatibility suite.
+3. Refine TMS9918/TMS9929 timing, add common cartridge mappers, cassette
+   support, joysticks, alternate national keyboard layouts, a supplied
+   BIOS/BASIC checkpoint, and an MSX1 compatibility suite.
 4. Implement the V9938, MSX2 secondary slots, multiple memory mappers, RTC,
    and the Philips NMS 8250 reference profile; then boot its user-supplied
    Nextor 2.1.1 Sunrise IDE ROM and the same raw hard-disk image used by

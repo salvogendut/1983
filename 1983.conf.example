@@ -13,6 +13,9 @@ smoothing = false
 real_crt = false
 crt_scanlines = 35
 
+[audio]
+audio_volume = 80
+
 [extensions]
 second_drive = false
 sunrise_ide = false

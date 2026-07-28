@@ -125,6 +125,7 @@ void config_defaults(Config *config) {
     config->scale = 1;
     config->smoothing = false;
     config->crt_scanlines = DISPLAY_CRT_SCANLINES_DEFAULT;
+    config->audio_volume = 80;
     config->notifications = NOTIFY_MODE_SCREEN;
 }
 
@@ -143,6 +144,10 @@ void config_normalize(Config *config) {
         config->crt_scanlines = 0;
     if (config->crt_scanlines > 95)
         config->crt_scanlines = 95;
+    if (config->audio_volume < 0)
+        config->audio_volume = 0;
+    if (config->audio_volume > 100)
+        config->audio_volume = 100;
     if ((unsigned)config->notifications > NOTIFY_MODE_CONSOLE)
         config->notifications = NOTIFY_MODE_SCREEN;
 }
@@ -202,6 +207,8 @@ void config_load(Config *config, const char *path) {
             config->real_crt = parse_bool(value, config->real_crt);
         else if (strcmp(key, "crt_scanlines") == 0)
             config->crt_scanlines = atoi(value);
+        else if (strcmp(key, "audio_volume") == 0)
+            config->audio_volume = atoi(value);
         else if (strcmp(key, "second_drive") == 0)
             config->second_drive = parse_bool(value, config->second_drive);
         else if (strcmp(key, "sunrise_ide") == 0)
@@ -248,6 +255,8 @@ int config_save(const Config *config) {
     fprintf(file, "smoothing = %s\n", bool_name(config->smoothing));
     fprintf(file, "real_crt = %s\n", bool_name(config->real_crt));
     fprintf(file, "crt_scanlines = %d\n\n", config->crt_scanlines);
+    fprintf(file, "[audio]\n");
+    fprintf(file, "audio_volume = %d\n\n", config->audio_volume);
     fprintf(file, "[extensions]\n");
     fprintf(file, "second_drive = %s\n", bool_name(config->second_drive));
     fprintf(file, "sunrise_ide = %s\n", bool_name(config->sunrise_ide));

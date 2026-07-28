@@ -3,6 +3,7 @@
 /test-msx
 /test-kbd
 /test-vdp
+/test-psg
 /Makefile
 /config.log
 /config.status

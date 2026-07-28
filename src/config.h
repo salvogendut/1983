@@ -23,6 +23,8 @@ typedef struct {
     bool real_crt;
     int  crt_scanlines;
 
+    int audio_volume;
+
     bool second_drive;
     bool sunrise_ide;
     bool scc;

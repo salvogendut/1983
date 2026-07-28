@@ -151,6 +151,67 @@ static void test_keyboard_matrix_and_ppi(void) {
         assert(msx_keyboard_read_row(&msx, row) == 0xff);
 }
 
+static void test_psg_ports_and_cycle_timed_audio(void) {
+    MsxMachine *msx = malloc(sizeof(*msx));
+    u8 bios[MSX_BIOS_SIZE];
+    bool positive = false;
+    bool negative = false;
+
+    assert(msx);
+    msx_init(msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(msx->psg.variant == PSG_VARIANT_AY8910);
+
+    msx_io_write(msx, 0xa0, 1);
+    msx_io_write(msx, 0xa1, 0xff);
+    assert(msx_io_read(msx, 0xa2) == 0x0f);
+    msx_io_write(msx, 0xa0, 7);
+    msx_io_write(msx, 0xa1, 0xff);
+    assert(msx_io_read(msx, 0xa2) == 0xbf);
+
+    msx_io_write(msx, 0xa0, 15);
+    msx_io_write(msx, 0xa1, 0x00);
+    assert(msx->kana_led);
+    assert(msx_io_read(msx, 0xa2) == 0x00);
+    msx_io_write(msx, 0xa1, 0x80);
+    assert(!msx->kana_led);
+
+    msx_io_write(msx, 0xa0, 14);
+    msx_io_write(msx, 0xa1, 0x55);
+    assert(msx_io_read(msx, 0xa2) == 0xbf);
+
+    memset(bios, 0xff, sizeof(bios));
+    {
+        const u8 program[] = {
+            0x3e, 0x00, 0xd3, 0xa0, /* tone A fine */
+            0x3e, 0x20, 0xd3, 0xa1,
+            0x3e, 0x01, 0xd3, 0xa0, /* tone A coarse */
+            0xaf,       0xd3, 0xa1,
+            0x3e, 0x07, 0xd3, 0xa0, /* A tone, no noise/B/C */
+            0x3e, 0x3e, 0xd3, 0xa1,
+            0x3e, 0x08, 0xd3, 0xa0, /* A volume */
+            0x3e, 0x0f, 0xd3, 0xa1,
+            0x76,
+        };
+        memcpy(bios, program, sizeof(program));
+    }
+    assert(msx_install_bios(msx, bios, sizeof(bios)) == 0);
+    msx_run_frame(msx);
+    assert(msx->audio_sample_count >= 880);
+    assert(msx->audio_sample_count <= 884);
+    assert(msx->audio_sample_cycles < MSX_CPU_HZ);
+    for (size_t i = 0; i < msx->audio_sample_count; ++i) {
+        positive |= msx->audio_samples[i] > 0;
+        negative |= msx->audio_samples[i] < 0;
+    }
+    assert(positive);
+    assert(negative);
+
+    msx_configure(msx, MSX_MODEL_GENERIC_MSX2,
+                  MSX_REGION_NTSC, 128);
+    assert(msx->psg.variant == PSG_VARIANT_YM2149);
+    free(msx);
+}
+
 static void test_cbios_checkpoint_if_available(void) {
     const char *directory = getenv("MSX_CBIOS_DIR");
     MsxMachine *msx;
@@ -258,6 +319,7 @@ int main(void) {
     test_slot_bus_and_cpu();
     test_vdp_ports_and_renderer();
     test_keyboard_matrix_and_ppi();
+    test_psg_ports_and_cycle_timed_audio();
     test_cbios_checkpoint_if_available();
     return 0;
 }

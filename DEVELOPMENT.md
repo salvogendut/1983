@@ -9,6 +9,7 @@ hardware specification.
 | Files | Responsibility |
 |-------|----------------|
 | `src/main.c` | Process lifetime, command line, SDL event loop, and shared function-key bindings |
+| `src/audio.*` | SDL3 audio-stream lifetime and host sample submission |
 | `src/config.*` | Defaults, normalization, persistent settings, and platform-specific configuration path |
 | `src/display.*` | SDL window and renderer, fixed logical canvas, framebuffer presentation, footer, and screenshots |
 | `src/kbd.*` | SDL scancode translation and shared frontend/guest function-key routing |
@@ -17,10 +18,12 @@ hardware specification.
 | `src/notify.*` | On-screen and console notifications |
 | `src/ui.*` | Small renderer primitives used by the frontend |
 | `src/msx.*` | Machine profiles, slot-aware memory and I/O bus, active-low keyboard matrix, ROM loading, and frame scheduler |
+| `src/psg.*` | Host-independent AY-3-8910/YM2149 tone, noise, envelope, mixer, and sample generation |
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
 | `src/vdp.*` | TMS9918/TMS9929 ports, state, interrupts, pattern modes, and sprite-mode-1 renderer |
 | `tests/test_msx.c` | Profiles, slots, CPU execution, VDP ports/rendering, and optional C-BIOS boot checks |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
+| `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
 | `tests/test_vdp.c` | Sprite size, magnification, priority, clipping, scanline limit, collision, and status-latch checks |
 
 Frontend modules may inspect summarized machine state for presentation, but
@@ -95,7 +98,7 @@ These notes were cross-checked against the openMSX 21.0 machine definitions
 and CPU/input implementations. The primary-slot, complete international
 keyboard matrix, PPI register, VDP-port, and PSG-register surfaces above are
 now present; secondary slots, alternate national keyboard matrices, mapper
-registers, the RTC, and accurate peripheral timing are not.
+registers, the RTC, joystick/mouse PSG inputs, and accurate VDP timing are not.
 
 ## Keyboard input
 
@@ -126,6 +129,29 @@ This is scanline-aware evaluation of the VRAM state at the frame boundary.
 Cycle-level changes to sprite attributes, patterns, display enable, or VDP
 registers during an active scanline are not timed yet.
 
+## PSG audio
+
+The machine core contains a host-independent AY-3-8910/YM2149 PSG. Generic
+MSX1 uses the AY variant and Generic MSX2 uses the YM variant. The core models
+the three square-wave channels, the 17-bit noise generator, all sixteen
+envelope shapes, fixed and envelope volume curves, mixer gating, and
+volume-register DAC output. Register readback preserves the documented
+AY-versus-YM differences.
+
+The PSG runs at 1,789,773 Hz. The Z80 bus tick callback advances machine time
+within each instruction, so writes through ports `0xA0` through `0xA2` affect
+the generated signal at their I/O-cycle position rather than at the next
+frame boundary. Samples are accumulated deterministically at 44.1 kHz,
+lightly DC-blocked and filtered, then passed as signed 16-bit mono audio to an
+SDL3 stream. Headless and unthrottled execution still advances the PSG and is
+covered by component tests, but deliberately does not open a host audio
+device.
+
+PSG port A currently reports inactive joystick inputs, the international
+keyboard-layout signal, and an empty-cassette comparator. Port B drives the
+active-low Kana LED. Joystick, mouse, and real cassette signals remain future
+peripheral work.
+
 ## Near-term implementation order
 
 The first five implementation steps—sibling Z80 integration, primary slots,
@@ -133,14 +159,15 @@ PPI slot selection, external firmware loading, and a repeatable C-BIOS/VDP
 checkpoint—are now represented in code and focused tests. The next sequence
 is:
 
-1. Add AY-compatible PSG audio while preserving the existing register surface.
-2. Add ASCII8/ASCII16, Konami, and Konami SCC cartridge mappers with explicit
+1. Add ASCII8/ASCII16, Konami, and Konami SCC cartridge mappers with explicit
    override hooks.
-3. Reach a deterministic BASIC prompt with a user-supplied BIOS/BASIC set.
-4. Add joystick input, cassette loading, alternate national keyboard layouts,
+2. Reach a deterministic BASIC prompt with a user-supplied BIOS/BASIC set.
+3. Add joystick input, cassette loading, alternate national keyboard layouts,
    and a small redistributable MSX1 compatibility corpus.
-5. Refine VDP timing so mid-frame register and VRAM changes take effect on
+4. Refine VDP timing so mid-frame register and VRAM changes take effect on
    the correct scanline.
+5. Add deterministic snapshot and audio-capture surfaces for compatibility
+   investigations.
 
 The firmware decision is to support both C-BIOS and user-supplied BIOS/BASIC
 sets with clearly different capabilities. C-BIOS is the redistributable

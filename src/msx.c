@@ -14,6 +14,7 @@ static const MsxProfile profiles[MSX_MODEL_COUNT] = {
         .expanded_slots = false,
         .memory_mapper = false,
         .rtc = false,
+        .psg_variant = PSG_VARIANT_AY8910,
     },
     [MSX_MODEL_GENERIC_MSX2] = {
         .model = MSX_MODEL_GENERIC_MSX2,
@@ -23,6 +24,7 @@ static const MsxProfile profiles[MSX_MODEL_COUNT] = {
         .expanded_slots = true,
         .memory_mapper = true,
         .rtc = true,
+        .psg_variant = PSG_VARIANT_YM2149,
     },
 };
 
@@ -81,6 +83,35 @@ static u8 bus_io_read(void *context, u16 port) {
 
 static void bus_io_write(void *context, u16 port, u8 value) {
     msx_io_write(context, port, value);
+}
+
+static void advance_machine(MsxMachine *msx, int cycles) {
+    if (!msx || cycles <= 0)
+        return;
+
+    msx->cycles += (unsigned)cycles;
+    msx->audio_sample_cycles +=
+        (u64)(unsigned)cycles * MSX_AUDIO_SAMPLE_RATE;
+    while (msx->audio_sample_cycles >= MSX_CPU_HZ) {
+        s16 discarded;
+        s16 *sample =
+            msx->audio_sample_count < MSX_AUDIO_FRAME_CAPACITY
+            ? &msx->audio_samples[msx->audio_sample_count] : &discarded;
+
+        psg_render(&msx->psg, sample, 1,
+                   MSX_PSG_CLOCK_HZ, MSX_AUDIO_SAMPLE_RATE);
+        if (msx->audio_sample_count < MSX_AUDIO_FRAME_CAPACITY)
+            ++msx->audio_sample_count;
+        msx->audio_sample_cycles -= MSX_CPU_HZ;
+    }
+}
+
+static void bus_tick(void *context, int cycles) {
+    MsxMachine *msx = context;
+
+    advance_machine(msx, cycles);
+    if (msx)
+        msx->bus_ticked_in_step += cycles;
 }
 
 const MsxProfile *msx_profile(MsxModel model) {
@@ -158,9 +189,16 @@ void msx_reset(MsxMachine *msx) {
     msx->kana_led = false;
     msx->ppi_port_c = 0xff;
     msx_keyboard_clear(msx);
-    msx->psg_register = 0;
-    memset(msx->psg, 0, sizeof(msx->psg));
+    psg_reset(&msx->psg);
+    /*
+     * Standard MSX wiring treats PSG port A as input and port B as output,
+     * even on engines which ignore software attempts to reverse them.
+     */
+    psg_write_register(&msx->psg, 7, 0x80);
     memset(msx->ram, 0, sizeof(msx->ram));
+    msx->audio_sample_count = 0;
+    msx->audio_sample_cycles = 0;
+    msx->bus_ticked_in_step = 0;
     msx->cycles = 0;
     msx->instructions = 0;
     msx->cycle_fraction = 0;
@@ -175,6 +213,7 @@ void msx_configure(MsxMachine *msx, MsxModel model, MsxRegion region,
     if (!msx)
         return;
     msx->profile = msx_profile(model);
+    psg_set_variant(&msx->psg, msx->profile->psg_variant);
     msx->region = region == MSX_REGION_NTSC
                 ? MSX_REGION_NTSC : MSX_REGION_PAL;
     msx->ram_kb = msx_normalize_ram_kb(msx->profile->model, ram_kb);
@@ -188,10 +227,13 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     memset(msx, 0, sizeof(*msx));
     z80_init(&msx->cpu);
     vdp_init(&msx->vdp);
+    psg_init(&msx->psg, PSG_VARIANT_AY8910);
     msx->bus.mem_read = bus_memory_read;
     msx->bus.mem_write = bus_memory_write;
     msx->bus.io_read = bus_io_read;
     msx->bus.io_write = bus_io_write;
+    msx->bus.tick = bus_tick;
+    msx->bus.ticked_in_step = &msx->bus_ticked_in_step;
     msx->bus.ctx = msx;
     msx_configure(msx, model, region, ram_kb);
 }
@@ -200,7 +242,10 @@ void msx_run_frame(MsxMachine *msx) {
     unsigned numerator;
     int frame_cycles;
 
-    if (!msx || msx->paused)
+    if (!msx)
+        return;
+    msx->audio_sample_count = 0;
+    if (msx->paused)
         return;
 
     ++msx->frame;
@@ -216,8 +261,9 @@ void msx_run_frame(MsxMachine *msx) {
         int consumed = z80_step(&msx->cpu, &msx->bus);
         if (consumed <= 0)
             consumed = 1;
+        if (consumed > msx->bus_ticked_in_step)
+            advance_machine(msx, consumed - msx->bus_ticked_in_step);
         msx->cycle_balance -= consumed;
-        msx->cycles += (unsigned)consumed;
         ++msx->instructions;
     }
 
@@ -293,9 +339,14 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
         case 0x99:
             return vdp_read_status(&msx->vdp);
         case 0xa2:
-            if (msx->psg_register == 14 || msx->psg_register == 15)
-                return 0xff;
-            return msx->psg[msx->psg_register & 0x0f];
+            if (msx->psg.selected == 14)
+                /*
+                 * No joystick is connected (bits 0-5 high), the generic
+                 * international keyboard layout drives bit 6 low, and an
+                 * empty cassette input rests high on bit 7.
+                 */
+                return 0xbf;
+            return psg_read_data(&msx->psg);
         case 0xa8:
             return msx->primary_slot;
         case 0xa9:
@@ -321,11 +372,17 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
             vdp_write_control(&msx->vdp, value);
             break;
         case 0xa0:
-            msx->psg_register = value & 0x0f;
+            psg_select(&msx->psg, value);
             break;
-        case 0xa1:
-            msx->psg[msx->psg_register & 0x0f] = value;
+        case 0xa1: {
+            unsigned reg = msx->psg.selected;
+            if (reg == 7)
+                value = (value & 0x3f) | 0x80;
+            psg_write_data(&msx->psg, value);
+            if (reg == 15)
+                msx->kana_led = !(value & 0x80);
             break;
+        }
         case 0xa8:
             msx->primary_slot = value;
             break;

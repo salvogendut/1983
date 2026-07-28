@@ -3,11 +3,15 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "psg.h"
 #include "types.h"
 #include "vdp.h"
 #include "z80.h"
 
 #define MSX_CPU_HZ 3579545u
+#define MSX_PSG_CLOCK_HZ 1789773u
+#define MSX_AUDIO_SAMPLE_RATE 44100u
+#define MSX_AUDIO_FRAME_CAPACITY 1024u
 #define MSX_BIOS_SIZE 0x8000u
 #define MSX_LOGO_SIZE 0x4000u
 #define MSX_RAM_MAX_SIZE 0x10000u
@@ -34,6 +38,7 @@ typedef struct {
     bool       expanded_slots;
     bool       memory_mapper;
     bool       rtc;
+    PsgVariant psg_variant;
 } MsxProfile;
 
 typedef struct {
@@ -60,6 +65,7 @@ typedef struct {
     Z80    cpu;
     Z80Bus bus;
     MsxVdp vdp;
+    Psg    psg;
 
     u8 bios[MSX_BIOS_SIZE];
     u8 logo[MSX_LOGO_SIZE];
@@ -74,8 +80,11 @@ typedef struct {
     u8 ppi_port_c;
     u8 keyboard_rows[MSX_KEYBOARD_ROWS];
     u8 keyboard_refs[MSX_KEYBOARD_ROWS][MSX_KEYBOARD_COLUMNS];
-    u8 psg_register;
-    u8 psg[16];
+
+    s16 audio_samples[MSX_AUDIO_FRAME_CAPACITY];
+    size_t audio_sample_count;
+    u64 audio_sample_cycles;
+    int bus_ticked_in_step;
 
     u64 cycles;
     u64 instructions;
