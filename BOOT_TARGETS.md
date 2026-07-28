@@ -104,12 +104,12 @@ Development tests advance through explicit checkpoints:
    `SP=F300`, primary-slot register `F0`, and 5,692 non-zero VRAM bytes. The
    same test then verifies C-BIOS launching a synthetic plain cartridge.
 2. Execute a supplied MSX1 BIOS and reach the BASIC prompt.
-3. **In progress:** the supplied NMS 8250 BIOS, MSX2 sub-ROM, and disk ROM
-   load into the expanded-slot layout, the internal mapper is accessible,
-   and the CPU-visible V9938 register/palette/128 KB VRAM interface is in
-   place. The RP-5C01 RTC now lets firmware enable an MSX2 bitmap mode and
-   initialize 32 KiB of VRAM; implement V9938 commands and bitmap rendering
-   to turn that state into a visible firmware checkpoint.
+3. **Reached:** the supplied NMS 8250 BIOS, MSX2 sub-ROM, and disk ROM load
+   into the expanded-slot layout, the internal mapper is accessible, and the
+   RP-5C01 RTC lets firmware initialize the V9938. At 200 PAL frames the
+   fixture reaches `PC=1044`, enables a 512x192 SCREEN 6 display, initializes
+   32 KiB of VRAM, and renders the blue firmware checkpoint. SCREEN 5-8
+   bitmap layouts and all twelve V9938 commands are covered independently.
 4. Enumerate the external 512 KB mapper and an empty Sunrise IDE device from
    the Nextor kernel ROM.
 5. Read a partitioned raw disk and reach the BASIC fallback when the system

@@ -180,12 +180,14 @@ void display_draw(Display *display, const MsxMachine *msx) {
 
     if (msx_can_boot(msx)) {
         for (int y = 0; y < DISPLAY_FB_H; ++y) {
-            int source_y = y * MSX1_VIDEO_H / DISPLAY_FB_H;
+            int source_y =
+                y * (int)msx->vdp.render_height / DISPLAY_FB_H;
             for (int x = 0; x < DISPLAY_FB_W; ++x) {
-                int source_x = x * MSX1_VIDEO_W / DISPLAY_FB_W;
+                int source_x =
+                    x * (int)msx->vdp.render_width / DISPLAY_FB_W;
                 display->pixels[y * DISPLAY_FB_W + x] =
                     msx->vdp.pixels[
-                        source_y * MSX1_VIDEO_W + source_x];
+                        source_y * msx->vdp.render_width + source_x];
             }
         }
     }

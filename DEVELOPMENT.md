@@ -21,12 +21,12 @@ hardware specification.
 | `src/psg.*` | Host-independent AY-3-8910/YM2149 tone, noise, envelope, mixer, and sample generation |
 | `src/rtc.*` | Host-independent RP-5C01 register banks, CMOS, control ports, and emulated-time calendar |
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
-| `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, status, and 128 KB VRAM interface |
+| `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, status, 128 KB VRAM, bitmap, and command engine |
 | `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, and optional C-BIOS/NMS 8250 boot checks |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
 | `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
 | `tests/test_rtc.c` | RP-5C01 banks, masks, reset behavior, calendar rollover, and clock advancement |
-| `tests/test_vdp.c` | Sprite size, magnification, priority, clipping, scanline limit, collision, and status-latch checks |
+| `tests/test_vdp.c` | Pattern/sprite rendering, V9938 bitmap layouts, commands, transfers, and status-latch checks |
 
 Frontend modules may inspect summarized machine state for presentation, but
 guest hardware should not depend on SDL. Keeping that direction of dependency
@@ -43,8 +43,9 @@ The window has a 640x520 logical size:
 
 Without firmware, the framebuffer remains a diagnostic scaffold. Once an
 MSX1 BIOS is loaded, the TMS9918/TMS9929 core supplies a 256x192 framebuffer
-which the SDL layer scales into the 640x480 guest canvas. The V9938 has its
-CPU-visible register/VRAM interface but not yet a complete MSX2 display.
+which the SDL layer scales into the 640x480 guest canvas. V9938 bitmap modes
+supply either 256- or 512-dot output and 192 or 212 lines through the same
+dynamic framebuffer boundary.
 
 ## Initial generic profiles
 
@@ -72,8 +73,9 @@ The first concrete MSX2 layout matches the Philips NMS 8250 used by
 primary slots 1 and 2, and expanded primary slot 3 containing the MSX2
 sub-ROM in secondary slot 0, the 128 KB internal mapper in slot 2, and the
 built-in disk ROM in slot 3/page 1. The expanded-slot register and mapper
-ports, V9938 CPU interface, and RTC are implemented; the V9938 bitmap renderer
-and WD2793 controller are not. The GeoBench configuration will then add
+ports, V9938 CPU interface, bitmap renderer, command engine, and RTC are
+implemented; sprite mode 2 and the WD2793 controller are not. The GeoBench
+configuration will then add
 independent SunriseIDE/Nextor and 512 KB memory-mapper extensions. These are
 two mapper devices, not one combined RAM allocation. Firmware discovery will
 reuse the recursive `~/.openMSX/share/systemroms` pool and match the pinned
@@ -102,9 +104,10 @@ relationships:
 These notes were cross-checked against the openMSX 21.0 machine definitions
 and CPU/input implementations. The primary-slot, complete international
 keyboard matrix, PPI register, VDP-port, and PSG-register surfaces above are
-now present. The NMS 8250 secondary slots and internal mapper registers are
-also present, as is the MSX2 RTC; alternate national keyboard matrices,
-joystick/mouse PSG inputs, and accurate VDP timing are not.
+now present. The NMS 8250 secondary slots, internal mapper registers, MSX2
+RTC, V9938 bitmap modes, and synchronous command engine are also present;
+alternate national keyboard matrices, joystick/mouse PSG inputs, and accurate
+VDP timing are not.
 
 ## Keyboard input
 

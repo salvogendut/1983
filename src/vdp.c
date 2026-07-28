@@ -36,6 +36,17 @@ static const u8 v9938_register_masks[32] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
+#define V9938_STATUS2_TR 0x80
+#define V9938_STATUS2_BD 0x10
+#define V9938_STATUS2_CE 0x01
+
+static unsigned bitmap_address(u8 mode, unsigned x, unsigned y);
+static u8 bitmap_pixel(const MsxVdp *vdp, u8 mode,
+                       unsigned x, unsigned y);
+static void execute_vdp_command(MsxVdp *vdp);
+static void command_transfer_write(MsxVdp *vdp);
+static u8 command_read_colour(MsxVdp *vdp);
+
 static unsigned vram_size(const MsxVdp *vdp) {
     return vdp->type == MSX_VDP_V9938
          ? MSX2_VRAM_SIZE : MSX1_VRAM_SIZE;
@@ -103,9 +114,10 @@ static u8 visible_colour(const MsxVdp *vdp, u8 colour) {
 }
 
 static void put_pixel(MsxVdp *vdp, int x, int y, u8 colour) {
-    if ((unsigned)x >= MSX1_VIDEO_W || (unsigned)y >= MSX1_VIDEO_H)
+    if ((unsigned)x >= vdp->render_width ||
+        (unsigned)y >= vdp->render_height)
         return;
-    vdp->pixels[y * MSX1_VIDEO_W + x] =
+    vdp->pixels[y * vdp->render_width + x] =
         palette_colour(vdp, visible_colour(vdp, colour));
 }
 
@@ -255,12 +267,25 @@ void vdp_reset(MsxVdp *vdp) {
     vdp->status = 0;
     vdp->status1 = 0;
     vdp->status2 = vdp->type == MSX_VDP_V9938 ? 0x0c : 0;
+    vdp->status7 = 0;
     vdp->read_buffer = 0;
     vdp->control_first = 0;
     vdp->address = 0;
     vdp->control_pending = false;
     vdp->palette_pending = false;
     vdp->irq = false;
+    vdp->command_x = 0;
+    vdp->command_y = 0;
+    vdp->command_origin_x = 0;
+    vdp->command_row_length = 0;
+    vdp->command_remaining_x = 0;
+    vdp->command_remaining_y = 0;
+    vdp->command_border_x = 0;
+    vdp->command_code = 0;
+    vdp->command_mode = 0;
+    vdp->command_argument = 0;
+    vdp->render_width = MSX1_VIDEO_W;
+    vdp->render_height = MSX1_VIDEO_H;
     memset(vdp->pixels, 0, sizeof(vdp->pixels));
 }
 
@@ -294,6 +319,10 @@ static void write_register(MsxVdp *vdp, unsigned reg, u8 value) {
         vdp->irq = false;
     if (reg == 16)
         vdp->palette_pending = false;
+    if (vdp->type == MSX_VDP_V9938 && reg == 44)
+        command_transfer_write(vdp);
+    if (vdp->type == MSX_VDP_V9938 && reg == 46)
+        execute_vdp_command(vdp);
 }
 
 u8 vdp_read_data(MsxVdp *vdp) {
@@ -329,18 +358,25 @@ u8 vdp_read_status(MsxVdp *vdp) {
             break;
         case 3:
         case 5:
-        case 7:
-        case 8:
             value = 0;
             if (reg == 5)
                 vdp->status &= (u8)~0x20;
             break;
+        case 7:
+            value = command_read_colour(vdp);
+            break;
+        case 8:
+            value = (u8)vdp->command_border_x;
+            break;
         case 4:
-        case 9:
             value = 0xfe;
             break;
         case 6:
             value = 0xfc;
+            break;
+        case 9:
+            value = (u8)((vdp->command_border_x >> 8) | 0xfe);
+            vdp->status2 &= (u8)~V9938_STATUS2_BD;
             break;
         default:
             value = 0xff;
@@ -552,18 +588,664 @@ static void render_multicolour(MsxVdp *vdp) {
     }
 }
 
+static unsigned bitmap_page_y(const MsxVdp *vdp, u8 mode) {
+    if (mode == 0x0c || mode == 0x10)
+        return (unsigned)(vdp->registers[2] & 0x60) << 3;
+    return (unsigned)(vdp->registers[2] & 0x20) << 3;
+}
+
+static unsigned bitmap_address(u8 mode, unsigned x, unsigned y) {
+    switch (mode) {
+        case 0x0c: /* SCREEN 5: 256 pixels, two 4-bit pixels per byte. */
+            return ((y & 1023) << 7) | ((x & 255) >> 1);
+        case 0x10: /* SCREEN 6: 512 pixels, four 2-bit pixels per byte. */
+            return ((y & 1023) << 7) | ((x & 511) >> 2);
+        case 0x14: /* SCREEN 7: 512 pixels, planar 4-bit pixels. */
+            return ((x & 2) << 15) |
+                   ((y & 511) << 7) | ((x & 511) >> 2);
+        case 0x1c: /* SCREEN 8: 256 pixels, planar 8-bit pixels. */
+            return ((x & 1) << 16) |
+                   ((y & 511) << 7) | ((x & 255) >> 1);
+        default:
+            return 0;
+    }
+}
+
+static u8 bitmap_pixel(const MsxVdp *vdp, u8 mode,
+                       unsigned x, unsigned y) {
+    u8 packed = vdp->vram[
+        wrap_address(vdp, bitmap_address(mode, x, y))];
+
+    switch (mode) {
+        case 0x0c:
+        case 0x14:
+            return (packed >> (((~x) & 1) << 2)) & 0x0f;
+        case 0x10:
+            return (packed >> (((~x) & 3) << 1)) & 0x03;
+        case 0x1c:
+            return packed;
+        default:
+            return 0;
+    }
+}
+
+static bool command_mode_info(u8 mode, unsigned *width,
+                              unsigned *colour_mask,
+                              unsigned *pixels_per_byte) {
+    switch (mode) {
+        case 0x0c:
+            *width = 256;
+            *colour_mask = 0x0f;
+            *pixels_per_byte = 2;
+            return true;
+        case 0x10:
+            *width = 512;
+            *colour_mask = 0x03;
+            *pixels_per_byte = 4;
+            return true;
+        case 0x14:
+            *width = 512;
+            *colour_mask = 0x0f;
+            *pixels_per_byte = 2;
+            return true;
+        case 0x1c:
+            *width = 256;
+            *colour_mask = 0xff;
+            *pixels_per_byte = 1;
+            return true;
+        default:
+            return false;
+    }
+}
+
+static unsigned command_coordinate(const MsxVdp *vdp, unsigned low_reg,
+                                   unsigned high_mask) {
+    return vdp->registers[low_reg] |
+           ((unsigned)(vdp->registers[low_reg + 1] & high_mask) << 8);
+}
+
+static unsigned command_clip_x1(unsigned x, unsigned count,
+                                unsigned width, bool reverse,
+                                unsigned pixels_per_byte,
+                                bool byte_command) {
+    unsigned units = width;
+    unsigned position = x;
+
+    if (byte_command) {
+        units /= pixels_per_byte;
+        position /= pixels_per_byte;
+        count /= pixels_per_byte;
+    }
+    if (position >= units)
+        return 1;
+    if (!count)
+        count = units;
+    return reverse
+         ? (count < position + 1 ? count : position + 1)
+         : (count < units - position ? count : units - position);
+}
+
+static unsigned command_clip_x2(unsigned sx, unsigned dx, unsigned count,
+                                unsigned width, bool reverse,
+                                unsigned pixels_per_byte,
+                                bool byte_command) {
+    unsigned units = width;
+    unsigned source = sx;
+    unsigned destination = dx;
+    unsigned boundary;
+
+    if (byte_command) {
+        units /= pixels_per_byte;
+        source /= pixels_per_byte;
+        destination /= pixels_per_byte;
+        count /= pixels_per_byte;
+    }
+    if (source >= units || destination >= units)
+        return 1;
+    if (!count)
+        count = units;
+    boundary = reverse
+             ? (source < destination ? source : destination) + 1
+             : units - (source > destination ? source : destination);
+    return count < boundary ? count : boundary;
+}
+
+static unsigned command_clip_y1(unsigned y, unsigned count,
+                                bool reverse) {
+    if (!count)
+        count = 1024;
+    return reverse && count > y + 1 ? y + 1 : count;
+}
+
+static unsigned command_clip_y2(unsigned sy, unsigned dy, unsigned count,
+                                bool reverse) {
+    unsigned boundary;
+
+    if (!count)
+        count = 1024;
+    if (!reverse)
+        return count;
+    boundary = (sy < dy ? sy : dy) + 1;
+    return count < boundary ? count : boundary;
+}
+
+static void command_write_pixel(MsxVdp *vdp, u8 mode,
+                                unsigned x, unsigned y, u8 colour,
+                                u8 operation) {
+    unsigned width;
+    unsigned colour_mask;
+    unsigned pixels_per_byte;
+    unsigned address;
+    unsigned shift;
+    u8 old_colour;
+    u8 new_colour;
+    u8 packed_mask;
+
+    if (!command_mode_info(mode, &width, &colour_mask,
+                           &pixels_per_byte))
+        return;
+    (void)width;
+    (void)pixels_per_byte;
+    colour &= (u8)colour_mask;
+    if ((operation & 0x08) && !colour)
+        return;
+    old_colour = bitmap_pixel(vdp, mode, x, y);
+    switch (operation & 0x07) {
+        case 0:
+            new_colour = colour;
+            break;
+        case 1:
+            new_colour = old_colour & colour;
+            break;
+        case 2:
+            new_colour = old_colour | colour;
+            break;
+        case 3:
+            new_colour = old_colour ^ colour;
+            break;
+        case 4:
+            new_colour = (u8)(~colour & colour_mask);
+            break;
+        default:
+            return;
+    }
+
+    address = wrap_address(vdp, bitmap_address(mode, x, y));
+    if (mode == 0x1c) {
+        vdp->vram[address] = new_colour;
+        return;
+    }
+    if (mode == 0x10)
+        shift = ((~x) & 3) << 1;
+    else
+        shift = ((~x) & 1) << 2;
+    packed_mask = (u8)(colour_mask << shift);
+    vdp->vram[address] =
+        (u8)((vdp->vram[address] & ~packed_mask) |
+             ((new_colour << shift) & packed_mask));
+}
+
+static void command_complete(MsxVdp *vdp) {
+    vdp->status2 &= (u8)~(V9938_STATUS2_TR | V9938_STATUS2_CE);
+    vdp->registers[46] = 0;
+    vdp->command_code = 0;
+}
+
+static bool command_advance_transfer(MsxVdp *vdp,
+                                     unsigned pixels_per_byte) {
+    int x_step = vdp->command_code == 0x0f
+               ? (int)pixels_per_byte : 1;
+    int y_step = vdp->command_argument & 0x08 ? -1 : 1;
+
+    if (vdp->command_argument & 0x04)
+        x_step = -x_step;
+    if (--vdp->command_remaining_x) {
+        vdp->command_x = (u16)(vdp->command_x + x_step);
+        return true;
+    }
+    if (!--vdp->command_remaining_y) {
+        command_complete(vdp);
+        return false;
+    }
+    vdp->command_x = vdp->command_origin_x;
+    vdp->command_y = (u16)(vdp->command_y + y_step);
+    vdp->command_remaining_x = vdp->command_row_length;
+    return true;
+}
+
+static void command_load_colour(MsxVdp *vdp) {
+    if (vdp->command_argument & 0x10)
+        vdp->status7 = 0xff;
+    else
+        vdp->status7 = bitmap_pixel(
+            vdp, vdp->command_mode, vdp->command_x, vdp->command_y);
+    vdp->registers[44] = vdp->status7;
+}
+
+static u8 command_read_colour(MsxVdp *vdp) {
+    u8 value = vdp->status7;
+
+    if (vdp->command_code == 0x0a &&
+        (vdp->status2 & V9938_STATUS2_CE)) {
+        unsigned width = 0;
+        unsigned colour_mask = 0;
+        unsigned pixels_per_byte = 1;
+
+        command_mode_info(vdp->command_mode, &width, &colour_mask,
+                          &pixels_per_byte);
+        (void)width;
+        (void)colour_mask;
+        if (command_advance_transfer(vdp, pixels_per_byte))
+            command_load_colour(vdp);
+    } else if (!(vdp->status2 & V9938_STATUS2_CE)) {
+        vdp->status2 &= (u8)~V9938_STATUS2_TR;
+    }
+    return value;
+}
+
+static void command_transfer_write(MsxVdp *vdp) {
+    unsigned width;
+    unsigned colour_mask;
+    unsigned pixels_per_byte;
+
+    if (!(vdp->status2 & V9938_STATUS2_CE) ||
+        !(vdp->status2 & V9938_STATUS2_TR) ||
+        (vdp->command_code != 0x0b &&
+         vdp->command_code != 0x0f) ||
+        !command_mode_info(vdp->command_mode, &width, &colour_mask,
+                           &pixels_per_byte))
+        return;
+    (void)width;
+    (void)colour_mask;
+    if (!(vdp->command_argument & 0x20)) {
+        if (vdp->command_code == 0x0b) {
+            command_write_pixel(
+                vdp, vdp->command_mode, vdp->command_x, vdp->command_y,
+                vdp->registers[44], vdp->registers[46] & 0x0f);
+        } else {
+            unsigned address = wrap_address(vdp, bitmap_address(
+                vdp->command_mode, vdp->command_x, vdp->command_y));
+            vdp->vram[address] = vdp->registers[44];
+        }
+    }
+    command_advance_transfer(vdp, pixels_per_byte);
+}
+
+static void command_setup_transfer(MsxVdp *vdp, u8 code, u8 mode,
+                                   unsigned x, unsigned y,
+                                   unsigned row_length,
+                                   unsigned rows) {
+    vdp->command_code = code;
+    vdp->command_mode = mode;
+    vdp->command_argument = vdp->registers[45];
+    vdp->command_x = (u16)x;
+    vdp->command_y = (u16)y;
+    vdp->command_origin_x = (u16)x;
+    vdp->command_row_length = (u16)row_length;
+    vdp->command_remaining_x = (u16)row_length;
+    vdp->command_remaining_y = (u16)rows;
+    vdp->status2 |= V9938_STATUS2_TR;
+}
+
+static void execute_vdp_command(MsxVdp *vdp) {
+    u8 command = vdp->registers[46];
+    u8 code = command >> 4;
+    u8 mode = display_mode(vdp);
+    u8 argument = vdp->registers[45];
+    bool reverse_x = (argument & 0x04) != 0;
+    bool reverse_y = (argument & 0x08) != 0;
+    bool source_external = (argument & 0x10) != 0;
+    bool destination_external = (argument & 0x20) != 0;
+    unsigned width;
+    unsigned colour_mask;
+    unsigned pixels_per_byte;
+    unsigned sx = command_coordinate(vdp, 32, 0x01);
+    unsigned sy = command_coordinate(vdp, 34, 0x03);
+    unsigned dx = command_coordinate(vdp, 36, 0x01);
+    unsigned dy = command_coordinate(vdp, 38, 0x03);
+    unsigned nx = command_coordinate(vdp, 40, 0x03);
+    unsigned ny = command_coordinate(vdp, 42, 0x03);
+    int tx = reverse_x ? -1 : 1;
+    int ty = reverse_y ? -1 : 1;
+
+    vdp->status2 &= (u8)~V9938_STATUS2_TR;
+    if (code < 4 ||
+        !command_mode_info(mode, &width, &colour_mask,
+                           &pixels_per_byte)) {
+        command_complete(vdp);
+        return;
+    }
+    vdp->status2 |= V9938_STATUS2_CE;
+    vdp->command_code = code;
+    vdp->command_mode = mode;
+    vdp->command_argument = argument;
+
+    switch (code) {
+        case 0x04: /* POINT */
+            vdp->status7 = source_external
+                         ? 0xff : bitmap_pixel(vdp, mode, sx, sy);
+            vdp->registers[44] = vdp->status7;
+            command_complete(vdp);
+            break;
+
+        case 0x05: /* PSET */
+            if (!destination_external)
+                command_write_pixel(vdp, mode, dx, dy,
+                                    vdp->registers[44],
+                                    command & 0x0f);
+            command_complete(vdp);
+            break;
+
+        case 0x06: { /* SRCH */
+            int x = (int)sx;
+            u8 colour = vdp->registers[44] & (u8)colour_mask;
+            bool find_unequal = (argument & 0x02) != 0;
+            bool outside_at_start = sx >= width;
+
+            for (;;) {
+                u8 found = source_external
+                         ? 0xff
+                         : bitmap_pixel(vdp, mode, (unsigned)x, sy);
+                if ((found == colour) != find_unequal) {
+                    vdp->status2 |= V9938_STATUS2_BD;
+                    break;
+                }
+                x += tx;
+                if (outside_at_start ||
+                    x < 0 || x >= (int)width)
+                    break;
+            }
+            vdp->command_border_x = (u16)x;
+            command_complete(vdp);
+            break;
+        }
+
+        case 0x07: { /* LINE */
+            unsigned major = nx & 0x03ff;
+            unsigned minor = ny & 0x03ff;
+            unsigned error = major ? (major - 1) >> 1 : 0;
+            int x = (int)dx;
+            int y = (int)dy;
+
+            for (unsigned step = 0; step <= major; ++step) {
+                if (!destination_external && y >= 0)
+                    command_write_pixel(
+                        vdp, mode, (unsigned)x, (unsigned)y,
+                        vdp->registers[44], command & 0x0f);
+                if (step == major)
+                    break;
+                if (!(argument & 0x01)) {
+                    x += tx;
+                    if (error < minor) {
+                        error += major;
+                        y += ty;
+                    }
+                } else {
+                    y += ty;
+                    if (error < minor) {
+                        error += major;
+                        x += tx;
+                    }
+                }
+                error = (error - minor) & 0x03ff;
+                if (x < 0 || x >= (int)width || y < 0)
+                    break;
+            }
+            command_complete(vdp);
+            break;
+        }
+
+        case 0x08: { /* LMMV */
+            unsigned columns = command_clip_x1(
+                dx, nx, width, reverse_x, pixels_per_byte, false);
+            unsigned rows = command_clip_y1(dy, ny, reverse_y);
+            unsigned y = dy;
+
+            for (unsigned row = 0; row < rows; ++row) {
+                unsigned x = dx;
+                for (unsigned column = 0; column < columns; ++column) {
+                    if (!destination_external)
+                        command_write_pixel(
+                            vdp, mode, x, y, vdp->registers[44],
+                            command & 0x0f);
+                    x = (unsigned)((int)x + tx);
+                }
+                y = (unsigned)((int)y + ty);
+            }
+            command_complete(vdp);
+            break;
+        }
+
+        case 0x09: { /* LMMM */
+            unsigned columns = command_clip_x2(
+                sx, dx, nx, width, reverse_x, pixels_per_byte, false);
+            unsigned rows = command_clip_y2(sy, dy, ny, reverse_y);
+            unsigned source_y = sy;
+            unsigned destination_y = dy;
+
+            for (unsigned row = 0; row < rows; ++row) {
+                unsigned source_x = sx;
+                unsigned destination_x = dx;
+                for (unsigned column = 0; column < columns; ++column) {
+                    u8 colour = source_external
+                              ? 0xff
+                              : bitmap_pixel(vdp, mode, source_x,
+                                             source_y);
+                    if (!destination_external)
+                        command_write_pixel(
+                            vdp, mode, destination_x, destination_y,
+                            colour, command & 0x0f);
+                    source_x = (unsigned)((int)source_x + tx);
+                    destination_x =
+                        (unsigned)((int)destination_x + tx);
+                }
+                source_y = (unsigned)((int)source_y + ty);
+                destination_y =
+                    (unsigned)((int)destination_y + ty);
+            }
+            command_complete(vdp);
+            break;
+        }
+
+        case 0x0a: { /* LMCM: logical VRAM-to-CPU transfer. */
+            unsigned columns = command_clip_x1(
+                sx, nx, width, reverse_x, pixels_per_byte, false);
+            unsigned rows = command_clip_y1(sy, ny, reverse_y);
+
+            command_setup_transfer(
+                vdp, code, mode, sx, sy, columns, rows);
+            command_load_colour(vdp);
+            break;
+        }
+
+        case 0x0b: { /* LMMC: logical CPU-to-VRAM transfer. */
+            unsigned columns = command_clip_x1(
+                dx, nx, width, reverse_x, pixels_per_byte, false);
+            unsigned rows = command_clip_y1(dy, ny, reverse_y);
+
+            command_setup_transfer(
+                vdp, code, mode, dx, dy, columns, rows);
+            break;
+        }
+
+        case 0x0c: { /* HMMV */
+            unsigned columns = command_clip_x1(
+                dx, nx, width, reverse_x, pixels_per_byte, true);
+            unsigned rows = command_clip_y1(dy, ny, reverse_y);
+            int byte_step = reverse_x
+                          ? -(int)pixels_per_byte
+                          : (int)pixels_per_byte;
+            unsigned y = dy;
+
+            for (unsigned row = 0; row < rows; ++row) {
+                unsigned x = dx;
+                for (unsigned column = 0; column < columns; ++column) {
+                    if (!destination_external) {
+                        unsigned address = wrap_address(
+                            vdp, bitmap_address(mode, x, y));
+                        vdp->vram[address] = vdp->registers[44];
+                    }
+                    x = (unsigned)((int)x + byte_step);
+                }
+                y = (unsigned)((int)y + ty);
+            }
+            command_complete(vdp);
+            break;
+        }
+
+        case 0x0d: { /* HMMM */
+            unsigned columns = command_clip_x2(
+                sx, dx, nx, width, reverse_x, pixels_per_byte, true);
+            unsigned rows = command_clip_y2(sy, dy, ny, reverse_y);
+            int byte_step = reverse_x
+                          ? -(int)pixels_per_byte
+                          : (int)pixels_per_byte;
+            unsigned source_y = sy;
+            unsigned destination_y = dy;
+
+            for (unsigned row = 0; row < rows; ++row) {
+                unsigned source_x = sx;
+                unsigned destination_x = dx;
+                for (unsigned column = 0; column < columns; ++column) {
+                    u8 value = source_external
+                             ? 0xff
+                             : vdp->vram[wrap_address(
+                                 vdp, bitmap_address(
+                                     mode, source_x, source_y))];
+                    if (!destination_external)
+                        vdp->vram[wrap_address(
+                            vdp, bitmap_address(
+                                mode, destination_x,
+                                destination_y))] = value;
+                    source_x =
+                        (unsigned)((int)source_x + byte_step);
+                    destination_x =
+                        (unsigned)((int)destination_x + byte_step);
+                }
+                source_y = (unsigned)((int)source_y + ty);
+                destination_y =
+                    (unsigned)((int)destination_y + ty);
+            }
+            command_complete(vdp);
+            break;
+        }
+
+        case 0x0e: { /* YMMM */
+            unsigned columns = command_clip_x1(
+                dx, 512, width, reverse_x, pixels_per_byte, true);
+            unsigned rows = command_clip_y2(sy, dy, ny, reverse_y);
+            int byte_step = reverse_x
+                          ? -(int)pixels_per_byte
+                          : (int)pixels_per_byte;
+            unsigned source_y = sy;
+            unsigned destination_y = dy;
+
+            for (unsigned row = 0; row < rows; ++row) {
+                unsigned x = dx;
+                for (unsigned column = 0; column < columns; ++column) {
+                    unsigned source_address = wrap_address(
+                        vdp, bitmap_address(mode, x, source_y));
+                    unsigned destination_address = wrap_address(
+                        vdp, bitmap_address(mode, x, destination_y));
+                    if (!destination_external)
+                        vdp->vram[destination_address] =
+                            vdp->vram[source_address];
+                    x = (unsigned)((int)x + byte_step);
+                }
+                source_y = (unsigned)((int)source_y + ty);
+                destination_y =
+                    (unsigned)((int)destination_y + ty);
+            }
+            command_complete(vdp);
+            break;
+        }
+
+        case 0x0f: { /* HMMC: high-speed CPU-to-VRAM transfer. */
+            unsigned columns = command_clip_x1(
+                dx, nx, width, reverse_x, pixels_per_byte, true);
+            unsigned rows = command_clip_y1(dy, ny, reverse_y);
+
+            command_setup_transfer(
+                vdp, code, mode, dx, dy, columns, rows);
+            break;
+        }
+
+        default:
+            command_complete(vdp);
+            break;
+    }
+}
+
+static u32 screen8_colour(u8 colour) {
+    u8 red = expand_three_bits((colour >> 2) & 0x07);
+    u8 green = expand_three_bits((colour >> 5) & 0x07);
+    unsigned blue_bits = colour & 0x03;
+    u8 blue = expand_three_bits(
+        blue_bits == 3 ? 7 : blue_bits * 2);
+
+    return ((u32)red << 16) | ((u32)green << 8) | blue;
+}
+
+static void render_bitmap(MsxVdp *vdp, u8 mode) {
+    unsigned page_y = bitmap_page_y(vdp, mode);
+    unsigned vertical_scroll = vdp->registers[23];
+
+    for (unsigned y = 0; y < vdp->render_height; ++y) {
+        unsigned source_y = page_y + ((y + vertical_scroll) & 0xff);
+        for (unsigned x = 0; x < vdp->render_width; ++x) {
+            u8 colour = bitmap_pixel(vdp, mode, x, source_y);
+            u32 rgb;
+
+            if (mode == 0x1c) {
+                rgb = screen8_colour(colour);
+            } else if (mode == 0x10 && colour == 0 &&
+                       !(vdp->registers[8] & 0x20)) {
+                u8 backdrop = x & 1
+                            ? vdp->registers[7] & 0x03
+                            : (vdp->registers[7] >> 2) & 0x03;
+                rgb = palette_colour(vdp, backdrop);
+            } else {
+                rgb = palette_colour(
+                    vdp, visible_colour(vdp, colour));
+            }
+            vdp->pixels[y * vdp->render_width + x] = rgb;
+        }
+    }
+}
+
 void vdp_render(MsxVdp *vdp) {
     u8 backdrop;
+    u8 mode;
 
     if (!vdp)
         return;
+    mode = display_mode(vdp);
+    if (vdp->type == MSX_VDP_V9938 &&
+        (mode == 0x0c || mode == 0x10 ||
+         mode == 0x14 || mode == 0x1c)) {
+        vdp->render_width =
+            mode == 0x10 || mode == 0x14
+            ? MSX2_VIDEO_W : MSX1_VIDEO_W;
+        vdp->render_height =
+            vdp->registers[9] & 0x80
+            ? MSX2_VIDEO_H : MSX1_VIDEO_H;
+    } else {
+        vdp->render_width = MSX1_VIDEO_W;
+        vdp->render_height = MSX1_VIDEO_H;
+    }
     backdrop = vdp->registers[7] & 0x0f;
     for (size_t i = 0;
-         i < sizeof(vdp->pixels) / sizeof(vdp->pixels[0]); ++i)
+         i < vdp->render_width * vdp->render_height; ++i)
         vdp->pixels[i] = palette_colour(vdp, backdrop);
 
     if (!(vdp->registers[1] & 0x40))
         return;
+    if (vdp->type == MSX_VDP_V9938 &&
+        (mode == 0x0c || mode == 0x10 ||
+         mode == 0x14 || mode == 0x1c)) {
+        render_bitmap(vdp, mode);
+        return;
+    }
     /*
      * TMS9918A mode bits are M1=R1.4, M2=R1.3, and M3=R0.1.
      * M2 selects Multicolour while the later M3 bit selects Graphics II.

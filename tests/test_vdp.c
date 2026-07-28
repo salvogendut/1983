@@ -15,7 +15,7 @@
 #define COLOUR_WHITE    0xffffffu
 
 static u32 pixel(const MsxVdp *vdp, int x, int y) {
-    return vdp->pixels[y * MSX1_VIDEO_W + x];
+    return vdp->pixels[y * vdp->render_width + x];
 }
 
 static void write_control_register(MsxVdp *vdp, unsigned reg, u8 value) {
@@ -530,6 +530,236 @@ static void test_v9938_banked_and_planar_vram(void) {
     assert(vdp.vram[0x4000] == 0);
 }
 
+static void setup_v9938_bitmap(MsxVdp *vdp, u8 reg0) {
+    vdp_init(vdp);
+    vdp_set_type(vdp, MSX_VDP_V9938);
+    vdp_reset(vdp);
+    vdp->registers[0] = reg0;
+    vdp->registers[1] = 0x40;
+    vdp->registers[2] = 0x1f;
+    vdp->registers[8] = 0x20; /* Disable colour-zero transparency. */
+}
+
+static void write_command_word(MsxVdp *vdp, unsigned low_reg,
+                               unsigned value) {
+    write_control_register(vdp, low_reg, (u8)value);
+    write_control_register(vdp, low_reg + 1, (u8)(value >> 8));
+}
+
+static void test_v9938_bitmap_rendering(void) {
+    MsxVdp vdp;
+
+    /* SCREEN 5 stores two palette indices in each byte. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp.vram[0] = 0x24;
+    vdp_render(&vdp);
+    assert(vdp.render_width == 256);
+    assert(vdp.render_height == 192);
+    assert(pixel(&vdp, 0, 0) == 0x24db24);
+    assert(pixel(&vdp, 1, 0) == 0x2424ff);
+
+    /* R2 selects one of the 32 KiB SCREEN 5/6 display pages. */
+    vdp.registers[2] = 0x3f;
+    vdp.vram[0x8000] = 0xf2;
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 0, 0) == COLOUR_WHITE);
+    assert(pixel(&vdp, 1, 0) == 0x24db24);
+
+    /* SCREEN 6 has four 2-bit, 512-dot pixels per byte. */
+    setup_v9938_bitmap(&vdp, 0x08);
+    vdp.vram[0] = 0x1b;
+    vdp_render(&vdp);
+    assert(vdp.render_width == 512);
+    assert(pixel(&vdp, 0, 0) == 0x000000);
+    assert(pixel(&vdp, 1, 0) == 0x000000);
+    assert(pixel(&vdp, 2, 0) == 0x24db24);
+    assert(pixel(&vdp, 3, 0) == 0x6dff6d);
+
+    /* Transparent zero uses the two halves of R7 on alternating dots. */
+    vdp.registers[8] = 0;
+    vdp.registers[7] = 0x09;
+    vdp.vram[0] = 0;
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 0, 0) == 0x24db24);
+    assert(pixel(&vdp, 1, 0) == 0x000000);
+
+    /* SCREEN 7 alternates its packed bytes between the two VRAM planes. */
+    setup_v9938_bitmap(&vdp, 0x0a);
+    vdp.vram[0] = 0x24;
+    vdp.vram[0x10000] = 0x6f;
+    vdp_render(&vdp);
+    assert(vdp.render_width == 512);
+    assert(pixel(&vdp, 0, 0) == 0x24db24);
+    assert(pixel(&vdp, 1, 0) == 0x2424ff);
+    assert(pixel(&vdp, 2, 0) == 0xb62424);
+    assert(pixel(&vdp, 3, 0) == COLOUR_WHITE);
+
+    /* SCREEN 8 uses the fixed 256-colour GRB representation. */
+    setup_v9938_bitmap(&vdp, 0x0e);
+    vdp.vram[0] = 0x1c;
+    vdp.vram[0x10000] = 0xe0;
+    vdp.vram[1] = 0x03;
+    vdp.registers[9] = 0x80;
+    vdp_render(&vdp);
+    assert(vdp.render_width == 256);
+    assert(vdp.render_height == 212);
+    assert(pixel(&vdp, 0, 0) == 0xff0000);
+    assert(pixel(&vdp, 1, 0) == 0x00ff00);
+    assert(pixel(&vdp, 2, 0) == 0x0000ff);
+}
+
+static void test_v9938_pixel_commands(void) {
+    MsxVdp vdp;
+
+    setup_v9938_bitmap(&vdp, 0x06); /* SCREEN 5 */
+
+    /* PSET and POINT share the packed-pixel coordinate layout. */
+    write_command_word(&vdp, 36, 1);
+    write_command_word(&vdp, 38, 0);
+    write_control_register(&vdp, 44, 6);
+    write_control_register(&vdp, 46, 0x50);
+    assert(vdp.vram[0] == 0x06);
+    assert(!(vdp.status2 & 0x01));
+
+    write_command_word(&vdp, 32, 1);
+    write_command_word(&vdp, 34, 0);
+    write_control_register(&vdp, 46, 0x40);
+    write_control_register(&vdp, 15, 7);
+    assert(vdp_read_status(&vdp) == 6);
+
+    /* XOR is one of the five V9938 logical operations. */
+    write_control_register(&vdp, 44, 3);
+    write_control_register(&vdp, 46, 0x53);
+    write_control_register(&vdp, 46, 0x40);
+    assert(vdp_read_status(&vdp) == 5);
+
+    /* SRCH reports the matching X coordinate and latches BD in S#2. */
+    write_command_word(&vdp, 32, 0);
+    write_control_register(&vdp, 44, 5);
+    write_control_register(&vdp, 45, 0);
+    write_control_register(&vdp, 46, 0x60);
+    write_control_register(&vdp, 15, 2);
+    assert(vdp_read_status(&vdp) & 0x10);
+    write_control_register(&vdp, 15, 8);
+    assert(vdp_read_status(&vdp) == 1);
+    write_control_register(&vdp, 15, 9);
+    assert(vdp_read_status(&vdp) == 0xfe);
+    write_control_register(&vdp, 15, 2);
+    assert(!(vdp_read_status(&vdp) & 0x10));
+
+    /* LINE's NX is the major-axis distance, so NX=3 draws four dots. */
+    write_command_word(&vdp, 36, 8);
+    write_command_word(&vdp, 38, 1);
+    write_command_word(&vdp, 40, 3);
+    write_command_word(&vdp, 42, 0);
+    write_control_register(&vdp, 44, 2);
+    write_control_register(&vdp, 45, 0);
+    write_control_register(&vdp, 46, 0x70);
+    vdp_render(&vdp);
+    for (int x = 8; x < 12; ++x)
+        assert(pixel(&vdp, x, 1) == 0x24db24);
+}
+
+static void test_v9938_block_commands(void) {
+    MsxVdp vdp;
+
+    setup_v9938_bitmap(&vdp, 0x06); /* SCREEN 5 */
+
+    /* LMMV fills a pixel rectangle. */
+    write_command_word(&vdp, 36, 4);
+    write_command_word(&vdp, 38, 2);
+    write_command_word(&vdp, 40, 3);
+    write_command_word(&vdp, 42, 2);
+    write_control_register(&vdp, 44, 3);
+    write_control_register(&vdp, 45, 0);
+    write_control_register(&vdp, 46, 0x80);
+    vdp_render(&vdp);
+    for (int y = 2; y < 4; ++y)
+        for (int x = 4; x < 7; ++x)
+            assert(pixel(&vdp, x, y) == 0x6dff6d);
+
+    /* LMMM copies the rectangle at pixel granularity. */
+    write_command_word(&vdp, 32, 4);
+    write_command_word(&vdp, 34, 2);
+    write_command_word(&vdp, 36, 10);
+    write_command_word(&vdp, 38, 6);
+    write_control_register(&vdp, 46, 0x90);
+    vdp_render(&vdp);
+    for (int y = 6; y < 8; ++y)
+        for (int x = 10; x < 13; ++x)
+            assert(pixel(&vdp, x, y) == 0x6dff6d);
+
+    /* HMMV/HMMM operate on complete packed bytes. */
+    write_command_word(&vdp, 36, 0);
+    write_command_word(&vdp, 38, 10);
+    write_command_word(&vdp, 40, 4);
+    write_command_word(&vdp, 42, 1);
+    write_control_register(&vdp, 44, 0xa5);
+    write_control_register(&vdp, 46, 0xc0);
+    assert(vdp.vram[10 * 128] == 0xa5);
+    assert(vdp.vram[10 * 128 + 1] == 0xa5);
+
+    write_command_word(&vdp, 32, 0);
+    write_command_word(&vdp, 34, 10);
+    write_command_word(&vdp, 36, 0);
+    write_command_word(&vdp, 38, 11);
+    write_control_register(&vdp, 46, 0xd0);
+    assert(vdp.vram[11 * 128] == 0xa5);
+    assert(vdp.vram[11 * 128 + 1] == 0xa5);
+
+    /* YMMM copies the rest of each scanline using DX for both sides. */
+    write_command_word(&vdp, 34, 10);
+    write_command_word(&vdp, 38, 12);
+    write_control_register(&vdp, 46, 0xe0);
+    assert(vdp.vram[12 * 128] == 0xa5);
+    assert(vdp.vram[12 * 128 + 1] == 0xa5);
+}
+
+static void test_v9938_command_transfers(void) {
+    MsxVdp vdp;
+
+    setup_v9938_bitmap(&vdp, 0x06); /* SCREEN 5 */
+
+    /* HMMC consumes one R#44 byte for each packed destination byte. */
+    write_command_word(&vdp, 36, 0);
+    write_command_word(&vdp, 38, 0);
+    write_command_word(&vdp, 40, 4);
+    write_command_word(&vdp, 42, 1);
+    write_control_register(&vdp, 45, 0);
+    write_control_register(&vdp, 46, 0xf0);
+    assert((vdp.status2 & 0x81) == 0x81);
+    write_control_register(&vdp, 44, 0x12);
+    assert((vdp.status2 & 0x81) == 0x81);
+    write_control_register(&vdp, 44, 0x34);
+    assert(!(vdp.status2 & 0x81));
+    assert(vdp.vram[0] == 0x12);
+    assert(vdp.vram[1] == 0x34);
+
+    /* LMMC consumes one colour value per destination pixel. */
+    write_command_word(&vdp, 36, 4);
+    write_command_word(&vdp, 38, 0);
+    write_command_word(&vdp, 40, 2);
+    write_command_word(&vdp, 42, 1);
+    write_control_register(&vdp, 46, 0xb0);
+    write_control_register(&vdp, 44, 5);
+    write_control_register(&vdp, 44, 6);
+    assert(!(vdp.status2 & 0x81));
+    assert(vdp.vram[2] == 0x56);
+
+    /* LMCM exposes each source pixel through S#7. */
+    write_command_word(&vdp, 32, 4);
+    write_command_word(&vdp, 34, 0);
+    write_command_word(&vdp, 40, 2);
+    write_command_word(&vdp, 42, 1);
+    write_control_register(&vdp, 46, 0xa0);
+    assert((vdp.status2 & 0x81) == 0x81);
+    write_control_register(&vdp, 15, 7);
+    assert(vdp_read_status(&vdp) == 5);
+    assert((vdp.status2 & 0x81) == 0x81);
+    assert(vdp_read_status(&vdp) == 6);
+    assert(!(vdp.status2 & 0x81));
+}
+
 int main(void) {
     test_basic_position_wrap_and_terminator();
     test_priority_transparency_and_collision();
@@ -544,5 +774,9 @@ int main(void) {
     test_v9938_registers_and_status_selection();
     test_v9938_palette_and_indirect_register_port();
     test_v9938_banked_and_planar_vram();
+    test_v9938_bitmap_rendering();
+    test_v9938_pixel_commands();
+    test_v9938_block_commands();
+    test_v9938_command_transfers();
     return 0;
 }
