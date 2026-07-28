@@ -123,7 +123,7 @@ void display_prepare_scaffold(Display *display, const MsxMachine *msx) {
 static void draw_scaffold_text(Display *display, const MsxMachine *msx) {
     char line[128];
     const char *status =
-        "Frontend scaffold ready - CPU and VDP execution not connected";
+        "Machine scaffold ready - load firmware with --bios PATH";
 
     ui_draw_text(display->renderer, 40.0f, 44.0f,
                  "1983 - MSX / MSX2 emulator", 255, 255, 120);
@@ -178,6 +178,18 @@ void display_draw(Display *display, const MsxMachine *msx) {
         0.0f, 0.0f, (float)DISPLAY_FB_W, (float)DISPLAY_FB_H
     };
 
+    if (msx_can_boot(msx)) {
+        for (int y = 0; y < DISPLAY_FB_H; ++y) {
+            int source_y = y * MSX1_VIDEO_H / DISPLAY_FB_H;
+            for (int x = 0; x < DISPLAY_FB_W; ++x) {
+                int source_x = x * MSX1_VIDEO_W / DISPLAY_FB_W;
+                display->pixels[y * DISPLAY_FB_W + x] =
+                    msx->vdp.pixels[
+                        source_y * MSX1_VIDEO_W + source_x];
+            }
+        }
+    }
+
     SDL_UpdateTexture(display->texture, NULL, display->pixels,
                       DISPLAY_FB_W * (int)sizeof(*display->pixels));
     SDL_SetRenderDrawColor(display->renderer, 0, 0, 0, 255);
@@ -196,7 +208,8 @@ void display_draw(Display *display, const MsxMachine *msx) {
             SDL_RenderFillRect(display->renderer, &line);
         }
     }
-    draw_scaffold_text(display, msx);
+    if (!msx_can_boot(msx))
+        draw_scaffold_text(display, msx);
     draw_footer(display, msx);
     leds_render(display->renderer, 0,
                 DISPLAY_SCREEN_H + DISPLAY_STRIP_H,

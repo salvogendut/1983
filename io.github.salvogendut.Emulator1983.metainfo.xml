@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.salvogendut.Emulator1983</id>
+  <name>1983</name>
+  <summary>Generic MSX and MSX2 emulator</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-only</project_license>
+  <developer id="io.github.salvogendut">
+    <name>Salvatore Bognanni</name>
+  </developer>
+  <description>
+    <p>
+      1983 is a compatibility-focused MSX and MSX2 emulator written in C
+      with SDL3. It is a sibling project of the 1984 Amstrad CPC emulator
+      and the 1985 Amstrad PCW emulator, reusing their window, overlay,
+      shortcut, notification, LED, and configuration conventions.
+    </p>
+    <p>
+      The first executable MSX1 slice includes Z80 execution, a primary-slot
+      memory bus, firmware and plain-cartridge loading, PPI slot control, and
+      an initial TMS9918/TMS9929 display path. C-BIOS reaches a deterministic
+      boot and cartridge-startup checkpoint.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.salvogendut.Emulator1983.desktop</launchable>
+  <url type="homepage">https://github.com/salvogendut/1983</url>
+  <url type="bugtracker">https://github.com/salvogendut/1983/issues</url>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.1.0" date="2026-07-28">
+      <description>
+        <p>Initial frontend and executable MSX1 scaffold with C-BIOS boot validation.</p>
+      </description>
+    </release>
+  </releases>
+</component>

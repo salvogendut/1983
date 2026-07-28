@@ -15,6 +15,7 @@
 @SET_MAKE@
 
 
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -89,6 +90,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+build_triplet = @build@
+host_triplet = @host@
 bin_PROGRAMS = 1983$(EXEEXT)
 check_PROGRAMS = test-msx$(EXEEXT)
 subdir = .
@@ -97,26 +100,35 @@ am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
-	$(am__configure_deps) $(noinst_HEADERS) $(am__DIST_COMMON)
+	$(am__configure_deps) $(dist_desktop_DATA) \
+	$(dist_icon128_DATA) $(dist_icon16_DATA) $(dist_icon256_DATA) \
+	$(dist_icon32_DATA) $(dist_icon48_DATA) $(dist_icon512_DATA) \
+	$(dist_icon64_DATA) $(dist_metainfo_DATA) $(noinst_HEADERS) \
+	$(am__DIST_COMMON)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)"
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(desktopdir)" \
+	"$(DESTDIR)$(icon128dir)" "$(DESTDIR)$(icon16dir)" \
+	"$(DESTDIR)$(icon256dir)" "$(DESTDIR)$(icon32dir)" \
+	"$(DESTDIR)$(icon48dir)" "$(DESTDIR)$(icon512dir)" \
+	"$(DESTDIR)$(icon64dir)" "$(DESTDIR)$(metainfodir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_1983_OBJECTS = src/1983-config.$(OBJEXT) src/1983-display.$(OBJEXT) \
 	src/1983-leds.$(OBJEXT) src/1983-main.$(OBJEXT) \
 	src/1983-msx.$(OBJEXT) src/1983-notify.$(OBJEXT) \
-	src/1983-overlay.$(OBJEXT) src/1983-ui.$(OBJEXT)
+	src/1983-overlay.$(OBJEXT) src/1983-ui.$(OBJEXT) \
+	src/1983-vdp.$(OBJEXT) src/1983-z80.$(OBJEXT)
 1983_OBJECTS = $(am_1983_OBJECTS)
 am__DEPENDENCIES_1 =
-1983_DEPENDENCIES = $(am__DEPENDENCIES_1)
 1983_LINK = $(CCLD) $(1983_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
 am_test_msx_OBJECTS = tests/test_msx-test_msx.$(OBJEXT) \
-	src/test_msx-msx.$(OBJEXT)
+	src/test_msx-msx.$(OBJEXT) src/test_msx-vdp.$(OBJEXT) \
+	src/test_msx-z80.$(OBJEXT)
 test_msx_OBJECTS = $(am_test_msx_OBJECTS)
 test_msx_LDADD = $(LDADD)
 test_msx_LINK = $(CCLD) $(test_msx_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -140,7 +152,9 @@ am__depfiles_remade = src/$(DEPDIR)/1983-config.Po \
 	src/$(DEPDIR)/1983-display.Po src/$(DEPDIR)/1983-leds.Po \
 	src/$(DEPDIR)/1983-main.Po src/$(DEPDIR)/1983-msx.Po \
 	src/$(DEPDIR)/1983-notify.Po src/$(DEPDIR)/1983-overlay.Po \
-	src/$(DEPDIR)/1983-ui.Po src/$(DEPDIR)/test_msx-msx.Po \
+	src/$(DEPDIR)/1983-ui.Po src/$(DEPDIR)/1983-vdp.Po \
+	src/$(DEPDIR)/1983-z80.Po src/$(DEPDIR)/test_msx-msx.Po \
+	src/$(DEPDIR)/test_msx-vdp.Po src/$(DEPDIR)/test_msx-z80.Po \
 	tests/$(DEPDIR)/test_msx-test_msx.Po
 am__mv = mv -f
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -166,6 +180,35 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+am__uninstall_files_from_dir = { \
+  { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
+  || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
+       $(am__cd) "$$dir" && echo $$files | $(am__xargs_n) 40 $(am__rm_f); }; \
+  }
+DATA = $(dist_desktop_DATA) $(dist_icon128_DATA) $(dist_icon16_DATA) \
+	$(dist_icon256_DATA) $(dist_icon32_DATA) $(dist_icon48_DATA) \
+	$(dist_icon512_DATA) $(dist_icon64_DATA) $(dist_metainfo_DATA)
 HEADERS = $(noinst_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
@@ -207,32 +250,6 @@ am__tty_colors = { \
     std='[m'; \
   fi; \
 }
-am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
-am__vpath_adj = case $$p in \
-    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
-    *) f=$$p;; \
-  esac;
-am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
-am__install_max = 40
-am__nobase_strip_setup = \
-  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
-am__nobase_strip = \
-  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
-am__nobase_list = $(am__nobase_strip_setup); \
-  for p in $$list; do echo "$$p $$p"; done | \
-  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
-  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
-    if (++n[$$2] == $(am__install_max)) \
-      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
-    END { for (dir in files) print dir, files[dir] }'
-am__base_list = \
-  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
-  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__uninstall_files_from_dir = { \
-  { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
-  || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
-       $(am__cd) "$$dir" && echo $$files | $(am__xargs_n) 40 $(am__rm_f); }; \
-  }
 am__recheck_rx = ^[ 	]*:recheck:[ 	]*
 am__global_test_result_rx = ^[ 	]*:global-test-result:[ 	]*
 am__copy_in_global_log_rx = ^[ 	]*:copy-in-global-log:[ 	]*
@@ -396,12 +413,14 @@ TEST_LOG_COMPILE = $(TEST_LOG_COMPILER) $(AM_TEST_LOG_FLAGS) \
 	$(TEST_LOG_FLAGS)
 am__DIST_COMMON = $(srcdir)/Makefile.in \
 	$(top_srcdir)/build-aux/compile \
+	$(top_srcdir)/build-aux/config.guess \
+	$(top_srcdir)/build-aux/config.sub \
 	$(top_srcdir)/build-aux/depcomp \
 	$(top_srcdir)/build-aux/install-sh \
 	$(top_srcdir)/build-aux/missing \
 	$(top_srcdir)/build-aux/test-driver README.md \
-	build-aux/compile build-aux/depcomp build-aux/install-sh \
-	build-aux/missing
+	build-aux/compile build-aux/config.guess build-aux/config.sub \
+	build-aux/depcomp build-aux/install-sh build-aux/missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -475,6 +494,8 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 VERSION = @VERSION@
+WINDRES = @WINDRES@
+WIN_RC_OBJ = @WIN_RC_OBJ@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -488,14 +509,22 @@ am__tar = @am__tar@
 am__untar = @am__untar@
 am__xargs_n = @am__xargs_n@
 bindir = @bindir@
+build = @build@
 build_alias = @build_alias@
+build_cpu = @build_cpu@
+build_os = @build_os@
+build_vendor = @build_vendor@
 builddir = @builddir@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+host = @host@
 host_alias = @host_alias@
+host_cpu = @host_cpu@
+host_os = @host_os@
+host_vendor = @host_vendor@
 htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
@@ -528,7 +557,9 @@ top_srcdir = @top_srcdir@
 	src/msx.c \
 	src/notify.c \
 	src/overlay.c \
-	src/ui.c
+	src/ui.c \
+	src/vdp.c \
+	src/z80.c
 
 noinst_HEADERS = \
 	src/config.h \
@@ -538,22 +569,48 @@ noinst_HEADERS = \
 	src/notify.h \
 	src/overlay.h \
 	src/types.h \
-	src/ui.h
+	src/ui.h \
+	src/vdp.h \
+	src/z80.h
 
 1983_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic \
 	-DPROG_GIT_COMMIT=\"$(PROG_GIT_COMMIT)\"
 
-1983_LDADD = $(SDL3_LIBS) -lm
+1983_LDADD = $(SDL3_LIBS) -lm $(WIN_RC_OBJ)
+1983_DEPENDENCIES = $(WIN_RC_OBJ)
+CLEANFILES = icons/1983-rc.o
 TESTS = $(check_PROGRAMS)
-test_msx_SOURCES = tests/test_msx.c src/msx.c
+test_msx_SOURCES = tests/test_msx.c src/msx.c src/vdp.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+desktopdir = $(datadir)/applications
+dist_desktop_DATA = io.github.salvogendut.Emulator1983.desktop
+metainfodir = $(datadir)/metainfo
+dist_metainfo_DATA = io.github.salvogendut.Emulator1983.metainfo.xml
+icon16dir = $(datadir)/icons/hicolor/16x16/apps
+dist_icon16_DATA = icons/16x16/apps/io.github.salvogendut.Emulator1983.png
+icon32dir = $(datadir)/icons/hicolor/32x32/apps
+dist_icon32_DATA = icons/32x32/apps/io.github.salvogendut.Emulator1983.png
+icon48dir = $(datadir)/icons/hicolor/48x48/apps
+dist_icon48_DATA = icons/48x48/apps/io.github.salvogendut.Emulator1983.png
+icon64dir = $(datadir)/icons/hicolor/64x64/apps
+dist_icon64_DATA = icons/64x64/apps/io.github.salvogendut.Emulator1983.png
+icon128dir = $(datadir)/icons/hicolor/128x128/apps
+dist_icon128_DATA = icons/128x128/apps/io.github.salvogendut.Emulator1983.png
+icon256dir = $(datadir)/icons/hicolor/256x256/apps
+dist_icon256_DATA = icons/256x256/apps/io.github.salvogendut.Emulator1983.png
+icon512dir = $(datadir)/icons/hicolor/512x512/apps
+dist_icon512_DATA = icons/512x512/apps/io.github.salvogendut.Emulator1983.png
 EXTRA_DIST = \
 	LICENSE \
 	README.md \
 	DEVELOPMENT.md \
 	BOOT_TARGETS.md \
-	1983.conf.example
+	1983.conf.example \
+	icons/1983.png \
+	icons/README.md \
+	icons/1983.rc \
+	icons/1983.ico
 
 all: all-am
 
@@ -659,6 +716,10 @@ src/1983-overlay.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-ui.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-vdp.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-z80.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 
 1983$(EXEEXT): $(1983_OBJECTS) $(1983_DEPENDENCIES) $(EXTRA_1983_DEPENDENCIES) 
 	@rm -f 1983$(EXEEXT)
@@ -672,6 +733,10 @@ tests/$(DEPDIR)/$(am__dirstamp):
 tests/test_msx-test_msx.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-msx.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_msx-vdp.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_msx-z80.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
 test-msx$(EXEEXT): $(test_msx_OBJECTS) $(test_msx_DEPENDENCIES) $(EXTRA_test_msx_DEPENDENCIES) 
@@ -694,7 +759,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-notify.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-overlay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-ui.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-vdp.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-z80.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-msx.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-vdp.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-z80.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_msx-test_msx.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -831,6 +900,34 @@ src/1983-ui.obj: src/ui.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-ui.obj `if test -f 'src/ui.c'; then $(CYGPATH_W) 'src/ui.c'; else $(CYGPATH_W) '$(srcdir)/src/ui.c'; fi`
 
+src/1983-vdp.o: src/vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-vdp.o -MD -MP -MF src/$(DEPDIR)/1983-vdp.Tpo -c -o src/1983-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-vdp.Tpo src/$(DEPDIR)/1983-vdp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/vdp.c' object='src/1983-vdp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
+
+src/1983-vdp.obj: src/vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-vdp.obj -MD -MP -MF src/$(DEPDIR)/1983-vdp.Tpo -c -o src/1983-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-vdp.Tpo src/$(DEPDIR)/1983-vdp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/vdp.c' object='src/1983-vdp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
+
+src/1983-z80.o: src/z80.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-z80.o -MD -MP -MF src/$(DEPDIR)/1983-z80.Tpo -c -o src/1983-z80.o `test -f 'src/z80.c' || echo '$(srcdir)/'`src/z80.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-z80.Tpo src/$(DEPDIR)/1983-z80.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/z80.c' object='src/1983-z80.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-z80.o `test -f 'src/z80.c' || echo '$(srcdir)/'`src/z80.c
+
+src/1983-z80.obj: src/z80.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-z80.obj -MD -MP -MF src/$(DEPDIR)/1983-z80.Tpo -c -o src/1983-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-z80.Tpo src/$(DEPDIR)/1983-z80.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/z80.c' object='src/1983-z80.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
+
 tests/test_msx-test_msx.o: tests/test_msx.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT tests/test_msx-test_msx.o -MD -MP -MF tests/$(DEPDIR)/test_msx-test_msx.Tpo -c -o tests/test_msx-test_msx.o `test -f 'tests/test_msx.c' || echo '$(srcdir)/'`tests/test_msx.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_msx-test_msx.Tpo tests/$(DEPDIR)/test_msx-test_msx.Po
@@ -858,6 +955,223 @@ src/test_msx-msx.obj: src/msx.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx.c' object='src/test_msx-msx.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-msx.obj `if test -f 'src/msx.c'; then $(CYGPATH_W) 'src/msx.c'; else $(CYGPATH_W) '$(srcdir)/src/msx.c'; fi`
+
+src/test_msx-vdp.o: src/vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-vdp.o -MD -MP -MF src/$(DEPDIR)/test_msx-vdp.Tpo -c -o src/test_msx-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-vdp.Tpo src/$(DEPDIR)/test_msx-vdp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/vdp.c' object='src/test_msx-vdp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
+
+src/test_msx-vdp.obj: src/vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-vdp.obj -MD -MP -MF src/$(DEPDIR)/test_msx-vdp.Tpo -c -o src/test_msx-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-vdp.Tpo src/$(DEPDIR)/test_msx-vdp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/vdp.c' object='src/test_msx-vdp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
+
+src/test_msx-z80.o: src/z80.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-z80.o -MD -MP -MF src/$(DEPDIR)/test_msx-z80.Tpo -c -o src/test_msx-z80.o `test -f 'src/z80.c' || echo '$(srcdir)/'`src/z80.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-z80.Tpo src/$(DEPDIR)/test_msx-z80.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/z80.c' object='src/test_msx-z80.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-z80.o `test -f 'src/z80.c' || echo '$(srcdir)/'`src/z80.c
+
+src/test_msx-z80.obj: src/z80.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-z80.obj -MD -MP -MF src/$(DEPDIR)/test_msx-z80.Tpo -c -o src/test_msx-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-z80.Tpo src/$(DEPDIR)/test_msx-z80.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/z80.c' object='src/test_msx-z80.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
+install-dist_desktopDATA: $(dist_desktop_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_desktop_DATA)'; test -n "$(desktopdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(desktopdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(desktopdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(desktopdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(desktopdir)" || exit $$?; \
+	done
+
+uninstall-dist_desktopDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_desktop_DATA)'; test -n "$(desktopdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(desktopdir)'; $(am__uninstall_files_from_dir)
+install-dist_icon128DATA: $(dist_icon128_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_icon128_DATA)'; test -n "$(icon128dir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(icon128dir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(icon128dir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(icon128dir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(icon128dir)" || exit $$?; \
+	done
+
+uninstall-dist_icon128DATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_icon128_DATA)'; test -n "$(icon128dir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(icon128dir)'; $(am__uninstall_files_from_dir)
+install-dist_icon16DATA: $(dist_icon16_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_icon16_DATA)'; test -n "$(icon16dir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(icon16dir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(icon16dir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(icon16dir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(icon16dir)" || exit $$?; \
+	done
+
+uninstall-dist_icon16DATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_icon16_DATA)'; test -n "$(icon16dir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(icon16dir)'; $(am__uninstall_files_from_dir)
+install-dist_icon256DATA: $(dist_icon256_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_icon256_DATA)'; test -n "$(icon256dir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(icon256dir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(icon256dir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(icon256dir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(icon256dir)" || exit $$?; \
+	done
+
+uninstall-dist_icon256DATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_icon256_DATA)'; test -n "$(icon256dir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(icon256dir)'; $(am__uninstall_files_from_dir)
+install-dist_icon32DATA: $(dist_icon32_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_icon32_DATA)'; test -n "$(icon32dir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(icon32dir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(icon32dir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(icon32dir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(icon32dir)" || exit $$?; \
+	done
+
+uninstall-dist_icon32DATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_icon32_DATA)'; test -n "$(icon32dir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(icon32dir)'; $(am__uninstall_files_from_dir)
+install-dist_icon48DATA: $(dist_icon48_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_icon48_DATA)'; test -n "$(icon48dir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(icon48dir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(icon48dir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(icon48dir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(icon48dir)" || exit $$?; \
+	done
+
+uninstall-dist_icon48DATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_icon48_DATA)'; test -n "$(icon48dir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(icon48dir)'; $(am__uninstall_files_from_dir)
+install-dist_icon512DATA: $(dist_icon512_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_icon512_DATA)'; test -n "$(icon512dir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(icon512dir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(icon512dir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(icon512dir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(icon512dir)" || exit $$?; \
+	done
+
+uninstall-dist_icon512DATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_icon512_DATA)'; test -n "$(icon512dir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(icon512dir)'; $(am__uninstall_files_from_dir)
+install-dist_icon64DATA: $(dist_icon64_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_icon64_DATA)'; test -n "$(icon64dir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(icon64dir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(icon64dir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(icon64dir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(icon64dir)" || exit $$?; \
+	done
+
+uninstall-dist_icon64DATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_icon64_DATA)'; test -n "$(icon64dir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(icon64dir)'; $(am__uninstall_files_from_dir)
+install-dist_metainfoDATA: $(dist_metainfo_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_metainfo_DATA)'; test -n "$(metainfodir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(metainfodir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(metainfodir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(metainfodir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(metainfodir)" || exit $$?; \
+	done
+
+uninstall-dist_metainfoDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_metainfo_DATA)'; test -n "$(metainfodir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(metainfodir)'; $(am__uninstall_files_from_dir)
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -1288,9 +1602,9 @@ check-am: all-am
 	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
-all-am: Makefile $(PROGRAMS) $(HEADERS)
+all-am: Makefile $(PROGRAMS) $(DATA) $(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(icon128dir)" "$(DESTDIR)$(icon16dir)" "$(DESTDIR)$(icon256dir)" "$(DESTDIR)$(icon32dir)" "$(DESTDIR)$(icon48dir)" "$(DESTDIR)$(icon512dir)" "$(DESTDIR)$(icon64dir)" "$(DESTDIR)$(metainfodir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -1318,6 +1632,7 @@ mostlyclean-generic:
 	-$(am__rm_f) $(TEST_SUITE_LOG)
 
 clean-generic:
+	-$(am__rm_f) $(CLEANFILES)
 
 distclean-generic:
 	-$(am__rm_f) $(CONFIG_CLEAN_FILES)
@@ -1345,7 +1660,11 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-notify.Po
 	-rm -f src/$(DEPDIR)/1983-overlay.Po
 	-rm -f src/$(DEPDIR)/1983-ui.Po
+	-rm -f src/$(DEPDIR)/1983-vdp.Po
+	-rm -f src/$(DEPDIR)/1983-z80.Po
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
+	-rm -f src/$(DEPDIR)/test_msx-vdp.Po
+	-rm -f src/$(DEPDIR)/test_msx-z80.Po
 	-rm -f tests/$(DEPDIR)/test_msx-test_msx.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -1363,7 +1682,11 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-dist_desktopDATA install-dist_icon128DATA \
+	install-dist_icon16DATA install-dist_icon256DATA \
+	install-dist_icon32DATA install-dist_icon48DATA \
+	install-dist_icon512DATA install-dist_icon64DATA \
+	install-dist_metainfoDATA
 
 install-dvi: install-dvi-am
 
@@ -1402,7 +1725,11 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-notify.Po
 	-rm -f src/$(DEPDIR)/1983-overlay.Po
 	-rm -f src/$(DEPDIR)/1983-ui.Po
+	-rm -f src/$(DEPDIR)/1983-vdp.Po
+	-rm -f src/$(DEPDIR)/1983-z80.Po
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
+	-rm -f src/$(DEPDIR)/test_msx-vdp.Po
+	-rm -f src/$(DEPDIR)/test_msx-z80.Po
 	-rm -f tests/$(DEPDIR)/test_msx-test_msx.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
@@ -1419,7 +1746,11 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS
+uninstall-am: uninstall-binPROGRAMS uninstall-dist_desktopDATA \
+	uninstall-dist_icon128DATA uninstall-dist_icon16DATA \
+	uninstall-dist_icon256DATA uninstall-dist_icon32DATA \
+	uninstall-dist_icon48DATA uninstall-dist_icon512DATA \
+	uninstall-dist_icon64DATA uninstall-dist_metainfoDATA
 
 .MAKE: check-am install-am install-strip
 
@@ -1432,17 +1763,30 @@ uninstall-am: uninstall-binPROGRAMS
 	distclean-generic distclean-tags distcleancheck distdir \
 	distuninstallcheck dvi dvi-am html html-am info info-am \
 	install install-am install-binPROGRAMS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am recheck tags tags-am \
-	uninstall uninstall-am uninstall-binPROGRAMS
+	install-data-am install-dist_desktopDATA \
+	install-dist_icon128DATA install-dist_icon16DATA \
+	install-dist_icon256DATA install-dist_icon32DATA \
+	install-dist_icon48DATA install-dist_icon512DATA \
+	install-dist_icon64DATA install-dist_metainfoDATA install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
+	recheck tags tags-am uninstall uninstall-am \
+	uninstall-binPROGRAMS uninstall-dist_desktopDATA \
+	uninstall-dist_icon128DATA uninstall-dist_icon16DATA \
+	uninstall-dist_icon256DATA uninstall-dist_icon32DATA \
+	uninstall-dist_icon48DATA uninstall-dist_icon512DATA \
+	uninstall-dist_icon64DATA uninstall-dist_metainfoDATA
 
 .PRECIOUS: Makefile
 
+
+icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
+	@mkdir -p icons
+	$(WINDRES) -I$(srcdir)/icons -i $< -O coff -o $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

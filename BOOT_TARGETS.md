@@ -50,9 +50,12 @@ an automatic download of whatever release happens to be newest.
 
 ## Boot checkpoints
 
-Development tests should advance through explicit checkpoints:
+Development tests advance through explicit checkpoints:
 
-1. Execute C-BIOS reset code and reach a stable cartridge startup path.
+1. **Reached:** execute C-BIOS 0.29 reset code and reach a stable cartridge
+   startup path. At 180 NTSC frames the current fixture reaches `PC=1A65`,
+   `SP=F300`, primary-slot register `F0`, and 5,692 non-zero VRAM bytes. The
+   same test then verifies C-BIOS launching a synthetic plain cartridge.
 2. Execute a supplied MSX1 BIOS and reach the BASIC prompt.
 3. Execute a supplied MSX2 BIOS and extension ROM with a working memory
    mapper.
@@ -67,6 +70,11 @@ Development tests should advance through explicit checkpoints:
 Each checkpoint should be scriptable in headless mode and should record the
 firmware hashes, machine profile, disk-image hash, CPU milestone, and
 framebuffer hash needed to reproduce it.
+
+The reached C-BIOS fixture uses `cbios_main_msx1.rom` with SHA-256
+`921d35edf143f1fde8e53570f92f85e05854610d6a5ea76cce881f2f9040cd9c`
+and `cbios_logo_msx1.rom` with SHA-256
+`8ad88a4653e26bdbd4c38329fe0a115846e9aa0866b0ac1fe1dd2c260c9932b3`.
 
 ## Media and configuration contract
 

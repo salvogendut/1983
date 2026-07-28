@@ -16,27 +16,43 @@ the three emulators look and behave as members of the same family. Portable
 code and minimal platform-specific dependencies are intended to keep it
 available on as many SDL3-supported systems as practical.
 
-> **Project status:** the initial frontend scaffold builds and runs, but it
-> does not emulate a Z80, VDP, sound chip, or storage device yet. It currently
-> provides the host interface and machine-profile boundaries on which the
-> emulator will be built.
+> **Project status:** the first executable MSX1 slice is in place. It runs the
+> sibling Z80 core against a primary-slot bus, boots C-BIOS, accepts plain ROM
+> cartridges, and renders the character/pattern modes needed by the initial
+> firmware checkpoint. Keyboard input, sprites, audio output, cartridge
+> mappers, storage, and MSX2 execution are still to come.
 
-## Current scaffold
+## Current implementation
 
 - Autotools-based C11 and SDL3 build, following the sibling projects.
+- Desktop/AppStream integration with the project artwork in standard hicolor
+  sizes and a multi-resolution Windows executable icon.
 - Resizable 640x480 guest display with a footer, LED bar, fullscreen and
   integer window scaling.
 - F9 options overlay with General, Media, Extensions, and Advanced sections.
 - Persistent generic MSX1/MSX2, PAL/NTSC, RAM, display, extension, and
   notification settings.
 - Power, Caps, Kana, drive, and cassette LEDs with hover descriptions.
+- Cycle-budgeted Z80 execution and maskable interrupts, adapted from the
+  sibling projects behind machine-owned memory and I/O callbacks.
+- Four 16 KB pages selected between four primary slots through PPI port
+  `0xA8`: firmware and C-BIOS logo ROMs in slot 0, a plain cartridge in slot
+  1, an open slot 2, and up to 64 KB of RAM in slot 3.
+- TMS9918/TMS9929 VRAM data/control ports, register and status behaviour,
+  vertical interrupts, and MSX1 Text, Graphics I, Graphics II, and Multicolour
+  rendering.
+- Minimal PPI, keyboard-matrix, and PSG register surfaces sufficient for the
+  firmware boot path. Host keys and audio generation are not connected yet.
+- Explicit `--bios`, `--logo`, and `--cart` loaders, plus a deterministic
+  180-frame C-BIOS checkpoint below SDL.
 - Reserved firmware, Nextor-kernel, Sunrise IDE, and raw hard-disk surfaces,
   clearly identified as unimplemented device and loader stubs.
 - On-screen and console notifications, screenshots, pause, reset, and
   placeholders for capture and monitor tools.
-- Generic MSX1 and MSX2 profiles that establish the future VDP, slot, memory
+- Generic MSX1 and MSX2 profiles that establish the VDP, slot, memory
   mapper, RTC, RAM, and VRAM boundaries.
-- A small machine-profile test and a headless mode for smoke testing.
+- Component tests, an optional C-BIOS boot fixture, headless execution, and a
+  machine-state dump for smoke testing.
 
 Media rows and extension switches are intentionally labelled as stubs in the
 interface until the corresponding devices exist.
@@ -67,6 +83,50 @@ Useful development invocations include:
 ./1983 --config ./test.conf
 ./1983 --headless --unthrottled --exit-after 10
 ./1983 --help
+```
+
+### Booting C-BIOS
+
+1983 does not currently bundle firmware. Download C-BIOS 0.29 from the
+[C-BIOS project](https://cbios.sourceforge.net/), then start the generic
+60 Hz MSX1 machine with its main and logo ROMs:
+
+```sh
+./1983 --region ntsc \
+  --bios /path/to/cbios_main_msx1.rom \
+  --logo /path/to/cbios_logo_msx1.rom
+```
+
+Add a plain cartridge of up to 64 KB with:
+
+```sh
+./1983 --region ntsc \
+  --bios /path/to/cbios_main_msx1.rom \
+  --logo /path/to/cbios_logo_msx1.rom \
+  --cart /path/to/game.rom
+```
+
+Only linear ROM cartridges are implemented so far; ASCII and Konami mapper
+cartridges will not yet run correctly. C-BIOS itself runs cartridge software
+but does not provide MSX BASIC, cassette, or disk services. Use a legitimately
+obtained vendor BIOS/BASIC image when those paths become implemented.
+
+The reproducible headless firmware checkpoint is:
+
+```sh
+./1983 --config /dev/null --headless --unthrottled --region ntsc \
+  --bios /path/to/cbios_main_msx1.rom \
+  --logo /path/to/cbios_logo_msx1.rom \
+  --exit-after 179 --dump-state
+```
+
+With the C-BIOS 0.29 images used by openMSX 21.0, this reaches frame 180 at
+`PC=1A65`, `SP=F300`, and primary-slot register `F0`, with 5,692 non-zero
+VRAM bytes. The optional fixture test exercises both that no-cartridge state
+and C-BIOS launching a small synthetic cartridge:
+
+```sh
+MSX_CBIOS_DIR=/path/to/cbios make check
 ```
 
 ## Keyboard controls
@@ -113,9 +173,9 @@ currently supported settings.
 
 | Area | Intended support |
 |------|------------------|
-| CPU | Z80 instruction set, interrupts, and cycle-aware execution |
-| Machine architecture | Primary and secondary slots, ROM and RAM layouts, memory mappers, and configurable regional profiles |
-| MSX video | TMS9918-family display modes, sprites, status flags, and interrupts |
+| CPU | Z80 instruction set, interrupts, and cycle-aware execution (initial core integrated) |
+| Machine architecture | Primary slots and linear ROM/RAM devices implemented; secondary slots and memory mappers planned |
+| MSX video | TMS9918-family pattern modes, status flags, and interrupts implemented; sprites and timing refinement planned |
 | MSX2 video | V9938 display modes, palettes, sprites, scrolling, expanded VRAM, and interrupts |
 | Audio | AY-3-8910-compatible PSG, with SCC and MSX-MUSIC as compatibility extensions |
 | Cartridges | Plain ROMs and common ASCII, Konami, and Konami SCC mapper families, with mapper override controls |
@@ -148,10 +208,14 @@ does not silently break another.
 1. **Frontend scaffold:** portable build, SDL3 window and display, persistent
    configuration, overlays, notifications, LEDs, machine profiles, and smoke
    testing. This initial step is in place.
-2. Integrate the sibling Z80 core, implement the PPI and slot-aware memory and
-   I/O buses, and boot an MSX1 BIOS and BASIC.
-3. Add the TMS9918/TMS9929 video path, keyboard matrix, PSG audio, cartridge
-   mappers, cassette support, joysticks, and an MSX1 compatibility suite.
+2. **Executable MSX1 slice:** integrate the sibling Z80 core, primary-slot
+   bus, PPI slot control, firmware/plain-cartridge loading, and the initial
+   TMS9918/TMS9929 video path. C-BIOS now reaches a deterministic boot
+   checkpoint and launches a test cartridge.
+3. Complete TMS9918/TMS9929 sprites and timing, connect the keyboard matrix,
+   generate PSG audio, add common cartridge mappers, cassette support,
+   joysticks, a supplied BIOS/BASIC checkpoint, and an MSX1 compatibility
+   suite.
 4. Implement the V9938, MSX2 secondary slots, memory mapper, RTC, and
    representative MSX2 machine profiles; then boot Nextor through a Sunrise
    ATA-IDE cartridge and raw hard-disk image.

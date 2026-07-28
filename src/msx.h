@@ -1,10 +1,17 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "types.h"
+#include "vdp.h"
+#include "z80.h"
 
 #define MSX_CPU_HZ 3579545u
+#define MSX_BIOS_SIZE 0x8000u
+#define MSX_LOGO_SIZE 0x4000u
+#define MSX_RAM_MAX_SIZE 0x10000u
+#define MSX_CART_MAX_SIZE 0x10000u
 
 typedef enum {
     MSX_MODEL_GENERIC_MSX1 = 0,
@@ -47,6 +54,29 @@ typedef struct {
     bool paused;
     bool caps_led;
     bool kana_led;
+
+    Z80    cpu;
+    Z80Bus bus;
+    MsxVdp vdp;
+
+    u8 bios[MSX_BIOS_SIZE];
+    u8 logo[MSX_LOGO_SIZE];
+    u8 ram[MSX_RAM_MAX_SIZE];
+    u8 cartridge[MSX_CART_MAX_SIZE];
+    size_t cartridge_size;
+    u16 cartridge_base;
+    bool bios_loaded;
+    bool logo_loaded;
+    bool cartridge_loaded;
+
+    u8 ppi_port_c;
+    u8 psg_register;
+    u8 psg[16];
+
+    u64 cycles;
+    u64 instructions;
+    unsigned cycle_fraction;
+    int cycle_balance;
 } MsxMachine;
 
 const MsxProfile *msx_profile(MsxModel model);
@@ -63,3 +93,16 @@ void msx_configure(MsxMachine *msx, MsxModel model, MsxRegion region,
                    int ram_kb);
 void msx_reset(MsxMachine *msx);
 void msx_run_frame(MsxMachine *msx);
+
+u8   msx_memory_read(MsxMachine *msx, u16 address);
+void msx_memory_write(MsxMachine *msx, u16 address, u8 value);
+u8   msx_io_read(MsxMachine *msx, u16 port);
+void msx_io_write(MsxMachine *msx, u16 port, u8 value);
+
+int msx_install_bios(MsxMachine *msx, const u8 *data, size_t size);
+int msx_install_logo(MsxMachine *msx, const u8 *data, size_t size);
+int msx_install_cartridge(MsxMachine *msx, const u8 *data, size_t size);
+int msx_load_bios(MsxMachine *msx, const char *path);
+int msx_load_logo(MsxMachine *msx, const char *path);
+int msx_load_cartridge(MsxMachine *msx, const char *path);
+bool msx_can_boot(const MsxMachine *msx);

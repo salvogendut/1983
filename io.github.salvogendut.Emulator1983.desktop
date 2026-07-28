@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=1983
+GenericName=MSX Emulator
+Comment=Generic MSX and MSX2 emulator
+Exec=1983 %F
+Icon=io.github.salvogendut.Emulator1983
+Terminal=false
+Categories=Game;Emulator;
+Keywords=msx;msx2;emulator;retro;z80;

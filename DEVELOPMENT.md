@@ -15,8 +15,10 @@ hardware specification.
 | `src/leds.*` | Shared bottom status strip and MSX-specific indicator definitions |
 | `src/notify.*` | On-screen and console notifications |
 | `src/ui.*` | Small renderer primitives used by the frontend |
-| `src/msx.*` | Emulator-facing machine profiles and the future memory/I/O boundary |
-| `tests/test_msx.c` | Profile, RAM normalization, reset, pause, and frame-state checks |
+| `src/msx.*` | Machine profiles, slot-aware memory and I/O bus, ROM loading, and frame scheduler |
+| `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
+| `src/vdp.*` | Initial TMS9918/TMS9929 ports, state, interrupts, and pattern-mode renderer |
+| `tests/test_msx.c` | Profiles, slots, CPU execution, VDP ports/rendering, and optional C-BIOS boot checks |
 
 Frontend modules may inspect summarized machine state for presentation, but
 guest hardware should not depend on SDL. Keeping that direction of dependency
@@ -31,9 +33,10 @@ The window has a 640x520 logical size:
 - 18-pixel shared shortcut footer;
 - 22-pixel MSX LED strip.
 
-The initial framebuffer is a diagnostic scaffold, not a VDP implementation.
-The TMS9918/TMS9929 and V9938 should eventually produce their own frame data
-through the machine boundary without owning the host window.
+Without firmware, the framebuffer remains a diagnostic scaffold. Once an
+MSX1 BIOS is loaded, the TMS9918/TMS9929 core supplies a 256x192 framebuffer
+which the SDL layer scales into the 640x480 guest canvas. The V9938 remains a
+profile boundary rather than an implemented MSX2 display.
 
 ## Initial generic profiles
 
@@ -50,8 +53,11 @@ vendor machine:
 | RAM mapper | No | Yes |
 | RTC | No | Yes |
 
-The next machine layer should make vendor and firmware layouts data-driven
-rather than accumulating model checks throughout device code.
+The current executable layout follows the C-BIOS MSX1 machine definition:
+slot 0 contains a 32 KB main ROM and optional 16 KB logo ROM, slot 1 contains
+one external plain cartridge, slot 2 is open, and slot 3 contains RAM. Future
+vendor and firmware layouts should become data-driven rather than
+accumulating model checks throughout device code.
 
 ## Bus and port assumptions
 
@@ -73,21 +79,26 @@ relationships:
 - The MSX2 RTC is selected and accessed through ports `0xB4` and `0xB5`.
 
 These notes were cross-checked against the openMSX 21.0 machine definitions
-and CPU-interface implementation. Device behaviour and timing still need
-dedicated documentation and tests before implementation.
+and CPU-interface implementation. The primary-slot, PPI register, VDP-port,
+and PSG-register surfaces above are now present; secondary slots, a keyboard
+matrix, mapper registers, the RTC, and accurate peripheral timing are not.
 
 ## Near-term implementation order
 
-1. Bring in the sibling Z80 core behind memory-read, memory-write, input, and
-   output callbacks.
-2. Add a slot bus with explicit primary/secondary slot ownership and ROM/RAM
-   devices.
-3. Implement the PPI sufficiently for slot selection and the keyboard matrix.
-4. Load a deliberately selected, legally usable MSX1 firmware set.
-5. Implement enough TMS9918/TMS9929 video and interrupt behaviour to reach a
-   repeatable firmware boot checkpoint.
-6. Add PSG output only after the CPU, slot, PPI, and VDP boundaries are covered
-   by focused tests.
+The first five implementation steps—sibling Z80 integration, primary slots,
+PPI slot selection, external firmware loading, and a repeatable C-BIOS/VDP
+checkpoint—are now represented in code and focused tests. The next sequence
+is:
+
+1. Add host keyboard events and the 11-row MSX keyboard matrix.
+2. Complete TMS9918/TMS9929 sprites, collision/status flags, and scanline
+   timing.
+3. Add AY-compatible PSG audio while preserving the existing register surface.
+4. Add ASCII8/ASCII16, Konami, and Konami SCC cartridge mappers with explicit
+   override hooks.
+5. Reach a deterministic BASIC prompt with a user-supplied BIOS/BASIC set.
+6. Add joystick input, cassette loading, and a small redistributable MSX1
+   compatibility corpus.
 
 The firmware decision is to support both C-BIOS and user-supplied BIOS/BASIC
 sets with clearly different capabilities. C-BIOS is the redistributable
@@ -117,6 +128,14 @@ Run a short frontend smoke test without a desktop:
   --config /tmp/1983-smoke.conf
 ```
 
-As devices arrive, add deterministic tests below the SDL layer first. Reserve
-rendered-frame and end-to-end boot tests for interactions that cannot be
-proved reliably at the component boundary.
+Run the pinned C-BIOS checkpoint when C-BIOS 0.29 is available:
+
+```sh
+MSX_CBIOS_DIR=/path/to/cbios make check
+```
+
+The optional test runs 180 NTSC frames to a stable no-cartridge state, then
+resets and verifies that C-BIOS discovers and launches a synthetic plain ROM
+cartridge. Keep deterministic tests below SDL first; reserve rendered-frame
+and end-to-end tests for interactions that cannot be proved reliably at the
+component boundary.

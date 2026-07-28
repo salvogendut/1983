@@ -19,12 +19,16 @@
 
 typedef struct {
     const char *config_path;
+    const char *bios_path;
+    const char *logo_path;
+    const char *cartridge_path;
     int model;
     int region;
     int scale;
     int exit_after;
     bool headless;
     bool unthrottled;
+    bool dump_state;
 } Cli;
 
 static const char *usage =
@@ -32,10 +36,14 @@ static const char *usage =
     "  --config PATH       use an alternative configuration file\n"
     "  --model msx1|msx2   override the configured generic machine\n"
     "  --region pal|ntsc   override the configured video standard\n"
+    "  --bios PATH         load a 32 KB MSX BIOS ROM\n"
+    "  --logo PATH         load a 16 KB C-BIOS logo ROM in slot 0/page 2\n"
+    "  --cart PATH         load a plain cartridge ROM in primary slot 1\n"
     "  --scale N           initial window scale (1 through 4)\n"
     "  --headless          use SDL's offscreen video backend\n"
     "  --exit-after N      exit after N host frames (for smoke tests)\n"
     "  --unthrottled       disable 50/60 Hz frame pacing\n"
+    "  --dump-state        print CPU/bus/VDP state on exit\n"
     "  -h, --help          show this help\n"
     "  --version           show version information\n";
 
@@ -98,9 +106,16 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->unthrottled = true;
             continue;
         }
+        if (strcmp(argument, "--dump-state") == 0) {
+            cli->dump_state = true;
+            continue;
+        }
         if ((strcmp(argument, "--config") == 0 ||
              strcmp(argument, "--model") == 0 ||
              strcmp(argument, "--region") == 0 ||
+             strcmp(argument, "--bios") == 0 ||
+             strcmp(argument, "--logo") == 0 ||
+             strcmp(argument, "--cart") == 0 ||
              strcmp(argument, "--scale") == 0 ||
              strcmp(argument, "--exit-after") == 0) &&
             i + 1 >= argc) {
@@ -109,6 +124,12 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
         }
         if (strcmp(argument, "--config") == 0) {
             cli->config_path = argv[++i];
+        } else if (strcmp(argument, "--bios") == 0) {
+            cli->bios_path = argv[++i];
+        } else if (strcmp(argument, "--logo") == 0) {
+            cli->logo_path = argv[++i];
+        } else if (strcmp(argument, "--cart") == 0) {
+            cli->cartridge_path = argv[++i];
         } else if (strcmp(argument, "--model") == 0) {
             cli->model = parse_model(argv[++i]);
             if (cli->model < 0)
@@ -160,10 +181,10 @@ static void draw_debug(const Config *config, const MsxMachine *msx,
     if (!config->debug)
         return;
     snprintf(text, sizeof(text),
-             "DBG host-frame=%llu slot=%02X map=%02X/%02X/%02X/%02X",
-             (unsigned long long)msx->frame, msx->primary_slot,
-             msx->mapper_segment[0], msx->mapper_segment[1],
-             msx->mapper_segment[2], msx->mapper_segment[3]);
+             "DBG frame=%llu PC=%04X slot=%02X cycles=%llu",
+             (unsigned long long)msx->frame, msx->cpu.pc,
+             msx->primary_slot,
+             (unsigned long long)msx->cycles);
     ui_fill_rect(display->renderer, 6.0f, 448.0f,
                  (float)strlen(text) * 8.0f + 12.0f, 20.0f,
                  0, 0, 0, 210);
@@ -217,6 +238,20 @@ int main(int argc, char **argv) {
     }
 
     msx_init(&msx, config.model, config.region, config.memory_kb);
+    if (cli.bios_path && msx_load_bios(&msx, cli.bios_path) < 0) {
+        fprintf(stderr, "cannot load 32 KB BIOS ROM: %s\n", cli.bios_path);
+        return 1;
+    }
+    if (cli.logo_path && msx_load_logo(&msx, cli.logo_path) < 0) {
+        fprintf(stderr, "cannot load 16 KB logo ROM: %s\n", cli.logo_path);
+        return 1;
+    }
+    if (cli.cartridge_path &&
+        msx_load_cartridge(&msx, cli.cartridge_path) < 0) {
+        fprintf(stderr, "cannot load cartridge ROM: %s\n",
+                cli.cartridge_path);
+        return 1;
+    }
     if (display_init(&display, &config, &msx) < 0) {
         display_quit(&display);
         return 1;
@@ -227,14 +262,23 @@ int main(int argc, char **argv) {
     notify_set_mode(config.notifications);
     leds_init();
     overlay_init(&overlay, &config, &display, &msx);
-    notify_post("Frontend scaffold ready - F9 opens options");
+    if (msx_can_boot(&msx))
+        notify_post("Firmware running - F9 opens options");
+    else
+        notify_post("Select a BIOS ROM to boot - F9 opens options");
 
-    printf("1983 - MSX / MSX2 emulator scaffold (git %s)\n",
+    printf("1983 - MSX / MSX2 emulator (git %s)\n",
            PROG_GIT_COMMIT);
     printf("%s, %s, %d KB RAM, %d KB VRAM, %s\n",
            msx.profile->name, msx_region_name(msx.region),
            msx.ram_kb, msx.profile->vram_kb, msx_vdp_name(&msx));
     printf("F4 screenshot, F5 reset, F9 options, F11 fullscreen, F12 quit\n");
+    if (msx_can_boot(&msx))
+        printf("BIOS loaded%s%s\n",
+               msx.logo_loaded ? ", logo ROM loaded" : "",
+               msx.cartridge_loaded ? ", cartridge loaded" : "");
+    else
+        printf("No BIOS loaded; use --bios PATH (and --logo PATH for C-BIOS)\n");
 
     next_tick = SDL_GetTicks();
     while (running) {
@@ -287,7 +331,7 @@ int main(int argc, char **argv) {
                     msx_reset(&msx);
                     leds_set_state(LED_CAPS, false);
                     leds_set_state(LED_KANA, false);
-                    notify_post("Generic machine reset");
+                    notify_post("Machine reset");
                     break;
                 case SDLK_F6:
                     notify_post("Animated capture is planned");
@@ -312,6 +356,8 @@ int main(int argc, char **argv) {
         }
 
         msx_run_frame(&msx);
+        leds_set_state(LED_CAPS, msx.caps_led);
+        leds_set_state(LED_KANA, msx.kana_led);
         notify_tick(1000 / msx.frame_hz);
         display_draw(&display, &msx);
         draw_debug(&config, &msx, &display);
@@ -339,6 +385,19 @@ int main(int argc, char **argv) {
     config.fullscreen = display.fullscreen;
     config.scale = display.scale;
     config_save(&config);
+    if (cli.dump_state) {
+        size_t nonzero_vram = 0;
+        for (size_t i = 0; i < sizeof(msx.vdp.vram); ++i)
+            if (msx.vdp.vram[i])
+                ++nonzero_vram;
+        printf("state frame=%llu pc=%04X sp=%04X slot=%02X "
+               "cycles=%llu instructions=%llu vram_nonzero=%zu "
+               "vdp_r0=%02X vdp_r1=%02X\n",
+               (unsigned long long)msx.frame, msx.cpu.pc, msx.cpu.sp,
+               msx.primary_slot, (unsigned long long)msx.cycles,
+               (unsigned long long)msx.instructions, nonzero_vram,
+               msx.vdp.registers[0], msx.vdp.registers[1]);
+    }
     display_quit(&display);
     return 0;
 }
