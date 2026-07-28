@@ -87,6 +87,7 @@ EXTRA_DIST = \
 	DEVELOPMENT.md \
 	BOOT_TARGETS.md \
 	1983.conf.example \
+	DOS/NEXTOR.SYS \
 	icons/1983.png \
 	icons/README.md \
 	icons/1983.rc \

@@ -88,10 +88,12 @@ The filenames suggested by openMSX are
 are only hints. A missing-ROM diagnostic must identify the component and
 expected checksums and must never silently substitute an incompatible image.
 
-Neither the Philips ROMs nor the Nextor ROM are committed to this repository.
-The GeoBench hard-disk image and its MSX-DOS/Nextor files also remain external
-test inputs. A newer Nextor kernel can be added as a separate compatibility
-fixture; it must not silently change this reproducible reference profile.
+Neither the Philips ROMs nor the Nextor kernel ROM are committed to this
+repository. The GeoBench hard-disk image and machine-specific DOS files remain
+external test inputs. The project does track the unmodified guest-side
+`DOS/NEXTOR.SYS`; all other files under `DOS/` are ignored. A newer Nextor
+kernel can be added as a separate compatibility fixture; it must not silently
+change this reproducible reference profile.
 
 ## Boot checkpoints
 
@@ -103,9 +105,10 @@ Development tests advance through explicit checkpoints:
    same test then verifies C-BIOS launching a synthetic plain cartridge.
 2. Execute a supplied MSX1 BIOS and reach the BASIC prompt.
 3. **In progress:** the supplied NMS 8250 BIOS, MSX2 sub-ROM, and disk ROM
-   load into the expanded-slot layout and the internal mapper is accessible;
-   implement enough V9938 and RTC behaviour to reach a visible firmware
-   checkpoint.
+   load into the expanded-slot layout, the internal mapper is accessible,
+   and the CPU-visible V9938 register/palette/128 KB VRAM interface is in
+   place; implement the remaining RTC and video behaviour needed to reach a
+   visible firmware checkpoint.
 4. Enumerate the external 512 KB mapper and an empty Sunrise IDE device from
    the Nextor kernel ROM.
 5. Read a partitioned raw disk and reach the BASIC fallback when the system
@@ -157,8 +160,9 @@ Nextor is developed separately from 1983. It is based on MSX-DOS 2.31 and has
 its own license: unmodified distribution is permitted under its terms, while
 commercial use and derivative forks require permission from its copyright
 holders. Nextor code or ROM data must not be copied into or relicensed as part
-of the GPL emulator. Until packaging has been reviewed against those terms,
-1983 will load an external, unmodified official release rather than bundle it.
+of the GPL emulator. The tracked `DOS/NEXTOR.SYS` is kept as an unmodified,
+separately licensed guest file. The machine's Nextor kernel ROM remains an
+external, user-supplied official release.
 
 The authoritative sources are:
 

@@ -222,6 +222,9 @@ void msx_configure(MsxMachine *msx, MsxModel model, MsxRegion region,
                 ? MSX_REGION_NTSC : MSX_REGION_PAL;
     msx->ram_kb = msx_normalize_ram_kb(msx->profile->model, ram_kb);
     msx->frame_hz = msx->region == MSX_REGION_NTSC ? 60 : 50;
+    vdp_set_type(&msx->vdp,
+                 msx->profile->model == MSX_MODEL_GENERIC_MSX2
+                 ? MSX_VDP_V9938 : MSX_VDP_TMS9918);
     msx_reset(msx);
 }
 
@@ -413,6 +416,14 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
             return vdp_read_data(&msx->vdp);
         case 0x99:
             return vdp_read_status(&msx->vdp);
+        case 0x9a:
+            if (msx->vdp.type == MSX_VDP_TMS9918)
+                return vdp_read_data(&msx->vdp);
+            break;
+        case 0x9b:
+            if (msx->vdp.type == MSX_VDP_TMS9918)
+                return vdp_read_status(&msx->vdp);
+            break;
         case 0xa2:
             if (msx->psg.selected == 14)
                 /*
@@ -454,6 +465,18 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
             break;
         case 0x99:
             vdp_write_control(&msx->vdp, value);
+            break;
+        case 0x9a:
+            if (msx->vdp.type == MSX_VDP_V9938)
+                vdp_write_palette(&msx->vdp, value);
+            else
+                vdp_write_data(&msx->vdp, value);
+            break;
+        case 0x9b:
+            if (msx->vdp.type == MSX_VDP_V9938)
+                vdp_write_indirect(&msx->vdp, value);
+            else
+                vdp_write_control(&msx->vdp, value);
             break;
         case 0xa0:
             psg_select(&msx->psg, value);

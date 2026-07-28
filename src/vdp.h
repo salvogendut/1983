@@ -5,29 +5,44 @@
 #include "types.h"
 
 #define MSX1_VRAM_SIZE 0x4000
+#define MSX2_VRAM_SIZE 0x20000
+#define MSX_VDP_REGISTER_COUNT 64
+#define MSX_VDP_PALETTE_SIZE 16
 #define MSX1_VIDEO_W 256
 #define MSX1_VIDEO_H 192
 
+typedef enum {
+    MSX_VDP_TMS9918 = 0,
+    MSX_VDP_V9938
+} MsxVdpType;
+
 typedef struct {
-    u8 vram[MSX1_VRAM_SIZE];
-    u8 registers[8];
+    u8 vram[MSX2_VRAM_SIZE];
+    u8 registers[MSX_VDP_REGISTER_COUNT];
     u8 status;
+    u8 status1;
+    u8 status2;
     u8 read_buffer;
     u8 control_first;
     u16 address;
+    u16 palette_grb[MSX_VDP_PALETTE_SIZE];
+    MsxVdpType type;
     bool control_pending;
+    bool palette_pending;
     bool irq;
     u32 pixels[MSX1_VIDEO_W * MSX1_VIDEO_H];
 } MsxVdp;
 
 void vdp_init(MsxVdp *vdp);
 void vdp_reset(MsxVdp *vdp);
+void vdp_set_type(MsxVdp *vdp, MsxVdpType type);
 
 u8   vdp_read_data(MsxVdp *vdp);
 u8   vdp_read_status(MsxVdp *vdp);
 void vdp_write_data(MsxVdp *vdp, u8 value);
 void vdp_write_control(MsxVdp *vdp, u8 value);
+void vdp_write_palette(MsxVdp *vdp, u8 value);
+void vdp_write_indirect(MsxVdp *vdp, u8 value);
 
 void vdp_end_frame(MsxVdp *vdp);
 void vdp_render(MsxVdp *vdp);
-

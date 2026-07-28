@@ -18,6 +18,19 @@ static u32 pixel(const MsxVdp *vdp, int x, int y) {
     return vdp->pixels[y * MSX1_VIDEO_W + x];
 }
 
+static void write_control_register(MsxVdp *vdp, unsigned reg, u8 value) {
+    assert(reg < MSX_VDP_REGISTER_COUNT);
+    vdp_write_control(vdp, value);
+    vdp_write_control(vdp, (u8)(0x80 | reg));
+}
+
+static void set_vram_address(MsxVdp *vdp, u16 address, bool write) {
+    assert(address < 0x4000);
+    vdp_write_control(vdp, (u8)address);
+    vdp_write_control(vdp,
+                      (u8)((address >> 8) | (write ? 0x40 : 0x00)));
+}
+
 static void setup_vdp(MsxVdp *vdp) {
     vdp_init(vdp);
     vdp->registers[1] = 0x40; /* display on, 8x8, no magnification */
@@ -372,6 +385,151 @@ static void test_backdrop_and_text_background_colours(void) {
     assert(pixel(&vdp, 8, 0) == COLOUR_LT_RED);
 }
 
+static void test_v9938_registers_and_status_selection(void) {
+    MsxVdp vdp;
+
+    vdp_init(&vdp);
+    assert(vdp.type == MSX_VDP_TMS9918);
+    vdp_set_type(&vdp, MSX_VDP_V9938);
+    vdp_reset(&vdp);
+    assert(vdp.type == MSX_VDP_V9938);
+    assert(vdp.registers[21] == 0x3b);
+    assert(vdp.registers[22] == 0x05);
+    assert(vdp.status2 == 0x0c);
+
+    write_control_register(&vdp, 8, 0xff);
+    assert(vdp.registers[8] == 0xfb);
+    assert(vdp.registers[0] == 0);
+    write_control_register(&vdp, 14, 0xff);
+    assert(vdp.registers[14] == 0x07);
+    write_control_register(&vdp, 17, 0xff);
+    assert(vdp.registers[17] == 0xbf);
+    write_control_register(&vdp, 24, 0xff);
+    assert(vdp.registers[24] == 0);
+    write_control_register(&vdp, 32, 0x5a);
+    assert(vdp.registers[32] == 0x5a);
+    write_control_register(&vdp, 47, 0x77);
+    assert(vdp.registers[47] == 0);
+
+    /* On a V9938, 11xxxxxx is not a register-write command. */
+    vdp_write_control(&vdp, 0x12);
+    vdp_write_control(&vdp, 0xc8);
+    assert(vdp.registers[8] == 0xfb);
+
+    vdp.status = 0xe4;
+    vdp.irq = true;
+    write_control_register(&vdp, 15, 2);
+    assert(vdp_read_status(&vdp) == 0x0c);
+    assert(vdp.status == 0xe4);
+    assert(vdp.irq);
+    write_control_register(&vdp, 15, 0);
+    assert(vdp_read_status(&vdp) == 0xe4);
+    assert(vdp.status == 0x04);
+    assert(!vdp.irq);
+    write_control_register(&vdp, 15, 15);
+    assert(vdp_read_status(&vdp) == 0xff);
+}
+
+static void test_v9938_palette_and_indirect_register_port(void) {
+    MsxVdp vdp;
+
+    vdp_init(&vdp);
+    vdp_set_type(&vdp, MSX_VDP_V9938);
+    vdp_reset(&vdp);
+    assert(vdp.palette_grb[2] == 0x611);
+
+    write_control_register(&vdp, 16, 2);
+    vdp_write_palette(&vdp, 0x17);
+    vdp_write_palette(&vdp, 0x03);
+    assert(vdp.palette_grb[2] == 0x317);
+    assert(vdp.registers[16] == 3);
+    write_control_register(&vdp, 7, 2);
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 0, 0) == 0x246dff);
+
+    /* Writing R16 aborts a half-complete palette write. */
+    vdp_write_palette(&vdp, 0x11);
+    assert(vdp.palette_pending);
+    write_control_register(&vdp, 16, 2);
+    assert(!vdp.palette_pending);
+    vdp_write_palette(&vdp, 0x22);
+    assert(vdp.palette_pending);
+    assert(vdp.palette_grb[2] == 0x317);
+
+    vdp_reset(&vdp);
+    write_control_register(&vdp, 17, 14);
+    vdp_write_indirect(&vdp, 5);
+    assert(vdp.registers[14] == 5);
+    assert(vdp.registers[17] == 15);
+    vdp_write_indirect(&vdp, 9);
+    assert(vdp.registers[15] == 9);
+    assert(vdp.registers[17] == 16);
+
+    write_control_register(&vdp, 17, 0x8e);
+    vdp_write_indirect(&vdp, 3);
+    assert(vdp.registers[14] == 3);
+    assert(vdp.registers[17] == 0x8e);
+}
+
+static void test_v9938_banked_and_planar_vram(void) {
+    MsxVdp vdp;
+
+    vdp_init(&vdp);
+    vdp_set_type(&vdp, MSX_VDP_V9938);
+    vdp_reset(&vdp);
+
+    write_control_register(&vdp, 14, 1);
+    set_vram_address(&vdp, 0, true);
+    vdp_write_data(&vdp, 0x11);
+    write_control_register(&vdp, 14, 2);
+    set_vram_address(&vdp, 0, true);
+    vdp_write_data(&vdp, 0x22);
+    assert(vdp.vram[0x4000] == 0x11);
+    assert(vdp.vram[0x8000] == 0x22);
+    write_control_register(&vdp, 14, 1);
+    set_vram_address(&vdp, 0, false);
+    assert(vdp_read_data(&vdp) == 0x11);
+
+    /* Compatible modes wrap the 14-bit pointer within the selected bank. */
+    vdp_reset(&vdp);
+    write_control_register(&vdp, 14, 1);
+    set_vram_address(&vdp, 0x3fff, true);
+    vdp_write_data(&vdp, 0xaa);
+    vdp_write_data(&vdp, 0xbb);
+    assert(vdp.vram[0x7fff] == 0xaa);
+    assert(vdp.vram[0x4000] == 0xbb);
+    assert(vdp.registers[14] == 1);
+
+    /* V9938 display modes carry a pointer wrap into R14. */
+    vdp_reset(&vdp);
+    write_control_register(&vdp, 0, 0x04); /* Graphics 3 */
+    write_control_register(&vdp, 14, 7);
+    set_vram_address(&vdp, 0x3fff, true);
+    vdp_write_data(&vdp, 0xcc);
+    vdp_write_data(&vdp, 0xdd);
+    assert(vdp.vram[0x1ffff] == 0xcc);
+    assert(vdp.vram[0] == 0xdd);
+    assert(vdp.registers[14] == 0);
+
+    /* Graphics 6/7 CPU accesses alternate between the two VRAM planes. */
+    vdp_reset(&vdp);
+    write_control_register(&vdp, 0, 0x0a); /* Graphics 6 */
+    set_vram_address(&vdp, 0, true);
+    vdp_write_data(&vdp, 0x12);
+    vdp_write_data(&vdp, 0x34);
+    assert(vdp.vram[0] == 0x12);
+    assert(vdp.vram[0x10000] == 0x34);
+
+    /* A TMS9918 remains restricted to its 16 KiB address space. */
+    vdp_init(&vdp);
+    set_vram_address(&vdp, 0x3fff, true);
+    vdp_write_data(&vdp, 0x56);
+    vdp_write_data(&vdp, 0x78);
+    assert(vdp.vram[0x3fff] == 0x56);
+    assert(vdp.vram[0] == 0x78);
+    assert(vdp.vram[0x4000] == 0);
+}
+
 int main(void) {
     test_basic_position_wrap_and_terminator();
     test_priority_transparency_and_collision();
@@ -383,5 +541,8 @@ int main(void) {
     test_sprite_modes_and_display_gating();
     test_graphics_2_and_multicolour_mode_bits();
     test_backdrop_and_text_background_colours();
+    test_v9938_registers_and_status_selection();
+    test_v9938_palette_and_indirect_register_port();
+    test_v9938_banked_and_planar_vram();
     return 0;
 }

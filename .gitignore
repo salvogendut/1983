@@ -11,6 +11,8 @@
 /autom4te.cache/
 /.local/
 /ROMS/
+/DOS/*
+!/DOS/NEXTOR.SYS
 /src/.deps/
 /tests/.deps/
 /src/.dirstamp

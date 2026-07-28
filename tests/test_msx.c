@@ -193,6 +193,38 @@ static void test_vdp_ports_and_renderer(void) {
     assert(!vdp.irq);
 }
 
+static void test_msx2_vdp_extended_ports(void) {
+    MsxMachine msx;
+
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
+    assert(msx.vdp.type == MSX_VDP_V9938);
+
+    /* R16 selects palette entry 4; port 9A writes its two GRB bytes. */
+    msx_io_write(&msx, 0x99, 4);
+    msx_io_write(&msx, 0x99, 0x90);
+    msx_io_write(&msx, 0x9a, 0x26);
+    msx_io_write(&msx, 0x9a, 0x04);
+    assert(msx.vdp.palette_grb[4] == 0x426);
+    assert(msx.vdp.registers[16] == 5);
+
+    /* R17 selects R14; port 9B writes it and advances the selector. */
+    msx_io_write(&msx, 0x99, 14);
+    msx_io_write(&msx, 0x99, 0x91);
+    msx_io_write(&msx, 0x9b, 6);
+    assert(msx.vdp.registers[14] == 6);
+    assert(msx.vdp.registers[17] == 15);
+    assert(msx_io_read(&msx, 0x9a) == 0xff);
+    assert(msx_io_read(&msx, 0x9b) == 0xff);
+
+    /* On an MSX1 VDP, 9A/9B mirror the data/control ports. */
+    msx_configure(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(msx.vdp.type == MSX_VDP_TMS9918);
+    msx_io_write(&msx, 0x9b, 0x00);
+    msx_io_write(&msx, 0x9b, 0x40);
+    msx_io_write(&msx, 0x9a, 0xa5);
+    assert(msx.vdp.vram[0] == 0xa5);
+}
+
 static void test_keyboard_matrix_and_ppi(void) {
     MsxMachine msx;
 
@@ -370,6 +402,7 @@ static void test_nms8250_checkpoint_if_available(void) {
     char bios_path[4096];
     char subrom_path[4096];
     char disk_rom_path[4096];
+    size_t nonzero_vram = 0;
 
     if (!directory || !directory[0])
         return;
@@ -388,17 +421,23 @@ static void test_nms8250_checkpoint_if_available(void) {
     assert(msx_load_disk_rom(msx, disk_rom_path) == 0);
     for (int frame = 0; frame < 200; ++frame)
         msx_run_frame(msx);
+    for (size_t i = 0; i < sizeof(msx->vdp.vram); ++i)
+        if (msx->vdp.vram[i])
+            ++nonzero_vram;
 
     fprintf(stderr,
             "NMS 8250 checkpoint: frame=%llu PC=%04X SP=%04X slot=%02X "
             "subslot=%02X mapper=%02X,%02X,%02X,%02X "
-            "cycles=%llu instructions=%llu\n",
+            "cycles=%llu instructions=%llu VRAM=%zu "
+            "R0=%02X R1=%02X R9=%02X R14=%02X\n",
             (unsigned long long)msx->frame, msx->cpu.pc, msx->cpu.sp,
             msx->primary_slot, msx->secondary_slot[3],
             msx->mapper_segment[0], msx->mapper_segment[1],
             msx->mapper_segment[2], msx->mapper_segment[3],
             (unsigned long long)msx->cycles,
-            (unsigned long long)msx->instructions);
+            (unsigned long long)msx->instructions, nonzero_vram,
+            msx->vdp.registers[0], msx->vdp.registers[1],
+            msx->vdp.registers[9], msx->vdp.registers[14]);
     assert(msx->frame == 200);
     assert(msx->bios_loaded);
     assert(msx->subrom_loaded);
@@ -410,6 +449,8 @@ static void test_nms8250_checkpoint_if_available(void) {
     assert(msx->mapper_segment[2] == 1);
     assert(msx->mapper_segment[3] == 0);
     assert(msx->instructions > 1000000);
+    assert(msx->vdp.type == MSX_VDP_V9938);
+    assert(msx->vdp.registers[9] == 0x02);
     free(msx);
 }
 
@@ -448,6 +489,7 @@ int main(void) {
     test_slot_bus_and_cpu();
     test_msx2_expanded_slots_and_firmware();
     test_vdp_ports_and_renderer();
+    test_msx2_vdp_extended_ports();
     test_keyboard_matrix_and_ppi();
     test_psg_ports_and_cycle_timed_audio();
     test_cbios_checkpoint_if_available();

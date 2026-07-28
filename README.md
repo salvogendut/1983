@@ -23,8 +23,11 @@ available on as many SDL3-supported systems as practical.
 > connected to SDL input, and the TMS9918-family sprite engine is implemented.
 > Its built-in AY/YM PSG now produces cycle-timed SDL3 audio. The first MSX2
 > machine slice loads separate BIOS, Sub-ROM, and disk-ROM images and models
-> the NMS 8250 expanded slot and internal mapper layout. V9938 video,
-> cartridge mappers, and storage devices are still to come.
+> the NMS 8250 expanded slot and internal mapper layout. Its V9938 foundation
+> implements the CPU-visible registers, status selection, programmable
+> palette, indirect-register port, and 128 KB VRAM interface. V9938 bitmap
+> rendering and commands, cartridge mappers, and storage devices are still to
+> come.
 
 ## Current implementation
 
@@ -51,6 +54,10 @@ available on as many SDL3-supported systems as practical.
 - TMS9918/TMS9929 VRAM data/control ports, register and status behaviour,
   vertical interrupts, and MSX1 Text, Graphics I, Graphics II, and Multicolour
   rendering.
+- V9938 control registers and masks, status-register selection, default and
+  programmable palettes, direct and indirect register writes, and a 128 KB
+  VRAM data path with R14 paging, extended-mode carry, and Graphics 6/7
+  planar CPU addressing.
 - TMS9918/TMS9929 sprite-mode-1 rendering with 8x8 and 16x16 patterns,
   magnification, early clock, priority, transparency, Y wrapping, the
   four-sprites-per-line limit, fifth-sprite index, and collision status.
@@ -150,6 +157,10 @@ The local `ROMS/` directory is ignored by Git and is available as a convenient
 place for user-supplied firmware, cartridges, and diagnostic images. Its
 contents must never be added to the repository.
 
+The local `DOS/` directory is the staging area for guest DOS files. Only the
+unmodified `DOS/NEXTOR.SYS` supplied for the project is tracked; every other
+file placed there, including `COMMAND2.COM`, is ignored by Git.
+
 Match the video standard to the software when possible. European MSX software
 normally expects PAL at 50 Hz, while Japanese software normally expects NTSC
 at 60 Hz. Select it with `--region pal|ntsc` or with **Video standard** in the
@@ -168,9 +179,11 @@ slot and mapper foundation:
   --disk-rom ROMS/nms8250_disk.rom
 ```
 
-These options reproduce the firmware placement of the real machine. A visible
-MSX2 boot is not expected yet: V9938 registers and video modes, the WD2793
-controller behind the disk ROM, and the RTC remain to be implemented.
+These options reproduce the firmware placement of the real machine. The
+firmware now reaches the expanded-slot/mapper checkpoint and programs V9938
+R9 for PAL timing without corrupting R1, but a visible MSX2 boot is not
+expected yet. V9938 bitmap rendering and commands, the WD2793 controller
+behind the disk ROM, and the RTC remain to be implemented.
 The corresponding optional firmware checkpoint is:
 
 ```sh
@@ -253,7 +266,7 @@ currently supported settings.
 | CPU | Z80 instruction set, interrupts, and cycle-aware execution (initial core integrated) |
 | Machine architecture | Primary slots and linear ROM/RAM devices implemented; NMS 8250 secondary slots and internal 128 KB mapper implemented |
 | MSX video | TMS9918-family pattern modes, sprite mode 1, status flags, limits, collisions, and interrupts implemented; cycle-level timing refinement planned |
-| MSX2 video | V9938 display modes, palettes, sprites, scrolling, expanded VRAM, and interrupts |
+| MSX2 video | CPU-visible V9938 registers, statuses, palette, and 128 KB VRAM implemented; bitmap modes, sprite mode 2, scrolling, commands, and detailed interrupts planned |
 | Audio | AY-3-8910/YM2149 PSG tone, noise, envelopes, DAC output, and SDL3 playback implemented; SCC and MSX-MUSIC planned as compatibility extensions |
 | Cartridges | Plain ROMs and common ASCII, Konami, and Konami SCC mapper families, with mapper override controls |
 | Cassette | CAS images and the standard BIOS cassette path |
@@ -293,10 +306,11 @@ does not silently break another.
 3. Refine TMS9918/TMS9929 timing, add common cartridge mappers, cassette
    support, joysticks, alternate national keyboard layouts, a supplied
    BIOS/BASIC checkpoint, and an MSX1 compatibility suite.
-4. Implement the V9938, MSX2 secondary slots, multiple memory mappers, RTC,
-   and the Philips NMS 8250 reference profile; then boot its user-supplied
-   Nextor 2.1.1 Sunrise IDE ROM and the same raw hard-disk image used by
-   `../geobench/tools/run_msx.sh`.
+4. Complete the V9938 bitmap/display engine and commands, RTC, multiple
+   memory mappers, and the Philips NMS 8250 reference profile. The V9938
+   CPU interface, MSX2 secondary slots, and internal mapper are in place.
+   Then boot its user-supplied Nextor 2.1.1 Sunrise IDE ROM and the same raw
+   hard-disk image used by `../geobench/tools/run_msx.sh`.
 5. Add commonly required sound and cartridge extensions, improve timing
    accuracy, and expand regression coverage.
 6. Package tested releases for the host platforms supported by 1984 and 1985.
