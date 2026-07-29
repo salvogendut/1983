@@ -323,6 +323,7 @@ void msx_reset(MsxMachine *msx) {
     memset(msx->mapper_segment, 0, sizeof(msx->mapper_segment));
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_reset(&msx->cartridges[i]);
+    sunrise_reset(&msx->sunrise);
     msx->paused = false;
     msx->caps_led = false;
     msx->kana_led = false;
@@ -386,6 +387,8 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     msx->ram_capacity = sizeof(msx->internal_ram);
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_init(&msx->cartridges[i]);
+    sunrise_init(&msx->sunrise);
+    msx->sunrise_slot = -1;
     z80_init(&msx->cpu);
     vdp_init(&msx->vdp);
     psg_init(&msx->psg, PSG_VARIANT_AY8910);
@@ -405,6 +408,8 @@ void msx_destroy(MsxMachine *msx) {
         return;
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_destroy(&msx->cartridges[i]);
+    sunrise_destroy(&msx->sunrise);
+    msx->sunrise_slot = -1;
     if (msx->ram && msx->ram != msx->internal_ram)
         free(msx->ram);
     msx->ram = NULL;
@@ -524,9 +529,13 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
                 return msx->logo[address - 0x8000];
             break;
         case 1:
-            return msx_cartridge_read(&msx->cartridges[0], address);
-        case 2:
-            return msx_cartridge_read(&msx->cartridges[1], address);
+        case 2: {
+            unsigned slot = primary - 1;
+
+            if (msx->sunrise_slot == (int)slot)
+                return sunrise_read(&msx->sunrise, address);
+            return msx_cartridge_read(&msx->cartridges[slot], address);
+        }
         case 3: {
             unsigned secondary;
 
@@ -563,8 +572,13 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
         return;
     }
     if (primary == 1 || primary == 2) {
-        msx_cartridge_write(&msx->cartridges[primary - 1],
-                            address, value);
+        unsigned slot = primary - 1;
+
+        if (msx->sunrise_slot == (int)slot)
+            sunrise_write(&msx->sunrise, address, value);
+        else
+            msx_cartridge_write(&msx->cartridges[slot],
+                                address, value);
         return;
     }
     if (primary != 3)
@@ -850,6 +864,70 @@ int msx_load_cartridge_slot(MsxMachine *msx, unsigned slot,
         msx_install_cartridge_slot(msx, slot, data, size, mapper);
     free(data);
     return result;
+}
+
+int msx_install_sunrise_ide(MsxMachine *msx, unsigned slot,
+                            const u8 *data, size_t size) {
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        sunrise_install_rom(&msx->sunrise, data, size) != 0)
+        return -1;
+    msx_cartridge_eject(&msx->cartridges[slot]);
+    msx->sunrise_slot = (int)slot;
+    msx_reset(msx);
+    return 0;
+}
+
+int msx_load_sunrise_ide(MsxMachine *msx, unsigned slot,
+                         const char *path) {
+    u8 *data;
+    size_t size;
+    int result;
+
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        read_rom_file(path, MSX_SUNRISE_ROM_SIZE, &data, &size) != 0)
+        return -1;
+    result = msx_install_sunrise_ide(msx, slot, data, size);
+    free(data);
+    return result;
+}
+
+void msx_eject_sunrise_ide(MsxMachine *msx) {
+    if (!msx)
+        return;
+    sunrise_eject_rom(&msx->sunrise);
+    msx->sunrise_slot = -1;
+    msx_reset(msx);
+}
+
+bool msx_sunrise_connected(const MsxMachine *msx) {
+    return msx && msx->sunrise_slot >= 0 &&
+           msx->sunrise_slot < (int)MSX_CARTRIDGE_SLOTS &&
+           msx->sunrise.rom_loaded;
+}
+
+int msx_sunrise_slot(const MsxMachine *msx) {
+    return msx_sunrise_connected(msx) ? msx->sunrise_slot : -1;
+}
+
+int msx_mount_sunrise_disk(MsxMachine *msx, const char *path) {
+    if (!msx_sunrise_connected(msx))
+        return -1;
+    return sunrise_mount_disk(&msx->sunrise, path);
+}
+
+void msx_eject_sunrise_disk(MsxMachine *msx) {
+    if (msx)
+        sunrise_eject_disk(&msx->sunrise);
+}
+
+bool msx_sunrise_disk_mounted(const MsxMachine *msx) {
+    return msx_sunrise_connected(msx) &&
+           sunrise_disk_mounted(&msx->sunrise);
+}
+
+bool msx_sunrise_take_activity(MsxMachine *msx) {
+    return msx_sunrise_connected(msx) &&
+           sunrise_take_activity(&msx->sunrise);
 }
 
 int msx_set_cartridge_mapper(MsxMachine *msx, unsigned slot,

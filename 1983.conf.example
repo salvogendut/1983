@@ -34,12 +34,16 @@ cartridge1 =
 cartridge1_mapper = auto
 cartridge2 =
 cartridge2_mapper = auto
+# Raw, 512-byte-sector image; currently mounted read-only.
+ide_image =
 last_media_dir =
 
 [extensions]
 extra_hardware = false
 second_drive = false
 sunrise_ide = false
+# Exact 128 KiB Sunrise IDE/Nextor kernel ROM.
+sunrise_rom =
 scc = false
 msx_music = false
 kanji_rom = false

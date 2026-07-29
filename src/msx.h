@@ -6,6 +6,7 @@
 #include "cartridge.h"
 #include "psg.h"
 #include "rtc.h"
+#include "sunrise.h"
 #include "types.h"
 #include "vdp.h"
 #include "z80.h"
@@ -93,6 +94,8 @@ typedef struct {
     size_t ram_capacity;
     u8 internal_ram[MSX_RAM_INTERNAL_SIZE];
     MsxCartridge cartridges[MSX_CARTRIDGE_SLOTS];
+    MsxSunriseIde sunrise;
+    int sunrise_slot;
     bool bios_loaded;
     bool logo_loaded;
     bool subrom_loaded;
@@ -165,6 +168,17 @@ int msx_set_cartridge_mapper(MsxMachine *msx, unsigned slot,
                              MsxCartridgeMapper mapper);
 void msx_eject_cartridge(MsxMachine *msx, unsigned slot);
 const MsxCartridge *msx_get_cartridge(const MsxMachine *msx, unsigned slot);
+int msx_install_sunrise_ide(MsxMachine *msx, unsigned slot,
+                            const u8 *data, size_t size);
+int msx_load_sunrise_ide(MsxMachine *msx, unsigned slot,
+                         const char *path);
+void msx_eject_sunrise_ide(MsxMachine *msx);
+bool msx_sunrise_connected(const MsxMachine *msx);
+int msx_sunrise_slot(const MsxMachine *msx);
+int msx_mount_sunrise_disk(MsxMachine *msx, const char *path);
+void msx_eject_sunrise_disk(MsxMachine *msx);
+bool msx_sunrise_disk_mounted(const MsxMachine *msx);
+bool msx_sunrise_take_activity(MsxMachine *msx);
 int msx_load_firmware_set(MsxMachine *msx, const char *bios_path,
                           const char *logo_path,
                           const char *subrom_path,

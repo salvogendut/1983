@@ -28,6 +28,9 @@ typedef struct {
     const char *logo_path;
     const char *subrom_path;
     const char *disk_rom_path;
+    const char *sunrise_rom_path;
+    const char *ide_image_path;
+    const char *screenshot_path;
     const char *cartridge_path[MSX_CARTRIDGE_SLOTS];
     MsxCartridgeMapper cartridge_mapper[MSX_CARTRIDGE_SLOTS];
     bool cartridge_mapper_set[MSX_CARTRIDGE_SLOTS];
@@ -50,6 +53,9 @@ static const char *usage =
     "  --logo PATH         load a 16 KB C-BIOS logo ROM in slot 0/page 2\n"
     "  --subrom PATH       load a 16 KB MSX2 Sub-ROM in slot 3-0\n"
     "  --disk-rom PATH     load a 16 KB disk ROM in slot 3-3/page 1\n"
+    "  --sunrise-rom PATH  load a 128 KB Sunrise IDE/Nextor kernel ROM\n"
+    "  --ide PATH          mount a raw IDE disk image read-only\n"
+    "  --screenshot PATH   save the final rendered frame as a PPM file\n"
     "  --cart PATH         alias for --cart1\n"
     "  --cart1 PATH        load a cartridge ROM in primary slot 1\n"
     "  --cart2 PATH        load a cartridge ROM in primary slot 2\n"
@@ -136,6 +142,9 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--logo") == 0 ||
              strcmp(argument, "--subrom") == 0 ||
              strcmp(argument, "--disk-rom") == 0 ||
+             strcmp(argument, "--sunrise-rom") == 0 ||
+             strcmp(argument, "--ide") == 0 ||
+             strcmp(argument, "--screenshot") == 0 ||
              strcmp(argument, "--cart") == 0 ||
              strcmp(argument, "--cart1") == 0 ||
              strcmp(argument, "--cart2") == 0 ||
@@ -160,6 +169,12 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->subrom_path = argv[++i];
         } else if (strcmp(argument, "--disk-rom") == 0) {
             cli->disk_rom_path = argv[++i];
+        } else if (strcmp(argument, "--sunrise-rom") == 0) {
+            cli->sunrise_rom_path = argv[++i];
+        } else if (strcmp(argument, "--ide") == 0) {
+            cli->ide_image_path = argv[++i];
+        } else if (strcmp(argument, "--screenshot") == 0) {
+            cli->screenshot_path = argv[++i];
         } else if (strcmp(argument, "--cart") == 0 ||
                    strcmp(argument, "--cart1") == 0) {
             cli->cartridge_path[0] = argv[++i];
@@ -363,6 +378,20 @@ int main(int argc, char **argv) {
     if (cli.disk_rom_path)
         snprintf(config.disk_rom_path, sizeof(config.disk_rom_path),
                  "%s", cli.disk_rom_path);
+    if (cli.sunrise_rom_path) {
+        snprintf(config.sunrise_rom_path,
+                 sizeof(config.sunrise_rom_path),
+                 "%s", cli.sunrise_rom_path);
+        config.extra_hardware = true;
+        config.sunrise_ide = true;
+    }
+    if (cli.ide_image_path) {
+        snprintf(config.ide_image_path,
+                 sizeof(config.ide_image_path),
+                 "%s", cli.ide_image_path);
+        config.extra_hardware = true;
+        config.sunrise_ide = true;
+    }
     for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
         if (cli.cartridge_path[slot])
             snprintf(config.cartridge_path[slot],
@@ -393,6 +422,44 @@ int main(int argc, char **argv) {
             cli.model_name) {
             msx_destroy(&msx);
             return 1;
+        }
+    }
+    if (config.sunrise_ide) {
+        int sunrise_slot = -1;
+
+        for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+            const char *owner =
+                config_cartridge_slot_owner(&config, slot);
+
+            if (owner && strcmp(owner, "Sunrise IDE") == 0) {
+                sunrise_slot = (int)slot;
+                break;
+            }
+        }
+        if (sunrise_slot < 0 || !config.sunrise_rom_path[0] ||
+            msx_load_sunrise_ide(
+                &msx, (unsigned)sunrise_slot,
+                config.sunrise_rom_path) != 0) {
+            fprintf(stderr,
+                    "cannot load 128 KB Sunrise IDE ROM: %s\n",
+                    config.sunrise_rom_path[0]
+                    ? config.sunrise_rom_path : "[not configured]");
+            if (cli.sunrise_rom_path || cli.ide_image_path) {
+                msx_destroy(&msx);
+                return 1;
+            }
+            config.sunrise_ide = false;
+            config_normalize(&config);
+        } else if (config.ide_image_path[0] &&
+                   msx_mount_sunrise_disk(
+                       &msx, config.ide_image_path) != 0) {
+            fprintf(stderr,
+                    "cannot mount raw IDE image read-only: %s\n",
+                    config.ide_image_path);
+            if (cli.ide_image_path) {
+                msx_destroy(&msx);
+                return 1;
+            }
         }
     }
     for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
@@ -474,6 +541,11 @@ int main(int argc, char **argv) {
                ? ", cartridge 2 loaded" : "");
     else
         printf("No BIOS loaded; use --bios PATH (and --logo PATH for C-BIOS)\n");
+    if (msx_sunrise_connected(&msx))
+        printf("Sunrise IDE loaded in cartridge slot %d%s\n",
+               msx_sunrise_slot(&msx) + 1,
+               msx_sunrise_disk_mounted(&msx)
+               ? ", raw disk mounted read-only" : ", no disk mounted");
 
     next_frame_ns = SDL_GetTicksNS();
     paced_frame_hz = msx.frame_hz;
@@ -602,6 +674,13 @@ int main(int argc, char **argv) {
                             msx.audio_sample_count);
         leds_set_state(LED_CAPS, msx.caps_led);
         leds_set_state(LED_KANA, msx.kana_led);
+        if (msx_sunrise_take_activity(&msx)) {
+            int slot = msx_sunrise_slot(&msx);
+
+            leds_ping(LED_IDE);
+            if (slot >= 0)
+                leds_ping_cartridge_activity((unsigned)slot);
+        }
         notify_tick(1000 / msx.frame_hz);
         display_draw(&display, &msx);
         draw_debug(&config, &msx, &display);
@@ -643,6 +722,10 @@ int main(int argc, char **argv) {
         ++host_frame;
     }
 
+    if (cli.screenshot_path &&
+        display_save_ppm(&display, cli.screenshot_path) != 0)
+        fprintf(stderr, "cannot save final screenshot: %s\n",
+                cli.screenshot_path);
     config.fullscreen = display.fullscreen;
     config.scale = display.scale;
     config_save(&config);

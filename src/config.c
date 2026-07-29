@@ -309,6 +309,12 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "disk_rom") == 0)
             snprintf(config->disk_rom_path,
                      sizeof(config->disk_rom_path), "%s", value);
+        else if (strcmp(key, "sunrise_rom") == 0)
+            snprintf(config->sunrise_rom_path,
+                     sizeof(config->sunrise_rom_path), "%s", value);
+        else if (strcmp(key, "ide_image") == 0)
+            snprintf(config->ide_image_path,
+                     sizeof(config->ide_image_path), "%s", value);
         else if (strcmp(key, "cartridge1") == 0)
             snprintf(config->cartridge_path[0],
                      sizeof(config->cartridge_path[0]), "%s", value);
@@ -382,12 +388,14 @@ int config_save(const Config *config) {
     fprintf(file, "cartridge2 = %s\n", config->cartridge_path[1]);
     fprintf(file, "cartridge2_mapper = %s\n",
             msx_cartridge_mapper_name(config->cartridge_mapper[1]));
+    fprintf(file, "ide_image = %s\n", config->ide_image_path);
     fprintf(file, "last_media_dir = %s\n\n", config->last_media_dir);
     fprintf(file, "[extensions]\n");
     fprintf(file, "extra_hardware = %s\n",
             bool_name(config->extra_hardware));
     fprintf(file, "second_drive = %s\n", bool_name(config->second_drive));
     fprintf(file, "sunrise_ide = %s\n", bool_name(config->sunrise_ide));
+    fprintf(file, "sunrise_rom = %s\n", config->sunrise_rom_path);
     fprintf(file, "scc = %s\n", bool_name(config->scc));
     fprintf(file, "msx_music = %s\n", bool_name(config->msx_music));
     fprintf(file, "kanji_rom = %s\n\n", bool_name(config->kanji_rom));

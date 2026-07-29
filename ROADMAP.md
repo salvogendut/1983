@@ -28,7 +28,7 @@ the 1984 and 1985 sibling emulators.
 | Audio | AY/YM PSG and SDL3 output are implemented; SCC and MSX-MUSIC are planned |
 | Cartridges | Dual Linear, ASCII8/16, Konami, and Konami SCC devices with persistent mapper controls are implemented |
 | Cassette | CAS images and the standard BIOS cassette path are planned |
-| Disk | DSK images, WD2793 behavior, Sunrise ATA-IDE, guest writes, and multiple drives are planned |
+| Disk | Sunrise ATA-IDE, read-only raw images, Nextor boot, and activity LEDs are implemented; DSK images, WD2793, guest writes, and multiple drives are planned |
 | Input | International keyboard, dual PSG joystick ports, SDL3 gamepad hotplug/routing, and persistent Joy Port selections are implemented; mouse protocols, alternate matrices, and clipboard paste are planned |
 | MSX2 hardware | Internal mapper, RTC, and editable firmware catalogue are implemented; persistent CMOS and more extensions are planned |
 | Tools | Screenshots and headless automation exist; snapshots, debugger, disassembler, and deterministic capture are planned |
@@ -48,6 +48,8 @@ the 1984 and 1985 sibling emulators.
    Advanced machine model editor.
 7. Dual active-low MSX joystick ports with SDL3 gamepad input and live
    Main Input routing.
+8. Sunrise IDE cartridge and read-only ATA backend, including an official
+   Nextor/GeoBench boot checkpoint and GUI media workflow.
 
 ## Near-term targets
 
@@ -70,9 +72,14 @@ The first mass-storage target matches `../geobench/tools/run_msx.sh`:
 - a raw FAT16 hard-disk image containing `NEXTOR.SYS`, `COMMAND2.COM`, and
   GeoBench.
 
-The external mapper remains a distinct device rather than being folded into
-a fictitious 640 KiB internal mapper. The Sunrise wrapper should remain
-separate from a reusable ATA task-file backend.
+The Sunrise cartridge and reusable ATA task-file backend are implemented.
+With the NMS 8250 internal disk ROM omitted, the official Nextor 2.1.1
+Sunrise kernel boots the 32 MiB GeoBench image to its desktop on the stock
+128 KiB internal mapper. Images are currently read-only.
+
+The external mapper remains a distinct future device rather than being
+folded into a fictitious 640 KiB internal mapper. Writable ATA media, the
+internal WD2793 path, and floppy images are the next storage layers.
 
 The staged storage checkpoints are defined in
 [`BOOT_TARGETS.md`](BOOT_TARGETS.md).

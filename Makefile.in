@@ -93,7 +93,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = 1983$(EXEEXT)
-check_PROGRAMS = test-cartridge$(EXEEXT) test-config$(EXEEXT) \
+check_PROGRAMS = test-cartridge$(EXEEXT) test-ata$(EXEEXT) \
+	test-sunrise$(EXEEXT) test-config$(EXEEXT) \
 	test-models$(EXEEXT) test-msx$(EXEEXT) test-gamepad$(EXEEXT) \
 	test-kbd$(EXEEXT) test-overlay$(EXEEXT) test-vdp$(EXEEXT) \
 	test-psg$(EXEEXT) test-rtc$(EXEEXT)
@@ -122,18 +123,25 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(desktopdir)" \
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_1983_OBJECTS = src/1983-config.$(OBJEXT) \
-	src/1983-cartridge.$(OBJEXT) src/1983-audio.$(OBJEXT) \
-	src/1983-display.$(OBJEXT) src/1983-gamepad.$(OBJEXT) \
-	src/1983-kbd.$(OBJEXT) src/1983-leds.$(OBJEXT) \
-	src/1983-main.$(OBJEXT) src/1983-models.$(OBJEXT) \
-	src/1983-msx.$(OBJEXT) src/1983-notify.$(OBJEXT) \
-	src/1983-overlay.$(OBJEXT) src/1983-psg.$(OBJEXT) \
-	src/1983-rtc.$(OBJEXT) src/1983-ui.$(OBJEXT) \
+	src/1983-cartridge.$(OBJEXT) src/1983-ata.$(OBJEXT) \
+	src/1983-audio.$(OBJEXT) src/1983-display.$(OBJEXT) \
+	src/1983-gamepad.$(OBJEXT) src/1983-kbd.$(OBJEXT) \
+	src/1983-leds.$(OBJEXT) src/1983-main.$(OBJEXT) \
+	src/1983-models.$(OBJEXT) src/1983-msx.$(OBJEXT) \
+	src/1983-notify.$(OBJEXT) src/1983-overlay.$(OBJEXT) \
+	src/1983-psg.$(OBJEXT) src/1983-rtc.$(OBJEXT) \
+	src/1983-sunrise.$(OBJEXT) src/1983-ui.$(OBJEXT) \
 	src/1983-vdp.$(OBJEXT) src/1983-z80.$(OBJEXT)
 1983_OBJECTS = $(am_1983_OBJECTS)
 am__DEPENDENCIES_1 =
 1983_LINK = $(CCLD) $(1983_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
+am_test_ata_OBJECTS = tests/test_ata-test_ata.$(OBJEXT) \
+	src/test_ata-ata.$(OBJEXT)
+test_ata_OBJECTS = $(am_test_ata_OBJECTS)
+test_ata_LDADD = $(LDADD)
+test_ata_LINK = $(CCLD) $(test_ata_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_test_cartridge_OBJECTS =  \
 	tests/test_cartridge-test_cartridge.$(OBJEXT) \
 	src/test_cartridge-cartridge.$(OBJEXT)
@@ -144,9 +152,10 @@ test_cartridge_LINK = $(CCLD) $(test_cartridge_CFLAGS) $(CFLAGS) \
 am_test_config_OBJECTS = tests/test_config-test_config.$(OBJEXT) \
 	src/test_config-config.$(OBJEXT) \
 	src/test_config-cartridge.$(OBJEXT) \
-	src/test_config-msx.$(OBJEXT) src/test_config-psg.$(OBJEXT) \
-	src/test_config-rtc.$(OBJEXT) src/test_config-vdp.$(OBJEXT) \
-	src/test_config-z80.$(OBJEXT)
+	src/test_config-ata.$(OBJEXT) src/test_config-msx.$(OBJEXT) \
+	src/test_config-psg.$(OBJEXT) src/test_config-rtc.$(OBJEXT) \
+	src/test_config-sunrise.$(OBJEXT) \
+	src/test_config-vdp.$(OBJEXT) src/test_config-z80.$(OBJEXT)
 test_config_OBJECTS = $(am_test_config_OBJECTS)
 test_config_LDADD = $(LDADD)
 test_config_LINK = $(CCLD) $(test_config_CFLAGS) $(CFLAGS) \
@@ -158,9 +167,10 @@ test_gamepad_DEPENDENCIES = $(am__DEPENDENCIES_1)
 test_gamepad_LINK = $(CCLD) $(test_gamepad_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_kbd_OBJECTS = tests/test_kbd-test_kbd.$(OBJEXT) \
-	src/test_kbd-cartridge.$(OBJEXT) src/test_kbd-kbd.$(OBJEXT) \
-	src/test_kbd-msx.$(OBJEXT) src/test_kbd-psg.$(OBJEXT) \
-	src/test_kbd-rtc.$(OBJEXT) src/test_kbd-vdp.$(OBJEXT) \
+	src/test_kbd-cartridge.$(OBJEXT) src/test_kbd-ata.$(OBJEXT) \
+	src/test_kbd-kbd.$(OBJEXT) src/test_kbd-msx.$(OBJEXT) \
+	src/test_kbd-psg.$(OBJEXT) src/test_kbd-rtc.$(OBJEXT) \
+	src/test_kbd-sunrise.$(OBJEXT) src/test_kbd-vdp.$(OBJEXT) \
 	src/test_kbd-z80.$(OBJEXT)
 test_kbd_OBJECTS = $(am_test_kbd_OBJECTS)
 test_kbd_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -169,16 +179,18 @@ test_kbd_LINK = $(CCLD) $(test_kbd_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 am_test_models_OBJECTS = tests/test_models-test_models.$(OBJEXT) \
 	src/test_models-models.$(OBJEXT) \
 	src/test_models-cartridge.$(OBJEXT) \
-	src/test_models-msx.$(OBJEXT) src/test_models-psg.$(OBJEXT) \
-	src/test_models-rtc.$(OBJEXT) src/test_models-vdp.$(OBJEXT) \
-	src/test_models-z80.$(OBJEXT)
+	src/test_models-ata.$(OBJEXT) src/test_models-msx.$(OBJEXT) \
+	src/test_models-psg.$(OBJEXT) src/test_models-rtc.$(OBJEXT) \
+	src/test_models-sunrise.$(OBJEXT) \
+	src/test_models-vdp.$(OBJEXT) src/test_models-z80.$(OBJEXT)
 test_models_OBJECTS = $(am_test_models_OBJECTS)
 test_models_LDADD = $(LDADD)
 test_models_LINK = $(CCLD) $(test_models_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_msx_OBJECTS = tests/test_msx-test_msx.$(OBJEXT) \
-	src/test_msx-cartridge.$(OBJEXT) src/test_msx-msx.$(OBJEXT) \
-	src/test_msx-psg.$(OBJEXT) src/test_msx-rtc.$(OBJEXT) \
+	src/test_msx-cartridge.$(OBJEXT) src/test_msx-ata.$(OBJEXT) \
+	src/test_msx-msx.$(OBJEXT) src/test_msx-psg.$(OBJEXT) \
+	src/test_msx-rtc.$(OBJEXT) src/test_msx-sunrise.$(OBJEXT) \
 	src/test_msx-vdp.$(OBJEXT) src/test_msx-z80.$(OBJEXT)
 test_msx_OBJECTS = $(am_test_msx_OBJECTS)
 test_msx_LDADD = $(LDADD)
@@ -187,6 +199,7 @@ test_msx_LINK = $(CCLD) $(test_msx_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 am_test_overlay_OBJECTS = tests/test_overlay-test_overlay.$(OBJEXT) \
 	src/test_overlay-config.$(OBJEXT) \
 	src/test_overlay-cartridge.$(OBJEXT) \
+	src/test_overlay-ata.$(OBJEXT) \
 	src/test_overlay-display.$(OBJEXT) \
 	src/test_overlay-leds.$(OBJEXT) \
 	src/test_overlay-models.$(OBJEXT) \
@@ -194,6 +207,7 @@ am_test_overlay_OBJECTS = tests/test_overlay-test_overlay.$(OBJEXT) \
 	src/test_overlay-notify.$(OBJEXT) \
 	src/test_overlay-overlay.$(OBJEXT) \
 	src/test_overlay-psg.$(OBJEXT) src/test_overlay-rtc.$(OBJEXT) \
+	src/test_overlay-sunrise.$(OBJEXT) \
 	src/test_overlay-ui.$(OBJEXT) src/test_overlay-vdp.$(OBJEXT) \
 	src/test_overlay-z80.$(OBJEXT)
 test_overlay_OBJECTS = $(am_test_overlay_OBJECTS)
@@ -212,6 +226,13 @@ test_rtc_OBJECTS = $(am_test_rtc_OBJECTS)
 test_rtc_LDADD = $(LDADD)
 test_rtc_LINK = $(CCLD) $(test_rtc_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_test_sunrise_OBJECTS = tests/test_sunrise-test_sunrise.$(OBJEXT) \
+	src/test_sunrise-ata.$(OBJEXT) \
+	src/test_sunrise-sunrise.$(OBJEXT)
+test_sunrise_OBJECTS = $(am_test_sunrise_OBJECTS)
+test_sunrise_LDADD = $(LDADD)
+test_sunrise_LINK = $(CCLD) $(test_sunrise_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_vdp_OBJECTS = tests/test_vdp-test_vdp.$(OBJEXT) \
 	src/test_vdp-vdp.$(OBJEXT)
 test_vdp_OBJECTS = $(am_test_vdp_OBJECTS)
@@ -233,39 +254,49 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = src/$(DEPDIR)/1983-audio.Po \
-	src/$(DEPDIR)/1983-cartridge.Po src/$(DEPDIR)/1983-config.Po \
-	src/$(DEPDIR)/1983-display.Po src/$(DEPDIR)/1983-gamepad.Po \
-	src/$(DEPDIR)/1983-kbd.Po src/$(DEPDIR)/1983-leds.Po \
-	src/$(DEPDIR)/1983-main.Po src/$(DEPDIR)/1983-models.Po \
-	src/$(DEPDIR)/1983-msx.Po src/$(DEPDIR)/1983-notify.Po \
-	src/$(DEPDIR)/1983-overlay.Po src/$(DEPDIR)/1983-psg.Po \
-	src/$(DEPDIR)/1983-rtc.Po src/$(DEPDIR)/1983-ui.Po \
+am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
+	src/$(DEPDIR)/1983-audio.Po src/$(DEPDIR)/1983-cartridge.Po \
+	src/$(DEPDIR)/1983-config.Po src/$(DEPDIR)/1983-display.Po \
+	src/$(DEPDIR)/1983-gamepad.Po src/$(DEPDIR)/1983-kbd.Po \
+	src/$(DEPDIR)/1983-leds.Po src/$(DEPDIR)/1983-main.Po \
+	src/$(DEPDIR)/1983-models.Po src/$(DEPDIR)/1983-msx.Po \
+	src/$(DEPDIR)/1983-notify.Po src/$(DEPDIR)/1983-overlay.Po \
+	src/$(DEPDIR)/1983-psg.Po src/$(DEPDIR)/1983-rtc.Po \
+	src/$(DEPDIR)/1983-sunrise.Po src/$(DEPDIR)/1983-ui.Po \
 	src/$(DEPDIR)/1983-vdp.Po src/$(DEPDIR)/1983-z80.Po \
+	src/$(DEPDIR)/test_ata-ata.Po \
 	src/$(DEPDIR)/test_cartridge-cartridge.Po \
+	src/$(DEPDIR)/test_config-ata.Po \
 	src/$(DEPDIR)/test_config-cartridge.Po \
 	src/$(DEPDIR)/test_config-config.Po \
 	src/$(DEPDIR)/test_config-msx.Po \
 	src/$(DEPDIR)/test_config-psg.Po \
 	src/$(DEPDIR)/test_config-rtc.Po \
+	src/$(DEPDIR)/test_config-sunrise.Po \
 	src/$(DEPDIR)/test_config-vdp.Po \
 	src/$(DEPDIR)/test_config-z80.Po \
 	src/$(DEPDIR)/test_gamepad-gamepad.Po \
+	src/$(DEPDIR)/test_kbd-ata.Po \
 	src/$(DEPDIR)/test_kbd-cartridge.Po \
 	src/$(DEPDIR)/test_kbd-kbd.Po src/$(DEPDIR)/test_kbd-msx.Po \
 	src/$(DEPDIR)/test_kbd-psg.Po src/$(DEPDIR)/test_kbd-rtc.Po \
+	src/$(DEPDIR)/test_kbd-sunrise.Po \
 	src/$(DEPDIR)/test_kbd-vdp.Po src/$(DEPDIR)/test_kbd-z80.Po \
+	src/$(DEPDIR)/test_models-ata.Po \
 	src/$(DEPDIR)/test_models-cartridge.Po \
 	src/$(DEPDIR)/test_models-models.Po \
 	src/$(DEPDIR)/test_models-msx.Po \
 	src/$(DEPDIR)/test_models-psg.Po \
 	src/$(DEPDIR)/test_models-rtc.Po \
+	src/$(DEPDIR)/test_models-sunrise.Po \
 	src/$(DEPDIR)/test_models-vdp.Po \
-	src/$(DEPDIR)/test_models-z80.Po \
+	src/$(DEPDIR)/test_models-z80.Po src/$(DEPDIR)/test_msx-ata.Po \
 	src/$(DEPDIR)/test_msx-cartridge.Po \
 	src/$(DEPDIR)/test_msx-msx.Po src/$(DEPDIR)/test_msx-psg.Po \
-	src/$(DEPDIR)/test_msx-rtc.Po src/$(DEPDIR)/test_msx-vdp.Po \
-	src/$(DEPDIR)/test_msx-z80.Po \
+	src/$(DEPDIR)/test_msx-rtc.Po \
+	src/$(DEPDIR)/test_msx-sunrise.Po \
+	src/$(DEPDIR)/test_msx-vdp.Po src/$(DEPDIR)/test_msx-z80.Po \
+	src/$(DEPDIR)/test_overlay-ata.Po \
 	src/$(DEPDIR)/test_overlay-cartridge.Po \
 	src/$(DEPDIR)/test_overlay-config.Po \
 	src/$(DEPDIR)/test_overlay-display.Po \
@@ -276,11 +307,15 @@ am__depfiles_remade = src/$(DEPDIR)/1983-audio.Po \
 	src/$(DEPDIR)/test_overlay-overlay.Po \
 	src/$(DEPDIR)/test_overlay-psg.Po \
 	src/$(DEPDIR)/test_overlay-rtc.Po \
+	src/$(DEPDIR)/test_overlay-sunrise.Po \
 	src/$(DEPDIR)/test_overlay-ui.Po \
 	src/$(DEPDIR)/test_overlay-vdp.Po \
 	src/$(DEPDIR)/test_overlay-z80.Po \
 	src/$(DEPDIR)/test_psg-psg.Po src/$(DEPDIR)/test_rtc-rtc.Po \
+	src/$(DEPDIR)/test_sunrise-ata.Po \
+	src/$(DEPDIR)/test_sunrise-sunrise.Po \
 	src/$(DEPDIR)/test_vdp-vdp.Po \
+	tests/$(DEPDIR)/test_ata-test_ata.Po \
 	tests/$(DEPDIR)/test_cartridge-test_cartridge.Po \
 	tests/$(DEPDIR)/test_config-test_config.Po \
 	tests/$(DEPDIR)/test_gamepad-test_gamepad.Po \
@@ -290,6 +325,7 @@ am__depfiles_remade = src/$(DEPDIR)/1983-audio.Po \
 	tests/$(DEPDIR)/test_overlay-test_overlay.Po \
 	tests/$(DEPDIR)/test_psg-test_psg.Po \
 	tests/$(DEPDIR)/test_rtc-test_rtc.Po \
+	tests/$(DEPDIR)/test_sunrise-test_sunrise.Po \
 	tests/$(DEPDIR)/test_vdp-test_vdp.Po
 am__mv = mv -f
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -308,16 +344,20 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 =
-SOURCES = $(1983_SOURCES) $(test_cartridge_SOURCES) \
-	$(test_config_SOURCES) $(test_gamepad_SOURCES) \
-	$(test_kbd_SOURCES) $(test_models_SOURCES) $(test_msx_SOURCES) \
+SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
+	$(test_cartridge_SOURCES) $(test_config_SOURCES) \
+	$(test_gamepad_SOURCES) $(test_kbd_SOURCES) \
+	$(test_models_SOURCES) $(test_msx_SOURCES) \
 	$(test_overlay_SOURCES) $(test_psg_SOURCES) \
-	$(test_rtc_SOURCES) $(test_vdp_SOURCES)
-DIST_SOURCES = $(1983_SOURCES) $(test_cartridge_SOURCES) \
-	$(test_config_SOURCES) $(test_gamepad_SOURCES) \
-	$(test_kbd_SOURCES) $(test_models_SOURCES) $(test_msx_SOURCES) \
+	$(test_rtc_SOURCES) $(test_sunrise_SOURCES) \
+	$(test_vdp_SOURCES)
+DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
+	$(test_cartridge_SOURCES) $(test_config_SOURCES) \
+	$(test_gamepad_SOURCES) $(test_kbd_SOURCES) \
+	$(test_models_SOURCES) $(test_msx_SOURCES) \
 	$(test_overlay_SOURCES) $(test_psg_SOURCES) \
-	$(test_rtc_SOURCES) $(test_vdp_SOURCES)
+	$(test_rtc_SOURCES) $(test_sunrise_SOURCES) \
+	$(test_vdp_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -696,6 +736,7 @@ top_srcdir = @top_srcdir@
 1983_SOURCES = \
 	src/config.c \
 	src/cartridge.c \
+	src/ata.c \
 	src/audio.c \
 	src/display.c \
 	src/gamepad.c \
@@ -708,6 +749,7 @@ top_srcdir = @top_srcdir@
 	src/overlay.c \
 	src/psg.c \
 	src/rtc.c \
+	src/sunrise.c \
 	src/ui.c \
 	src/vdp.c \
 	src/z80.c
@@ -715,6 +757,7 @@ top_srcdir = @top_srcdir@
 noinst_HEADERS = \
 	src/config.h \
 	src/cartridge.h \
+	src/ata.h \
 	src/audio.h \
 	src/display.h \
 	src/gamepad.h \
@@ -726,6 +769,7 @@ noinst_HEADERS = \
 	src/overlay.h \
 	src/psg.h \
 	src/rtc.h \
+	src/sunrise.h \
 	src/types.h \
 	src/ui.h \
 	src/vdp.h \
@@ -742,24 +786,30 @@ TESTS = $(check_PROGRAMS) tests/test-cli.sh
 test_cartridge_SOURCES = tests/test_cartridge.c src/cartridge.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
 test_cartridge_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
+test_ata_SOURCES = tests/test_ata.c src/ata.c
+test_ata_CPPFLAGS = -I$(top_srcdir)/src
+test_ata_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_sunrise_SOURCES = tests/test_sunrise.c src/ata.c src/sunrise.c
+test_sunrise_CPPFLAGS = -I$(top_srcdir)/src
+test_sunrise_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/ata.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
 test_config_CPPFLAGS = -I$(top_srcdir)/src
 test_config_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
+test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/ata.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
 test_models_CPPFLAGS = -I$(top_srcdir)/src
 test_models_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
+test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/ata.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_SOURCES = tests/test_gamepad.c src/gamepad.c
 test_gamepad_CPPFLAGS = -I$(top_srcdir)/src
 test_gamepad_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_LDADD = $(SDL3_LIBS)
-test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
+test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/ata.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
-test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/display.c src/leds.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/ui.c src/vdp.c src/z80.c
+test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/ata.c src/display.c src/leds.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/sunrise.c src/ui.c src/vdp.c src/z80.c
 test_overlay_CPPFLAGS = -I$(top_srcdir)/src
 test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_overlay_LDADD = $(SDL3_LIBS) -lm
@@ -899,6 +949,8 @@ src/1983-config.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-ata.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-audio.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-display.$(OBJEXT): src/$(am__dirstamp) \
@@ -923,6 +975,8 @@ src/1983-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-sunrise.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-ui.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-vdp.$(OBJEXT): src/$(am__dirstamp) \
@@ -939,6 +993,14 @@ tests/$(am__dirstamp):
 tests/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) tests/$(DEPDIR)
 	@: >>tests/$(DEPDIR)/$(am__dirstamp)
+tests/test_ata-test_ata.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_ata-ata.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-ata$(EXEEXT): $(test_ata_OBJECTS) $(test_ata_DEPENDENCIES) $(EXTRA_test_ata_DEPENDENCIES)
+	@rm -f test-ata$(EXEEXT)
+	$(AM_V_CCLD)$(test_ata_LINK) $(test_ata_OBJECTS) $(test_ata_LDADD) $(LIBS)
 tests/test_cartridge-test_cartridge.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_cartridge-cartridge.$(OBJEXT): src/$(am__dirstamp) \
@@ -953,11 +1015,15 @@ src/test_config-config.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-ata.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-rtc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-vdp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -979,6 +1045,8 @@ tests/test_kbd-test_kbd.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_kbd-ata.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-kbd.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-msx.$(OBJEXT): src/$(am__dirstamp) \
@@ -986,6 +1054,8 @@ src/test_kbd-msx.$(OBJEXT): src/$(am__dirstamp) \
 src/test_kbd-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-rtc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_kbd-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-vdp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1001,11 +1071,15 @@ src/test_models-models.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_models-ata.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-rtc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_models-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-vdp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1019,11 +1093,15 @@ tests/test_msx-test_msx.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_msx-ata.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-rtc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_msx-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-vdp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1038,6 +1116,8 @@ tests/test_overlay-test_overlay.$(OBJEXT): tests/$(am__dirstamp) \
 src/test_overlay-config.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-cartridge.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-ata.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-display.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1054,6 +1134,8 @@ src/test_overlay-overlay.$(OBJEXT): src/$(am__dirstamp) \
 src/test_overlay-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-rtc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-ui.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1081,6 +1163,16 @@ src/test_rtc-rtc.$(OBJEXT): src/$(am__dirstamp) \
 test-rtc$(EXEEXT): $(test_rtc_OBJECTS) $(test_rtc_DEPENDENCIES) $(EXTRA_test_rtc_DEPENDENCIES)
 	@rm -f test-rtc$(EXEEXT)
 	$(AM_V_CCLD)$(test_rtc_LINK) $(test_rtc_OBJECTS) $(test_rtc_LDADD) $(LIBS)
+tests/test_sunrise-test_sunrise.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_sunrise-ata.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_sunrise-sunrise.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-sunrise$(EXEEXT): $(test_sunrise_OBJECTS) $(test_sunrise_DEPENDENCIES) $(EXTRA_test_sunrise_DEPENDENCIES)
+	@rm -f test-sunrise$(EXEEXT)
+	$(AM_V_CCLD)$(test_sunrise_LINK) $(test_sunrise_OBJECTS) $(test_sunrise_LDADD) $(LIBS)
 tests/test_vdp-test_vdp.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_vdp-vdp.$(OBJEXT): src/$(am__dirstamp) \
@@ -1098,6 +1190,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-audio.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-config.Po@am__quote@ # am--include-marker
@@ -1112,38 +1205,49 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-overlay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-ui.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-z80.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_ata-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_cartridge-cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-z80.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_gamepad-gamepad.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-kbd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-z80.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-models.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-z80.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-z80.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-display.Po@am__quote@ # am--include-marker
@@ -1154,12 +1258,16 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-overlay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-ui.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-z80.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_psg-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_rtc-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sunrise-ata.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sunrise-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_vdp-vdp.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_ata-test_ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_cartridge-test_cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_config-test_config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_gamepad-test_gamepad.Po@am__quote@ # am--include-marker
@@ -1169,6 +1277,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_overlay-test_overlay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_psg-test_psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_rtc-test_rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_sunrise-test_sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_vdp-test_vdp.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -1220,6 +1329,20 @@ src/1983-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/1983-cartridge.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
+
+src/1983-ata.o: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-ata.o -MD -MP -MF src/$(DEPDIR)/1983-ata.Tpo -c -o src/1983-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-ata.Tpo src/$(DEPDIR)/1983-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/1983-ata.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+
+src/1983-ata.obj: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-ata.obj -MD -MP -MF src/$(DEPDIR)/1983-ata.Tpo -c -o src/1983-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-ata.Tpo src/$(DEPDIR)/1983-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/1983-ata.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
 
 src/1983-audio.o: src/audio.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-audio.o -MD -MP -MF src/$(DEPDIR)/1983-audio.Tpo -c -o src/1983-audio.o `test -f 'src/audio.c' || echo '$(srcdir)/'`src/audio.c
@@ -1389,6 +1512,20 @@ src/1983-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
 
+src/1983-sunrise.o: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-sunrise.o -MD -MP -MF src/$(DEPDIR)/1983-sunrise.Tpo -c -o src/1983-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-sunrise.Tpo src/$(DEPDIR)/1983-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/1983-sunrise.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+
+src/1983-sunrise.obj: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-sunrise.obj -MD -MP -MF src/$(DEPDIR)/1983-sunrise.Tpo -c -o src/1983-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-sunrise.Tpo src/$(DEPDIR)/1983-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/1983-sunrise.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
+
 src/1983-ui.o: src/ui.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-ui.o -MD -MP -MF src/$(DEPDIR)/1983-ui.Tpo -c -o src/1983-ui.o `test -f 'src/ui.c' || echo '$(srcdir)/'`src/ui.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-ui.Tpo src/$(DEPDIR)/1983-ui.Po
@@ -1430,6 +1567,34 @@ src/1983-z80.obj: src/z80.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/z80.c' object='src/1983-z80.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
+
+tests/test_ata-test_ata.o: tests/test_ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -MT tests/test_ata-test_ata.o -MD -MP -MF tests/$(DEPDIR)/test_ata-test_ata.Tpo -c -o tests/test_ata-test_ata.o `test -f 'tests/test_ata.c' || echo '$(srcdir)/'`tests/test_ata.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_ata-test_ata.Tpo tests/$(DEPDIR)/test_ata-test_ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_ata.c' object='tests/test_ata-test_ata.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -c -o tests/test_ata-test_ata.o `test -f 'tests/test_ata.c' || echo '$(srcdir)/'`tests/test_ata.c
+
+tests/test_ata-test_ata.obj: tests/test_ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -MT tests/test_ata-test_ata.obj -MD -MP -MF tests/$(DEPDIR)/test_ata-test_ata.Tpo -c -o tests/test_ata-test_ata.obj `if test -f 'tests/test_ata.c'; then $(CYGPATH_W) 'tests/test_ata.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_ata.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_ata-test_ata.Tpo tests/$(DEPDIR)/test_ata-test_ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_ata.c' object='tests/test_ata-test_ata.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -c -o tests/test_ata-test_ata.obj `if test -f 'tests/test_ata.c'; then $(CYGPATH_W) 'tests/test_ata.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_ata.c'; fi`
+
+src/test_ata-ata.o: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -MT src/test_ata-ata.o -MD -MP -MF src/$(DEPDIR)/test_ata-ata.Tpo -c -o src/test_ata-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_ata-ata.Tpo src/$(DEPDIR)/test_ata-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_ata-ata.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -c -o src/test_ata-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+
+src/test_ata-ata.obj: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -MT src/test_ata-ata.obj -MD -MP -MF src/$(DEPDIR)/test_ata-ata.Tpo -c -o src/test_ata-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_ata-ata.Tpo src/$(DEPDIR)/test_ata-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_ata-ata.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -c -o src/test_ata-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
 
 tests/test_cartridge-test_cartridge.o: tests/test_cartridge.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -MT tests/test_cartridge-test_cartridge.o -MD -MP -MF tests/$(DEPDIR)/test_cartridge-test_cartridge.Tpo -c -o tests/test_cartridge-test_cartridge.o `test -f 'tests/test_cartridge.c' || echo '$(srcdir)/'`tests/test_cartridge.c
@@ -1501,6 +1666,20 @@ src/test_config-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
 
+src/test_config-ata.o: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-ata.o -MD -MP -MF src/$(DEPDIR)/test_config-ata.Tpo -c -o src/test_config-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-ata.Tpo src/$(DEPDIR)/test_config-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_config-ata.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+
+src/test_config-ata.obj: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-ata.obj -MD -MP -MF src/$(DEPDIR)/test_config-ata.Tpo -c -o src/test_config-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-ata.Tpo src/$(DEPDIR)/test_config-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_config-ata.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
+
 src/test_config-msx.o: src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-msx.o -MD -MP -MF src/$(DEPDIR)/test_config-msx.Tpo -c -o src/test_config-msx.o `test -f 'src/msx.c' || echo '$(srcdir)/'`src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-msx.Tpo src/$(DEPDIR)/test_config-msx.Po
@@ -1542,6 +1721,20 @@ src/test_config-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_config-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+src/test_config-sunrise.o: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-sunrise.o -MD -MP -MF src/$(DEPDIR)/test_config-sunrise.Tpo -c -o src/test_config-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-sunrise.Tpo src/$(DEPDIR)/test_config-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/test_config-sunrise.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+
+src/test_config-sunrise.obj: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-sunrise.obj -MD -MP -MF src/$(DEPDIR)/test_config-sunrise.Tpo -c -o src/test_config-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-sunrise.Tpo src/$(DEPDIR)/test_config-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/test_config-sunrise.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
 
 src/test_config-vdp.o: src/vdp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-vdp.o -MD -MP -MF src/$(DEPDIR)/test_config-vdp.Tpo -c -o src/test_config-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
@@ -1627,6 +1820,20 @@ src/test_kbd-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
 
+src/test_kbd-ata.o: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-ata.o -MD -MP -MF src/$(DEPDIR)/test_kbd-ata.Tpo -c -o src/test_kbd-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-ata.Tpo src/$(DEPDIR)/test_kbd-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_kbd-ata.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+
+src/test_kbd-ata.obj: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-ata.obj -MD -MP -MF src/$(DEPDIR)/test_kbd-ata.Tpo -c -o src/test_kbd-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-ata.Tpo src/$(DEPDIR)/test_kbd-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_kbd-ata.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
+
 src/test_kbd-kbd.o: src/kbd.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-kbd.o -MD -MP -MF src/$(DEPDIR)/test_kbd-kbd.Tpo -c -o src/test_kbd-kbd.o `test -f 'src/kbd.c' || echo '$(srcdir)/'`src/kbd.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-kbd.Tpo src/$(DEPDIR)/test_kbd-kbd.Po
@@ -1682,6 +1889,20 @@ src/test_kbd-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_kbd-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+src/test_kbd-sunrise.o: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-sunrise.o -MD -MP -MF src/$(DEPDIR)/test_kbd-sunrise.Tpo -c -o src/test_kbd-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-sunrise.Tpo src/$(DEPDIR)/test_kbd-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/test_kbd-sunrise.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+
+src/test_kbd-sunrise.obj: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-sunrise.obj -MD -MP -MF src/$(DEPDIR)/test_kbd-sunrise.Tpo -c -o src/test_kbd-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-sunrise.Tpo src/$(DEPDIR)/test_kbd-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/test_kbd-sunrise.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
 
 src/test_kbd-vdp.o: src/vdp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-vdp.o -MD -MP -MF src/$(DEPDIR)/test_kbd-vdp.Tpo -c -o src/test_kbd-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
@@ -1753,6 +1974,20 @@ src/test_models-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
 
+src/test_models-ata.o: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-ata.o -MD -MP -MF src/$(DEPDIR)/test_models-ata.Tpo -c -o src/test_models-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-ata.Tpo src/$(DEPDIR)/test_models-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_models-ata.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+
+src/test_models-ata.obj: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-ata.obj -MD -MP -MF src/$(DEPDIR)/test_models-ata.Tpo -c -o src/test_models-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-ata.Tpo src/$(DEPDIR)/test_models-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_models-ata.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
+
 src/test_models-msx.o: src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-msx.o -MD -MP -MF src/$(DEPDIR)/test_models-msx.Tpo -c -o src/test_models-msx.o `test -f 'src/msx.c' || echo '$(srcdir)/'`src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-msx.Tpo src/$(DEPDIR)/test_models-msx.Po
@@ -1794,6 +2029,20 @@ src/test_models-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_models-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+src/test_models-sunrise.o: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-sunrise.o -MD -MP -MF src/$(DEPDIR)/test_models-sunrise.Tpo -c -o src/test_models-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-sunrise.Tpo src/$(DEPDIR)/test_models-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/test_models-sunrise.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+
+src/test_models-sunrise.obj: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-sunrise.obj -MD -MP -MF src/$(DEPDIR)/test_models-sunrise.Tpo -c -o src/test_models-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-sunrise.Tpo src/$(DEPDIR)/test_models-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/test_models-sunrise.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
 
 src/test_models-vdp.o: src/vdp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-vdp.o -MD -MP -MF src/$(DEPDIR)/test_models-vdp.Tpo -c -o src/test_models-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
@@ -1851,6 +2100,20 @@ src/test_msx-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
 
+src/test_msx-ata.o: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-ata.o -MD -MP -MF src/$(DEPDIR)/test_msx-ata.Tpo -c -o src/test_msx-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-ata.Tpo src/$(DEPDIR)/test_msx-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_msx-ata.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+
+src/test_msx-ata.obj: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-ata.obj -MD -MP -MF src/$(DEPDIR)/test_msx-ata.Tpo -c -o src/test_msx-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-ata.Tpo src/$(DEPDIR)/test_msx-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_msx-ata.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
+
 src/test_msx-msx.o: src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-msx.o -MD -MP -MF src/$(DEPDIR)/test_msx-msx.Tpo -c -o src/test_msx-msx.o `test -f 'src/msx.c' || echo '$(srcdir)/'`src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-msx.Tpo src/$(DEPDIR)/test_msx-msx.Po
@@ -1892,6 +2155,20 @@ src/test_msx-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_msx-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+src/test_msx-sunrise.o: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-sunrise.o -MD -MP -MF src/$(DEPDIR)/test_msx-sunrise.Tpo -c -o src/test_msx-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-sunrise.Tpo src/$(DEPDIR)/test_msx-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/test_msx-sunrise.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+
+src/test_msx-sunrise.obj: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-sunrise.obj -MD -MP -MF src/$(DEPDIR)/test_msx-sunrise.Tpo -c -o src/test_msx-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-sunrise.Tpo src/$(DEPDIR)/test_msx-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/test_msx-sunrise.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
 
 src/test_msx-vdp.o: src/vdp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-vdp.o -MD -MP -MF src/$(DEPDIR)/test_msx-vdp.Tpo -c -o src/test_msx-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
@@ -1962,6 +2239,20 @@ src/test_overlay-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/test_overlay-cartridge.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
+
+src/test_overlay-ata.o: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-ata.o -MD -MP -MF src/$(DEPDIR)/test_overlay-ata.Tpo -c -o src/test_overlay-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-ata.Tpo src/$(DEPDIR)/test_overlay-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_overlay-ata.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+
+src/test_overlay-ata.obj: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-ata.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-ata.Tpo -c -o src/test_overlay-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-ata.Tpo src/$(DEPDIR)/test_overlay-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_overlay-ata.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
 
 src/test_overlay-display.o: src/display.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-display.o -MD -MP -MF src/$(DEPDIR)/test_overlay-display.Tpo -c -o src/test_overlay-display.o `test -f 'src/display.c' || echo '$(srcdir)/'`src/display.c
@@ -2075,6 +2366,20 @@ src/test_overlay-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
 
+src/test_overlay-sunrise.o: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-sunrise.o -MD -MP -MF src/$(DEPDIR)/test_overlay-sunrise.Tpo -c -o src/test_overlay-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-sunrise.Tpo src/$(DEPDIR)/test_overlay-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/test_overlay-sunrise.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+
+src/test_overlay-sunrise.obj: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-sunrise.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-sunrise.Tpo -c -o src/test_overlay-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-sunrise.Tpo src/$(DEPDIR)/test_overlay-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/test_overlay-sunrise.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
+
 src/test_overlay-ui.o: src/ui.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-ui.o -MD -MP -MF src/$(DEPDIR)/test_overlay-ui.Tpo -c -o src/test_overlay-ui.o `test -f 'src/ui.c' || echo '$(srcdir)/'`src/ui.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-ui.Tpo src/$(DEPDIR)/test_overlay-ui.Po
@@ -2172,6 +2477,48 @@ src/test_rtc-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_rtc-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -c -o src/test_rtc-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+tests/test_sunrise-test_sunrise.o: tests/test_sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -MT tests/test_sunrise-test_sunrise.o -MD -MP -MF tests/$(DEPDIR)/test_sunrise-test_sunrise.Tpo -c -o tests/test_sunrise-test_sunrise.o `test -f 'tests/test_sunrise.c' || echo '$(srcdir)/'`tests/test_sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_sunrise-test_sunrise.Tpo tests/$(DEPDIR)/test_sunrise-test_sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_sunrise.c' object='tests/test_sunrise-test_sunrise.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -c -o tests/test_sunrise-test_sunrise.o `test -f 'tests/test_sunrise.c' || echo '$(srcdir)/'`tests/test_sunrise.c
+
+tests/test_sunrise-test_sunrise.obj: tests/test_sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -MT tests/test_sunrise-test_sunrise.obj -MD -MP -MF tests/$(DEPDIR)/test_sunrise-test_sunrise.Tpo -c -o tests/test_sunrise-test_sunrise.obj `if test -f 'tests/test_sunrise.c'; then $(CYGPATH_W) 'tests/test_sunrise.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_sunrise.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_sunrise-test_sunrise.Tpo tests/$(DEPDIR)/test_sunrise-test_sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_sunrise.c' object='tests/test_sunrise-test_sunrise.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -c -o tests/test_sunrise-test_sunrise.obj `if test -f 'tests/test_sunrise.c'; then $(CYGPATH_W) 'tests/test_sunrise.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_sunrise.c'; fi`
+
+src/test_sunrise-ata.o: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -MT src/test_sunrise-ata.o -MD -MP -MF src/$(DEPDIR)/test_sunrise-ata.Tpo -c -o src/test_sunrise-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_sunrise-ata.Tpo src/$(DEPDIR)/test_sunrise-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_sunrise-ata.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -c -o src/test_sunrise-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
+
+src/test_sunrise-ata.obj: src/ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -MT src/test_sunrise-ata.obj -MD -MP -MF src/$(DEPDIR)/test_sunrise-ata.Tpo -c -o src/test_sunrise-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_sunrise-ata.Tpo src/$(DEPDIR)/test_sunrise-ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ata.c' object='src/test_sunrise-ata.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -c -o src/test_sunrise-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
+
+src/test_sunrise-sunrise.o: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -MT src/test_sunrise-sunrise.o -MD -MP -MF src/$(DEPDIR)/test_sunrise-sunrise.Tpo -c -o src/test_sunrise-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_sunrise-sunrise.Tpo src/$(DEPDIR)/test_sunrise-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/test_sunrise-sunrise.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -c -o src/test_sunrise-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
+
+src/test_sunrise-sunrise.obj: src/sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -MT src/test_sunrise-sunrise.obj -MD -MP -MF src/$(DEPDIR)/test_sunrise-sunrise.Tpo -c -o src/test_sunrise-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_sunrise-sunrise.Tpo src/$(DEPDIR)/test_sunrise-sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/test_sunrise-sunrise.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -c -o src/test_sunrise-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
 
 tests/test_vdp-test_vdp.o: tests/test_vdp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -MT tests/test_vdp-test_vdp.o -MD -MP -MF tests/$(DEPDIR)/test_vdp-test_vdp.Tpo -c -o tests/test_vdp-test_vdp.o `test -f 'tests/test_vdp.c' || echo '$(srcdir)/'`tests/test_vdp.c
@@ -2643,6 +2990,20 @@ test-cartridge.log: test-cartridge$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-ata.log: test-ata$(EXEEXT)
+	@p='test-ata$(EXEEXT)'; \
+	b='test-ata'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-sunrise.log: test-sunrise$(EXEEXT)
+	@p='test-sunrise$(EXEEXT)'; \
+	b='test-sunrise'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-config.log: test-config$(EXEEXT)
 	@p='test-config$(EXEEXT)'; \
 	b='test-config'; \
@@ -2960,6 +3321,7 @@ clean-am: clean-binPROGRAMS clean-checkPROGRAMS clean-generic \
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
+	-rm -f src/$(DEPDIR)/1983-ata.Po
 	-rm -f src/$(DEPDIR)/1983-audio.Po
 	-rm -f src/$(DEPDIR)/1983-cartridge.Po
 	-rm -f src/$(DEPDIR)/1983-config.Po
@@ -2974,38 +3336,49 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-overlay.Po
 	-rm -f src/$(DEPDIR)/1983-psg.Po
 	-rm -f src/$(DEPDIR)/1983-rtc.Po
+	-rm -f src/$(DEPDIR)/1983-sunrise.Po
 	-rm -f src/$(DEPDIR)/1983-ui.Po
 	-rm -f src/$(DEPDIR)/1983-vdp.Po
 	-rm -f src/$(DEPDIR)/1983-z80.Po
+	-rm -f src/$(DEPDIR)/test_ata-ata.Po
 	-rm -f src/$(DEPDIR)/test_cartridge-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_config-ata.Po
 	-rm -f src/$(DEPDIR)/test_config-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_config-config.Po
 	-rm -f src/$(DEPDIR)/test_config-msx.Po
 	-rm -f src/$(DEPDIR)/test_config-psg.Po
 	-rm -f src/$(DEPDIR)/test_config-rtc.Po
+	-rm -f src/$(DEPDIR)/test_config-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_config-vdp.Po
 	-rm -f src/$(DEPDIR)/test_config-z80.Po
 	-rm -f src/$(DEPDIR)/test_gamepad-gamepad.Po
+	-rm -f src/$(DEPDIR)/test_kbd-ata.Po
 	-rm -f src/$(DEPDIR)/test_kbd-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_kbd-kbd.Po
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
 	-rm -f src/$(DEPDIR)/test_kbd-psg.Po
 	-rm -f src/$(DEPDIR)/test_kbd-rtc.Po
+	-rm -f src/$(DEPDIR)/test_kbd-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_kbd-vdp.Po
 	-rm -f src/$(DEPDIR)/test_kbd-z80.Po
+	-rm -f src/$(DEPDIR)/test_models-ata.Po
 	-rm -f src/$(DEPDIR)/test_models-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_models-models.Po
 	-rm -f src/$(DEPDIR)/test_models-msx.Po
 	-rm -f src/$(DEPDIR)/test_models-psg.Po
 	-rm -f src/$(DEPDIR)/test_models-rtc.Po
+	-rm -f src/$(DEPDIR)/test_models-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_models-vdp.Po
 	-rm -f src/$(DEPDIR)/test_models-z80.Po
+	-rm -f src/$(DEPDIR)/test_msx-ata.Po
 	-rm -f src/$(DEPDIR)/test_msx-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
 	-rm -f src/$(DEPDIR)/test_msx-psg.Po
 	-rm -f src/$(DEPDIR)/test_msx-rtc.Po
+	-rm -f src/$(DEPDIR)/test_msx-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_msx-vdp.Po
 	-rm -f src/$(DEPDIR)/test_msx-z80.Po
+	-rm -f src/$(DEPDIR)/test_overlay-ata.Po
 	-rm -f src/$(DEPDIR)/test_overlay-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_overlay-config.Po
 	-rm -f src/$(DEPDIR)/test_overlay-display.Po
@@ -3016,12 +3389,16 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_overlay-overlay.Po
 	-rm -f src/$(DEPDIR)/test_overlay-psg.Po
 	-rm -f src/$(DEPDIR)/test_overlay-rtc.Po
+	-rm -f src/$(DEPDIR)/test_overlay-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_overlay-ui.Po
 	-rm -f src/$(DEPDIR)/test_overlay-vdp.Po
 	-rm -f src/$(DEPDIR)/test_overlay-z80.Po
 	-rm -f src/$(DEPDIR)/test_psg-psg.Po
 	-rm -f src/$(DEPDIR)/test_rtc-rtc.Po
+	-rm -f src/$(DEPDIR)/test_sunrise-ata.Po
+	-rm -f src/$(DEPDIR)/test_sunrise-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
+	-rm -f tests/$(DEPDIR)/test_ata-test_ata.Po
 	-rm -f tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
 	-rm -f tests/$(DEPDIR)/test_config-test_config.Po
 	-rm -f tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
@@ -3031,6 +3408,7 @@ distclean: distclean-am
 	-rm -f tests/$(DEPDIR)/test_overlay-test_overlay.Po
 	-rm -f tests/$(DEPDIR)/test_psg-test_psg.Po
 	-rm -f tests/$(DEPDIR)/test_rtc-test_rtc.Po
+	-rm -f tests/$(DEPDIR)/test_sunrise-test_sunrise.Po
 	-rm -f tests/$(DEPDIR)/test_vdp-test_vdp.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -3083,6 +3461,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
+	-rm -f src/$(DEPDIR)/1983-ata.Po
 	-rm -f src/$(DEPDIR)/1983-audio.Po
 	-rm -f src/$(DEPDIR)/1983-cartridge.Po
 	-rm -f src/$(DEPDIR)/1983-config.Po
@@ -3097,38 +3476,49 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-overlay.Po
 	-rm -f src/$(DEPDIR)/1983-psg.Po
 	-rm -f src/$(DEPDIR)/1983-rtc.Po
+	-rm -f src/$(DEPDIR)/1983-sunrise.Po
 	-rm -f src/$(DEPDIR)/1983-ui.Po
 	-rm -f src/$(DEPDIR)/1983-vdp.Po
 	-rm -f src/$(DEPDIR)/1983-z80.Po
+	-rm -f src/$(DEPDIR)/test_ata-ata.Po
 	-rm -f src/$(DEPDIR)/test_cartridge-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_config-ata.Po
 	-rm -f src/$(DEPDIR)/test_config-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_config-config.Po
 	-rm -f src/$(DEPDIR)/test_config-msx.Po
 	-rm -f src/$(DEPDIR)/test_config-psg.Po
 	-rm -f src/$(DEPDIR)/test_config-rtc.Po
+	-rm -f src/$(DEPDIR)/test_config-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_config-vdp.Po
 	-rm -f src/$(DEPDIR)/test_config-z80.Po
 	-rm -f src/$(DEPDIR)/test_gamepad-gamepad.Po
+	-rm -f src/$(DEPDIR)/test_kbd-ata.Po
 	-rm -f src/$(DEPDIR)/test_kbd-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_kbd-kbd.Po
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
 	-rm -f src/$(DEPDIR)/test_kbd-psg.Po
 	-rm -f src/$(DEPDIR)/test_kbd-rtc.Po
+	-rm -f src/$(DEPDIR)/test_kbd-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_kbd-vdp.Po
 	-rm -f src/$(DEPDIR)/test_kbd-z80.Po
+	-rm -f src/$(DEPDIR)/test_models-ata.Po
 	-rm -f src/$(DEPDIR)/test_models-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_models-models.Po
 	-rm -f src/$(DEPDIR)/test_models-msx.Po
 	-rm -f src/$(DEPDIR)/test_models-psg.Po
 	-rm -f src/$(DEPDIR)/test_models-rtc.Po
+	-rm -f src/$(DEPDIR)/test_models-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_models-vdp.Po
 	-rm -f src/$(DEPDIR)/test_models-z80.Po
+	-rm -f src/$(DEPDIR)/test_msx-ata.Po
 	-rm -f src/$(DEPDIR)/test_msx-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
 	-rm -f src/$(DEPDIR)/test_msx-psg.Po
 	-rm -f src/$(DEPDIR)/test_msx-rtc.Po
+	-rm -f src/$(DEPDIR)/test_msx-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_msx-vdp.Po
 	-rm -f src/$(DEPDIR)/test_msx-z80.Po
+	-rm -f src/$(DEPDIR)/test_overlay-ata.Po
 	-rm -f src/$(DEPDIR)/test_overlay-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_overlay-config.Po
 	-rm -f src/$(DEPDIR)/test_overlay-display.Po
@@ -3139,12 +3529,16 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_overlay-overlay.Po
 	-rm -f src/$(DEPDIR)/test_overlay-psg.Po
 	-rm -f src/$(DEPDIR)/test_overlay-rtc.Po
+	-rm -f src/$(DEPDIR)/test_overlay-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_overlay-ui.Po
 	-rm -f src/$(DEPDIR)/test_overlay-vdp.Po
 	-rm -f src/$(DEPDIR)/test_overlay-z80.Po
 	-rm -f src/$(DEPDIR)/test_psg-psg.Po
 	-rm -f src/$(DEPDIR)/test_rtc-rtc.Po
+	-rm -f src/$(DEPDIR)/test_sunrise-ata.Po
+	-rm -f src/$(DEPDIR)/test_sunrise-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
+	-rm -f tests/$(DEPDIR)/test_ata-test_ata.Po
 	-rm -f tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
 	-rm -f tests/$(DEPDIR)/test_config-test_config.Po
 	-rm -f tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
@@ -3154,6 +3548,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f tests/$(DEPDIR)/test_overlay-test_overlay.Po
 	-rm -f tests/$(DEPDIR)/test_psg-test_psg.Po
 	-rm -f tests/$(DEPDIR)/test_rtc-test_rtc.Po
+	-rm -f tests/$(DEPDIR)/test_sunrise-test_sunrise.Po
 	-rm -f tests/$(DEPDIR)/test_vdp-test_vdp.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

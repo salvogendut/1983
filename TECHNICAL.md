@@ -109,8 +109,8 @@ is not implemented yet.
 
 The Media overlay can load, eject, and independently configure both
 cartridges. Cassette and floppy rows remain explicit stubs. The IDE
-hard-disk stub appears only when Sunrise IDE is connected; the Nextor kernel
-is cartridge firmware and therefore has no separate Media row.
+hard-disk selector appears only when Sunrise IDE is connected; the Nextor
+kernel is cartridge firmware and therefore has no separate Media row.
 
 General > Extra Hardware reveals the Extensions section. Sunrise IDE, SCC,
 and MSX-MUSIC are treated as cartridge-connected devices: the first enabled
@@ -122,9 +122,36 @@ extension ejects and forgets media in the newly reserved slot.
 The footer always shows Cartridge I and Cartridge II indicators between
 Power and Caps Lock. An occupied ordinary ROM slot is orange. A slot owned
 by Sunrise IDE is split orange/green, with orange showing the connected
-cartridge and green reserved for disk activity. The same renderer supports
+cartridge and green showing disk reads. The same renderer supports
 an orange/white network-cartridge form, whose white half reports network
 access when a network device is added.
+
+## Sunrise IDE and ATA storage
+
+The Sunrise IDE extension is a real cartridge device rather than a generic
+ROM mapper. It implements the 128 KiB, eight-bank ROM window, bit-reversed
+bank control, IDE overlay enable, 16-bit data latch, task-file register
+window, master/slave selection, alternate status, and device soft reset used
+by the Sunrise interface. The address decode follows the openMSX 21.0
+Sunrise implementation.
+
+Its host-independent ATA backend exposes an LBA-capable device with IDENTIFY,
+READ SECTORS, multiple-sector reads, diagnostic/reset commands, geometry
+setup, and the feature commands needed by the official Nextor 2.1.1 Sunrise
+kernel. Raw images must be a non-empty multiple of 512 bytes. They are opened
+read-only; guest write commands return ABRT and cannot modify the host file.
+Failed mounts preserve the previously mounted image.
+
+The Extensions overlay selects the 128 KiB Sunrise/Nextor ROM and reserves
+its physical cartridge slot. Media > IDE hard disk then mounts or ejects the
+raw image. Both paths persist in `1983.conf`; command-line equivalents are
+`--sunrise-rom` and `--ide`. Sector reads pulse both the IDE indicator and
+the green half of the owning cartridge LED.
+
+The current reference run uses the NMS 8250 BIOS and Sub-ROM without its
+internal disk ROM, because that ROM expects the not-yet-implemented WD2793.
+The external Sunrise kernel boots the 32 MiB GeoBench FAT16 image through
+Nextor to the GeoBench desktop using the stock 128 KiB mapper.
 
 ## MSX1 video
 
@@ -240,9 +267,9 @@ frontends.
 
 - Cassette and floppy devices and image formats.
 - WD2793 disk controller.
-- Sunrise ATA-IDE and raw hard-disk support.
-- Nextor kernel and guest disk boot.
-- Joystick and mouse input.
+- Writable ATA images, CHS-only edge cases, and additional ATA commands.
+- Separate external memory-mapper extensions.
+- MSX mouse input.
 - Alternate national keyboard layouts.
 - SCC and MSX-MUSIC audio.
 - Persistent RTC CMOS files.
