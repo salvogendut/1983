@@ -44,18 +44,16 @@ the 1984 and 1985 sibling emulators.
    beam-positioned status and interrupts, expanded slots, internal mapper,
    and RTC.
 5. Scanline-progressive V9938 rendering and timed CPU/command VRAM access.
-6. Editable machine catalogue and General > Machine firmware workflow.
+6. Editable machine catalogue, General > Machine firmware workflow, and the
+   Advanced machine model editor.
 
 ## Near-term targets
 
-1. Add the **Advanced > Machine model editor** for catalogue add/change/delete
-   operations.
-2. Reach a deterministic BASIC prompt with a user-supplied BIOS/BASIC set.
-3. Add joystick input, cassette loading, alternate national keyboard
+1. Add joystick input, cassette loading, alternate national keyboard
    layouts, and a small redistributable MSX1 compatibility corpus.
-4. Refine progressive VDP rendering from completed-scanline changes to
+2. Refine progressive VDP rendering from completed-scanline changes to
    within-scanline fetch timing where software depends on raster effects.
-5. Add deterministic snapshots and audio/video capture for compatibility
+3. Add deterministic snapshots and audio/video capture for compatibility
    investigations.
 
 ## Storage and Nextor

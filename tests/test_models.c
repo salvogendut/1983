@@ -6,12 +6,18 @@
 
 int main(void) {
     static const char *path = "tests/test-models.tmp";
+    static const char *saved_path = "tests/test-models-saved.tmp";
+    static const char *firmware_path = "tests/test-model-firmware.tmp";
     ModelCatalog catalog;
+    ModelCatalog saved;
+    ModelDefinition edited;
     const ModelDefinition *model;
+    char error[160];
     FILE *file;
 
     model_catalog_defaults(&catalog);
     assert(catalog.count == 3);
+    assert(catalog.edit_path[0]);
     assert(strcmp(catalog.entries[0].id, "msx1") == 0);
     assert(catalog.entries[2].hardware ==
            MSX_MODEL_PHILIPS_NMS8250);
@@ -57,6 +63,65 @@ int main(void) {
                   "tests/firmware/disk.rom") == 0);
     assert(!model_catalog_find(&catalog, "unsupported"));
     assert(model_catalog_index(&catalog, "custom-msx2") == 1);
+
+    edited = catalog.entries[0];
+    edited.bios_path[0] = '\0';
+    edited.logo_path[0] = '\0';
+    edited.subrom_path[0] = '\0';
+    edited.disk_rom_path[0] = '\0';
+    assert(model_definition_validate(
+        &catalog, &edited, 0, true, error, sizeof(error)));
+    snprintf(edited.id, sizeof(edited.id), "custom-msx2");
+    assert(!model_definition_validate(
+        &catalog, &edited, 0, false, error, sizeof(error)));
+    assert(strstr(error, "already"));
+    snprintf(edited.id, sizeof(edited.id), "invalid model]");
+    assert(!model_definition_validate(
+        &catalog, &edited, 0, false, error, sizeof(error)));
+    assert(strstr(error, "ID must"));
+    snprintf(edited.id, sizeof(edited.id), "validated-model");
+    snprintf(edited.name, sizeof(edited.name), "Unsafe\nname");
+    assert(!model_definition_validate(
+        &catalog, &edited, (size_t)-1, false,
+        error, sizeof(error)));
+    assert(strstr(error, "line breaks"));
+    snprintf(edited.name, sizeof(edited.name), "Validated model");
+    snprintf(edited.logo_path, sizeof(edited.logo_path),
+             "unsafe\npath.rom");
+    assert(!model_definition_validate(
+        &catalog, &edited, (size_t)-1, false,
+        error, sizeof(error)));
+    assert(strstr(error, "line breaks"));
+    edited.logo_path[0] = '\0';
+    snprintf(edited.bios_path, sizeof(edited.bios_path),
+             "%s", firmware_path);
+    file = fopen(firmware_path, "wb");
+    assert(file);
+    assert(fputc(0, file) != EOF);
+    assert(fclose(file) == 0);
+    assert(!model_definition_validate(
+        &catalog, &edited, (size_t)-1, true,
+        error, sizeof(error)));
+    assert(strstr(error, "32 KB"));
+    file = fopen(firmware_path, "wb");
+    assert(file);
+    assert(fseek(file, MSX_BIOS_SIZE - 1, SEEK_SET) == 0);
+    assert(fputc(0, file) != EOF);
+    assert(fclose(file) == 0);
+    assert(model_definition_validate(
+        &catalog, &edited, (size_t)-1, true,
+        error, sizeof(error)));
+
+    assert(model_catalog_save(&catalog, saved_path) == 0);
+    assert(model_catalog_load(&saved, saved_path) == 0);
+    assert(saved.count == catalog.count);
+    model = model_catalog_find(&saved, "custom-msx");
+    assert(model);
+    assert(strstr(model->bios_path,
+                  "/tests/firmware/main.rom"));
+
+    assert(remove(firmware_path) == 0);
+    assert(remove(saved_path) == 0);
     assert(remove(path) == 0);
 
     puts("machine catalogue tests passed");

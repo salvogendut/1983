@@ -26,10 +26,18 @@ typedef struct {
     ModelDefinition entries[MODEL_CATALOG_MAX];
     size_t count;
     char path[PATH_MAX];
+    char edit_path[PATH_MAX];
 } ModelCatalog;
 
 void model_catalog_defaults(ModelCatalog *catalog);
 int model_catalog_load(ModelCatalog *catalog, const char *path);
+int model_catalog_save(const ModelCatalog *catalog, const char *path);
+void model_catalog_user_path(char *path, size_t path_size);
+bool model_definition_validate(const ModelCatalog *catalog,
+                               const ModelDefinition *definition,
+                               size_t replaced_index,
+                               bool check_firmware,
+                               char *error, size_t error_size);
 const ModelDefinition *model_catalog_find(const ModelCatalog *catalog,
                                           const char *id);
 const ModelDefinition *model_catalog_find_hardware(

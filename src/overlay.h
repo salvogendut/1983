@@ -20,7 +20,11 @@ typedef enum {
 typedef enum {
     OVERLAY_STATE_MENU = 0,
     OVERLAY_STATE_CONFIRM,
-    OVERLAY_STATE_MACHINE
+    OVERLAY_STATE_MACHINE,
+    OVERLAY_STATE_MODEL_LIST,
+    OVERLAY_STATE_MODEL_EDIT,
+    OVERLAY_STATE_MODEL_TEXT,
+    OVERLAY_STATE_MODEL_DELETE
 } OverlayState;
 
 typedef enum {
@@ -30,7 +34,11 @@ typedef enum {
     OVERLAY_DIALOG_BIOS,
     OVERLAY_DIALOG_LOGO,
     OVERLAY_DIALOG_SUBROM,
-    OVERLAY_DIALOG_DISK_ROM
+    OVERLAY_DIALOG_DISK_ROM,
+    OVERLAY_DIALOG_MODEL_BIOS,
+    OVERLAY_DIALOG_MODEL_LOGO,
+    OVERLAY_DIALOG_MODEL_SUBROM,
+    OVERLAY_DIALOG_MODEL_DISK_ROM
 } OverlayDialogTarget;
 
 typedef struct {
@@ -42,7 +50,7 @@ typedef struct {
 
     Config saved;
     Config *config;
-    const ModelCatalog *models;
+    ModelCatalog *models;
     Display *display;
     MsxMachine *msx;
 
@@ -60,10 +68,18 @@ typedef struct {
     char pending_subrom_path[PATH_MAX];
     char pending_disk_rom_path[PATH_MAX];
     char pending_firmware_dir[PATH_MAX];
+
+    int model_editor_row;
+    int model_edit_index;
+    int model_edit_field;
+    int model_text_field;
+    ModelDefinition model_edit;
+    char model_text[PATH_MAX];
+    char model_editor_error[192];
 } Overlay;
 
 void overlay_init(Overlay *overlay, Config *config,
-                  const ModelCatalog *models, Display *display,
+                  ModelCatalog *models, Display *display,
                   MsxMachine *msx);
 bool overlay_handle_event(Overlay *overlay, const SDL_Event *event);
 void overlay_tick(Overlay *overlay);

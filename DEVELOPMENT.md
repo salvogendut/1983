@@ -81,11 +81,13 @@ profiles. A `[model id]` entry supplies `name`, `hardware`, `bios`, `logo`,
 can add any number of named models which reuse an implemented hardware layout
 without recompiling 1983. The parser caps the catalogue at 64 valid entries,
 ignores unknown hardware layouts and duplicate IDs, and falls back to the
-three built-in entries when no valid file is available. A future editor can
-write the same format without changing the runtime contract. That editor is
-planned as **Advanced > Machine model editor**, behind the existing Tinker
-gate, with add/change/delete operations and explicit confirmation before
-removing an entry.
+three built-in entries when no valid file is available.
+
+**Advanced > Machine model editor**, behind the existing Tinker gate, writes
+the same format through `model_catalog_save()`. It edits a copy, validates
+the selected definition, atomically replaces the per-user catalogue, reloads
+that file, and only then replaces the live catalogue. Repository and
+installed catalogues therefore act as seed data and remain unchanged.
 
 The first concrete MSX2 layout matches the Philips NMS 8250 used by
 `../geobench/tools/run_msx.sh`: BIOS/BASIC in primary slot 0, external

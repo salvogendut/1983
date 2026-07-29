@@ -59,6 +59,19 @@ wrong-sized required components invoke sequential SDL3 file pickers. BIOS,
 optional logo, Sub-ROM, and disk ROM are loaded atomically, so cancellation
 or validation failure preserves the previous firmware.
 
+With Tinker enabled, Advanced > Machine model editor provides catalogue
+list, add, edit, duplicate, and delete workflows. IDs are restricted to
+portable INI-safe characters and must be unique. Non-empty firmware paths
+selected or changed in the editor are checked for their required 32 KiB or
+16 KiB size. Empty fields remain valid and invoke the normal picker when the
+model is selected.
+
+Editor changes are written through a same-directory temporary file and
+atomically renamed to the per-user `1983-models.conf`. The saved file is
+reloaded before replacing the active in-memory catalogue. This leaves the
+last valid catalogue active if writing or parsing fails and avoids modifying
+read-only packaged data.
+
 The selected model ID, resolved hardware layout, and per-user firmware
 overrides are stored in `1983.conf`. Explicit command-line options take
 precedence.
