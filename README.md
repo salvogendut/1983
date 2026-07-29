@@ -88,12 +88,15 @@ Useful options:
 
 ## Firmware and machines
 
-1983 does not bundle copyrighted MSX system ROMs. Place firmware and
-cartridges you are entitled to use in the Git-ignored `ROMS/` directory, or
-point the machine catalogue at another private location.
+1983 bundles the redistributable C-BIOS 0.29 MSX1 firmware so cartridge
+software has a ready-to-use boot target. Other system ROMs and cartridges
+are not distributed; place copies you are entitled to use in the
+Git-ignored `ROMS/` directory, or point the machine catalogue at another
+private location.
 
 [`1983-models.conf`](1983-models.conf) initially defines:
 
+- `cbios` — C-BIOS MSX, using the bundled main and logo ROMs;
 - `msx1` — MSX with a 32 KiB BIOS;
 - `msx2` — MSX2 with a BIOS and Sub-ROM;
 - `nms8250` — Philips NMS 8250 with BIOS, Sub-ROM, and disk ROM.
@@ -112,12 +115,12 @@ models; choose firmware files; validate IDs and ROM sizes; and atomically
 save the complete catalogue to the user configuration directory. Select the
 edited model under **General > Machine** to apply it.
 
-C-BIOS can be started explicitly:
+C-BIOS can also be started explicitly:
 
 ```sh
 ./1983 --region ntsc \
-  --bios /path/to/cbios_main_msx1.rom \
-  --logo /path/to/cbios_logo_msx1.rom \
+  --bios ROMS/cbios_main_msx1.rom \
+  --logo ROMS/cbios_logo_msx1.rom \
   --cart /path/to/game.rom
 ```
 
@@ -241,8 +244,8 @@ the current directory, and the installed application-data directory.
 writes a per-user catalogue, seeding it with the complete active catalogue
 on the first saved edit so installed or repository copies remain untouched.
 
-The local `DOS/` directory is reserved for guest DOS files. Only the
-unmodified `DOS/NEXTOR.SYS` is tracked; other DOS files are ignored.
+The local `DOS/` directory is reserved for guest DOS files. Its contents,
+including `NEXTOR.SYS`, are ignored and are not distributed with 1983.
 
 ## Documentation
 

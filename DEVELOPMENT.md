@@ -119,7 +119,8 @@ memory-mapper extension still
 has to be added; it must remain a second device rather than being folded into
 a fictitious 640 KiB allocation. Firmware discovery builds on the explicit
 `1983-models.conf` paths and the pinned hashes documented in
-`BOOT_TARGETS.md`; no machine ROM belongs in the repository.
+`BOOT_TARGETS.md`. Only the redistributable C-BIOS MSX1 main and logo ROMs
+belong in the repository; all proprietary machine firmware remains local.
 
 The frontend RAM control currently scales the active system mapper from its
 profile default through 4 MiB; allocations above 128 KiB live on the heap.
@@ -425,10 +426,10 @@ Run a short frontend smoke test without a desktop:
   --config /tmp/1983-smoke.conf
 ```
 
-Run the pinned C-BIOS checkpoint when C-BIOS 0.29 is available:
+Run the pinned C-BIOS checkpoint against the bundled C-BIOS 0.29 files:
 
 ```sh
-MSX_CBIOS_DIR=/path/to/cbios make check
+MSX_CBIOS_DIR=ROMS make check
 ```
 
 Run the Philips NMS 8250 firmware checkpoint with:

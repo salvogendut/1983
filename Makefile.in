@@ -105,7 +105,7 @@ am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
-	$(am__configure_deps) $(dist_desktop_DATA) \
+	$(am__configure_deps) $(dist_cbios_DATA) $(dist_desktop_DATA) \
 	$(dist_icon128_DATA) $(dist_icon16_DATA) $(dist_icon256_DATA) \
 	$(dist_icon32_DATA) $(dist_icon48_DATA) $(dist_icon512_DATA) \
 	$(dist_icon64_DATA) $(dist_metainfo_DATA) $(dist_pkgdata_DATA) \
@@ -115,12 +115,12 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(desktopdir)" \
-	"$(DESTDIR)$(icon128dir)" "$(DESTDIR)$(icon16dir)" \
-	"$(DESTDIR)$(icon256dir)" "$(DESTDIR)$(icon32dir)" \
-	"$(DESTDIR)$(icon48dir)" "$(DESTDIR)$(icon512dir)" \
-	"$(DESTDIR)$(icon64dir)" "$(DESTDIR)$(metainfodir)" \
-	"$(DESTDIR)$(pkgdatadir)"
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(cbiosdir)" \
+	"$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(icon128dir)" \
+	"$(DESTDIR)$(icon16dir)" "$(DESTDIR)$(icon256dir)" \
+	"$(DESTDIR)$(icon32dir)" "$(DESTDIR)$(icon48dir)" \
+	"$(DESTDIR)$(icon512dir)" "$(DESTDIR)$(icon64dir)" \
+	"$(DESTDIR)$(metainfodir)" "$(DESTDIR)$(pkgdatadir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_1983_OBJECTS = src/1983-config.$(OBJEXT) \
@@ -448,10 +448,10 @@ am__uninstall_files_from_dir = { \
   || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
        $(am__cd) "$$dir" && echo $$files | $(am__xargs_n) 40 $(am__rm_f); }; \
   }
-DATA = $(dist_desktop_DATA) $(dist_icon128_DATA) $(dist_icon16_DATA) \
-	$(dist_icon256_DATA) $(dist_icon32_DATA) $(dist_icon48_DATA) \
-	$(dist_icon512_DATA) $(dist_icon64_DATA) $(dist_metainfo_DATA) \
-	$(dist_pkgdata_DATA)
+DATA = $(dist_cbios_DATA) $(dist_desktop_DATA) $(dist_icon128_DATA) \
+	$(dist_icon16_DATA) $(dist_icon256_DATA) $(dist_icon32_DATA) \
+	$(dist_icon48_DATA) $(dist_icon512_DATA) $(dist_icon64_DATA) \
+	$(dist_metainfo_DATA) $(dist_pkgdata_DATA)
 HEADERS = $(noinst_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
@@ -901,6 +901,12 @@ dist_desktop_DATA = io.github.salvogendut.Emulator1983.desktop
 metainfodir = $(datadir)/metainfo
 dist_metainfo_DATA = io.github.salvogendut.Emulator1983.metainfo.xml
 dist_pkgdata_DATA = 1983-models.conf
+cbiosdir = $(pkgdatadir)/ROMS
+dist_cbios_DATA = \
+	ROMS/README.C-BIOS \
+	ROMS/cbios_logo_msx1.rom \
+	ROMS/cbios_main_msx1.rom
+
 icon16dir = $(datadir)/icons/hicolor/16x16/apps
 dist_icon16_DATA = icons/16x16/apps/io.github.salvogendut.Emulator1983.png
 icon32dir = $(datadir)/icons/hicolor/32x32/apps
@@ -925,7 +931,6 @@ EXTRA_DIST = \
 	BOOT_TARGETS.md \
 	1983.conf.example \
 	tests/test-cli.sh \
-	DOS/NEXTOR.SYS \
 	icons/1983.png \
 	icons/README.md \
 	icons/1983.rc \
@@ -3058,6 +3063,27 @@ src/test_wd2793-wd2793.obj: src/wd2793.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/wd2793.c' object='src/test_wd2793-wd2793.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wd2793_CPPFLAGS) $(CPPFLAGS) $(test_wd2793_CFLAGS) $(CFLAGS) -c -o src/test_wd2793-wd2793.obj `if test -f 'src/wd2793.c'; then $(CYGPATH_W) 'src/wd2793.c'; else $(CYGPATH_W) '$(srcdir)/src/wd2793.c'; fi`
+install-dist_cbiosDATA: $(dist_cbios_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_cbios_DATA)'; test -n "$(cbiosdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(cbiosdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(cbiosdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(cbiosdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(cbiosdir)" || exit $$?; \
+	done
+
+uninstall-dist_cbiosDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_cbios_DATA)'; test -n "$(cbiosdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(cbiosdir)'; $(am__uninstall_files_from_dir)
 install-dist_desktopDATA: $(dist_desktop_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(dist_desktop_DATA)'; test -n "$(desktopdir)" || list=; \
@@ -3805,7 +3831,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(PROGRAMS) $(DATA) $(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(icon128dir)" "$(DESTDIR)$(icon16dir)" "$(DESTDIR)$(icon256dir)" "$(DESTDIR)$(icon32dir)" "$(DESTDIR)$(icon48dir)" "$(DESTDIR)$(icon512dir)" "$(DESTDIR)$(icon64dir)" "$(DESTDIR)$(metainfodir)" "$(DESTDIR)$(pkgdatadir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(cbiosdir)" "$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(icon128dir)" "$(DESTDIR)$(icon16dir)" "$(DESTDIR)$(icon256dir)" "$(DESTDIR)$(icon32dir)" "$(DESTDIR)$(icon48dir)" "$(DESTDIR)$(icon512dir)" "$(DESTDIR)$(icon64dir)" "$(DESTDIR)$(metainfodir)" "$(DESTDIR)$(pkgdatadir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -3983,11 +4009,12 @@ info: info-am
 
 info-am:
 
-install-data-am: install-dist_desktopDATA install-dist_icon128DATA \
-	install-dist_icon16DATA install-dist_icon256DATA \
-	install-dist_icon32DATA install-dist_icon48DATA \
-	install-dist_icon512DATA install-dist_icon64DATA \
-	install-dist_metainfoDATA install-dist_pkgdataDATA
+install-data-am: install-dist_cbiosDATA install-dist_desktopDATA \
+	install-dist_icon128DATA install-dist_icon16DATA \
+	install-dist_icon256DATA install-dist_icon32DATA \
+	install-dist_icon48DATA install-dist_icon512DATA \
+	install-dist_icon64DATA install-dist_metainfoDATA \
+	install-dist_pkgdataDATA
 
 install-dvi: install-dvi-am
 
@@ -4147,12 +4174,12 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-dist_desktopDATA \
-	uninstall-dist_icon128DATA uninstall-dist_icon16DATA \
-	uninstall-dist_icon256DATA uninstall-dist_icon32DATA \
-	uninstall-dist_icon48DATA uninstall-dist_icon512DATA \
-	uninstall-dist_icon64DATA uninstall-dist_metainfoDATA \
-	uninstall-dist_pkgdataDATA
+uninstall-am: uninstall-binPROGRAMS uninstall-dist_cbiosDATA \
+	uninstall-dist_desktopDATA uninstall-dist_icon128DATA \
+	uninstall-dist_icon16DATA uninstall-dist_icon256DATA \
+	uninstall-dist_icon32DATA uninstall-dist_icon48DATA \
+	uninstall-dist_icon512DATA uninstall-dist_icon64DATA \
+	uninstall-dist_metainfoDATA uninstall-dist_pkgdataDATA
 
 .MAKE: check-am install-am install-strip
 
@@ -4165,19 +4192,20 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_desktopDATA \
 	distclean-generic distclean-tags distcleancheck distdir \
 	distuninstallcheck dvi dvi-am html html-am info info-am \
 	install install-am install-binPROGRAMS install-data \
-	install-data-am install-dist_desktopDATA \
-	install-dist_icon128DATA install-dist_icon16DATA \
-	install-dist_icon256DATA install-dist_icon32DATA \
-	install-dist_icon48DATA install-dist_icon512DATA \
-	install-dist_icon64DATA install-dist_metainfoDATA \
-	install-dist_pkgdataDATA install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am recheck tags tags-am \
-	uninstall uninstall-am uninstall-binPROGRAMS \
+	install-data-am install-dist_cbiosDATA \
+	install-dist_desktopDATA install-dist_icon128DATA \
+	install-dist_icon16DATA install-dist_icon256DATA \
+	install-dist_icon32DATA install-dist_icon48DATA \
+	install-dist_icon512DATA install-dist_icon64DATA \
+	install-dist_metainfoDATA install-dist_pkgdataDATA install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
+	recheck tags tags-am uninstall uninstall-am \
+	uninstall-binPROGRAMS uninstall-dist_cbiosDATA \
 	uninstall-dist_desktopDATA uninstall-dist_icon128DATA \
 	uninstall-dist_icon16DATA uninstall-dist_icon256DATA \
 	uninstall-dist_icon32DATA uninstall-dist_icon48DATA \
