@@ -377,8 +377,6 @@ int main(void) {
     assert(!config.sunrise_ide);
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.sunrise_setup_row == 2);
-    send_key(&overlay, SDLK_DOWN);
-    assert(overlay.sunrise_setup_row == 3);
     send_key(&overlay, SDLK_RETURN);
     assert(overlay.state == OVERLAY_STATE_MENU);
     assert(config.sunrise_ide);
@@ -428,11 +426,7 @@ int main(void) {
     assert(overlay.sunrise_setup_row == 2);
     assert(strcmp(overlay.pending_ide_image_path,
                   ide_image_path) == 0);
-    assert(overlay.pending_ide_image_mode == ATA_IMAGE_READ_ONLY);
-    send_key(&overlay, SDLK_RETURN);
-    assert(overlay.pending_ide_image_mode == ATA_IMAGE_READ_WRITE);
-    send_key(&overlay, SDLK_DOWN);
-    assert(overlay.sunrise_setup_row == 3);
+    assert(config.ide_image_mode == ATA_IMAGE_READ_ONLY);
     send_key(&overlay, SDLK_RETURN);
     assert(overlay.state == OVERLAY_STATE_MENU);
     assert(config.sunrise_ide);
@@ -441,8 +435,8 @@ int main(void) {
     assert(strcmp(config.ide_image_path,
                   ide_image_path) == 0);
     assert(msx_sunrise_disk_mounted(&msx));
-    assert(msx_sunrise_disk_writable(&msx));
-    assert(config.ide_image_mode == ATA_IMAGE_READ_WRITE);
+    assert(!msx_sunrise_disk_writable(&msx));
+    assert(config.ide_image_mode == ATA_IMAGE_READ_ONLY);
 
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
@@ -504,14 +498,19 @@ int main(void) {
     assert(msx_sunrise_disk_mounted(&msx));
     assert(strcmp(config.ide_image_path, ide_image_path) == 0);
     send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 8);
-    send_key(&overlay, SDLK_RETURN);
-    assert(config.ide_image_mode == ATA_IMAGE_READ_ONLY);
-    assert(!msx_sunrise_disk_writable(&msx));
-    send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 0);
 
     send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_EXTENSIONS);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_ADVANCED);
+    assert(overlay.row == 0);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 1);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.ide_image_mode == ATA_IMAGE_READ_WRITE);
+    assert(msx_sunrise_disk_writable(&msx));
+    send_key(&overlay, SDLK_LEFT);
     assert(overlay.section == OVERLAY_EXTENSIONS);
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
@@ -543,7 +542,7 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
     assert(overlay.row == 0);
-    for (int row = 0; row < 4; ++row)
+    for (int row = 0; row < 5; ++row)
         send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.cassette_audible_monitor);
@@ -551,7 +550,7 @@ int main(void) {
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.cassette_visual_monitor);
-    for (int row = 0; row < 5; ++row)
+    for (int row = 0; row < 6; ++row)
         send_key(&overlay, SDLK_UP);
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_RETURN);

@@ -182,7 +182,8 @@ chosen and both selected files have been validated. The firmware path is
 then retained so later activations are simple disconnect/reconnect toggles;
 Delete on the extension forgets it and re-enables setup for replacement.
 Media > IDE hard disk owns subsequent mounting and ejection while the
-controller is connected. Both paths and the access mode persist in
+controller is connected. Advanced > IDE image access mode owns the explicit
+read-only/read-write switch. Both paths and the access mode persist in
 `1983.conf`; command-line equivalents are `--sunrise-rom`, `--ide`, and
 `--ide-mode`. Sector reads and writes pulse the
 dedicated Sunrise IDE indicator; the owning cartridge LED remains orange to

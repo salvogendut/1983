@@ -35,6 +35,7 @@ enum {
 
 enum {
     ADVANCED_MODEL_EDITOR = 0,
+    ADVANCED_IDE_IMAGE_ACCESS,
     ADVANCED_SMOOTHING,
     ADVANCED_REAL_CRT,
     ADVANCED_CRT_SCANLINES,
@@ -59,7 +60,6 @@ enum {
 enum {
     SUNRISE_SETUP_FIRMWARE = 0,
     SUNRISE_SETUP_DISK,
-    SUNRISE_SETUP_ACCESS,
     SUNRISE_SETUP_CONNECT,
     SUNRISE_SETUP_ROWS
 };
@@ -89,7 +89,7 @@ static int section_rows(const Overlay *overlay,
     switch (section) {
         case OVERLAY_GENERAL:    return GENERAL_ROWS;
         case OVERLAY_MEDIA:
-            return overlay->config->sunrise_ide ? 9 : 7;
+            return overlay->config->sunrise_ide ? 8 : 7;
         case OVERLAY_EXTENSIONS: return 4;
         case OVERLAY_ADVANCED:   return ADVANCED_ROWS;
         case OVERLAY_SECTION_COUNT: break;
@@ -410,11 +410,6 @@ static void item_text(const Overlay *overlay, int row,
                     snprintf(label, label_size, "IDE hard disk");
                     ide_image_text(overlay, value, value_size);
                     break;
-                case 8:
-                    snprintf(label, label_size, "IDE image access");
-                    snprintf(value, value_size, "%s",
-                             ide_mode_name(config->ide_image_mode));
-                    break;
             }
             break;
         case OVERLAY_EXTENSIONS:
@@ -450,6 +445,12 @@ static void item_text(const Overlay *overlay, int row,
                              "Machine model editor");
                     snprintf(value, value_size, "%zu models",
                              overlay->models->count);
+                    break;
+                case ADVANCED_IDE_IMAGE_ACCESS:
+                    snprintf(label, label_size,
+                             "IDE image access mode");
+                    snprintf(value, value_size, "%s",
+                             ide_mode_name(config->ide_image_mode));
                     break;
                 case ADVANCED_SMOOTHING:
                     snprintf(label, label_size, "Smoothing");
@@ -1452,8 +1453,6 @@ static void begin_sunrise_setup(Overlay *overlay) {
     snprintf(overlay->pending_ide_image_path,
              sizeof(overlay->pending_ide_image_path), "%s",
              overlay->config->ide_image_path);
-    overlay->pending_ide_image_mode =
-        overlay->config->ide_image_mode;
     overlay->state = OVERLAY_STATE_SUNRISE_SETUP;
 }
 
@@ -1523,7 +1522,7 @@ static void finish_sunrise_setup(Overlay *overlay) {
     if (!connect_sunrise(
             overlay, overlay->pending_sunrise_rom_path,
             overlay->pending_ide_image_path,
-            overlay->pending_ide_image_mode))
+            overlay->config->ide_image_mode))
         return;
     overlay->dirty = true;
     overlay->state = OVERLAY_STATE_MENU;
@@ -1619,7 +1618,7 @@ static void activate_item(Overlay *overlay) {
         case OVERLAY_MEDIA: {
             static const char *media[] = {
                 "", "", "", "", "Cassette", "Drive A", "Drive B",
-                "IDE hard disk", "IDE image access"
+                "IDE hard disk"
             };
             if (overlay->row == 0) {
                 open_cartridge_dialog(overlay, 0);
@@ -1643,13 +1642,6 @@ static void activate_item(Overlay *overlay) {
             }
             if (overlay->row == 7) {
                 open_ide_image_dialog(overlay);
-                return;
-            }
-            if (overlay->row == 8) {
-                (void)set_ide_image_mode(
-                    overlay,
-                    config->ide_image_mode == ATA_IMAGE_READ_ONLY
-                    ? ATA_IMAGE_READ_WRITE : ATA_IMAGE_READ_ONLY);
                 return;
             }
             notify_post("%s loading is not implemented yet",
@@ -1699,6 +1691,15 @@ static void activate_item(Overlay *overlay) {
                 case ADVANCED_MODEL_EDITOR:
                     begin_model_editor(overlay);
                     return;
+                case ADVANCED_IDE_IMAGE_ACCESS:
+                    if (!set_ide_image_mode(
+                            overlay,
+                            config->ide_image_mode ==
+                                ATA_IMAGE_READ_ONLY
+                            ? ATA_IMAGE_READ_WRITE :
+                              ATA_IMAGE_READ_ONLY))
+                        return;
+                    break;
                 case ADVANCED_SMOOTHING:
                     config->smoothing = !config->smoothing;
                     break;
@@ -1848,13 +1849,6 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                     break;
                 case SUNRISE_SETUP_DISK:
                     open_ide_image_dialog(overlay);
-                    break;
-                case SUNRISE_SETUP_ACCESS:
-                    overlay->pending_ide_image_mode =
-                        overlay->pending_ide_image_mode ==
-                            ATA_IMAGE_READ_ONLY
-                        ? ATA_IMAGE_READ_WRITE :
-                          ATA_IMAGE_READ_ONLY;
                     break;
                 case SUNRISE_SETUP_CONNECT:
                     finish_sunrise_setup(overlay);
@@ -2124,7 +2118,7 @@ static const char *section_hint(OverlaySection section) {
         case OVERLAY_EXTENSIONS:
             return "Enter toggles; Delete forgets Sunrise firmware.";
         case OVERLAY_ADVANCED:
-            return "Machine models are saved to the per-user catalogue.";
+            return "Machine models, IDE safety, and diagnostic controls.";
         case OVERLAY_SECTION_COUNT:
             break;
     }
@@ -2227,7 +2221,7 @@ void overlay_tick(Overlay *overlay) {
                          sizeof(overlay->config->last_media_dir),
                          overlay->dialog_path);
             overlay->sunrise_setup_row =
-                SUNRISE_SETUP_ACCESS;
+                SUNRISE_SETUP_CONNECT;
             notify_post("IDE disk selected: %s",
                         path_basename(overlay->dialog_path));
             return;
@@ -2581,7 +2575,7 @@ static void render_model_delete(const Overlay *overlay,
 static void render_sunrise_setup(const Overlay *overlay,
                                  SDL_Renderer *renderer) {
     static const char *labels[SUNRISE_SETUP_ROWS] = {
-        "Firmware ROM", "IDE hard disk", "Disk access", "Connect"
+        "Firmware ROM", "IDE hard disk", "Connect"
     };
     char firmware[52];
     char disk[52];
@@ -2607,8 +2601,6 @@ static void render_sunrise_setup(const Overlay *overlay,
         snprintf(disk, sizeof(disk), "[optional - no disk]");
     values[SUNRISE_SETUP_FIRMWARE] = firmware;
     values[SUNRISE_SETUP_DISK] = disk;
-    values[SUNRISE_SETUP_ACCESS] =
-        ide_mode_name(overlay->pending_ide_image_mode);
     values[SUNRISE_SETUP_CONNECT] = "Connect Sunrise IDE";
 
     ui_fill_rect(renderer, 0.0f, 0.0f,
