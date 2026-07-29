@@ -48,6 +48,9 @@ ide_image_mode = read-only
 # Raw, 512-byte-sector SD-card images for SD Mapper V2.
 sd_card_a =
 sd_card_b =
+# Raw images for the MegaFlashROM SCC+ SD card slots.
+megaflash_sd_a =
+megaflash_sd_b =
 # read-only (safe default) or read-write; applies to both cards.
 sd_image_mode = read-only
 last_media_dir =
@@ -64,6 +67,10 @@ sd_mapper_rom =
 # Hardware switches; a 256 KiB ROM contains two 128 KiB driver halves.
 sd_mapper_ram = true
 sd_mapper_alternate_driver = false
+# Initial flash image up to 8 MiB. Short images have an erased, padded tail.
+# Guest flash changes are stored separately and never overwrite this source.
+megaflash = false
+megaflash_rom =
 scc = false
 msx_music = false
 kanji_rom = false

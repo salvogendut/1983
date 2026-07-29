@@ -6,8 +6,9 @@ config=tests/test-cli-config.tmp
 sunrise=tests/test-cli-sunrise.tmp
 sdrom=tests/test-cli-sdmapper.tmp
 sdimage=tests/test-cli-sdcard.tmp
+megaflash=tests/test-cli-megaflash.tmp
 cassette=tests/test-cli-cassette.tmp
-trap 'rm -f "$log" "$config" "$sunrise" "$sdrom" "$sdimage" "$cassette"' EXIT HUP INT TERM
+trap 'rm -f "$log" "$config" "$sunrise" "$sdrom" "$sdimage" "$megaflash" "$cassette"' EXIT HUP INT TERM
 
 if ./1983 --mapper definitely-not-a-mapper >"$log" 2>&1; then
     echo "invalid mapper was accepted" >&2
@@ -53,6 +54,22 @@ if ./1983 --ide-mode unsafe >"$log" 2>&1; then
     exit 1
 fi
 grep -q "expected read-only or read-write" "$log"
+
+if ./1983 --config /dev/null \
+        --megaflash-rom missing-megaflash.rom \
+        >"$log" 2>&1; then
+    echo "missing MegaFlashROM image was accepted" >&2
+    exit 1
+fi
+grep -q "cannot load MegaFlashROM" "$log"
+
+dd if=/dev/zero of="$megaflash" bs=1048576 count=8 2>/dev/null
+dd if=/dev/zero of="$sdimage" bs=512 count=2 2>/dev/null
+./1983 --config /dev/null --megaflash-rom "$megaflash" \
+    --megaflash-sd-a "$sdimage" --headless --unthrottled \
+    --exit-after 0 >"$log" 2>&1
+grep -q "MegaFlashROM SCC+ SD loaded in cartridge slot 2" "$log"
+grep -q "MegaFlash SD A: $sdimage (read-only)" "$log"
 
 if ./1983 --config /dev/null --sd-mapper-rom missing-sdmapper.rom \
         >"$log" 2>&1; then
@@ -112,6 +129,9 @@ grep -q -- "--sd-mapper-rom PATH" "$log"
 grep -q -- "--sd-a PATH" "$log"
 grep -q -- "--sd-b PATH" "$log"
 grep -q -- "--sd-mode MODE" "$log"
+grep -q -- "--megaflash-rom PATH" "$log"
+grep -q -- "--megaflash-sd-a PATH" "$log"
+grep -q -- "--megaflash-sd-b PATH" "$log"
 grep -q -- "--disk-a PATH" "$log"
 grep -q -- "--disk-b PATH" "$log"
 grep -q -- "--floppy-mode MODE" "$log"

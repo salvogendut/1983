@@ -193,6 +193,7 @@ int main(void) {
     const char *ide_image_path = "tests/test-sunrise-disk.tmp";
     const char *sd_mapper_rom_path = "tests/test-sd-mapper-rom.tmp";
     const char *sd_image_path = "tests/test-sd-card.tmp";
+    const char *megaflash_rom_path = "tests/test-megaflash-rom.tmp";
     const char *cassette_path = "tests/test-cassette.tmp";
     Config config;
     ModelCatalog models;
@@ -255,6 +256,16 @@ int main(void) {
     memset(sunrise_rom, 0x5a, SD_CARD_SECTOR_SIZE);
     assert(fwrite(sunrise_rom, 1, SD_CARD_SECTOR_SIZE, fixture) ==
            SD_CARD_SECTOR_SIZE);
+    assert(fclose(fixture) == 0);
+    fixture = fopen(megaflash_rom_path, "wb");
+    assert(fixture);
+    memset(sunrise_rom, 0xff, sizeof(sunrise_rom));
+    for (size_t chunk = 0;
+         chunk < MSX_MEGAFLASH_FLASH_SIZE / sizeof(sunrise_rom);
+         ++chunk)
+        assert(fwrite(
+                   sunrise_rom, 1, sizeof(sunrise_rom), fixture) ==
+               sizeof(sunrise_rom));
     assert(fclose(fixture) == 0);
     fixture = fopen(cassette_path, "wb");
     assert(fixture);
@@ -450,6 +461,7 @@ int main(void) {
     assert(!msx_sunrise_disk_writable(&msx));
     assert(config.ide_image_mode == ATA_IMAGE_READ_ONLY);
 
+    send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
@@ -750,12 +762,70 @@ int main(void) {
     send_key(&overlay, SDLK_F9);
     assert(!overlay.visible);
 
+    /* MegaFlash setup owns one slot but exposes two removable SD cards. */
+    config_defaults(&config);
+    config.extra_hardware = true;
+    config.tinker = true;
+    msx_configure(&msx, config.model, config.region,
+                  config.memory_kb);
+    overlay_init(&overlay, &config, &models, &display, &msx);
+    send_key(&overlay, SDLK_F9);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_EXTENSIONS);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 2);
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_MEGAFLASH_SETUP);
+    overlay.dialog_target = OVERLAY_DIALOG_MEGAFLASH_ROM;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", megaflash_rom_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(overlay.megaflash_setup_row == 1);
+    overlay.dialog_target = OVERLAY_DIALOG_MEGAFLASH_SD_A;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", sd_image_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(overlay.megaflash_setup_row == 2);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_MENU);
+    assert(config.megaflash);
+    assert(msx_megaflash_connected(&msx));
+    assert(msx_megaflash_slot(&msx) == 1);
+    assert(msx_megaflash_card_mounted(&msx, 0));
+    assert(strcmp(config.megaflash_rom_path,
+                  megaflash_rom_path) == 0);
+    assert(strcmp(config.megaflash_card_path[0],
+                  sd_image_path) == 0);
+    send_key(&overlay, SDLK_LEFT);
+    send_key(&overlay, SDLK_UP);
+    send_key(&overlay, SDLK_UP);
+    assert(overlay.row == 6);
+    send_key(&overlay, SDLK_DELETE);
+    assert(!msx_megaflash_card_mounted(&msx, 0));
+    assert(!config.megaflash_card_path[0][0]);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.megaflash);
+    assert(!msx_megaflash_connected(&msx));
+    send_key(&overlay, SDLK_DELETE);
+    assert(!config.megaflash_rom_path[0]);
+    send_key(&overlay, SDLK_F9);
+    assert(!overlay.visible);
+
     assert(remove(editor_path) == 0);
     assert(remove(sunrise_rom_path) == 0);
     assert(remove(sunrise_rom_path_2) == 0);
     assert(remove(ide_image_path) == 0);
     assert(remove(sd_mapper_rom_path) == 0);
     assert(remove(sd_image_path) == 0);
+    assert(remove(megaflash_rom_path) == 0);
     assert(remove(cassette_path) == 0);
 
     display_quit(&display);

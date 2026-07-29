@@ -5,6 +5,7 @@
 
 #include "cassette.h"
 #include "cartridge.h"
+#include "megaflash.h"
 #include "psg.h"
 #include "rtc.h"
 #include "sd_mapper.h"
@@ -115,9 +116,11 @@ typedef struct {
     u8 internal_ram[MSX_RAM_INTERNAL_SIZE];
     MsxCartridge cartridges[MSX_CARTRIDGE_SLOTS];
     Cassette cassette;
+    MsxMegaFlashRom megaflash;
     MsxSdMapper sd_mapper;
     MsxSunriseIde sunrise;
     Wd2793 fdc;
+    int megaflash_slot;
     int sd_mapper_slot;
     int sunrise_slot;
     bool bios_loaded;
@@ -251,6 +254,32 @@ bool msx_sd_card_dirty(const MsxMachine *msx, unsigned card);
 bool msx_sd_card_has_error(const MsxMachine *msx, unsigned card);
 const char *msx_sd_card_error(const MsxMachine *msx, unsigned card);
 bool msx_sd_card_take_activity(MsxMachine *msx, unsigned card);
+int msx_install_megaflash(MsxMachine *msx, unsigned slot,
+                          const u8 *data, size_t size);
+int msx_load_megaflash(MsxMachine *msx, unsigned slot,
+                       const char *path);
+int msx_load_megaflash_persistent(MsxMachine *msx, unsigned slot,
+                                  const char *initial_path,
+                                  const char *state_path);
+int msx_flush_megaflash(MsxMachine *msx);
+bool msx_megaflash_flash_dirty(const MsxMachine *msx);
+bool msx_megaflash_flash_has_error(const MsxMachine *msx);
+const char *msx_megaflash_flash_error(const MsxMachine *msx);
+int msx_eject_megaflash(MsxMachine *msx);
+bool msx_megaflash_connected(const MsxMachine *msx);
+int msx_megaflash_slot(const MsxMachine *msx);
+int msx_mount_megaflash_card(MsxMachine *msx, unsigned card,
+                             const char *path, SdImageMode mode);
+int msx_flush_megaflash_card(MsxMachine *msx, unsigned card);
+int msx_eject_megaflash_card(MsxMachine *msx, unsigned card);
+bool msx_megaflash_card_mounted(const MsxMachine *msx, unsigned card);
+bool msx_megaflash_card_writable(const MsxMachine *msx, unsigned card);
+bool msx_megaflash_card_dirty(const MsxMachine *msx, unsigned card);
+bool msx_megaflash_card_has_error(const MsxMachine *msx,
+                                  unsigned card);
+const char *msx_megaflash_card_error(const MsxMachine *msx,
+                                     unsigned card);
+bool msx_megaflash_take_activity(MsxMachine *msx, unsigned card);
 int msx_set_rtc_persistence(MsxMachine *msx, const char *path,
                             u64 host_seconds);
 int msx_flush_rtc_persistence(MsxMachine *msx, u64 host_seconds);

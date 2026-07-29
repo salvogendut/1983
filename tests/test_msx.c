@@ -227,6 +227,37 @@ static void test_sd_mapper_expanded_cartridge_bus(void) {
     free(rom);
 }
 
+static void test_megaflash_expanded_cartridge_bus(void) {
+    MsxMachine msx;
+    u8 *flash = malloc(MSX_MEGAFLASH_FLASH_SIZE);
+
+    assert(flash);
+    for (size_t address = 0;
+         address < MSX_MEGAFLASH_FLASH_SIZE; ++address)
+        flash[address] = (u8)(address >> 13);
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_NTSC, 64);
+    assert(msx_install_megaflash(
+               &msx, 0, flash, MSX_MEGAFLASH_FLASH_SIZE) == 0);
+    assert(msx_megaflash_connected(&msx));
+    assert(msx_megaflash_slot(&msx) == 0);
+    msx.primary_slot = 0x55;
+    assert(msx_memory_read(&msx, 0x4000) == 0);
+    assert(msx_memory_read(&msx, 0xffff) == 0xff);
+    msx_memory_write(&msx, 0xffff, 0x55);
+    assert(msx_memory_read(&msx, 0xffff) == 0xaa);
+    assert(msx_memory_read(&msx, 0x4000) == 8);
+    assert(msx_io_read(&msx, 0xfc) == 0xe3);
+    msx_io_write(&msx, 0xfc, 12);
+    assert(msx_io_read(&msx, 0xfc) == 0xec);
+    msx_io_write(&msx, 0x10, 8);
+    msx_io_write(&msx, 0x11, 15);
+    assert(msx.megaflash.psg.registers[8] == 15);
+    assert(msx_eject_megaflash(&msx) == 0);
+    assert(!msx_megaflash_connected(&msx));
+    msx_destroy(&msx);
+    free(flash);
+}
+
 static void test_ascii8_cpu_boot_checkpoint(void) {
     MsxMachine msx;
     u8 bios[MSX_BIOS_SIZE];
@@ -1101,6 +1132,19 @@ static u64 vdp_frame_hash(const MsxVdp *vdp) {
     return hash;
 }
 
+static bool bytes_contain(const u8 *data, size_t size,
+                          const char *text) {
+    size_t length = strlen(text);
+
+    if (length > size)
+        return false;
+    for (size_t offset = 0; offset <= size - length; ++offset) {
+        if (memcmp(data + offset, text, length) == 0)
+            return true;
+    }
+    return false;
+}
+
 static void test_nms8250_floppy_checkpoint_if_available(void) {
     const char *directory = getenv("MSX_NMS8250_DIR");
     const char *image_path = getenv("MSX_NMS8250_DSK");
@@ -1303,6 +1347,61 @@ static void test_nextor_sd_mapper_checkpoint_if_available(void) {
     free(msx);
 }
 
+static void test_nextor_megaflash_checkpoint_if_available(void) {
+    const char *bios_path = getenv("MSX_MEGAFLASH_BIOS_ROM");
+    const char *flash_path = getenv("MSX_MEGAFLASH_ROM");
+    const char *image_path = getenv("MSX_MEGAFLASH_IMAGE");
+    MsxMachine *msx;
+    size_t nonzero_vram = 0;
+    u64 framebuffer_hash;
+
+    if (!bios_path || !bios_path[0] ||
+        !flash_path || !flash_path[0])
+        return;
+
+    msx = malloc(sizeof(*msx));
+    assert(msx);
+    msx_init(msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(msx_load_bios(msx, bios_path) == 0);
+    assert(msx_load_megaflash(msx, 1, flash_path) == 0);
+    if (image_path && image_path[0])
+        assert(msx_mount_megaflash_card(
+                   msx, 0, image_path, SD_IMAGE_READ_ONLY) == 0);
+    for (int frame = 0; frame < 1200; ++frame)
+        msx_run_frame(msx);
+    for (size_t i = 0; i < sizeof(msx->vdp.vram); ++i)
+        if (msx->vdp.vram[i])
+            ++nonzero_vram;
+    framebuffer_hash = vdp_frame_hash(&msx->vdp);
+
+    fprintf(stderr,
+            "Nextor/MegaFlashROM SCC+ SD checkpoint: frame=%llu "
+            "PC=%04X slot=%02X cart-subslot=%02X "
+            "mapper=%02X,%02X,%02X,%02X instructions=%llu "
+            "VRAM=%zu framebuffer=%016llX\n",
+            (unsigned long long)msx->frame, msx->cpu.pc,
+            msx->primary_slot, msx->megaflash.secondary_slot,
+            msx->megaflash.mapper_segment[0],
+            msx->megaflash.mapper_segment[1],
+            msx->megaflash.mapper_segment[2],
+            msx->megaflash.mapper_segment[3],
+            (unsigned long long)msx->instructions, nonzero_vram,
+            (unsigned long long)framebuffer_hash);
+    assert(msx->frame == 1200);
+    assert(msx_megaflash_connected(msx));
+    assert(msx_megaflash_slot(msx) == 1);
+    assert(!image_path || !image_path[0] ||
+           msx_megaflash_card_mounted(msx, 0));
+    assert(msx->instructions > 1000000);
+    assert(nonzero_vram > 100);
+    assert(framebuffer_hash != 0);
+    assert(bytes_contain(
+               msx->vdp.vram, sizeof(msx->vdp.vram),
+               "NEXTOR.SYS"));
+    msx_destroy(msx);
+    free(msx);
+}
+
 int main(void) {
     MsxMachine msx;
 
@@ -1374,6 +1473,7 @@ int main(void) {
     test_dual_cartridge_slots_and_mapper_reset();
     test_sunrise_cartridge_slot_bus();
     test_sd_mapper_expanded_cartridge_bus();
+    test_megaflash_expanded_cartridge_bus();
     test_ascii8_cpu_boot_checkpoint();
     test_atomic_firmware_set_and_eject();
     test_msx2_expanded_slots_and_firmware();
@@ -1393,6 +1493,7 @@ int main(void) {
     test_nms8250_floppy_checkpoint_if_available();
     test_nextor_sunrise_checkpoint_if_available();
     test_nextor_sd_mapper_checkpoint_if_available();
+    test_nextor_megaflash_checkpoint_if_available();
     msx_destroy(&msx);
     return 0;
 }

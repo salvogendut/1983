@@ -20,13 +20,16 @@ SDL3 allows.
 > battery-backed per-machine CMOS, plus native Philips WD2793 floppy
 > support with safe read-only/read-write raw
 > DSK images, safe read-only/read-write Sunrise IDE disks, and the composite
-> MSX SD Mapper V2 with two SD cards and an independent 512 KiB mapper. The
+> MSX SD Mapper V2 and MegaFlashROM SCC+ SD cartridges. Both provide two SD
+> cards and an independent 512 KiB mapper; MegaFlashROM additionally provides
+> persistent 8 MiB flash, SCC-I, and a cartridge PSG. The
 > official Sunrise Nextor kernel can boot the GeoBench raw image to its
 > desktop, while the official SD Mapper V2 ROM boots both Nextor system
-> media and the GeoBench image from SD.
+> media and the GeoBench image from SD. The official MegaFlashROM preflash
+> also boots its Nextor 2.10 ROM disk to the command prompt.
 > Standard MSX CAS cassette playback
 > is integrated with the BIOS motor and input path. Protected floppy
-> formats, cassette recording, SCC audio, and other extensions remain in
+> formats, cassette recording, MSX-MUSIC audio, and other extensions remain in
 > development.
 
 ## Highlights
@@ -47,6 +50,9 @@ SDL3 allows.
   images, safe flush/ejection, IDE activity, and Nextor boot.
 - MSX SD Mapper V2 emulation with its expanded cartridge slot, two SPI SD
   cards, switchable 512 KiB mapper, safe writable images, and Nextor boot.
+- MegaFlashROM SCC+ SD emulation with four expanded subslots, persistent
+  M29W640GB flash, all hardware mapper modes, dual MegaSD cards, a 512 KiB
+  mapper, SCC-I and cartridge PSG audio, and safe writable storage.
 - Philips NMS 8250 WD2793 emulation, conventional raw DSK images, safe
   sector writes, optional second floppy, and independent activity LEDs.
 - Standard MSX CAS playback with emulated motor control, transport status,
@@ -88,6 +94,8 @@ Useful options:
   --ide /path/to/disk.img --ide-mode read-only
 ./1983 --model msx1 --sd-mapper-rom /path/to/SDXC110.ROM \
   --sd-a /path/to/card.img --sd-mode read-only
+./1983 --model msx1 --megaflash-rom /path/to/megaflash-8m.rom \
+  --megaflash-sd-a /path/to/card.img --sd-mode read-only
 ./1983 --config ./test.conf
 ./1983 --headless --unthrottled --exit-after 10
 ./1983 --help
@@ -211,7 +219,8 @@ output. The translucent visual scope appears while the tape motor is running
 and shows the waveform, detected type, required command, and elapsed/total
 time. Recording and sampled audio formats are not implemented yet.
 
-Sunrise IDE, SD Mapper V2, SCC, and MSX-MUSIC are cartridge-connected
+Sunrise IDE, SD Mapper V2, MegaFlashROM SCC+ SD, SCC, and MSX-MUSIC are
+cartridge-connected
 extensions. The
 first configured device reserves cartridge slot 2 and the second reserves
 slot 1. Reserved cartridge and mapper controls remain visible but cannot be
@@ -242,6 +251,23 @@ provides **SD access mode**, **SD Mapper 512K RAM**, and the primary/alternate
 driver switch. Two green SD A/B LEDs report card traffic. Command-line
 equivalents are `--sd-mapper-rom`, `--sd-a`, `--sd-b`, and `--sd-mode`.
 Controller ROMs and card contents are user-supplied and are never bundled.
+
+**Extensions > MegaFlashROM** configures the composite MegaFlashROM SCC+ SD
+cartridge. Its setup keeps three different things distinct: an initial flash
+image up to 8 MiB, removable SD Card A, and removable SD Card B. The initial
+dump seeds a private writable flash state under the active configuration
+directory's `flash/` folder; guest flash programming never modifies the
+source dump. Subsequent starts load that private state. The emulated cartridge
+contains the recovery subslot, multi-mapper MegaFlash subslot, independent
+512 KiB mapper, MegaSD subslot, SCC-I, and cartridge PSG. Later SD insertion
+and safe ejection live under Media and use the same Advanced > SD access mode
+as SD Mapper V2. The SD A/B LEDs report traffic, while the owning cartridge
+LED remains orange. Command-line equivalents are `--megaflash-rom`,
+`--megaflash-sd-a`, `--megaflash-sd-b`, and `--sd-mode`. The required initial
+dump, flashed software, and SD contents are user-supplied and never bundled.
+The official [`mfrsd.rom` preflash](https://www.msxcartridgeshop.com/bin/mfrsd.zip)
+is accepted at its native 8,208,384-byte length and its remaining erased
+flash area is padded automatically.
 
 SDL scancodes map positionally to the international MSX keyboard. Left Ctrl
 is CTRL, left Alt is GRAPH, right Alt is CODE, and right Ctrl is the ACC/dead

@@ -31,6 +31,8 @@ typedef struct {
     const char *sunrise_rom_path;
     const char *sd_mapper_rom_path;
     const char *sd_card_path[MSX_SD_MAPPER_CARDS];
+    const char *megaflash_rom_path;
+    const char *megaflash_card_path[MSX_MEGAFLASH_CARDS];
     const char *drive_a_path;
     const char *drive_b_path;
     const char *ide_image_path;
@@ -65,6 +67,9 @@ static const char *usage =
     "  --sd-mapper-rom PATH load a 128/256 KB MSX SD Mapper V2 ROM\n"
     "  --sd-a PATH          insert a raw image in SD Mapper card A\n"
     "  --sd-b PATH          insert a raw image in SD Mapper card B\n"
+    "  --megaflash-rom PATH load a MegaFlashROM image (max 8 MiB)\n"
+    "  --megaflash-sd-a PATH insert its first raw SD-card image\n"
+    "  --megaflash-sd-b PATH insert its second raw SD-card image\n"
     "  --sd-mode MODE       SD access: read-only (default) or read-write\n"
     "  --disk-a PATH       insert a raw MSX DSK image in Drive A\n"
     "  --disk-b PATH       insert a raw MSX DSK image in Drive B\n"
@@ -202,6 +207,9 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--sd-mapper-rom") == 0 ||
              strcmp(argument, "--sd-a") == 0 ||
              strcmp(argument, "--sd-b") == 0 ||
+             strcmp(argument, "--megaflash-rom") == 0 ||
+             strcmp(argument, "--megaflash-sd-a") == 0 ||
+             strcmp(argument, "--megaflash-sd-b") == 0 ||
              strcmp(argument, "--sd-mode") == 0 ||
              strcmp(argument, "--disk-a") == 0 ||
              strcmp(argument, "--disk-b") == 0 ||
@@ -242,6 +250,12 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->sd_card_path[0] = argv[++i];
         } else if (strcmp(argument, "--sd-b") == 0) {
             cli->sd_card_path[1] = argv[++i];
+        } else if (strcmp(argument, "--megaflash-rom") == 0) {
+            cli->megaflash_rom_path = argv[++i];
+        } else if (strcmp(argument, "--megaflash-sd-a") == 0) {
+            cli->megaflash_card_path[0] = argv[++i];
+        } else if (strcmp(argument, "--megaflash-sd-b") == 0) {
+            cli->megaflash_card_path[1] = argv[++i];
         } else if (strcmp(argument, "--sd-mode") == 0) {
             cli->sd_image_mode = parse_sd_mode(argv[++i]);
             if (cli->sd_image_mode < 0)
@@ -423,6 +437,7 @@ int main(int argc, char **argv) {
     GamepadInput gamepad;
     Overlay overlay;
     char rtc_path[PATH_MAX];
+    char megaflash_state_path[PATH_MAX];
     SDL_WindowID window_id;
     bool running = true;
     int host_frame = 0;
@@ -528,6 +543,22 @@ int main(int argc, char **argv) {
                  "%s", cli.sd_card_path[card]);
         config.extra_hardware = true;
         config.sd_mapper = true;
+    }
+    if (cli.megaflash_rom_path) {
+        snprintf(config.megaflash_rom_path,
+                 sizeof(config.megaflash_rom_path),
+                 "%s", cli.megaflash_rom_path);
+        config.extra_hardware = true;
+        config.megaflash = true;
+    }
+    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
+        if (!cli.megaflash_card_path[card])
+            continue;
+        snprintf(config.megaflash_card_path[card],
+                 sizeof(config.megaflash_card_path[card]),
+                 "%s", cli.megaflash_card_path[card]);
+        config.extra_hardware = true;
+        config.megaflash = true;
     }
     if (cli.ide_image_path) {
         snprintf(config.ide_image_path,
@@ -743,6 +774,70 @@ int main(int argc, char **argv) {
             }
         }
     }
+    if (config.megaflash) {
+        int megaflash_slot = -1;
+        int state_path_result =
+            config_megaflash_state_path(
+                &config, megaflash_state_path,
+                sizeof(megaflash_state_path));
+
+        for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+            const char *owner =
+                config_cartridge_slot_owner(&config, slot);
+
+            if (owner &&
+                strcmp(owner, "MegaFlashROM SCC+ SD") == 0) {
+                megaflash_slot = (int)slot;
+                break;
+            }
+        }
+        if (megaflash_slot < 0 ||
+            !config.megaflash_rom_path[0] ||
+            state_path_result != 0 ||
+            (megaflash_state_path[0]
+             ? msx_load_megaflash_persistent(
+                   &msx, (unsigned)megaflash_slot,
+                   config.megaflash_rom_path,
+                   megaflash_state_path)
+             : msx_load_megaflash(
+                   &msx, (unsigned)megaflash_slot,
+                   config.megaflash_rom_path)) != 0) {
+            fprintf(stderr,
+                    "cannot load MegaFlashROM SCC+ SD "
+                    "image %s: %s\n",
+                    config.megaflash_rom_path[0]
+                    ? config.megaflash_rom_path : "[not configured]",
+                    msx_megaflash_flash_error(&msx));
+            if (cli.megaflash_rom_path ||
+                cli.megaflash_card_path[0] ||
+                cli.megaflash_card_path[1]) {
+                msx_destroy(&msx);
+                return 1;
+            }
+            config.megaflash = false;
+            config_normalize(&config);
+        } else {
+            for (unsigned card = 0;
+                 card < MSX_MEGAFLASH_CARDS; ++card) {
+                if (!config.megaflash_card_path[card][0])
+                    continue;
+                if (msx_mount_megaflash_card(
+                        &msx, card,
+                        config.megaflash_card_path[card],
+                        config.sd_image_mode) == 0)
+                    continue;
+                fprintf(stderr,
+                        "cannot mount MegaFlash SD %c image %s: %s\n",
+                        'A' + (int)card,
+                        config.megaflash_card_path[card],
+                        msx_megaflash_card_error(&msx, card));
+                if (cli.megaflash_card_path[card]) {
+                    msx_destroy(&msx);
+                    return 1;
+                }
+            }
+        }
+    }
     for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
         const char *path = config.cartridge_path[slot];
         const char *owner =
@@ -842,6 +937,21 @@ int main(int argc, char **argv) {
                    ? config.sd_card_path[card] : "empty",
                    msx_sd_card_mounted(&msx, card)
                    ? (msx_sd_card_writable(&msx, card)
+                      ? " (read/write)" : " (read-only)")
+                   : "");
+        }
+    }
+    if (msx_megaflash_connected(&msx)) {
+        printf("MegaFlashROM SCC+ SD loaded in cartridge slot %d "
+               "(8 MiB flash, SCC-I, PSG, 512 KB mapper)\n",
+               msx_megaflash_slot(&msx) + 1);
+        for (unsigned card = 0;
+             card < MSX_MEGAFLASH_CARDS; ++card) {
+            printf("  MegaFlash SD %c: %s%s\n", 'A' + (int)card,
+                   msx_megaflash_card_mounted(&msx, card)
+                   ? config.megaflash_card_path[card] : "empty",
+                   msx_megaflash_card_mounted(&msx, card)
+                   ? (msx_megaflash_card_writable(&msx, card)
                       ? " (read/write)" : " (read-only)")
                    : "");
         }
@@ -1074,6 +1184,10 @@ int main(int argc, char **argv) {
             leds_ping(LED_SD_A);
         if (msx_sd_card_take_activity(&msx, 1))
             leds_ping(LED_SD_B);
+        if (msx_megaflash_take_activity(&msx, 0))
+            leds_ping(LED_SD_A);
+        if (msx_megaflash_take_activity(&msx, 1))
+            leds_ping(LED_SD_B);
         if (msx_drive_a_take_activity(&msx))
             leds_ping(LED_FDC_A);
         if (msx_drive_b_take_activity(&msx))
@@ -1155,6 +1269,24 @@ int main(int argc, char **argv) {
         msx_flush_sunrise_disk(&msx) != 0) {
         fprintf(stderr, "cannot flush IDE image at shutdown: %s\n",
                 msx_sunrise_disk_error(&msx));
+        shutdown_status = 1;
+    }
+    if (msx_megaflash_connected(&msx) &&
+        msx_flush_megaflash(&msx) != 0) {
+        fprintf(stderr,
+                "cannot flush MegaFlashROM flash state at shutdown: %s\n",
+                msx_megaflash_flash_error(&msx));
+        shutdown_status = 1;
+    }
+    for (unsigned card = 0;
+         card < MSX_MEGAFLASH_CARDS; ++card) {
+        if (!msx_megaflash_card_mounted(&msx, card) ||
+            msx_flush_megaflash_card(&msx, card) == 0)
+            continue;
+        fprintf(stderr,
+                "cannot flush MegaFlash SD %c at shutdown: %s\n",
+                'A' + (int)card,
+                msx_megaflash_card_error(&msx, card));
         shutdown_status = 1;
     }
     for (unsigned card = 0;

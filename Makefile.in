@@ -96,10 +96,11 @@ bin_PROGRAMS = 1983$(EXEEXT)
 check_PROGRAMS = test-cartridge$(EXEEXT) test-cassette$(EXEEXT) \
 	test-ata$(EXEEXT) test-floppy$(EXEEXT) test-wd2793$(EXEEXT) \
 	test-sunrise$(EXEEXT) test-sdcard$(EXEEXT) \
-	test-sd-mapper$(EXEEXT) test-config$(EXEEXT) \
-	test-models$(EXEEXT) test-msx$(EXEEXT) test-gamepad$(EXEEXT) \
-	test-kbd$(EXEEXT) test-overlay$(EXEEXT) test-vdp$(EXEEXT) \
-	test-psg$(EXEEXT) test-rtc$(EXEEXT)
+	test-sd-mapper$(EXEEXT) test-megaflash$(EXEEXT) \
+	test-config$(EXEEXT) test-models$(EXEEXT) test-msx$(EXEEXT) \
+	test-gamepad$(EXEEXT) test-kbd$(EXEEXT) test-overlay$(EXEEXT) \
+	test-vdp$(EXEEXT) test-psg$(EXEEXT) test-scc$(EXEEXT) \
+	test-rtc$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -130,9 +131,10 @@ am_1983_OBJECTS = src/1983-config.$(OBJEXT) \
 	src/1983-audio.$(OBJEXT) src/1983-display.$(OBJEXT) \
 	src/1983-gamepad.$(OBJEXT) src/1983-kbd.$(OBJEXT) \
 	src/1983-leds.$(OBJEXT) src/1983-main.$(OBJEXT) \
-	src/1983-models.$(OBJEXT) src/1983-msx.$(OBJEXT) \
-	src/1983-notify.$(OBJEXT) src/1983-overlay.$(OBJEXT) \
-	src/1983-psg.$(OBJEXT) src/1983-rtc.$(OBJEXT) \
+	src/1983-megaflash.$(OBJEXT) src/1983-models.$(OBJEXT) \
+	src/1983-msx.$(OBJEXT) src/1983-notify.$(OBJEXT) \
+	src/1983-overlay.$(OBJEXT) src/1983-psg.$(OBJEXT) \
+	src/1983-rtc.$(OBJEXT) src/1983-scc.$(OBJEXT) \
 	src/1983-sdcard.$(OBJEXT) src/1983-sd_mapper.$(OBJEXT) \
 	src/1983-sunrise.$(OBJEXT) src/1983-ui.$(OBJEXT) \
 	src/1983-vdp.$(OBJEXT) src/1983-wd2793.$(OBJEXT) \
@@ -149,7 +151,8 @@ test_ata_LINK = $(CCLD) $(test_ata_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_test_cartridge_OBJECTS =  \
 	tests/test_cartridge-test_cartridge.$(OBJEXT) \
-	src/test_cartridge-cartridge.$(OBJEXT)
+	src/test_cartridge-cartridge.$(OBJEXT) \
+	src/test_cartridge-scc.$(OBJEXT)
 test_cartridge_OBJECTS = $(am_test_cartridge_OBJECTS)
 test_cartridge_LDADD = $(LDADD)
 test_cartridge_LINK = $(CCLD) $(test_cartridge_CFLAGS) $(CFLAGS) \
@@ -166,8 +169,10 @@ am_test_config_OBJECTS = tests/test_config-test_config.$(OBJEXT) \
 	src/test_config-cartridge.$(OBJEXT) \
 	src/test_config-cassette.$(OBJEXT) \
 	src/test_config-ata.$(OBJEXT) src/test_config-floppy.$(OBJEXT) \
+	src/test_config-megaflash.$(OBJEXT) \
 	src/test_config-msx.$(OBJEXT) src/test_config-psg.$(OBJEXT) \
-	src/test_config-rtc.$(OBJEXT) src/test_config-sdcard.$(OBJEXT) \
+	src/test_config-rtc.$(OBJEXT) src/test_config-scc.$(OBJEXT) \
+	src/test_config-sdcard.$(OBJEXT) \
 	src/test_config-sd_mapper.$(OBJEXT) \
 	src/test_config-sunrise.$(OBJEXT) \
 	src/test_config-vdp.$(OBJEXT) src/test_config-wd2793.$(OBJEXT) \
@@ -192,8 +197,9 @@ am_test_kbd_OBJECTS = tests/test_kbd-test_kbd.$(OBJEXT) \
 	src/test_kbd-cartridge.$(OBJEXT) \
 	src/test_kbd-cassette.$(OBJEXT) src/test_kbd-ata.$(OBJEXT) \
 	src/test_kbd-floppy.$(OBJEXT) src/test_kbd-kbd.$(OBJEXT) \
-	src/test_kbd-msx.$(OBJEXT) src/test_kbd-psg.$(OBJEXT) \
-	src/test_kbd-rtc.$(OBJEXT) src/test_kbd-sdcard.$(OBJEXT) \
+	src/test_kbd-megaflash.$(OBJEXT) src/test_kbd-msx.$(OBJEXT) \
+	src/test_kbd-psg.$(OBJEXT) src/test_kbd-rtc.$(OBJEXT) \
+	src/test_kbd-scc.$(OBJEXT) src/test_kbd-sdcard.$(OBJEXT) \
 	src/test_kbd-sd_mapper.$(OBJEXT) \
 	src/test_kbd-sunrise.$(OBJEXT) src/test_kbd-vdp.$(OBJEXT) \
 	src/test_kbd-wd2793.$(OBJEXT) src/test_kbd-z80.$(OBJEXT)
@@ -201,13 +207,25 @@ test_kbd_OBJECTS = $(am_test_kbd_OBJECTS)
 test_kbd_DEPENDENCIES = $(am__DEPENDENCIES_1)
 test_kbd_LINK = $(CCLD) $(test_kbd_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_test_megaflash_OBJECTS =  \
+	tests/test_megaflash-test_megaflash.$(OBJEXT) \
+	src/test_megaflash-megaflash.$(OBJEXT) \
+	src/test_megaflash-psg.$(OBJEXT) \
+	src/test_megaflash-scc.$(OBJEXT) \
+	src/test_megaflash-sdcard.$(OBJEXT)
+test_megaflash_OBJECTS = $(am_test_megaflash_OBJECTS)
+test_megaflash_LDADD = $(LDADD)
+test_megaflash_LINK = $(CCLD) $(test_megaflash_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_models_OBJECTS = tests/test_models-test_models.$(OBJEXT) \
 	src/test_models-models.$(OBJEXT) \
 	src/test_models-cartridge.$(OBJEXT) \
 	src/test_models-cassette.$(OBJEXT) \
 	src/test_models-ata.$(OBJEXT) src/test_models-floppy.$(OBJEXT) \
+	src/test_models-megaflash.$(OBJEXT) \
 	src/test_models-msx.$(OBJEXT) src/test_models-psg.$(OBJEXT) \
-	src/test_models-rtc.$(OBJEXT) src/test_models-sdcard.$(OBJEXT) \
+	src/test_models-rtc.$(OBJEXT) src/test_models-scc.$(OBJEXT) \
+	src/test_models-sdcard.$(OBJEXT) \
 	src/test_models-sd_mapper.$(OBJEXT) \
 	src/test_models-sunrise.$(OBJEXT) \
 	src/test_models-vdp.$(OBJEXT) src/test_models-wd2793.$(OBJEXT) \
@@ -219,8 +237,9 @@ test_models_LINK = $(CCLD) $(test_models_CFLAGS) $(CFLAGS) \
 am_test_msx_OBJECTS = tests/test_msx-test_msx.$(OBJEXT) \
 	src/test_msx-cartridge.$(OBJEXT) \
 	src/test_msx-cassette.$(OBJEXT) src/test_msx-ata.$(OBJEXT) \
-	src/test_msx-floppy.$(OBJEXT) src/test_msx-msx.$(OBJEXT) \
-	src/test_msx-psg.$(OBJEXT) src/test_msx-rtc.$(OBJEXT) \
+	src/test_msx-floppy.$(OBJEXT) src/test_msx-megaflash.$(OBJEXT) \
+	src/test_msx-msx.$(OBJEXT) src/test_msx-psg.$(OBJEXT) \
+	src/test_msx-rtc.$(OBJEXT) src/test_msx-scc.$(OBJEXT) \
 	src/test_msx-sdcard.$(OBJEXT) src/test_msx-sd_mapper.$(OBJEXT) \
 	src/test_msx-sunrise.$(OBJEXT) src/test_msx-vdp.$(OBJEXT) \
 	src/test_msx-wd2793.$(OBJEXT) src/test_msx-z80.$(OBJEXT)
@@ -236,11 +255,13 @@ am_test_overlay_OBJECTS = tests/test_overlay-test_overlay.$(OBJEXT) \
 	src/test_overlay-floppy.$(OBJEXT) \
 	src/test_overlay-display.$(OBJEXT) \
 	src/test_overlay-leds.$(OBJEXT) \
+	src/test_overlay-megaflash.$(OBJEXT) \
 	src/test_overlay-models.$(OBJEXT) \
 	src/test_overlay-msx.$(OBJEXT) \
 	src/test_overlay-notify.$(OBJEXT) \
 	src/test_overlay-overlay.$(OBJEXT) \
 	src/test_overlay-psg.$(OBJEXT) src/test_overlay-rtc.$(OBJEXT) \
+	src/test_overlay-scc.$(OBJEXT) \
 	src/test_overlay-sdcard.$(OBJEXT) \
 	src/test_overlay-sd_mapper.$(OBJEXT) \
 	src/test_overlay-sunrise.$(OBJEXT) \
@@ -262,6 +283,12 @@ am_test_rtc_OBJECTS = tests/test_rtc-test_rtc.$(OBJEXT) \
 test_rtc_OBJECTS = $(am_test_rtc_OBJECTS)
 test_rtc_LDADD = $(LDADD)
 test_rtc_LINK = $(CCLD) $(test_rtc_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am_test_scc_OBJECTS = tests/test_scc-test_scc.$(OBJEXT) \
+	src/test_scc-scc.$(OBJEXT)
+test_scc_OBJECTS = $(am_test_scc_OBJECTS)
+test_scc_LDADD = $(LDADD)
+test_scc_LINK = $(CCLD) $(test_scc_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_test_sd_mapper_OBJECTS =  \
 	tests/test_sd_mapper-test_sd_mapper.$(OBJEXT) \
@@ -318,23 +345,27 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/1983-display.Po src/$(DEPDIR)/1983-floppy.Po \
 	src/$(DEPDIR)/1983-gamepad.Po src/$(DEPDIR)/1983-kbd.Po \
 	src/$(DEPDIR)/1983-leds.Po src/$(DEPDIR)/1983-main.Po \
-	src/$(DEPDIR)/1983-models.Po src/$(DEPDIR)/1983-msx.Po \
-	src/$(DEPDIR)/1983-notify.Po src/$(DEPDIR)/1983-overlay.Po \
-	src/$(DEPDIR)/1983-psg.Po src/$(DEPDIR)/1983-rtc.Po \
+	src/$(DEPDIR)/1983-megaflash.Po src/$(DEPDIR)/1983-models.Po \
+	src/$(DEPDIR)/1983-msx.Po src/$(DEPDIR)/1983-notify.Po \
+	src/$(DEPDIR)/1983-overlay.Po src/$(DEPDIR)/1983-psg.Po \
+	src/$(DEPDIR)/1983-rtc.Po src/$(DEPDIR)/1983-scc.Po \
 	src/$(DEPDIR)/1983-sd_mapper.Po src/$(DEPDIR)/1983-sdcard.Po \
 	src/$(DEPDIR)/1983-sunrise.Po src/$(DEPDIR)/1983-ui.Po \
 	src/$(DEPDIR)/1983-vdp.Po src/$(DEPDIR)/1983-wd2793.Po \
 	src/$(DEPDIR)/1983-z80.Po src/$(DEPDIR)/test_ata-ata.Po \
 	src/$(DEPDIR)/test_cartridge-cartridge.Po \
+	src/$(DEPDIR)/test_cartridge-scc.Po \
 	src/$(DEPDIR)/test_cassette-cassette.Po \
 	src/$(DEPDIR)/test_config-ata.Po \
 	src/$(DEPDIR)/test_config-cartridge.Po \
 	src/$(DEPDIR)/test_config-cassette.Po \
 	src/$(DEPDIR)/test_config-config.Po \
 	src/$(DEPDIR)/test_config-floppy.Po \
+	src/$(DEPDIR)/test_config-megaflash.Po \
 	src/$(DEPDIR)/test_config-msx.Po \
 	src/$(DEPDIR)/test_config-psg.Po \
 	src/$(DEPDIR)/test_config-rtc.Po \
+	src/$(DEPDIR)/test_config-scc.Po \
 	src/$(DEPDIR)/test_config-sd_mapper.Po \
 	src/$(DEPDIR)/test_config-sdcard.Po \
 	src/$(DEPDIR)/test_config-sunrise.Po \
@@ -347,20 +378,28 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_kbd-cartridge.Po \
 	src/$(DEPDIR)/test_kbd-cassette.Po \
 	src/$(DEPDIR)/test_kbd-floppy.Po src/$(DEPDIR)/test_kbd-kbd.Po \
+	src/$(DEPDIR)/test_kbd-megaflash.Po \
 	src/$(DEPDIR)/test_kbd-msx.Po src/$(DEPDIR)/test_kbd-psg.Po \
-	src/$(DEPDIR)/test_kbd-rtc.Po \
+	src/$(DEPDIR)/test_kbd-rtc.Po src/$(DEPDIR)/test_kbd-scc.Po \
 	src/$(DEPDIR)/test_kbd-sd_mapper.Po \
 	src/$(DEPDIR)/test_kbd-sdcard.Po \
 	src/$(DEPDIR)/test_kbd-sunrise.Po \
 	src/$(DEPDIR)/test_kbd-vdp.Po src/$(DEPDIR)/test_kbd-wd2793.Po \
-	src/$(DEPDIR)/test_kbd-z80.Po src/$(DEPDIR)/test_models-ata.Po \
+	src/$(DEPDIR)/test_kbd-z80.Po \
+	src/$(DEPDIR)/test_megaflash-megaflash.Po \
+	src/$(DEPDIR)/test_megaflash-psg.Po \
+	src/$(DEPDIR)/test_megaflash-scc.Po \
+	src/$(DEPDIR)/test_megaflash-sdcard.Po \
+	src/$(DEPDIR)/test_models-ata.Po \
 	src/$(DEPDIR)/test_models-cartridge.Po \
 	src/$(DEPDIR)/test_models-cassette.Po \
 	src/$(DEPDIR)/test_models-floppy.Po \
+	src/$(DEPDIR)/test_models-megaflash.Po \
 	src/$(DEPDIR)/test_models-models.Po \
 	src/$(DEPDIR)/test_models-msx.Po \
 	src/$(DEPDIR)/test_models-psg.Po \
 	src/$(DEPDIR)/test_models-rtc.Po \
+	src/$(DEPDIR)/test_models-scc.Po \
 	src/$(DEPDIR)/test_models-sd_mapper.Po \
 	src/$(DEPDIR)/test_models-sdcard.Po \
 	src/$(DEPDIR)/test_models-sunrise.Po \
@@ -369,8 +408,10 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_models-z80.Po src/$(DEPDIR)/test_msx-ata.Po \
 	src/$(DEPDIR)/test_msx-cartridge.Po \
 	src/$(DEPDIR)/test_msx-cassette.Po \
-	src/$(DEPDIR)/test_msx-floppy.Po src/$(DEPDIR)/test_msx-msx.Po \
-	src/$(DEPDIR)/test_msx-psg.Po src/$(DEPDIR)/test_msx-rtc.Po \
+	src/$(DEPDIR)/test_msx-floppy.Po \
+	src/$(DEPDIR)/test_msx-megaflash.Po \
+	src/$(DEPDIR)/test_msx-msx.Po src/$(DEPDIR)/test_msx-psg.Po \
+	src/$(DEPDIR)/test_msx-rtc.Po src/$(DEPDIR)/test_msx-scc.Po \
 	src/$(DEPDIR)/test_msx-sd_mapper.Po \
 	src/$(DEPDIR)/test_msx-sdcard.Po \
 	src/$(DEPDIR)/test_msx-sunrise.Po \
@@ -383,12 +424,14 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_overlay-display.Po \
 	src/$(DEPDIR)/test_overlay-floppy.Po \
 	src/$(DEPDIR)/test_overlay-leds.Po \
+	src/$(DEPDIR)/test_overlay-megaflash.Po \
 	src/$(DEPDIR)/test_overlay-models.Po \
 	src/$(DEPDIR)/test_overlay-msx.Po \
 	src/$(DEPDIR)/test_overlay-notify.Po \
 	src/$(DEPDIR)/test_overlay-overlay.Po \
 	src/$(DEPDIR)/test_overlay-psg.Po \
 	src/$(DEPDIR)/test_overlay-rtc.Po \
+	src/$(DEPDIR)/test_overlay-scc.Po \
 	src/$(DEPDIR)/test_overlay-sd_mapper.Po \
 	src/$(DEPDIR)/test_overlay-sdcard.Po \
 	src/$(DEPDIR)/test_overlay-sunrise.Po \
@@ -397,6 +440,7 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_overlay-wd2793.Po \
 	src/$(DEPDIR)/test_overlay-z80.Po \
 	src/$(DEPDIR)/test_psg-psg.Po src/$(DEPDIR)/test_rtc-rtc.Po \
+	src/$(DEPDIR)/test_scc-scc.Po \
 	src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po \
 	src/$(DEPDIR)/test_sd_mapper-sdcard.Po \
 	src/$(DEPDIR)/test_sdcard-sdcard.Po \
@@ -412,11 +456,13 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	tests/$(DEPDIR)/test_floppy-test_floppy.Po \
 	tests/$(DEPDIR)/test_gamepad-test_gamepad.Po \
 	tests/$(DEPDIR)/test_kbd-test_kbd.Po \
+	tests/$(DEPDIR)/test_megaflash-test_megaflash.Po \
 	tests/$(DEPDIR)/test_models-test_models.Po \
 	tests/$(DEPDIR)/test_msx-test_msx.Po \
 	tests/$(DEPDIR)/test_overlay-test_overlay.Po \
 	tests/$(DEPDIR)/test_psg-test_psg.Po \
 	tests/$(DEPDIR)/test_rtc-test_rtc.Po \
+	tests/$(DEPDIR)/test_scc-test_scc.Po \
 	tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po \
 	tests/$(DEPDIR)/test_sdcard-test_sdcard.Po \
 	tests/$(DEPDIR)/test_sunrise-test_sunrise.Po \
@@ -443,20 +489,22 @@ SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_cartridge_SOURCES) $(test_cassette_SOURCES) \
 	$(test_config_SOURCES) $(test_floppy_SOURCES) \
 	$(test_gamepad_SOURCES) $(test_kbd_SOURCES) \
-	$(test_models_SOURCES) $(test_msx_SOURCES) \
-	$(test_overlay_SOURCES) $(test_psg_SOURCES) \
-	$(test_rtc_SOURCES) $(test_sd_mapper_SOURCES) \
-	$(test_sdcard_SOURCES) $(test_sunrise_SOURCES) \
-	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
+	$(test_megaflash_SOURCES) $(test_models_SOURCES) \
+	$(test_msx_SOURCES) $(test_overlay_SOURCES) \
+	$(test_psg_SOURCES) $(test_rtc_SOURCES) $(test_scc_SOURCES) \
+	$(test_sd_mapper_SOURCES) $(test_sdcard_SOURCES) \
+	$(test_sunrise_SOURCES) $(test_vdp_SOURCES) \
+	$(test_wd2793_SOURCES)
 DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_cartridge_SOURCES) $(test_cassette_SOURCES) \
 	$(test_config_SOURCES) $(test_floppy_SOURCES) \
 	$(test_gamepad_SOURCES) $(test_kbd_SOURCES) \
-	$(test_models_SOURCES) $(test_msx_SOURCES) \
-	$(test_overlay_SOURCES) $(test_psg_SOURCES) \
-	$(test_rtc_SOURCES) $(test_sd_mapper_SOURCES) \
-	$(test_sdcard_SOURCES) $(test_sunrise_SOURCES) \
-	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
+	$(test_megaflash_SOURCES) $(test_models_SOURCES) \
+	$(test_msx_SOURCES) $(test_overlay_SOURCES) \
+	$(test_psg_SOURCES) $(test_rtc_SOURCES) $(test_scc_SOURCES) \
+	$(test_sd_mapper_SOURCES) $(test_sdcard_SOURCES) \
+	$(test_sunrise_SOURCES) $(test_vdp_SOURCES) \
+	$(test_wd2793_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -844,12 +892,14 @@ top_srcdir = @top_srcdir@
 	src/kbd.c \
 	src/leds.c \
 	src/main.c \
+	src/megaflash.c \
 	src/models.c \
 	src/msx.c \
 	src/notify.c \
 	src/overlay.c \
 	src/psg.c \
 	src/rtc.c \
+	src/scc.c \
 	src/sdcard.c \
 	src/sd_mapper.c \
 	src/sunrise.c \
@@ -869,12 +919,14 @@ noinst_HEADERS = \
 	src/gamepad.h \
 	src/kbd.h \
 	src/leds.h \
+	src/megaflash.h \
 	src/models.h \
 	src/msx.h \
 	src/notify.h \
 	src/overlay.h \
 	src/psg.h \
 	src/rtc.h \
+	src/scc.h \
 	src/sdcard.h \
 	src/sd_mapper.h \
 	src/sunrise.h \
@@ -892,7 +944,7 @@ noinst_HEADERS = \
 1983_DEPENDENCIES = $(WIN_RC_OBJ)
 CLEANFILES = icons/1983-rc.o
 TESTS = $(check_PROGRAMS) tests/test-cli.sh
-test_cartridge_SOURCES = tests/test_cartridge.c src/cartridge.c
+test_cartridge_SOURCES = tests/test_cartridge.c src/cartridge.c src/scc.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
 test_cartridge_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_cassette_SOURCES = tests/test_cassette.c src/cassette.c
@@ -916,24 +968,27 @@ test_sdcard_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_sd_mapper_SOURCES = tests/test_sd_mapper.c src/sdcard.c src/sd_mapper.c
 test_sd_mapper_CPPFLAGS = -I$(top_srcdir)/src
 test_sd_mapper_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/msx.c src/psg.c src/rtc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_megaflash_SOURCES = tests/test_megaflash.c src/megaflash.c src/psg.c src/scc.c src/sdcard.c
+test_megaflash_CPPFLAGS = -I$(top_srcdir)/src
+test_megaflash_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_config_CPPFLAGS = -I$(top_srcdir)/src
 test_config_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/msx.c src/psg.c src/rtc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_models_CPPFLAGS = -I$(top_srcdir)/src
 test_models_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/msx.c src/psg.c src/rtc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_SOURCES = tests/test_gamepad.c src/gamepad.c
 test_gamepad_CPPFLAGS = -I$(top_srcdir)/src
 test_gamepad_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_LDADD = $(SDL3_LIBS)
-test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/kbd.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
-test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/ui.c src/vdp.c src/wd2793.c src/z80.c
+test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/ui.c src/vdp.c src/wd2793.c src/z80.c
 test_overlay_CPPFLAGS = -I$(top_srcdir)/src
 test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_overlay_LDADD = $(SDL3_LIBS) -lm
@@ -943,6 +998,9 @@ test_vdp_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_psg_SOURCES = tests/test_psg.c src/psg.c
 test_psg_CPPFLAGS = -I$(top_srcdir)/src
 test_psg_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_scc_SOURCES = tests/test_scc.c src/scc.c
+test_scc_CPPFLAGS = -I$(top_srcdir)/src
+test_scc_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_rtc_SOURCES = tests/test_rtc.c src/rtc.c
 test_rtc_CPPFLAGS = -I$(top_srcdir)/src
 test_rtc_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
@@ -1096,6 +1154,8 @@ src/1983-leds.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-main.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-megaflash.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-models.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-msx.$(OBJEXT): src/$(am__dirstamp) \
@@ -1107,6 +1167,8 @@ src/1983-overlay.$(OBJEXT): src/$(am__dirstamp) \
 src/1983-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-rtc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-scc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1144,6 +1206,8 @@ tests/test_cartridge-test_cartridge.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_cartridge-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_cartridge-scc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 
 test-cartridge$(EXEEXT): $(test_cartridge_OBJECTS) $(test_cartridge_DEPENDENCIES) $(EXTRA_test_cartridge_DEPENDENCIES)
 	@rm -f test-cartridge$(EXEEXT)
@@ -1168,11 +1232,15 @@ src/test_config-ata.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-floppy.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-megaflash.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-rtc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-scc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1218,11 +1286,15 @@ src/test_kbd-floppy.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-kbd.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_kbd-megaflash.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-rtc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_kbd-scc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1240,6 +1312,20 @@ src/test_kbd-z80.$(OBJEXT): src/$(am__dirstamp) \
 test-kbd$(EXEEXT): $(test_kbd_OBJECTS) $(test_kbd_DEPENDENCIES) $(EXTRA_test_kbd_DEPENDENCIES)
 	@rm -f test-kbd$(EXEEXT)
 	$(AM_V_CCLD)$(test_kbd_LINK) $(test_kbd_OBJECTS) $(test_kbd_LDADD) $(LIBS)
+tests/test_megaflash-test_megaflash.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_megaflash-megaflash.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_megaflash-psg.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_megaflash-scc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_megaflash-sdcard.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-megaflash$(EXEEXT): $(test_megaflash_OBJECTS) $(test_megaflash_DEPENDENCIES) $(EXTRA_test_megaflash_DEPENDENCIES)
+	@rm -f test-megaflash$(EXEEXT)
+	$(AM_V_CCLD)$(test_megaflash_LINK) $(test_megaflash_OBJECTS) $(test_megaflash_LDADD) $(LIBS)
 tests/test_models-test_models.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_models-models.$(OBJEXT): src/$(am__dirstamp) \
@@ -1252,11 +1338,15 @@ src/test_models-ata.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-floppy.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_models-megaflash.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-rtc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_models-scc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1284,11 +1374,15 @@ src/test_msx-ata.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-floppy.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_msx-megaflash.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-rtc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_msx-scc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1322,6 +1416,8 @@ src/test_overlay-display.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-leds.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-megaflash.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-models.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-msx.$(OBJEXT): src/$(am__dirstamp) \
@@ -1333,6 +1429,8 @@ src/test_overlay-overlay.$(OBJEXT): src/$(am__dirstamp) \
 src/test_overlay-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-rtc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-scc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1368,6 +1466,14 @@ src/test_rtc-rtc.$(OBJEXT): src/$(am__dirstamp) \
 test-rtc$(EXEEXT): $(test_rtc_OBJECTS) $(test_rtc_DEPENDENCIES) $(EXTRA_test_rtc_DEPENDENCIES)
 	@rm -f test-rtc$(EXEEXT)
 	$(AM_V_CCLD)$(test_rtc_LINK) $(test_rtc_OBJECTS) $(test_rtc_LDADD) $(LIBS)
+tests/test_scc-test_scc.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_scc-scc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-scc$(EXEEXT): $(test_scc_OBJECTS) $(test_scc_DEPENDENCIES) $(EXTRA_test_scc_DEPENDENCIES)
+	@rm -f test-scc$(EXEEXT)
+	$(AM_V_CCLD)$(test_scc_LINK) $(test_scc_OBJECTS) $(test_scc_LDADD) $(LIBS)
 tests/test_sd_mapper-test_sd_mapper.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_sd_mapper-sdcard.$(OBJEXT): src/$(am__dirstamp) \
@@ -1434,12 +1540,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-kbd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-leds.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-main.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-models.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-notify.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-overlay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sunrise.Po@am__quote@ # am--include-marker
@@ -1449,15 +1557,18 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-z80.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_ata-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_cartridge-cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_cartridge-scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_cassette-cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-floppy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-sunrise.Po@am__quote@ # am--include-marker
@@ -1471,23 +1582,31 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-kbd.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-wd2793.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-z80.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_megaflash-megaflash.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_megaflash-psg.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_megaflash-scc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_megaflash-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-floppy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-models.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-sunrise.Po@am__quote@ # am--include-marker
@@ -1498,9 +1617,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-floppy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-sunrise.Po@am__quote@ # am--include-marker
@@ -1514,12 +1635,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-display.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-leds.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-models.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-notify.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-overlay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sunrise.Po@am__quote@ # am--include-marker
@@ -1529,6 +1652,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-z80.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_psg-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_rtc-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_scc-scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sd_mapper-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sdcard-sdcard.Po@am__quote@ # am--include-marker
@@ -1544,11 +1668,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_floppy-test_floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_gamepad-test_gamepad.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_kbd-test_kbd.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_megaflash-test_megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_models-test_models.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_msx-test_msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_overlay-test_overlay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_psg-test_psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_rtc-test_rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_scc-test_scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_sdcard-test_sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_sunrise-test_sunrise.Po@am__quote@ # am--include-marker
@@ -1731,6 +1857,20 @@ src/1983-main.obj: src/main.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-main.obj `if test -f 'src/main.c'; then $(CYGPATH_W) 'src/main.c'; else $(CYGPATH_W) '$(srcdir)/src/main.c'; fi`
 
+src/1983-megaflash.o: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-megaflash.o -MD -MP -MF src/$(DEPDIR)/1983-megaflash.Tpo -c -o src/1983-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-megaflash.Tpo src/$(DEPDIR)/1983-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/1983-megaflash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+
+src/1983-megaflash.obj: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-megaflash.obj -MD -MP -MF src/$(DEPDIR)/1983-megaflash.Tpo -c -o src/1983-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-megaflash.Tpo src/$(DEPDIR)/1983-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/1983-megaflash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+
 src/1983-models.o: src/models.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-models.o -MD -MP -MF src/$(DEPDIR)/1983-models.Tpo -c -o src/1983-models.o `test -f 'src/models.c' || echo '$(srcdir)/'`src/models.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-models.Tpo src/$(DEPDIR)/1983-models.Po
@@ -1814,6 +1954,20 @@ src/1983-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/1983-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+src/1983-scc.o: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-scc.o -MD -MP -MF src/$(DEPDIR)/1983-scc.Tpo -c -o src/1983-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-scc.Tpo src/$(DEPDIR)/1983-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/1983-scc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+
+src/1983-scc.obj: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-scc.obj -MD -MP -MF src/$(DEPDIR)/1983-scc.Tpo -c -o src/1983-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-scc.Tpo src/$(DEPDIR)/1983-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/1983-scc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
 
 src/1983-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-sdcard.o -MD -MP -MF src/$(DEPDIR)/1983-sdcard.Tpo -c -o src/1983-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -1969,6 +2123,20 @@ src/test_cartridge-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -c -o src/test_cartridge-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
 
+src/test_cartridge-scc.o: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -MT src/test_cartridge-scc.o -MD -MP -MF src/$(DEPDIR)/test_cartridge-scc.Tpo -c -o src/test_cartridge-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_cartridge-scc.Tpo src/$(DEPDIR)/test_cartridge-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_cartridge-scc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -c -o src/test_cartridge-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+
+src/test_cartridge-scc.obj: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -MT src/test_cartridge-scc.obj -MD -MP -MF src/$(DEPDIR)/test_cartridge-scc.Tpo -c -o src/test_cartridge-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_cartridge-scc.Tpo src/$(DEPDIR)/test_cartridge-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_cartridge-scc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -c -o src/test_cartridge-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+
 tests/test_cassette-test_cassette.o: tests/test_cassette.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -MT tests/test_cassette-test_cassette.o -MD -MP -MF tests/$(DEPDIR)/test_cassette-test_cassette.Tpo -c -o tests/test_cassette-test_cassette.o `test -f 'tests/test_cassette.c' || echo '$(srcdir)/'`tests/test_cassette.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_cassette-test_cassette.Tpo tests/$(DEPDIR)/test_cassette-test_cassette.Po
@@ -2081,6 +2249,20 @@ src/test_config-floppy.obj: src/floppy.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-floppy.obj `if test -f 'src/floppy.c'; then $(CYGPATH_W) 'src/floppy.c'; else $(CYGPATH_W) '$(srcdir)/src/floppy.c'; fi`
 
+src/test_config-megaflash.o: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-megaflash.o -MD -MP -MF src/$(DEPDIR)/test_config-megaflash.Tpo -c -o src/test_config-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-megaflash.Tpo src/$(DEPDIR)/test_config-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/test_config-megaflash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+
+src/test_config-megaflash.obj: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-megaflash.obj -MD -MP -MF src/$(DEPDIR)/test_config-megaflash.Tpo -c -o src/test_config-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-megaflash.Tpo src/$(DEPDIR)/test_config-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/test_config-megaflash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+
 src/test_config-msx.o: src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-msx.o -MD -MP -MF src/$(DEPDIR)/test_config-msx.Tpo -c -o src/test_config-msx.o `test -f 'src/msx.c' || echo '$(srcdir)/'`src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-msx.Tpo src/$(DEPDIR)/test_config-msx.Po
@@ -2122,6 +2304,20 @@ src/test_config-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_config-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+src/test_config-scc.o: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-scc.o -MD -MP -MF src/$(DEPDIR)/test_config-scc.Tpo -c -o src/test_config-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-scc.Tpo src/$(DEPDIR)/test_config-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_config-scc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+
+src/test_config-scc.obj: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-scc.obj -MD -MP -MF src/$(DEPDIR)/test_config-scc.Tpo -c -o src/test_config-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-scc.Tpo src/$(DEPDIR)/test_config-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_config-scc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
 
 src/test_config-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_config-sdcard.Tpo -c -o src/test_config-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -2347,6 +2543,20 @@ src/test_kbd-kbd.obj: src/kbd.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-kbd.obj `if test -f 'src/kbd.c'; then $(CYGPATH_W) 'src/kbd.c'; else $(CYGPATH_W) '$(srcdir)/src/kbd.c'; fi`
 
+src/test_kbd-megaflash.o: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-megaflash.o -MD -MP -MF src/$(DEPDIR)/test_kbd-megaflash.Tpo -c -o src/test_kbd-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-megaflash.Tpo src/$(DEPDIR)/test_kbd-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/test_kbd-megaflash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+
+src/test_kbd-megaflash.obj: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-megaflash.obj -MD -MP -MF src/$(DEPDIR)/test_kbd-megaflash.Tpo -c -o src/test_kbd-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-megaflash.Tpo src/$(DEPDIR)/test_kbd-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/test_kbd-megaflash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+
 src/test_kbd-msx.o: src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-msx.o -MD -MP -MF src/$(DEPDIR)/test_kbd-msx.Tpo -c -o src/test_kbd-msx.o `test -f 'src/msx.c' || echo '$(srcdir)/'`src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-msx.Tpo src/$(DEPDIR)/test_kbd-msx.Po
@@ -2388,6 +2598,20 @@ src/test_kbd-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_kbd-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+src/test_kbd-scc.o: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-scc.o -MD -MP -MF src/$(DEPDIR)/test_kbd-scc.Tpo -c -o src/test_kbd-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-scc.Tpo src/$(DEPDIR)/test_kbd-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_kbd-scc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+
+src/test_kbd-scc.obj: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-scc.obj -MD -MP -MF src/$(DEPDIR)/test_kbd-scc.Tpo -c -o src/test_kbd-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-scc.Tpo src/$(DEPDIR)/test_kbd-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_kbd-scc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
 
 src/test_kbd-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_kbd-sdcard.Tpo -c -o src/test_kbd-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -2473,6 +2697,76 @@ src/test_kbd-z80.obj: src/z80.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
 
+tests/test_megaflash-test_megaflash.o: tests/test_megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT tests/test_megaflash-test_megaflash.o -MD -MP -MF tests/$(DEPDIR)/test_megaflash-test_megaflash.Tpo -c -o tests/test_megaflash-test_megaflash.o `test -f 'tests/test_megaflash.c' || echo '$(srcdir)/'`tests/test_megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_megaflash-test_megaflash.Tpo tests/$(DEPDIR)/test_megaflash-test_megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_megaflash.c' object='tests/test_megaflash-test_megaflash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o tests/test_megaflash-test_megaflash.o `test -f 'tests/test_megaflash.c' || echo '$(srcdir)/'`tests/test_megaflash.c
+
+tests/test_megaflash-test_megaflash.obj: tests/test_megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT tests/test_megaflash-test_megaflash.obj -MD -MP -MF tests/$(DEPDIR)/test_megaflash-test_megaflash.Tpo -c -o tests/test_megaflash-test_megaflash.obj `if test -f 'tests/test_megaflash.c'; then $(CYGPATH_W) 'tests/test_megaflash.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_megaflash.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_megaflash-test_megaflash.Tpo tests/$(DEPDIR)/test_megaflash-test_megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_megaflash.c' object='tests/test_megaflash-test_megaflash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o tests/test_megaflash-test_megaflash.obj `if test -f 'tests/test_megaflash.c'; then $(CYGPATH_W) 'tests/test_megaflash.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_megaflash.c'; fi`
+
+src/test_megaflash-megaflash.o: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT src/test_megaflash-megaflash.o -MD -MP -MF src/$(DEPDIR)/test_megaflash-megaflash.Tpo -c -o src/test_megaflash-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_megaflash-megaflash.Tpo src/$(DEPDIR)/test_megaflash-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/test_megaflash-megaflash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o src/test_megaflash-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+
+src/test_megaflash-megaflash.obj: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT src/test_megaflash-megaflash.obj -MD -MP -MF src/$(DEPDIR)/test_megaflash-megaflash.Tpo -c -o src/test_megaflash-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_megaflash-megaflash.Tpo src/$(DEPDIR)/test_megaflash-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/test_megaflash-megaflash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o src/test_megaflash-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+
+src/test_megaflash-psg.o: src/psg.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT src/test_megaflash-psg.o -MD -MP -MF src/$(DEPDIR)/test_megaflash-psg.Tpo -c -o src/test_megaflash-psg.o `test -f 'src/psg.c' || echo '$(srcdir)/'`src/psg.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_megaflash-psg.Tpo src/$(DEPDIR)/test_megaflash-psg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/psg.c' object='src/test_megaflash-psg.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o src/test_megaflash-psg.o `test -f 'src/psg.c' || echo '$(srcdir)/'`src/psg.c
+
+src/test_megaflash-psg.obj: src/psg.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT src/test_megaflash-psg.obj -MD -MP -MF src/$(DEPDIR)/test_megaflash-psg.Tpo -c -o src/test_megaflash-psg.obj `if test -f 'src/psg.c'; then $(CYGPATH_W) 'src/psg.c'; else $(CYGPATH_W) '$(srcdir)/src/psg.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_megaflash-psg.Tpo src/$(DEPDIR)/test_megaflash-psg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/psg.c' object='src/test_megaflash-psg.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o src/test_megaflash-psg.obj `if test -f 'src/psg.c'; then $(CYGPATH_W) 'src/psg.c'; else $(CYGPATH_W) '$(srcdir)/src/psg.c'; fi`
+
+src/test_megaflash-scc.o: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT src/test_megaflash-scc.o -MD -MP -MF src/$(DEPDIR)/test_megaflash-scc.Tpo -c -o src/test_megaflash-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_megaflash-scc.Tpo src/$(DEPDIR)/test_megaflash-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_megaflash-scc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o src/test_megaflash-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+
+src/test_megaflash-scc.obj: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT src/test_megaflash-scc.obj -MD -MP -MF src/$(DEPDIR)/test_megaflash-scc.Tpo -c -o src/test_megaflash-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_megaflash-scc.Tpo src/$(DEPDIR)/test_megaflash-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_megaflash-scc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o src/test_megaflash-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+
+src/test_megaflash-sdcard.o: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT src/test_megaflash-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_megaflash-sdcard.Tpo -c -o src/test_megaflash-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_megaflash-sdcard.Tpo src/$(DEPDIR)/test_megaflash-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_megaflash-sdcard.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o src/test_megaflash-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+
+src/test_megaflash-sdcard.obj: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT src/test_megaflash-sdcard.obj -MD -MP -MF src/$(DEPDIR)/test_megaflash-sdcard.Tpo -c -o src/test_megaflash-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_megaflash-sdcard.Tpo src/$(DEPDIR)/test_megaflash-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_megaflash-sdcard.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o src/test_megaflash-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+
 tests/test_models-test_models.o: tests/test_models.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT tests/test_models-test_models.o -MD -MP -MF tests/$(DEPDIR)/test_models-test_models.Tpo -c -o tests/test_models-test_models.o `test -f 'tests/test_models.c' || echo '$(srcdir)/'`tests/test_models.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_models-test_models.Tpo tests/$(DEPDIR)/test_models-test_models.Po
@@ -2557,6 +2851,20 @@ src/test_models-floppy.obj: src/floppy.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-floppy.obj `if test -f 'src/floppy.c'; then $(CYGPATH_W) 'src/floppy.c'; else $(CYGPATH_W) '$(srcdir)/src/floppy.c'; fi`
 
+src/test_models-megaflash.o: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-megaflash.o -MD -MP -MF src/$(DEPDIR)/test_models-megaflash.Tpo -c -o src/test_models-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-megaflash.Tpo src/$(DEPDIR)/test_models-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/test_models-megaflash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+
+src/test_models-megaflash.obj: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-megaflash.obj -MD -MP -MF src/$(DEPDIR)/test_models-megaflash.Tpo -c -o src/test_models-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-megaflash.Tpo src/$(DEPDIR)/test_models-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/test_models-megaflash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+
 src/test_models-msx.o: src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-msx.o -MD -MP -MF src/$(DEPDIR)/test_models-msx.Tpo -c -o src/test_models-msx.o `test -f 'src/msx.c' || echo '$(srcdir)/'`src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-msx.Tpo src/$(DEPDIR)/test_models-msx.Po
@@ -2598,6 +2906,20 @@ src/test_models-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_models-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+src/test_models-scc.o: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-scc.o -MD -MP -MF src/$(DEPDIR)/test_models-scc.Tpo -c -o src/test_models-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-scc.Tpo src/$(DEPDIR)/test_models-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_models-scc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+
+src/test_models-scc.obj: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-scc.obj -MD -MP -MF src/$(DEPDIR)/test_models-scc.Tpo -c -o src/test_models-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-scc.Tpo src/$(DEPDIR)/test_models-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_models-scc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
 
 src/test_models-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_models-sdcard.Tpo -c -o src/test_models-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -2753,6 +3075,20 @@ src/test_msx-floppy.obj: src/floppy.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-floppy.obj `if test -f 'src/floppy.c'; then $(CYGPATH_W) 'src/floppy.c'; else $(CYGPATH_W) '$(srcdir)/src/floppy.c'; fi`
 
+src/test_msx-megaflash.o: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-megaflash.o -MD -MP -MF src/$(DEPDIR)/test_msx-megaflash.Tpo -c -o src/test_msx-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-megaflash.Tpo src/$(DEPDIR)/test_msx-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/test_msx-megaflash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+
+src/test_msx-megaflash.obj: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-megaflash.obj -MD -MP -MF src/$(DEPDIR)/test_msx-megaflash.Tpo -c -o src/test_msx-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-megaflash.Tpo src/$(DEPDIR)/test_msx-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/test_msx-megaflash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+
 src/test_msx-msx.o: src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-msx.o -MD -MP -MF src/$(DEPDIR)/test_msx-msx.Tpo -c -o src/test_msx-msx.o `test -f 'src/msx.c' || echo '$(srcdir)/'`src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-msx.Tpo src/$(DEPDIR)/test_msx-msx.Po
@@ -2794,6 +3130,20 @@ src/test_msx-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_msx-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+src/test_msx-scc.o: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-scc.o -MD -MP -MF src/$(DEPDIR)/test_msx-scc.Tpo -c -o src/test_msx-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-scc.Tpo src/$(DEPDIR)/test_msx-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_msx-scc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+
+src/test_msx-scc.obj: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-scc.obj -MD -MP -MF src/$(DEPDIR)/test_msx-scc.Tpo -c -o src/test_msx-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-scc.Tpo src/$(DEPDIR)/test_msx-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_msx-scc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
 
 src/test_msx-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_msx-sdcard.Tpo -c -o src/test_msx-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -2991,6 +3341,20 @@ src/test_overlay-leds.obj: src/leds.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-leds.obj `if test -f 'src/leds.c'; then $(CYGPATH_W) 'src/leds.c'; else $(CYGPATH_W) '$(srcdir)/src/leds.c'; fi`
 
+src/test_overlay-megaflash.o: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-megaflash.o -MD -MP -MF src/$(DEPDIR)/test_overlay-megaflash.Tpo -c -o src/test_overlay-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-megaflash.Tpo src/$(DEPDIR)/test_overlay-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/test_overlay-megaflash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
+
+src/test_overlay-megaflash.obj: src/megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-megaflash.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-megaflash.Tpo -c -o src/test_overlay-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-megaflash.Tpo src/$(DEPDIR)/test_overlay-megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/megaflash.c' object='src/test_overlay-megaflash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-megaflash.obj `if test -f 'src/megaflash.c'; then $(CYGPATH_W) 'src/megaflash.c'; else $(CYGPATH_W) '$(srcdir)/src/megaflash.c'; fi`
+
 src/test_overlay-models.o: src/models.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-models.o -MD -MP -MF src/$(DEPDIR)/test_overlay-models.Tpo -c -o src/test_overlay-models.o `test -f 'src/models.c' || echo '$(srcdir)/'`src/models.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-models.Tpo src/$(DEPDIR)/test_overlay-models.Po
@@ -3074,6 +3438,20 @@ src/test_overlay-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_overlay-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+src/test_overlay-scc.o: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-scc.o -MD -MP -MF src/$(DEPDIR)/test_overlay-scc.Tpo -c -o src/test_overlay-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-scc.Tpo src/$(DEPDIR)/test_overlay-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_overlay-scc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+
+src/test_overlay-scc.obj: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-scc.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-scc.Tpo -c -o src/test_overlay-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-scc.Tpo src/$(DEPDIR)/test_overlay-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_overlay-scc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
 
 src/test_overlay-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_overlay-sdcard.Tpo -c -o src/test_overlay-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -3228,6 +3606,34 @@ src/test_rtc-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_rtc-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -c -o src/test_rtc-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+tests/test_scc-test_scc.o: tests/test_scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -MT tests/test_scc-test_scc.o -MD -MP -MF tests/$(DEPDIR)/test_scc-test_scc.Tpo -c -o tests/test_scc-test_scc.o `test -f 'tests/test_scc.c' || echo '$(srcdir)/'`tests/test_scc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_scc-test_scc.Tpo tests/$(DEPDIR)/test_scc-test_scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_scc.c' object='tests/test_scc-test_scc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -c -o tests/test_scc-test_scc.o `test -f 'tests/test_scc.c' || echo '$(srcdir)/'`tests/test_scc.c
+
+tests/test_scc-test_scc.obj: tests/test_scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -MT tests/test_scc-test_scc.obj -MD -MP -MF tests/$(DEPDIR)/test_scc-test_scc.Tpo -c -o tests/test_scc-test_scc.obj `if test -f 'tests/test_scc.c'; then $(CYGPATH_W) 'tests/test_scc.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_scc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_scc-test_scc.Tpo tests/$(DEPDIR)/test_scc-test_scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_scc.c' object='tests/test_scc-test_scc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -c -o tests/test_scc-test_scc.obj `if test -f 'tests/test_scc.c'; then $(CYGPATH_W) 'tests/test_scc.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_scc.c'; fi`
+
+src/test_scc-scc.o: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -MT src/test_scc-scc.o -MD -MP -MF src/$(DEPDIR)/test_scc-scc.Tpo -c -o src/test_scc-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_scc-scc.Tpo src/$(DEPDIR)/test_scc-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_scc-scc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -c -o src/test_scc-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
+
+src/test_scc-scc.obj: src/scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -MT src/test_scc-scc.obj -MD -MP -MF src/$(DEPDIR)/test_scc-scc.Tpo -c -o src/test_scc-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_scc-scc.Tpo src/$(DEPDIR)/test_scc-scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_scc-scc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -c -o src/test_scc-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
 
 tests/test_sd_mapper-test_sd_mapper.o: tests/test_sd_mapper.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -MT tests/test_sd_mapper-test_sd_mapper.o -MD -MP -MF tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo -c -o tests/test_sd_mapper-test_sd_mapper.o `test -f 'tests/test_sd_mapper.c' || echo '$(srcdir)/'`tests/test_sd_mapper.c
@@ -3923,6 +4329,13 @@ test-sd-mapper.log: test-sd-mapper$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-megaflash.log: test-megaflash$(EXEEXT)
+	@p='test-megaflash$(EXEEXT)'; \
+	b='test-megaflash'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-config.log: test-config$(EXEEXT)
 	@p='test-config$(EXEEXT)'; \
 	b='test-config'; \
@@ -3975,6 +4388,13 @@ test-vdp.log: test-vdp$(EXEEXT)
 test-psg.log: test-psg$(EXEEXT)
 	@p='test-psg$(EXEEXT)'; \
 	b='test-psg'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-scc.log: test-scc$(EXEEXT)
+	@p='test-scc$(EXEEXT)'; \
+	b='test-scc'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -4251,12 +4671,14 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-kbd.Po
 	-rm -f src/$(DEPDIR)/1983-leds.Po
 	-rm -f src/$(DEPDIR)/1983-main.Po
+	-rm -f src/$(DEPDIR)/1983-megaflash.Po
 	-rm -f src/$(DEPDIR)/1983-models.Po
 	-rm -f src/$(DEPDIR)/1983-msx.Po
 	-rm -f src/$(DEPDIR)/1983-notify.Po
 	-rm -f src/$(DEPDIR)/1983-overlay.Po
 	-rm -f src/$(DEPDIR)/1983-psg.Po
 	-rm -f src/$(DEPDIR)/1983-rtc.Po
+	-rm -f src/$(DEPDIR)/1983-scc.Po
 	-rm -f src/$(DEPDIR)/1983-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/1983-sdcard.Po
 	-rm -f src/$(DEPDIR)/1983-sunrise.Po
@@ -4266,15 +4688,18 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-z80.Po
 	-rm -f src/$(DEPDIR)/test_ata-ata.Po
 	-rm -f src/$(DEPDIR)/test_cartridge-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_cartridge-scc.Po
 	-rm -f src/$(DEPDIR)/test_cassette-cassette.Po
 	-rm -f src/$(DEPDIR)/test_config-ata.Po
 	-rm -f src/$(DEPDIR)/test_config-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_config-cassette.Po
 	-rm -f src/$(DEPDIR)/test_config-config.Po
 	-rm -f src/$(DEPDIR)/test_config-floppy.Po
+	-rm -f src/$(DEPDIR)/test_config-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_config-msx.Po
 	-rm -f src/$(DEPDIR)/test_config-psg.Po
 	-rm -f src/$(DEPDIR)/test_config-rtc.Po
+	-rm -f src/$(DEPDIR)/test_config-scc.Po
 	-rm -f src/$(DEPDIR)/test_config-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_config-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_config-sunrise.Po
@@ -4288,23 +4713,31 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_kbd-cassette.Po
 	-rm -f src/$(DEPDIR)/test_kbd-floppy.Po
 	-rm -f src/$(DEPDIR)/test_kbd-kbd.Po
+	-rm -f src/$(DEPDIR)/test_kbd-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
 	-rm -f src/$(DEPDIR)/test_kbd-psg.Po
 	-rm -f src/$(DEPDIR)/test_kbd-rtc.Po
+	-rm -f src/$(DEPDIR)/test_kbd-scc.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_kbd-vdp.Po
 	-rm -f src/$(DEPDIR)/test_kbd-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_kbd-z80.Po
+	-rm -f src/$(DEPDIR)/test_megaflash-megaflash.Po
+	-rm -f src/$(DEPDIR)/test_megaflash-psg.Po
+	-rm -f src/$(DEPDIR)/test_megaflash-scc.Po
+	-rm -f src/$(DEPDIR)/test_megaflash-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_models-ata.Po
 	-rm -f src/$(DEPDIR)/test_models-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_models-cassette.Po
 	-rm -f src/$(DEPDIR)/test_models-floppy.Po
+	-rm -f src/$(DEPDIR)/test_models-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_models-models.Po
 	-rm -f src/$(DEPDIR)/test_models-msx.Po
 	-rm -f src/$(DEPDIR)/test_models-psg.Po
 	-rm -f src/$(DEPDIR)/test_models-rtc.Po
+	-rm -f src/$(DEPDIR)/test_models-scc.Po
 	-rm -f src/$(DEPDIR)/test_models-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_models-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_models-sunrise.Po
@@ -4315,9 +4748,11 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_msx-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_msx-cassette.Po
 	-rm -f src/$(DEPDIR)/test_msx-floppy.Po
+	-rm -f src/$(DEPDIR)/test_msx-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
 	-rm -f src/$(DEPDIR)/test_msx-psg.Po
 	-rm -f src/$(DEPDIR)/test_msx-rtc.Po
+	-rm -f src/$(DEPDIR)/test_msx-scc.Po
 	-rm -f src/$(DEPDIR)/test_msx-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_msx-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_msx-sunrise.Po
@@ -4331,12 +4766,14 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_overlay-display.Po
 	-rm -f src/$(DEPDIR)/test_overlay-floppy.Po
 	-rm -f src/$(DEPDIR)/test_overlay-leds.Po
+	-rm -f src/$(DEPDIR)/test_overlay-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_overlay-models.Po
 	-rm -f src/$(DEPDIR)/test_overlay-msx.Po
 	-rm -f src/$(DEPDIR)/test_overlay-notify.Po
 	-rm -f src/$(DEPDIR)/test_overlay-overlay.Po
 	-rm -f src/$(DEPDIR)/test_overlay-psg.Po
 	-rm -f src/$(DEPDIR)/test_overlay-rtc.Po
+	-rm -f src/$(DEPDIR)/test_overlay-scc.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sunrise.Po
@@ -4346,6 +4783,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_overlay-z80.Po
 	-rm -f src/$(DEPDIR)/test_psg-psg.Po
 	-rm -f src/$(DEPDIR)/test_rtc-rtc.Po
+	-rm -f src/$(DEPDIR)/test_scc-scc.Po
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_sdcard-sdcard.Po
@@ -4361,11 +4799,13 @@ distclean: distclean-am
 	-rm -f tests/$(DEPDIR)/test_floppy-test_floppy.Po
 	-rm -f tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
 	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po
+	-rm -f tests/$(DEPDIR)/test_megaflash-test_megaflash.Po
 	-rm -f tests/$(DEPDIR)/test_models-test_models.Po
 	-rm -f tests/$(DEPDIR)/test_msx-test_msx.Po
 	-rm -f tests/$(DEPDIR)/test_overlay-test_overlay.Po
 	-rm -f tests/$(DEPDIR)/test_psg-test_psg.Po
 	-rm -f tests/$(DEPDIR)/test_rtc-test_rtc.Po
+	-rm -f tests/$(DEPDIR)/test_scc-test_scc.Po
 	-rm -f tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
 	-rm -f tests/$(DEPDIR)/test_sdcard-test_sdcard.Po
 	-rm -f tests/$(DEPDIR)/test_sunrise-test_sunrise.Po
@@ -4434,12 +4874,14 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-kbd.Po
 	-rm -f src/$(DEPDIR)/1983-leds.Po
 	-rm -f src/$(DEPDIR)/1983-main.Po
+	-rm -f src/$(DEPDIR)/1983-megaflash.Po
 	-rm -f src/$(DEPDIR)/1983-models.Po
 	-rm -f src/$(DEPDIR)/1983-msx.Po
 	-rm -f src/$(DEPDIR)/1983-notify.Po
 	-rm -f src/$(DEPDIR)/1983-overlay.Po
 	-rm -f src/$(DEPDIR)/1983-psg.Po
 	-rm -f src/$(DEPDIR)/1983-rtc.Po
+	-rm -f src/$(DEPDIR)/1983-scc.Po
 	-rm -f src/$(DEPDIR)/1983-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/1983-sdcard.Po
 	-rm -f src/$(DEPDIR)/1983-sunrise.Po
@@ -4449,15 +4891,18 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-z80.Po
 	-rm -f src/$(DEPDIR)/test_ata-ata.Po
 	-rm -f src/$(DEPDIR)/test_cartridge-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_cartridge-scc.Po
 	-rm -f src/$(DEPDIR)/test_cassette-cassette.Po
 	-rm -f src/$(DEPDIR)/test_config-ata.Po
 	-rm -f src/$(DEPDIR)/test_config-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_config-cassette.Po
 	-rm -f src/$(DEPDIR)/test_config-config.Po
 	-rm -f src/$(DEPDIR)/test_config-floppy.Po
+	-rm -f src/$(DEPDIR)/test_config-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_config-msx.Po
 	-rm -f src/$(DEPDIR)/test_config-psg.Po
 	-rm -f src/$(DEPDIR)/test_config-rtc.Po
+	-rm -f src/$(DEPDIR)/test_config-scc.Po
 	-rm -f src/$(DEPDIR)/test_config-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_config-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_config-sunrise.Po
@@ -4471,23 +4916,31 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_kbd-cassette.Po
 	-rm -f src/$(DEPDIR)/test_kbd-floppy.Po
 	-rm -f src/$(DEPDIR)/test_kbd-kbd.Po
+	-rm -f src/$(DEPDIR)/test_kbd-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
 	-rm -f src/$(DEPDIR)/test_kbd-psg.Po
 	-rm -f src/$(DEPDIR)/test_kbd-rtc.Po
+	-rm -f src/$(DEPDIR)/test_kbd-scc.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_kbd-vdp.Po
 	-rm -f src/$(DEPDIR)/test_kbd-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_kbd-z80.Po
+	-rm -f src/$(DEPDIR)/test_megaflash-megaflash.Po
+	-rm -f src/$(DEPDIR)/test_megaflash-psg.Po
+	-rm -f src/$(DEPDIR)/test_megaflash-scc.Po
+	-rm -f src/$(DEPDIR)/test_megaflash-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_models-ata.Po
 	-rm -f src/$(DEPDIR)/test_models-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_models-cassette.Po
 	-rm -f src/$(DEPDIR)/test_models-floppy.Po
+	-rm -f src/$(DEPDIR)/test_models-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_models-models.Po
 	-rm -f src/$(DEPDIR)/test_models-msx.Po
 	-rm -f src/$(DEPDIR)/test_models-psg.Po
 	-rm -f src/$(DEPDIR)/test_models-rtc.Po
+	-rm -f src/$(DEPDIR)/test_models-scc.Po
 	-rm -f src/$(DEPDIR)/test_models-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_models-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_models-sunrise.Po
@@ -4498,9 +4951,11 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_msx-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_msx-cassette.Po
 	-rm -f src/$(DEPDIR)/test_msx-floppy.Po
+	-rm -f src/$(DEPDIR)/test_msx-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
 	-rm -f src/$(DEPDIR)/test_msx-psg.Po
 	-rm -f src/$(DEPDIR)/test_msx-rtc.Po
+	-rm -f src/$(DEPDIR)/test_msx-scc.Po
 	-rm -f src/$(DEPDIR)/test_msx-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_msx-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_msx-sunrise.Po
@@ -4514,12 +4969,14 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_overlay-display.Po
 	-rm -f src/$(DEPDIR)/test_overlay-floppy.Po
 	-rm -f src/$(DEPDIR)/test_overlay-leds.Po
+	-rm -f src/$(DEPDIR)/test_overlay-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_overlay-models.Po
 	-rm -f src/$(DEPDIR)/test_overlay-msx.Po
 	-rm -f src/$(DEPDIR)/test_overlay-notify.Po
 	-rm -f src/$(DEPDIR)/test_overlay-overlay.Po
 	-rm -f src/$(DEPDIR)/test_overlay-psg.Po
 	-rm -f src/$(DEPDIR)/test_overlay-rtc.Po
+	-rm -f src/$(DEPDIR)/test_overlay-scc.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sunrise.Po
@@ -4529,6 +4986,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_overlay-z80.Po
 	-rm -f src/$(DEPDIR)/test_psg-psg.Po
 	-rm -f src/$(DEPDIR)/test_rtc-rtc.Po
+	-rm -f src/$(DEPDIR)/test_scc-scc.Po
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_sdcard-sdcard.Po
@@ -4544,11 +5002,13 @@ maintainer-clean: maintainer-clean-am
 	-rm -f tests/$(DEPDIR)/test_floppy-test_floppy.Po
 	-rm -f tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
 	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po
+	-rm -f tests/$(DEPDIR)/test_megaflash-test_megaflash.Po
 	-rm -f tests/$(DEPDIR)/test_models-test_models.Po
 	-rm -f tests/$(DEPDIR)/test_msx-test_msx.Po
 	-rm -f tests/$(DEPDIR)/test_overlay-test_overlay.Po
 	-rm -f tests/$(DEPDIR)/test_psg-test_psg.Po
 	-rm -f tests/$(DEPDIR)/test_rtc-test_rtc.Po
+	-rm -f tests/$(DEPDIR)/test_scc-test_scc.Po
 	-rm -f tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
 	-rm -f tests/$(DEPDIR)/test_sdcard-test_sdcard.Po
 	-rm -f tests/$(DEPDIR)/test_sunrise-test_sunrise.Po

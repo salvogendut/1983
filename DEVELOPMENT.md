@@ -11,7 +11,7 @@ complete MSX hardware specification.
 | `src/main.c` | Process lifetime, command line, SDL event loop, and shared function-key bindings |
 | `src/ata.*` | Host-independent ATA task file, IDENTIFY/read/write/flush commands, and safe raw-image lifetime |
 | `src/floppy.*` | Host-independent raw DSK geometry, sector I/O, access mode, flush, and safe image lifetime |
-| `src/cartridge.*` | Host-independent cartridge image ownership, mapper detection, bank registers, and SCC register window |
+| `src/cartridge.*` | Host-independent cartridge image ownership, mapper detection, bank registers, and standard SCC integration |
 | `src/cassette.*` | Host-independent MSX CAS parser, type detection, waveform synthesis, motor-controlled transport, comparator, and monitor signal |
 | `src/audio.*` | SDL3 audio-stream lifetime and host sample submission |
 | `src/config.*` | Defaults, normalization, persistent settings, and platform-specific configuration path |
@@ -20,12 +20,14 @@ complete MSX hardware specification.
 | `src/kbd.*` | SDL scancode translation and shared frontend/guest function-key routing |
 | `src/overlay.*` | F9 options workflow and live application of frontend and machine-profile settings |
 | `src/leds.*` | Shared bottom status strip and MSX-specific indicator definitions |
+| `src/megaflash.*` | MegaFlashROM SCC+ SD expanded subslots, flash/persistence, mappers, MegaSD, SCC-I, and cartridge PSG |
 | `src/models.*` | Editable machine catalogue parsing, firmware-path resolution, and built-in fallback entries |
 | `src/notify.*` | On-screen and console notifications |
 | `src/ui.*` | Small renderer primitives used by the frontend |
 | `src/msx.*` | Machine profiles, slot-aware memory and I/O bus, keyboard/joystick/mouse protocols, ROM loading, and frame scheduler |
 | `src/psg.*` | Host-independent AY-3-8910/YM2149 tone, noise, envelope, mixer, and sample generation |
 | `src/rtc.*` | Host-independent RP-5C01 registers, test modes, calendar, validated CMOS serialization, and atomic host persistence |
+| `src/scc.*` | Host-independent SCC/SCC-I waveform memory, registers, modes, and sample generation |
 | `src/sdcard.*` | Host-independent SPI SD command state, raw-card image lifetime, complete-sector writes, flush, errors, and activity |
 | `src/sd_mapper.*` | SD Mapper V2 expanded-slot, firmware banking, dual-card registers, timer, and independent 512 KiB mapper |
 | `src/sunrise.*` | Sunrise IDE cartridge ROM banking, address decode, 16-bit data latch, and ATA bridge |
@@ -48,6 +50,8 @@ complete MSX hardware specification.
 | `tests/test_rtc.c` | RP-5C01 banks, masks, 12/24-hour and test modes, calendar boundaries, offline continuity, corruption rejection, and safe persistence |
 | `tests/test_sdcard.c` | SPI initialization, identification, capacity, read/write, multiple transfers, addressing, image safety, and error handling |
 | `tests/test_sd_mapper.c` | Firmware banking, expanded subslots, card selection/status, timer, mapper ports, reset, and image lifetime |
+| `tests/test_megaflash.c` | Expanded layout, mapper families, flash program/erase/persistence, dual SD, sound, corruption, and flush safety |
+| `tests/test_scc.c` | SCC compatible/plus maps, waveform sharing, generators, deformation, and audio |
 | `tests/test_vdp.c` | Pattern/sprite-mode-1/2 rendering, V9938 bitmap layouts, commands, preloaded transfers, and beam/status checks |
 
 Frontend modules may inspect summarized machine state for presentation, but
@@ -121,6 +125,8 @@ IDE/Nextor cartridge is implemented independently, and the current GeoBench
 checkpoint boots on the internal 128 KiB mapper. The SD Mapper V2 cartridge
 adds a separate 512 KiB mapper as one half of its real composite hardware,
 rather than folding it into a fictitious 640 KiB internal allocation.
+MegaFlashROM SCC+ SD supplies another independent 512 KiB mapper inside its
+own four-subslot composite cartridge.
 Firmware discovery builds on the explicit
 `1983-models.conf` paths and the pinned hashes documented in
 `BOOT_TARGETS.md`. Only the redistributable C-BIOS MSX1 main and logo ROMs
@@ -129,19 +135,20 @@ belong in the repository; all proprietary machine firmware remains local.
 The frontend RAM control currently scales the active system mapper from its
 profile default through 4 MiB; allocations above 128 KiB live on the heap.
 The generic MSX1 layout exposes mapper ports when more than 64 KiB is
-selected. The SD Mapper V2 RAM remains a distinct device and combines its
-mapper-port output with the internal mapper using the bus's wired-AND
-semantics.
+selected. SD Mapper V2 and MegaFlashROM RAM remain distinct devices and
+combine their mapper-port output with the internal mapper using the bus's
+wired-AND semantics.
 
 `config_cartridge_slot_owner()` is the shared authority for physical
-cartridge-port reservations. Sunrise IDE, SD Mapper V2, SCC, and MSX-MUSIC
+cartridge-port reservations. Sunrise IDE, SD Mapper V2, MegaFlashROM SCC+ SD,
+SCC, and MSX-MUSIC
 reserve slot 2 then slot 1 in deterministic order. Startup and overlay media
 operations must consult that function rather than duplicating extension
 policy.
 `configure_leds()` maps the resolved owner and cartridge presence onto the
 two physical slot indicators. Sunrise storage activity uses the dedicated
-IDE LED, and SD Mapper V2 uses the dedicated SD A/B LEDs. Future network
-backends should report access through
+IDE LED, while both SD cartridges use the dedicated SD A/B LEDs. Future
+network backends should report access through
 `leds_ping_cartridge_activity()` for their owning slot.
 
 ## Sunrise and ATA boundaries
@@ -208,6 +215,38 @@ and verifies that firmware, the expanded cartridge, its 512 KiB mapper, and
 Nextor-loaded video state all remain live. Exact CPU and framebuffer values
 are reported but intentionally not pinned because users may supply different
 valid BIOS and card contents.
+
+## MegaFlashROM SCC+ SD boundaries
+
+`src/megaflash.c` owns the complete cartridge bus contract instead of
+presenting its parts as independent extensions. It decodes the four internal
+subslots, all MegaFlash and MegaSD mapper registers, the 512 KiB mapper, SCC-I
+windows, cartridge PSG ports, and M29W640GB commands. Its two `SdCard`
+instances reuse the storage protocol and conservative host-image lifetime
+from `src/sdcard.c`.
+
+The user-supplied initial image of up to 8 MiB is immutable seed material.
+Short images are padded with erased bytes. Writable guest flash lives in
+`flash/megaflashrom-scc-plus-sd.flash` beside the active
+configuration. A state file must be exactly 8 MiB; an invalid existing file
+is an error rather than a reason to silently overwrite it from the seed.
+Saves use a synchronized temporary and atomic replacement. Dirty flash or SD
+media prevents unsafe disconnect if its host flush fails.
+
+The optional real-device checkpoint is enabled with:
+
+```sh
+MSX_MEGAFLASH_BIOS_ROM=/path/to/MSX.ROM \
+MSX_MEGAFLASH_ROM=/path/to/mfrsd.rom \
+make check
+```
+
+It boots a PAL MSX1 for 1,200 frames and requires cartridge connection,
+the `NEXTOR.SYS` banner in VRAM, sustained CPU execution, and populated video
+state. `MSX_MEGAFLASH_IMAGE` may additionally mount a card for the run; the
+preflash boots its internal ROM disk first, so MegaSD traffic is verified
+independently at the component boundary. The flash image, programmed contents,
+and optional card remain local test inputs.
 
 ## WD2793 and floppy boundaries
 

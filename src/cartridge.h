@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "scc.h"
 #include "types.h"
 
 #define MSX_CARTRIDGE_SLOTS 2u
@@ -25,7 +26,7 @@ typedef struct {
     MsxCartridgeMapper requested_mapper;
     MsxCartridgeMapper mapper;
     u8 banks[4];
-    u8 scc_registers[0x100];
+    Scc scc;
     bool loaded;
     bool scc_enabled;
 } MsxCartridge;
@@ -44,5 +45,8 @@ int msx_cartridge_install(MsxCartridge *cartridge, const u8 *data,
                           size_t size, MsxCartridgeMapper mapper);
 int msx_cartridge_set_mapper(MsxCartridge *cartridge,
                              MsxCartridgeMapper mapper);
-u8 msx_cartridge_read(const MsxCartridge *cartridge, u16 address);
+u8 msx_cartridge_read(MsxCartridge *cartridge, u16 address);
 void msx_cartridge_write(MsxCartridge *cartridge, u16 address, u8 value);
+void msx_cartridge_render_audio(MsxCartridge *cartridge,
+                                s16 *sample, unsigned clock_hz,
+                                unsigned sample_rate);

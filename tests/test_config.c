@@ -9,6 +9,7 @@ int main(void) {
     Config config;
     Config loaded;
     char rtc_path[PATH_MAX];
+    char flash_path[PATH_MAX];
 
     config_defaults(&config);
     assert(strcmp(config.machine_id, "msx1") == 0);
@@ -19,6 +20,10 @@ int main(void) {
     assert(!config.sunrise_rom_path[0]);
     assert(!config.sd_mapper);
     assert(!config.sd_mapper_rom_path[0]);
+    assert(!config.megaflash);
+    assert(!config.megaflash_rom_path[0]);
+    assert(!config.megaflash_card_path[0][0]);
+    assert(!config.megaflash_card_path[1][0]);
     assert(!config.sd_card_path[0][0]);
     assert(!config.sd_card_path[1][0]);
     assert(config.sd_mapper_ram);
@@ -52,6 +57,13 @@ int main(void) {
     assert(config_rtc_path(
                &config, rtc_path, sizeof(rtc_path)) == 0);
     assert(strcmp(rtc_path, "./rtc/my-nms8250.cmos") == 0);
+    config.megaflash = true;
+    assert(config_megaflash_state_path(
+               &config, flash_path, sizeof(flash_path)) == 0);
+    assert(strcmp(
+               flash_path,
+               "./flash/megaflashrom-scc-plus-sd.flash") == 0);
+    config.megaflash = false;
     snprintf(config.machine_id, sizeof(config.machine_id),
              "my nms/8250");
     assert(config_rtc_path(
@@ -112,6 +124,15 @@ int main(void) {
     snprintf(config.sd_card_path[1],
              sizeof(config.sd_card_path[1]),
              "/disks/NEXTOR-B.IMG");
+    snprintf(config.megaflash_rom_path,
+             sizeof(config.megaflash_rom_path),
+             "/roms/megaflashrom-scc-plus-sd.rom");
+    snprintf(config.megaflash_card_path[0],
+             sizeof(config.megaflash_card_path[0]),
+             "/disks/MEGA-A.IMG");
+    snprintf(config.megaflash_card_path[1],
+             sizeof(config.megaflash_card_path[1]),
+             "/disks/MEGA-B.IMG");
     config.sd_image_mode = SD_IMAGE_READ_WRITE;
     config.sd_mapper_ram = false;
     config.sd_mapper_alternate_driver = true;
@@ -157,6 +178,14 @@ int main(void) {
                   "/disks/NEXTOR-A.IMG") == 0);
     assert(strcmp(loaded.sd_card_path[1],
                   "/disks/NEXTOR-B.IMG") == 0);
+    assert(!loaded.megaflash);
+    assert(strcmp(
+               loaded.megaflash_rom_path,
+               "/roms/megaflashrom-scc-plus-sd.rom") == 0);
+    assert(strcmp(loaded.megaflash_card_path[0],
+                  "/disks/MEGA-A.IMG") == 0);
+    assert(strcmp(loaded.megaflash_card_path[1],
+                  "/disks/MEGA-B.IMG") == 0);
     assert(loaded.sd_image_mode == SD_IMAGE_READ_WRITE);
     assert(!loaded.sd_mapper_ram);
     assert(loaded.sd_mapper_alternate_driver);
@@ -189,8 +218,10 @@ int main(void) {
     assert(loaded.sd_mapper);
     assert(!loaded.scc);
     loaded.sunrise_ide = false;
+    loaded.megaflash = true;
     config_normalize(&loaded);
-    assert(config_cartridge_slot_available(&loaded, 0));
+    assert(strcmp(config_cartridge_slot_owner(&loaded, 0),
+                  "MegaFlashROM SCC+ SD") == 0);
     assert(strcmp(config_cartridge_slot_owner(&loaded, 1),
                   "SD Mapper V2") == 0);
     loaded.main_input = (InputPort)99;

@@ -44,6 +44,7 @@ typedef struct {
     bool second_drive;
     bool sunrise_ide;
     bool sd_mapper;
+    bool megaflash;
     bool sd_mapper_ram;
     bool sd_mapper_alternate_driver;
     FloppyImageMode floppy_image_mode;
@@ -67,6 +68,8 @@ typedef struct {
     char sunrise_rom_path[PATH_MAX];
     char sd_mapper_rom_path[PATH_MAX];
     char sd_card_path[MSX_SD_MAPPER_CARDS][PATH_MAX];
+    char megaflash_rom_path[PATH_MAX];
+    char megaflash_card_path[MSX_MEGAFLASH_CARDS][PATH_MAX];
     char drive_a_path[PATH_MAX];
     char drive_b_path[PATH_MAX];
     char ide_image_path[PATH_MAX];
@@ -82,6 +85,8 @@ void config_normalize(Config *config);
 void config_load(Config *config, const char *path);
 int  config_save(const Config *config);
 int  config_rtc_path(const Config *config, char *path, size_t path_size);
+int  config_megaflash_state_path(const Config *config,
+                                 char *path, size_t path_size);
 unsigned config_cartridge_extension_count(const Config *config);
 const char *config_cartridge_slot_owner(const Config *config,
                                         unsigned slot);

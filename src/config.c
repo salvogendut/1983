@@ -163,6 +163,7 @@ void config_normalize(Config *config) {
     bool *cartridge_extensions[] = {
         &config->sunrise_ide,
         &config->sd_mapper,
+        &config->megaflash,
         &config->scc,
         &config->msx_music,
     };
@@ -305,6 +306,8 @@ void config_load(Config *config, const char *path) {
             config->sunrise_ide = parse_bool(value, config->sunrise_ide);
         else if (strcmp(key, "sd_mapper") == 0)
             config->sd_mapper = parse_bool(value, config->sd_mapper);
+        else if (strcmp(key, "megaflash") == 0)
+            config->megaflash = parse_bool(value, config->megaflash);
         else if (strcmp(key, "sd_mapper_ram") == 0)
             config->sd_mapper_ram =
                 parse_bool(value, config->sd_mapper_ram);
@@ -352,6 +355,17 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "sd_card_b") == 0)
             snprintf(config->sd_card_path[1],
                      sizeof(config->sd_card_path[1]), "%s", value);
+        else if (strcmp(key, "megaflash_rom") == 0)
+            snprintf(config->megaflash_rom_path,
+                     sizeof(config->megaflash_rom_path), "%s", value);
+        else if (strcmp(key, "megaflash_sd_a") == 0)
+            snprintf(config->megaflash_card_path[0],
+                     sizeof(config->megaflash_card_path[0]),
+                     "%s", value);
+        else if (strcmp(key, "megaflash_sd_b") == 0)
+            snprintf(config->megaflash_card_path[1],
+                     sizeof(config->megaflash_card_path[1]),
+                     "%s", value);
         else if (strcmp(key, "ide_image") == 0)
             snprintf(config->ide_image_path,
                      sizeof(config->ide_image_path), "%s", value);
@@ -465,6 +479,10 @@ int config_save(const Config *config) {
             ? "read-write" : "read-only");
     fprintf(file, "sd_card_a = %s\n", config->sd_card_path[0]);
     fprintf(file, "sd_card_b = %s\n", config->sd_card_path[1]);
+    fprintf(file, "megaflash_sd_a = %s\n",
+            config->megaflash_card_path[0]);
+    fprintf(file, "megaflash_sd_b = %s\n",
+            config->megaflash_card_path[1]);
     fprintf(file, "sd_image_mode = %s\n",
             config->sd_image_mode == SD_IMAGE_READ_WRITE
             ? "read-write" : "read-only");
@@ -481,6 +499,10 @@ int config_save(const Config *config) {
             bool_name(config->sd_mapper_ram));
     fprintf(file, "sd_mapper_alternate_driver = %s\n",
             bool_name(config->sd_mapper_alternate_driver));
+    fprintf(file, "megaflash = %s\n",
+            bool_name(config->megaflash));
+    fprintf(file, "megaflash_rom = %s\n",
+            config->megaflash_rom_path);
     fprintf(file, "scc = %s\n", bool_name(config->scc));
     fprintf(file, "msx_music = %s\n", bool_name(config->msx_music));
     fprintf(file, "kanji_rom = %s\n\n", bool_name(config->kanji_rom));
@@ -559,11 +581,58 @@ int config_rtc_path(const Config *config, char *path, size_t path_size) {
     return 0;
 }
 
+int config_megaflash_state_path(const Config *config,
+                                char *path, size_t path_size) {
+    char directory[PATH_MAX];
+    char *separator;
+    size_t length;
+
+    if (!config || !path || !path_size)
+        return -1;
+    path[0] = '\0';
+    if (!config->megaflash || !config->path[0])
+        return 0;
+#ifndef _WIN32
+    if (strcmp(config->path, "/dev/null") == 0)
+        return 0;
+#else
+    if (strcasecmp(config->path, "NUL") == 0)
+        return 0;
+#endif
+    snprintf(directory, sizeof(directory), "%s", config->path);
+    separator = strrchr(directory, '/');
+#ifdef _WIN32
+    {
+        char *backslash = strrchr(directory, '\\');
+        if (!separator || (backslash && backslash > separator))
+            separator = backslash;
+    }
+#endif
+    if (separator == directory)
+        separator[1] = '\0';
+    else if (separator)
+        *separator = '\0';
+    else
+        snprintf(directory, sizeof(directory), ".");
+    length = strlen(directory);
+    if (snprintf(path, path_size,
+                 "%s%sflash/megaflashrom-scc-plus-sd.flash",
+                 directory,
+                 length && directory[length - 1] != '/' &&
+                 directory[length - 1] != '\\' ? "/" : "") >=
+            (int)path_size) {
+        path[0] = '\0';
+        return -1;
+    }
+    return 0;
+}
+
 unsigned config_cartridge_extension_count(const Config *config) {
     if (!config)
         return 0;
     return (config->sunrise_ide ? 1u : 0u) +
            (config->sd_mapper ? 1u : 0u) +
+           (config->megaflash ? 1u : 0u) +
            (config->scc ? 1u : 0u) +
            (config->msx_music ? 1u : 0u);
 }
@@ -579,6 +648,8 @@ const char *config_cartridge_slot_owner(const Config *config,
         extensions[count++] = "Sunrise IDE";
     if (config->sd_mapper && count < MSX_CARTRIDGE_SLOTS)
         extensions[count++] = "SD Mapper V2";
+    if (config->megaflash && count < MSX_CARTRIDGE_SLOTS)
+        extensions[count++] = "MegaFlashROM SCC+ SD";
     if (config->scc && count < MSX_CARTRIDGE_SLOTS)
         extensions[count++] = "Konami SCC";
     if (config->msx_music && count < MSX_CARTRIDGE_SLOTS)

@@ -12,7 +12,7 @@ The implementation supports these complementary paths:
 |------|---------|---------------------|
 | C-BIOS | Redistributable out-of-box firmware for cartridge software | Useful for early Z80, slot, VDP, input, and cartridge tests; no BASIC, cassette, or disk support |
 | User-supplied MSX BIOS/BASIC | Representative real-machine behaviour | Required for BASIC and for broad software and peripheral compatibility |
-| Nextor | Disk operating system for machines with a supported storage controller | Boots through Sunrise IDE on the GeoBench NMS 8250 target and through SD Mapper V2 on MSX1 |
+| Nextor | Disk operating system for machines with a supported storage controller | Boots through Sunrise IDE on the GeoBench NMS 8250 target and through SD Mapper V2 on MSX1; MegaFlashROM provides an additional user-supplied preflash lane |
 
 C-BIOS and a vendor-compatible BIOS/BASIC set are alternatives at the machine
 firmware layer. Nextor is not a replacement for that layer: it is a disk
@@ -172,6 +172,37 @@ reaches the GeoBench desktop; at the 2,501-frame inspection point it has
 performed SD reads, populated 12,293 VRAM bytes, and left the external mapper
 at `03,02,01,00`.
 
+### MegaFlashROM SCC+ SD
+
+Enable **General > Extra Hardware**, then choose
+**Extensions > MegaFlashROM**. Its setup asks separately for an initial
+cartridge flash image up to 8 MiB and optional raw images for SD Card A and SD
+Card B. Connect reserves one physical cartridge slot; later card changes and
+safe ejection live under Media. The shared Advanced > SD access mode controls
+the two removable cards.
+
+The initial dump is read-only seed material. 1983 creates a private writable
+flash state under the active configuration directory and loads that state on
+later runs, so flashing software cannot alter the dump. A corrupt state is
+rejected and a host flush failure blocks unsafe disconnection. The initial
+dump, its flashed software, and SD images are not distributed by 1983.
+The current official preflash is available from
+[MSX Cartridge Shop](https://www.msxcartridgeshop.com/bin/mfrsd.zip);
+its `mfrsd.rom` has SHA-1
+`1621f623b834dc57cb2983f30b36bcc3ac56cafd`.
+
+```sh
+./1983 --model msx1 \
+  --megaflash-rom /path/to/mfrsd.rom \
+  --megaflash-sd-a /path/to/card.img --sd-mode read-only
+```
+
+The device includes its recovery, MegaFlash, 512 KiB mapper, and MegaSD
+subslots plus SCC-I and cartridge PSG audio. Component tests use a synthetic
+8 MiB flash image. The official preflash has also booted its internal Nextor
+2.10 ROM disk to an `A:\` prompt in 1983. The optional full-system checkpoint
+below repeats that run with local firmware; a card image is optional.
+
 ### Optional firmware tests
 
 ```sh
@@ -189,6 +220,9 @@ make check
 MSX_SD_MAPPER_BIOS_ROM=/path/to/MSX.ROM \
 MSX_SD_MAPPER_ROM=/path/to/SDXC110.ROM \
 MSX_SD_MAPPER_IMAGE=/path/to/card.img \
+make check
+MSX_MEGAFLASH_BIOS_ROM=/path/to/MSX.ROM \
+MSX_MEGAFLASH_ROM=/path/to/mfrsd.rom \
 make check
 ```
 
@@ -330,6 +364,19 @@ Development tests advance through explicit checkpoints:
    sockets, firmware banking, mapper switches and ports, SDHC/SDSC addressing,
    single/multiple block reads and writes, reset, flush, error, and
    safe-ejection behavior.
+9. **Reached:** MegaFlashROM SCC+
+   SD exposes four subslots, all five MegaFlash mapper families, protected
+   M29W640GB command programming, the 512 KiB mapper, dual MegaSD sockets,
+   SCC-I, and cartridge PSG. Persistent flash and SD media reject corruption,
+   retain dirty state after failed flushes, and block unsafe ejection. The
+   official `mfrsd.rom` preflash boots its internal Nextor 2.10 ROM disk to an
+   `A:\` prompt. At 1,200 PAL frames the reference run reaches `PC=0D87`,
+   mapper registers `03,02,01,00`, 4,226 non-zero VRAM bytes, and framebuffer
+   hash `D2B8FADA1DF43F93`; `NEXTOR.SYS` is present in the name table. This
+   reference used an MSX1 BIOS with SHA-256
+   `999564a371dd2fdf7fbe8d853e82a68d557c27b7d87417639b2fa17704b83f78`
+   and the official preflash with SHA-256
+   `54d92573bf88b699b6f15d82f497d268a61a9d491b71aa84fd78d862a4561065`.
 
 Each checkpoint should be scriptable in headless mode and should record the
 firmware hashes, machine profile, disk-image hash, CPU milestone, and
@@ -366,6 +413,9 @@ also provides:
 - a raw IDE hard-disk selector under Media while Sunrise is connected;
 - a guided SD Mapper V2 setup under Extensions and SD Card A/B selectors
   under Media while it is connected;
+- a guided MegaFlashROM SCC+ SD setup under Extensions, with an immutable
+  initial flash source, private persistent flash state, and its own SD Card
+  A/B Media selectors;
 - a persistent standard MSX CAS cassette selector and transport under Media;
 - a persistent Floppy A selector for the NMS 8250;
 - an Advanced second-floppy switch which conditionally adds Floppy B.
@@ -387,11 +437,15 @@ SD Mapper setup applies the same atomic workflow to its controller ROM and
 both removable card images. Firmware, card paths, mapper and driver switches,
 and access mode persist independently. Failed card replacement preserves the
 previous mount, and an I/O error blocks unsafe ejection.
+MegaFlashROM setup validates an initial image up to 8 MiB, seeds private
+writable state without modifying that source, and applies the same
+conservative card lifetime to both MegaSD sockets.
 
 Selecting the Sunrise extension must not silently replace a cartridge or
 firmware image. It reserves a physical cartridge slot through the same
 ownership policy as every cartridge-connected extension. SD Mapper V2 does
-the same while expanding only its own assigned primary slot. The NMS 8250
+the same while expanding only its own assigned primary slot, as does
+MegaFlashROM SCC+ SD. The NMS 8250
 profile reproduces slot 0 BIOS/BASIC and expanded primary slot 3 with the
 MSX2 Sub-ROM, internal mapper, and disk ROM; Sunrise remains an independent
 external cartridge. SD Mapper RAM remains an independent external mapper.

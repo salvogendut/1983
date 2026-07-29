@@ -13,6 +13,8 @@
 /test-sunrise
 /test-sdcard
 /test-sd-mapper
+/test-megaflash
+/test-scc
 /test-config
 /test-models
 /test-gamepad

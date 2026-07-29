@@ -22,13 +22,13 @@ the 1984 and 1985 sibling emulators.
 | Area | Current position and intended support |
 |------|---------------------------------------|
 | CPU | Z80 instruction set, interrupts, and cycle-aware execution are integrated |
-| Machine architecture | Primary slots, NMS 8250 expanded slots, its internal mapper, configurable mapper capacity through 4 MiB, and the SD Mapper V2's independent 512 KiB mapper are implemented |
+| Machine architecture | Primary slots, NMS 8250 expanded slots, its internal mapper, configurable mapper capacity through 4 MiB, and independent 512 KiB mappers in both composite SD cartridges are implemented |
 | MSX video | Pattern modes, sprite mode 1, status, collisions, and interrupts are implemented; timing refinement remains |
 | MSX2 video | V9938 registers, palette, bitmap modes, sprite mode 2, commands, interrupts, contended VRAM, and scanline-progressive output are implemented |
-| Audio | AY/YM PSG and SDL3 output are implemented; SCC and MSX-MUSIC are planned |
-| Cartridges | Dual Linear, ASCII8/16, Konami, and Konami SCC devices with persistent mapper controls are implemented |
+| Audio | AY/YM PSG, SCC/SCC-I, cartridge PSG mixing, and SDL3 output are implemented; MSX-MUSIC is planned |
+| Cartridges | Dual Linear, ASCII8/16, Konami, and Konami SCC devices plus SD Mapper V2 and MegaFlashROM SCC+ SD composite cartridges are implemented |
 | Cassette | Standard CAS playback, BIOS motor/comparator wiring, overlay/CLI loading, transport display, and Tape LED are implemented; recording and sampled audio are planned |
-| Disk | Sunrise ATA-IDE/Nextor, dual-card SD Mapper V2, and Philips WD2793 paths are implemented with safe writable raw images, optional dual floppies, and activity LEDs; protected/flux formats remain planned |
+| Disk | Sunrise ATA-IDE/Nextor, dual-card SD Mapper V2 and MegaFlashROM storage, and Philips WD2793 paths are implemented with safe writable raw images, optional dual floppies, and activity LEDs; protected/flux formats remain planned |
 | Input | International keyboard, dual PSG joystick ports, SDL3 gamepad hotplug/routing, MSX mouse capture/protocols, and persistent Joy Port selections are implemented; alternate matrices and clipboard paste are planned |
 | MSX2 hardware | Internal mapper, RP-5C01 RTC with persistent per-machine CMOS, and editable firmware catalogue are implemented; more extensions are planned |
 | Tools | Screenshots and headless automation exist; snapshots, debugger, disassembler, and deterministic capture are planned |
@@ -59,18 +59,19 @@ the 1984 and 1985 sibling emulators.
 12. Composite MSX SD Mapper V2 cartridge with expanded subslots, dual SPI SD
     media, an independent 512 KiB mapper, safe image writes, and a real
     Nextor 2.1.2 boot checkpoint.
+13. MegaFlashROM SCC+ SD with persistent 8 MiB flash, recovery and
+    multi-mapper subslots, dual MegaSD media, an independent 512 KiB mapper,
+    SCC-I and cartridge PSG audio, the complete GUI/CLI media workflow, and
+    an official preflash/Nextor boot checkpoint.
 
 ## Near-term targets
 
-1. Implement MegaFlashROM SCC+ SD as the next composite storage/audio
-   cartridge, reusing the SD image backend without conflating its flash,
-   SCC+, mapper, and slot behavior with SD Mapper V2.
-2. Add alternate national keyboard layouts and a small redistributable MSX1
+1. Add alternate national keyboard layouts and a small redistributable MSX1
    compatibility corpus; expand cassette support with recording or sampled
    audio after playback compatibility is established.
-3. Refine progressive VDP rendering from completed-scanline changes to
+2. Refine progressive VDP rendering from completed-scanline changes to
    within-scanline fetch timing where software depends on raster effects.
-4. Add deterministic snapshots and audio/video capture for compatibility
+3. Add deterministic snapshots and audio/video capture for compatibility
    investigations.
 
 ## Storage and Nextor
@@ -104,7 +105,7 @@ The staged storage checkpoints are defined in
 ## Later work
 
 - Broaden MSX1 and MSX2 compatibility and regression corpora.
-- Add SCC and MSX-MUSIC sound.
+- Add MSX-MUSIC sound.
 - Add commonly required cartridge and machine extensions.
 - Improve VDP, audio, and bus timing where real software exposes a
   difference.
