@@ -40,6 +40,14 @@ static const u8 v9938_register_masks[32] = {
 #define V9938_STATUS2_BD 0x10
 #define V9938_STATUS2_CE 0x01
 
+enum {
+    V9938_TICKS_PER_LINE = 1368,
+    V9938_SYNC_AND_TOP_ERASE_LINES = 16,
+    V9938_PAL_TOP_BORDER_LINES = 36,
+    V9938_NTSC_TOP_BORDER_LINES = 9,
+    V9938_LEFT_BORDER_TICKS = 202,
+};
+
 static unsigned bitmap_address(u8 mode, unsigned x, unsigned y);
 static u8 bitmap_pixel(const MsxVdp *vdp, u8 mode,
                        unsigned x, unsigned y);
@@ -60,6 +68,73 @@ static u8 display_mode(const MsxVdp *vdp) {
     return (u8)(((vdp->registers[0] & 0x0e) << 1) |
                 ((vdp->registers[1] & 0x08) >> 2) |
                 ((vdp->registers[1] & 0x10) >> 4));
+}
+
+static unsigned v9938_vertical_adjust(const MsxVdp *vdp) {
+    return (vdp->registers[18] >> 4) ^ 7;
+}
+
+static unsigned v9938_line_zero(const MsxVdp *vdp) {
+    return V9938_SYNC_AND_TOP_ERASE_LINES +
+        (vdp->timing_scanlines == 313
+         ? V9938_PAL_TOP_BORDER_LINES
+         : V9938_NTSC_TOP_BORDER_LINES) +
+        (vdp->registers[9] & 0x80 ? 0 : 10) +
+        v9938_vertical_adjust(vdp);
+}
+
+static unsigned v9938_right_border(const MsxVdp *vdp) {
+    bool text_mode = (vdp->registers[1] & 0x10) != 0;
+    int horizontal_adjust = (vdp->registers[18] & 0x0f) ^ 7;
+
+    return (unsigned)(
+        258 + (horizontal_adjust - 7) * 4 +
+        (text_mode ? 36 : 0) +
+        (text_mode ? 960 : 1024));
+}
+
+/*
+ * The V9938 line counter starts at display line zero, is offset by R#23,
+ * and matches R#19 at the start of the matching line's right border.
+ * Large counter values can carry into the following frame, but the match
+ * disappears once the counter is reset in that frame's top border.
+ */
+static bool v9938_hscan_tick(const MsxVdp *vdp, u64 *tick) {
+    u64 frame_ticks;
+    u64 match_tick;
+
+    if (vdp->type != MSX_VDP_V9938 ||
+        !vdp->timing_frame_cycles || !vdp->timing_scanlines)
+        return false;
+
+    frame_ticks =
+        (u64)vdp->timing_scanlines * V9938_TICKS_PER_LINE;
+    match_tick =
+        (u64)v9938_line_zero(vdp) * V9938_TICKS_PER_LINE +
+        (u64)((vdp->registers[19] - vdp->registers[23]) & 0xff) *
+            V9938_TICKS_PER_LINE +
+        v9938_right_border(vdp);
+    if (match_tick >= frame_ticks) {
+        u64 counter_reset_tick =
+            (u64)(8 + v9938_vertical_adjust(vdp)) *
+            V9938_TICKS_PER_LINE;
+
+        match_tick -= frame_ticks;
+        if (match_tick >= counter_reset_tick)
+            return false;
+    }
+    *tick = match_tick;
+    return true;
+}
+
+static void update_irq(MsxVdp *vdp) {
+    bool vertical =
+        (vdp->status & 0x80) && (vdp->registers[1] & 0x20);
+    bool horizontal =
+        vdp->type == MSX_VDP_V9938 &&
+        (vdp->status1 & 0x01) && (vdp->registers[0] & 0x10);
+
+    vdp->irq = vertical || horizontal;
 }
 
 static bool planar_vram(const MsxVdp *vdp) {
@@ -554,8 +629,11 @@ static void write_register(MsxVdp *vdp, unsigned reg, u8 value) {
     }
 
     vdp->registers[reg] = value;
-    if (reg == 1 && !(value & 0x20))
-        vdp->irq = false;
+    if (vdp->type == MSX_VDP_V9938 &&
+        reg == 0 && !(value & 0x10))
+        vdp->status1 &= (u8)~0x01;
+    if (reg == 0 || reg == 1)
+        update_irq(vdp);
     if (reg == 16)
         vdp->palette_pending = false;
     if (vdp->type == MSX_VDP_V9938 && reg == 44)
@@ -587,10 +665,38 @@ u8 vdp_read_status(MsxVdp *vdp) {
         case 0:
             value = vdp->status;
             vdp->status &= 0x1f;
-            vdp->irq = false;
+            update_irq(vdp);
             break;
         case 1:
-            value = vdp->status1;
+            value = vdp->status1 & (u8)~0x01;
+            if (vdp->registers[0] & 0x10) {
+                value |= vdp->status1 & 0x01;
+            } else {
+                u64 match_tick;
+
+                /*
+                 * With IE1 disabled FH is a non-latching pulse from the
+                 * matching right border into the next line's left border.
+                 */
+                if (v9938_hscan_tick(vdp, &match_tick)) {
+                    u64 frame_ticks =
+                        (u64)vdp->timing_scanlines *
+                        V9938_TICKS_PER_LINE;
+                    u64 beam_ticks =
+                        (u64)vdp->timing_cycle * frame_ticks /
+                        vdp->timing_frame_cycles;
+                    u64 after_match =
+                        (beam_ticks + frame_ticks - match_tick) %
+                        frame_ticks;
+                    unsigned pulse_ticks =
+                        (vdp->registers[1] & 0x10) ? 316 : 288;
+
+                    if (after_match < pulse_ticks)
+                        value |= 0x01;
+                }
+            }
+            vdp->status1 &= (u8)~0x01;
+            update_irq(vdp);
             break;
         case 2:
             value = vdp->status2;
@@ -695,13 +801,6 @@ void vdp_write_indirect(MsxVdp *vdp, u8 value) {
 }
 
 static void update_retrace_status(MsxVdp *vdp) {
-    enum {
-        V9938_TICKS_PER_LINE = 1368,
-        V9938_SYNC_AND_TOP_ERASE_LINES = 16,
-        V9938_PAL_TOP_BORDER_LINES = 36,
-        V9938_NTSC_TOP_BORDER_LINES = 9,
-        V9938_LEFT_BORDER_TICKS = 202,
-    };
     u64 frame_ticks;
     u64 beam_ticks;
     u64 display_start;
@@ -709,7 +808,6 @@ static void update_retrace_status(MsxVdp *vdp) {
     unsigned line_zero;
     unsigned line_phase;
     unsigned visible_lines;
-    int horizontal_adjust;
     int right_border;
     unsigned blank_length;
     bool text_mode;
@@ -726,13 +824,7 @@ static void update_retrace_status(MsxVdp *vdp) {
         beam_ticks % V9938_TICKS_PER_LINE);
     visible_lines = vdp->registers[9] & 0x80
                   ? MSX2_VIDEO_H : MSX1_VIDEO_H;
-    line_zero =
-        V9938_SYNC_AND_TOP_ERASE_LINES +
-        (vdp->timing_scanlines == 313
-         ? V9938_PAL_TOP_BORDER_LINES
-         : V9938_NTSC_TOP_BORDER_LINES) +
-        (vdp->registers[9] & 0x80 ? 0 : 10) +
-        ((vdp->registers[18] >> 4) ^ 7);
+    line_zero = v9938_line_zero(vdp);
     display_start =
         (u64)line_zero * V9938_TICKS_PER_LINE +
         V9938_LEFT_BORDER_TICKS;
@@ -746,11 +838,7 @@ static void update_retrace_status(MsxVdp *vdp) {
         vdp->status2 |= 0x40;
 
     text_mode = (vdp->registers[1] & 0x10) != 0;
-    horizontal_adjust = (vdp->registers[18] & 0x0f) ^ 7;
-    right_border =
-        258 + (horizontal_adjust - 7) * 4 +
-        (text_mode ? 36 : 0) +
-        (text_mode ? 960 : 1024);
+    right_border = (int)v9938_right_border(vdp);
     blank_length = text_mode ? 404 : 312;
     if ((line_phase + V9938_TICKS_PER_LINE -
          (unsigned)right_border) %
@@ -769,8 +857,31 @@ void vdp_begin_frame(MsxVdp *vdp, unsigned frame_cycles,
 }
 
 void vdp_advance(MsxVdp *vdp, unsigned cycles) {
+    u64 match_tick;
+    u64 frame_ticks;
+    u64 match_cycle;
+    u64 first_match;
+    u64 end_cycle;
+
     if (!vdp || !vdp->timing_frame_cycles)
         return;
+    if (vdp->type == MSX_VDP_V9938 &&
+        (vdp->registers[0] & 0x10) &&
+        v9938_hscan_tick(vdp, &match_tick)) {
+        frame_ticks =
+            (u64)vdp->timing_scanlines * V9938_TICKS_PER_LINE;
+        match_cycle =
+            (match_tick * vdp->timing_frame_cycles +
+             frame_ticks - 1) / frame_ticks;
+        first_match = match_cycle;
+        if (first_match <= vdp->timing_cycle)
+            first_match += vdp->timing_frame_cycles;
+        end_cycle = (u64)vdp->timing_cycle + cycles;
+        if (first_match <= end_cycle) {
+            vdp->status1 |= 0x01;
+            update_irq(vdp);
+        }
+    }
     vdp->timing_cycle =
         (vdp->timing_cycle + cycles) % vdp->timing_frame_cycles;
     update_retrace_status(vdp);
@@ -785,8 +896,7 @@ void vdp_end_frame(MsxVdp *vdp) {
      */
     vdp_render(vdp);
     vdp->status |= 0x80;
-    if (vdp->registers[1] & 0x20)
-        vdp->irq = true;
+    update_irq(vdp);
 }
 
 static void render_graphics_1(MsxVdp *vdp) {

@@ -800,6 +800,173 @@ static void test_v9938_retrace_status(void) {
     assert(vdp_read_status(&vdp) & 0x20);
 }
 
+static void test_v9938_line_interrupt(void) {
+    enum {
+        TICKS_PER_LINE = 1368,
+        PAL_LINES = 313,
+        PAL_FRAME_TICKS = TICKS_PER_LINE * PAL_LINES,
+        DEFAULT_LINE_ZERO = 16 + 36 + 10 + 7,
+        DEFAULT_RIGHT_BORDER = 1282,
+    };
+    MsxVdp vdp;
+    unsigned match_tick;
+
+    vdp_init(&vdp);
+    vdp_set_type(&vdp, MSX_VDP_V9938);
+    vdp_reset(&vdp);
+    write_control_register(&vdp, 15, 1);
+    write_control_register(&vdp, 19, 3);
+    write_control_register(&vdp, 0, 0x10); /* IE1 */
+    match_tick =
+        (DEFAULT_LINE_ZERO + 3) * TICKS_PER_LINE +
+        DEFAULT_RIGHT_BORDER;
+
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, match_tick - 1);
+    assert(!(vdp.status1 & 0x01));
+    assert(!vdp.irq);
+    assert(!(vdp_read_status(&vdp) & 0x01));
+    vdp_advance(&vdp, 1);
+    assert(vdp.status1 & 0x01);
+    assert(vdp.irq);
+
+    /* Reading S#1 acknowledges FH and releases its interrupt source. */
+    assert(vdp_read_status(&vdp) & 0x01);
+    assert(!(vdp.status1 & 0x01));
+    assert(!vdp.irq);
+    assert(!(vdp_read_status(&vdp) & 0x01));
+
+    /*
+     * R#23 offsets the line counter: R#19=20 and R#23=5 match visible
+     * counter line 15.
+     */
+    write_control_register(&vdp, 19, 20);
+    write_control_register(&vdp, 23, 5);
+    match_tick =
+        (DEFAULT_LINE_ZERO + 15) * TICKS_PER_LINE +
+        DEFAULT_RIGHT_BORDER;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, match_tick - 1);
+    assert(!vdp.irq);
+    vdp_advance(&vdp, 1);
+    assert(vdp.irq);
+    assert(vdp_read_status(&vdp) & 0x01);
+
+    /* Match timing scales to a real CPU-cycle frame budget. */
+    {
+        const unsigned cpu_frame_cycles = 71590;
+        unsigned match_cycle =
+            (unsigned)(((u64)match_tick * cpu_frame_cycles +
+                        PAL_FRAME_TICKS - 1) /
+                       PAL_FRAME_TICKS);
+
+        vdp_begin_frame(&vdp, cpu_frame_cycles, PAL_LINES);
+        vdp_advance(&vdp, match_cycle - 1);
+        assert(!vdp.irq);
+        vdp_advance(&vdp, 1);
+        assert(vdp.irq);
+        assert(vdp_read_status(&vdp) & 0x01);
+    }
+
+    /*
+     * On NTSC, high counter values can wrap into the next frame before
+     * the top-border counter reset. Matches after that reset do not occur.
+     */
+    {
+        const unsigned ntsc_lines = 262;
+        const unsigned ntsc_frame_ticks = TICKS_PER_LINE * ntsc_lines;
+        const unsigned ntsc_line_zero = 16 + 9 + 10 + 7;
+
+        write_control_register(&vdp, 19, 230);
+        write_control_register(&vdp, 23, 0);
+        match_tick =
+            (ntsc_line_zero + 230 - ntsc_lines) * TICKS_PER_LINE +
+            DEFAULT_RIGHT_BORDER;
+        vdp_begin_frame(&vdp, ntsc_frame_ticks, ntsc_lines);
+        vdp_advance(&vdp, match_tick);
+        assert(vdp.irq);
+        assert(vdp_read_status(&vdp) & 0x01);
+
+        write_control_register(&vdp, 19, 240);
+        vdp_begin_frame(&vdp, ntsc_frame_ticks, ntsc_lines);
+        vdp_advance(&vdp, ntsc_frame_ticks - 1);
+        assert(!vdp.irq);
+        assert(!(vdp_read_status(&vdp) & 0x01));
+    }
+
+    /*
+     * With IE1 disabled FH is a beam-position pulse rather than a
+     * latched IRQ. It spans the right border through the following
+     * left border in a graphics mode.
+     */
+    write_control_register(&vdp, 0, 0);
+    write_control_register(&vdp, 19, 0);
+    write_control_register(&vdp, 23, 0);
+    match_tick =
+        DEFAULT_LINE_ZERO * TICKS_PER_LINE + DEFAULT_RIGHT_BORDER;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, match_tick);
+    assert(vdp_read_status(&vdp) & 0x01);
+    assert(vdp_read_status(&vdp) & 0x01);
+    assert(!vdp.irq);
+    vdp_advance(&vdp, 287);
+    assert(vdp_read_status(&vdp) & 0x01);
+    vdp_advance(&vdp, 1);
+    assert(!(vdp_read_status(&vdp) & 0x01));
+}
+
+static void test_v9938_interrupt_arbitration(void) {
+    enum {
+        TICKS_PER_LINE = 1368,
+        PAL_LINES = 313,
+        PAL_FRAME_TICKS = TICKS_PER_LINE * PAL_LINES,
+        DEFAULT_LINE_ZERO = 16 + 36 + 10 + 7,
+        DEFAULT_RIGHT_BORDER = 1282,
+    };
+    MsxVdp vdp;
+    unsigned match_tick =
+        DEFAULT_LINE_ZERO * TICKS_PER_LINE + DEFAULT_RIGHT_BORDER;
+
+    vdp_init(&vdp);
+    vdp_set_type(&vdp, MSX_VDP_V9938);
+    vdp_reset(&vdp);
+    write_control_register(&vdp, 0, 0x10); /* IE1 */
+    write_control_register(&vdp, 1, 0x20); /* IE0 */
+    write_control_register(&vdp, 15, 0);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, match_tick);
+    assert(vdp.irq);
+    vdp_end_frame(&vdp);
+
+    /* Clearing F through S#0 must leave a pending FH interrupt active. */
+    assert(vdp_read_status(&vdp) & 0x80);
+    assert(vdp.irq);
+    write_control_register(&vdp, 15, 1);
+    assert(vdp_read_status(&vdp) & 0x01);
+    assert(!vdp.irq);
+
+    /* Conversely, acknowledging FH must not drop a pending vertical IRQ. */
+    write_control_register(&vdp, 15, 0);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, match_tick);
+    vdp_end_frame(&vdp);
+    write_control_register(&vdp, 15, 1);
+    assert(vdp_read_status(&vdp) & 0x01);
+    assert(vdp.irq);
+    write_control_register(&vdp, 15, 0);
+    assert(vdp_read_status(&vdp) & 0x80);
+    assert(!vdp.irq);
+
+    /* Enabling IE0 while F is already set asserts the shared IRQ line. */
+    write_control_register(&vdp, 1, 0);
+    vdp_end_frame(&vdp);
+    assert(!vdp.irq);
+    write_control_register(&vdp, 1, 0x20);
+    assert(vdp.irq);
+    write_control_register(&vdp, 1, 0);
+    assert(!vdp.irq);
+}
+
 static void test_v9938_palette_and_indirect_register_port(void) {
     MsxVdp vdp;
 
@@ -1170,6 +1337,8 @@ int main(void) {
     test_backdrop_and_text_background_colours();
     test_v9938_registers_and_status_selection();
     test_v9938_retrace_status();
+    test_v9938_line_interrupt();
+    test_v9938_interrupt_arbitration();
     test_v9938_palette_and_indirect_register_port();
     test_v9938_banked_and_planar_vram();
     test_v9938_bitmap_rendering();

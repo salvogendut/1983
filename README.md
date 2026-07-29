@@ -310,7 +310,7 @@ currently supported settings.
 | CPU | Z80 instruction set, interrupts, and cycle-aware execution (initial core integrated) |
 | Machine architecture | Primary slots and linear ROM/RAM devices implemented; NMS 8250 secondary slots and internal 128 KB mapper implemented |
 | MSX video | TMS9918-family pattern modes, sprite mode 1, status flags, limits, collisions, and interrupts implemented; cycle-level timing refinement planned |
-| MSX2 video | V9938 registers, beam-timed VR/HR status, palette, 128 KB VRAM, SCREEN 5-8 bitmap rendering, sprite mode 2, and drawing commands implemented; advanced scrolling, command timing, and scanline interrupts planned |
+| MSX2 video | V9938 registers, beam-timed VR/HR status and R#19/S#1 scanline interrupts, palette, 128 KB VRAM, SCREEN 5-8 bitmap rendering, sprite mode 2, and drawing commands implemented; advanced scrolling and command/VRAM timing planned |
 | Audio | AY-3-8910/YM2149 PSG tone, noise, envelopes, DAC output, and SDL3 playback implemented; SCC and MSX-MUSIC planned as compatibility extensions |
 | Cartridges | Plain ROMs and common ASCII, Konami, and Konami SCC mapper families, with mapper override controls |
 | Cassette | CAS images and the standard BIOS cassette path |

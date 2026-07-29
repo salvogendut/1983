@@ -171,6 +171,26 @@ The later timing pass should follow openMSX's measured
 [V9938 VRAM timings](https://openmsx.org/vdp-vram-timing/vdp-timing.html)
 and [part II](https://openmsx.org/vdp-vram-timing/vdp-timing-2.html).
 
+## V9938 scanline interrupts
+
+The beam scheduler implements the V9938 horizontal interrupt path. R#19 is
+compared with the display-line counter after applying the R#23 vertical
+offset. A match occurs at the beginning of that line's right border, including
+R#18 horizontal/vertical adjustment, 192/212-line mode, PAL/NTSC frame
+geometry, and the counter's limited carry into the following frame.
+
+With R#0 IE1 enabled, a match latches FH in S#1 and asserts the VDP interrupt
+until S#1 is read or IE1 is disabled. With IE1 disabled, FH remains observable
+as the hardware's short beam-position pulse but does not assert IRQ. Vertical
+F/IE0 and horizontal FH/IE1 are independent sources on the shared IRQ output:
+reading S#0 acknowledges only vertical blank, while reading S#1 acknowledges
+only the horizontal match.
+
+The match position is converted from the V9938's 1368 ticks per scanline to
+the current CPU-frame budget, so normal PAL/NTSC execution does not assume
+one CPU cycle per VDP tick. This is functional interrupt timing; VRAM access
+slot contention and mid-scanline renderer changes remain later timing work.
+
 ## PSG audio
 
 The machine core contains a host-independent AY-3-8910/YM2149 PSG. Generic
