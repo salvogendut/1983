@@ -32,9 +32,16 @@ typedef struct {
     Config *config;
     Display *display;
     MsxMachine *msx;
+
+    int dialog_slot;
+    char dialog_path[PATH_MAX];
+    bool dialog_ready;
+    bool dialog_failed;
+    char dialog_error[256];
 } Overlay;
 
 void overlay_init(Overlay *overlay, Config *config, Display *display,
                   MsxMachine *msx);
 bool overlay_handle_event(Overlay *overlay, const SDL_Event *event);
+void overlay_tick(Overlay *overlay);
 void overlay_render(const Overlay *overlay);

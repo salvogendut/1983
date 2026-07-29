@@ -17,8 +17,9 @@ code and minimal platform-specific dependencies are intended to keep it
 available on as many SDL3-supported systems as practical.
 
 > **Project status:** the first executable MSX1 slice is in place. It runs the
-> sibling Z80 core against a primary-slot bus, boots C-BIOS, accepts plain ROM
-> cartridges, and renders the character/pattern modes needed by the initial
+> sibling Z80 core against a primary-slot bus, boots C-BIOS, accepts linear
+> and commonly mapped ROM cartridges, and renders the character/pattern modes
+> needed by the initial
 > firmware checkpoint. The standard international MSX keyboard matrix is
 > connected to SDL input, and the TMS9918-family sprite engine is implemented.
 > Its built-in AY/YM PSG now produces cycle-timed SDL3 audio. The first MSX2
@@ -30,8 +31,9 @@ available on as many SDL3-supported systems as practical.
 > status, and level-sensitive VDP interrupts. A real MSX2 BIOS and Sub-ROM now
 > complete their SCREEN 6 startup and launch the diagnostic cartridge. The
 > MSX2 RP-5C01 RTC ports and banked CMOS are also connected. V9938 sprite
-> mode 2 is implemented across SCREEN 4 through SCREEN 8. Cartridge mappers
-> and storage devices are still to come.
+> mode 2 is implemented across SCREEN 4 through SCREEN 8. Dual cartridge
+> slots now support Linear, ASCII8, ASCII16, Konami, and Konami SCC mapping;
+> storage devices are still to come.
 
 ## Current implementation
 
@@ -42,16 +44,20 @@ available on as many SDL3-supported systems as practical.
   integer window scaling.
 - F9 options overlay with General, Media, Audio, Extensions, and Advanced
   sections.
-- Persistent generic MSX1/MSX2, PAL/NTSC, RAM, display, extension, and
-  notification settings.
+- Persistent generic MSX1/MSX2, PAL/NTSC, RAM, cartridge media/mapper,
+  display, extension, and notification settings.
 - Power, Caps, Kana, drive, and cassette LEDs with hover descriptions.
 - Cycle-budgeted Z80 execution and maskable interrupts, adapted from the
   sibling projects behind machine-owned memory and I/O callbacks. The VDP
   interrupt is propagated as a level, including immediate cancellation when
   firmware acknowledges S#0 before reenabling interrupts.
 - Four 16 KB pages selected between four primary slots through PPI port
-  `0xA8`: firmware and C-BIOS logo ROMs in slot 0, a plain cartridge in slot
-  1, an open slot 2, and RAM or the MSX2 expanded devices in slot 3.
+  `0xA8`: firmware and C-BIOS logo ROMs in slot 0, independent cartridge
+  devices in slots 1 and 2, and RAM or the MSX2 expanded devices in slot 3.
+- Linear, ASCII8, ASCII16, Konami, and Konami SCC cartridge mapping, with
+  resettable bank registers, safe bank wrapping, conservative automatic
+  detection, and explicit per-slot overrides. The SCC register window is
+  mapped; SCC sound generation remains future work.
 - NMS 8250-style expanded primary slot 3, including its inverted secondary
   slot register at `0xFFFF`, a mirrored Sub-ROM in secondary slot 0, internal
   mapper RAM in slot 2, and the disk ROM in slot 3/page 1.
@@ -102,9 +108,11 @@ available on as many SDL3-supported systems as practical.
 - Standard PSG port directions, international-layout and empty-cassette input
   defaults, and Kana LED output. Joystick and mouse signals are not connected
   yet.
-- Explicit `--bios`, `--logo`, `--subrom`, `--disk-rom`, and `--cart`
-  loaders, plus deterministic C-BIOS, standalone MSX-DIAG BIOS, NMS 8250
-  firmware, and optional MSX2 diagnostic-cartridge checkpoints below SDL.
+- Explicit `--bios`, `--logo`, `--subrom`, `--disk-rom`, `--cart1`, and
+  `--cart2` loaders, with per-slot mapper controls and backwards-compatible
+  `--cart`/`--mapper` aliases. The tests include deterministic C-BIOS,
+  standalone MSX-DIAG BIOS, NMS 8250 firmware, synthetic mapped-cartridge,
+  and optional MSX2 diagnostic-cartridge checkpoints below SDL.
 - Reserved Nextor-kernel, Sunrise IDE, and raw hard-disk surfaces, clearly
   identified as unimplemented device and loader stubs.
 - On-screen and console notifications, screenshots, pause, reset, and
@@ -114,8 +122,9 @@ available on as many SDL3-supported systems as practical.
 - Component tests, an optional C-BIOS boot fixture, headless execution, and a
   machine-state dump for smoke testing.
 
-Media rows and extension switches are intentionally labelled as stubs in the
-interface until the corresponding devices exist.
+The two cartridge rows in the Media overlay are functional. Other media rows
+and extension switches remain clearly labelled as stubs until their devices
+exist.
 
 ## Building
 
@@ -172,7 +181,7 @@ the overlay or moving focus away from the window releases every guest key.
   --logo /path/to/cbios_logo_msx1.rom
 ```
 
-Add a plain cartridge of up to 64 KB with:
+Add a cartridge to primary slot 1 with:
 
 ```sh
 ./1983 --region ntsc \
@@ -181,10 +190,22 @@ Add a plain cartridge of up to 64 KB with:
   --cart /path/to/game.rom
 ```
 
-Only linear ROM cartridges are implemented so far; ASCII and Konami mapper
-cartridges will not yet run correctly. C-BIOS itself runs cartridge software
+The legacy `--cart` option is an alias for `--cart1`. Mapper detection defaults
+to `auto`; ambiguous software can be forced explicitly, and a second
+cartridge can be mounted independently:
+
+```sh
+./1983 --bios /path/to/bios.rom \
+  --cart1 /path/to/game.rom --mapper1 konami-scc \
+  --cart2 /path/to/utility.rom --mapper2 ascii8
+```
+
+Accepted mapper names are `auto`, `linear`, `ascii8`, `ascii16`, `konami`,
+and `konami-scc`. Automatic selection keeps ROMs smaller than 64 KB linear
+and uses mapper-register write signatures for larger ROMs. Use an explicit
+override if a title is misidentified. C-BIOS itself runs cartridge software
 but does not provide MSX BASIC, cassette, or disk services. Use a legitimately
-obtained vendor BIOS/BASIC image when those paths become implemented.
+obtained vendor BIOS/BASIC image for those services.
 
 The local `ROMS/` directory is ignored by Git and is available as a convenient
 place for user-supplied firmware, cartridges, and diagnostic images. Its
@@ -305,7 +326,10 @@ Inside the overlay, Left and Right change section, Up and Down select a row,
 Enter changes the selected setting, F9 applies and saves, and Escape offers to
 save or discard modified settings. The Advanced section appears after enabling
 General > Tinker. The Audio section controls PSG volume in ten-percent steps;
-zero mutes the output.
+zero mutes the output. In Media, Enter on Cartridge 1 or Cartridge 2 opens an
+SDL file picker, Enter on the adjacent mapper row cycles its override, and
+Delete ejects the selected cartridge. Mounted paths and overrides are saved;
+the command line takes precedence when supplied.
 
 Configuration is saved to `~/.config/1983/1983.conf` on Unix-like systems and
 under the user's application-data directory on Windows. Pass `--config PATH`
@@ -337,7 +361,7 @@ currently supported settings.
 | MSX video | TMS9918-family pattern modes, sprite mode 1, status flags, limits, collisions, and interrupts implemented; cycle-level timing refinement planned |
 | MSX2 video | V9938 registers, beam-timed VR/HR status, R#19/S#1 scanline interrupts, progressively timed drawing commands, contended CPU VRAM access, scanline-progressive output, palette, 128 KB VRAM, SCREEN 5-8 bitmap rendering, and sprite mode 2 implemented; advanced scrolling and within-scanline pixel timing planned |
 | Audio | AY-3-8910/YM2149 PSG tone, noise, envelopes, DAC output, and SDL3 playback implemented; SCC and MSX-MUSIC planned as compatibility extensions |
-| Cartridges | Plain ROMs and common ASCII, Konami, and Konami SCC mapper families, with mapper override controls |
+| Cartridges | Dual primary-slot devices with linear, ASCII8/16, Konami, and Konami SCC mapping and persistent auto/manual controls implemented; SCC audio planned |
 | Cassette | CAS images and the standard BIOS cassette path |
 | Disk | DSK images, common MSX disk-ROM behaviour, Sunrise ATA-IDE, Nextor-compatible block storage, guest writes, and multiple drives |
 | Input | International MSX keyboard matrix implemented; joysticks, mouse, alternate national layouts, and host clipboard paste planned |
@@ -358,7 +382,7 @@ configuration. 1983 therefore separates the shared architecture from
 machine-specific choices such as region, video frequency, BIOS set, slot
 layout, RAM, VRAM, and built-in extensions.
 
-Cartridge mapper detection will prefer safe heuristics while retaining a
+Cartridge mapper detection uses conservative heuristics while retaining a
 manual override. Compatibility work will be backed by repeatable boot,
 framebuffer, audio, and timing tests so that support for one machine profile
 does not silently break another.
@@ -372,9 +396,10 @@ does not silently break another.
    bus, PPI slot control, firmware/plain-cartridge loading, and the initial
    TMS9918/TMS9929 video path. C-BIOS now reaches a deterministic boot
    checkpoint and launches a test cartridge.
-3. Refine TMS9918/TMS9929 timing, add common cartridge mappers, cassette
-   support, joysticks, alternate national keyboard layouts, a supplied
-   BIOS/BASIC checkpoint, and an MSX1 compatibility suite.
+3. Refine TMS9918/TMS9929 timing, broaden the cartridge compatibility corpus,
+   add cassette support, joysticks, alternate national keyboard layouts, a
+   supplied BIOS/BASIC checkpoint, and an MSX1 compatibility suite. Common
+   linear, ASCII, and Konami cartridge mapper families are now implemented.
 4. Complete the V9938 display engine, multiple memory mappers, and the Philips
    NMS 8250 reference profile. The V9938 CPU interface, SCREEN 5-8 renderer,
    sprite-mode-2 engine, synchronous command engine, MSX2 secondary slots,

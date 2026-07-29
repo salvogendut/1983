@@ -16,6 +16,13 @@ crt_scanlines = 35
 [audio]
 audio_volume = 80
 
+[media]
+cartridge1 =
+cartridge1_mapper = auto
+cartridge2 =
+cartridge2_mapper = auto
+last_media_dir =
+
 [extensions]
 second_drive = false
 sunrise_ide = false

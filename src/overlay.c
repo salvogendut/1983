@@ -36,7 +36,7 @@ static bool section_available(const Overlay *overlay,
 static int section_rows(OverlaySection section) {
     switch (section) {
         case OVERLAY_GENERAL:    return 5;
-        case OVERLAY_MEDIA:      return 8;
+        case OVERLAY_MEDIA:      return 10;
         case OVERLAY_AUDIO:      return 1;
         case OVERLAY_EXTENSIONS: return 5;
         case OVERLAY_ADVANCED:   return 6;
@@ -60,6 +60,50 @@ static const char *notification_name(NotifyMode mode) {
         case NOTIFY_MODE_SCREEN:  return "Screen";
     }
     return "Screen";
+}
+
+static const char *path_basename(const char *path) {
+    const char *slash;
+    const char *backslash;
+
+    if (!path || !path[0])
+        return "";
+    slash = strrchr(path, '/');
+    backslash = strrchr(path, '\\');
+    if (!slash || (backslash && backslash > slash))
+        slash = backslash;
+    return slash ? slash + 1 : path;
+}
+
+static void cartridge_text(const Overlay *overlay, unsigned slot,
+                           char *value, size_t value_size) {
+    const char *path = overlay->config->cartridge_path[slot];
+    const MsxCartridge *cartridge =
+        msx_get_cartridge(overlay->msx, slot);
+
+    if (cartridge && cartridge->loaded)
+        snprintf(value, value_size, "%s", path_basename(path));
+    else if (path[0])
+        snprintf(value, value_size, "%s [not loaded]",
+                 path_basename(path));
+    else
+        snprintf(value, value_size, "[not mounted]");
+}
+
+static void mapper_text(const Overlay *overlay, unsigned slot,
+                        char *value, size_t value_size) {
+    MsxCartridgeMapper requested =
+        overlay->config->cartridge_mapper[slot];
+    const MsxCartridge *cartridge =
+        msx_get_cartridge(overlay->msx, slot);
+
+    if (requested == MSX_CART_MAPPER_AUTO &&
+        cartridge && cartridge->loaded)
+        snprintf(value, value_size, "Auto (%s)",
+                 msx_cartridge_mapper_display_name(cartridge->mapper));
+    else
+        snprintf(value, value_size, "%s",
+                 msx_cartridge_mapper_display_name(requested));
 }
 
 static void item_text(const Overlay *overlay, int row,
@@ -101,16 +145,53 @@ static void item_text(const Overlay *overlay, int row,
             break;
         case OVERLAY_MEDIA:
             switch (row) {
-                case 0: snprintf(label, label_size, "Firmware set"); break;
-                case 1: snprintf(label, label_size, "Cartridge 1");  break;
-                case 2: snprintf(label, label_size, "Cartridge 2");  break;
-                case 3: snprintf(label, label_size, "Cassette");     break;
-                case 4: snprintf(label, label_size, "Drive A");      break;
-                case 5: snprintf(label, label_size, "Drive B");      break;
-                case 6: snprintf(label, label_size, "Nextor kernel"); break;
-                case 7: snprintf(label, label_size, "IDE hard disk"); break;
+                case 0:
+                    snprintf(label, label_size, "Firmware set");
+                    snprintf(value, value_size,
+                             "[command-line setup]");
+                    break;
+                case 1:
+                    snprintf(label, label_size, "Cartridge 1");
+                    cartridge_text(overlay, 0, value, value_size);
+                    break;
+                case 2:
+                    snprintf(label, label_size, "Cart 1 mapper");
+                    mapper_text(overlay, 0, value, value_size);
+                    break;
+                case 3:
+                    snprintf(label, label_size, "Cartridge 2");
+                    cartridge_text(overlay, 1, value, value_size);
+                    break;
+                case 4:
+                    snprintf(label, label_size, "Cart 2 mapper");
+                    mapper_text(overlay, 1, value, value_size);
+                    break;
+                case 5:
+                    snprintf(label, label_size, "Cassette");
+                    snprintf(value, value_size,
+                             "[not mounted - loader planned]");
+                    break;
+                case 6:
+                    snprintf(label, label_size, "Drive A");
+                    snprintf(value, value_size,
+                             "[not mounted - loader planned]");
+                    break;
+                case 7:
+                    snprintf(label, label_size, "Drive B");
+                    snprintf(value, value_size,
+                             "[not mounted - loader planned]");
+                    break;
+                case 8:
+                    snprintf(label, label_size, "Nextor kernel");
+                    snprintf(value, value_size,
+                             "[not mounted - loader planned]");
+                    break;
+                case 9:
+                    snprintf(label, label_size, "IDE hard disk");
+                    snprintf(value, value_size,
+                             "[not mounted - loader planned]");
+                    break;
             }
-            snprintf(value, value_size, "[not mounted - loader planned]");
             break;
         case OVERLAY_AUDIO:
             snprintf(label, label_size, "PSG volume");
@@ -222,6 +303,29 @@ static void apply_config(Overlay *overlay) {
     configure_leds(config, msx);
 }
 
+static void restore_cartridges(Overlay *overlay) {
+    for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+        const char *current = overlay->config->cartridge_path[slot];
+        const char *saved = overlay->saved.cartridge_path[slot];
+        bool changed =
+            strcmp(current, saved) != 0 ||
+            overlay->config->cartridge_mapper[slot] !=
+                overlay->saved.cartridge_mapper[slot];
+
+        if (!changed)
+            continue;
+        if (!saved[0]) {
+            msx_eject_cartridge(overlay->msx, slot);
+        } else if (msx_load_cartridge_slot(
+                       overlay->msx, slot, saved,
+                       overlay->saved.cartridge_mapper[slot]) != 0) {
+            msx_eject_cartridge(overlay->msx, slot);
+            notify_post("Could not restore cartridge %u: %s",
+                        slot + 1, path_basename(saved));
+        }
+    }
+}
+
 static void close_overlay(Overlay *overlay, bool save) {
     if (save) {
         apply_config(overlay);
@@ -232,6 +336,7 @@ static void close_overlay(Overlay *overlay, bool save) {
                 notify_post("Could not save settings");
         }
     } else {
+        restore_cartridges(overlay);
         *overlay->config = overlay->saved;
         apply_config(overlay);
     }
@@ -258,6 +363,101 @@ static void change_notification_mode(Config *config) {
     if (config->notifications > NOTIFY_MODE_CONSOLE)
         config->notifications = NOTIFY_MODE_OFF;
     notify_set_mode(config->notifications);
+}
+
+static void copy_dirname(char *destination, size_t destination_size,
+                         const char *path) {
+    char *slash;
+    char *backslash;
+
+    snprintf(destination, destination_size, "%s", path ? path : "");
+    slash = strrchr(destination, '/');
+    backslash = strrchr(destination, '\\');
+    if (!slash || (backslash && backslash > slash))
+        slash = backslash;
+    if (!slash) {
+        destination[0] = '\0';
+    } else if (slash == destination) {
+        slash[1] = '\0';
+    } else {
+        *slash = '\0';
+    }
+}
+
+static void cartridge_dialog_callback(void *userdata,
+                                      const char * const *files,
+                                      int filter) {
+    Overlay *overlay = userdata;
+
+    (void)filter;
+    if (!files) {
+        snprintf(overlay->dialog_error, sizeof(overlay->dialog_error),
+                 "%s", SDL_GetError());
+        SDL_MemoryBarrierRelease();
+        overlay->dialog_failed = true;
+    } else if (files[0]) {
+        snprintf(overlay->dialog_path, sizeof(overlay->dialog_path),
+                 "%s", files[0]);
+        SDL_MemoryBarrierRelease();
+        overlay->dialog_ready = true;
+    } else {
+        overlay->dialog_path[0] = '\0';
+        SDL_MemoryBarrierRelease();
+        overlay->dialog_ready = true;
+    }
+}
+
+static void open_cartridge_dialog(Overlay *overlay, unsigned slot) {
+    static const SDL_DialogFileFilter filters[] = {
+        { "MSX cartridge ROMs", "rom;ROM;mx1;MX1;mx2;MX2" },
+        { "All files", "*" },
+    };
+    const char *location =
+        overlay->config->last_media_dir[0]
+        ? overlay->config->last_media_dir : NULL;
+
+    if (overlay->dialog_slot >= 0)
+        return;
+    overlay->dialog_slot = (int)slot;
+    overlay->dialog_ready = false;
+    overlay->dialog_failed = false;
+    overlay->dialog_error[0] = '\0';
+    SDL_ShowOpenFileDialog(cartridge_dialog_callback, overlay,
+                           overlay->display
+                           ? overlay->display->window : NULL,
+                           filters, 2, location, false);
+}
+
+static void change_cartridge_mapper(Overlay *overlay, unsigned slot) {
+    MsxCartridgeMapper previous =
+        overlay->config->cartridge_mapper[slot];
+    MsxCartridgeMapper next =
+        (MsxCartridgeMapper)(previous + 1);
+    const MsxCartridge *cartridge;
+
+    if (next >= MSX_CART_MAPPER_COUNT)
+        next = MSX_CART_MAPPER_AUTO;
+    cartridge = msx_get_cartridge(overlay->msx, slot);
+    if (cartridge && cartridge->loaded &&
+        msx_set_cartridge_mapper(overlay->msx, slot, next) != 0) {
+        notify_post("Cartridge %u is too large for %s",
+                    slot + 1,
+                    msx_cartridge_mapper_display_name(next));
+        return;
+    }
+    overlay->config->cartridge_mapper[slot] = next;
+    overlay->dirty = true;
+    if (cartridge && cartridge->loaded) {
+        const MsxCartridge *updated =
+            msx_get_cartridge(overlay->msx, slot);
+        if (next == MSX_CART_MAPPER_AUTO)
+            notify_post("Cartridge %u mapper: Auto (%s)",
+                        slot + 1,
+                        msx_cartridge_mapper_display_name(updated->mapper));
+        else
+            notify_post("Cartridge %u mapper: %s", slot + 1,
+                        msx_cartridge_mapper_display_name(next));
+    }
 }
 
 static void activate_item(Overlay *overlay) {
@@ -293,9 +493,25 @@ static void activate_item(Overlay *overlay) {
             break;
         case OVERLAY_MEDIA: {
             static const char *media[] = {
-                "Firmware set", "Cartridge 1", "Cartridge 2", "Cassette",
+                "Firmware set", "", "", "", "", "Cassette",
                 "Drive A", "Drive B", "Nextor kernel", "IDE hard disk"
             };
+            if (overlay->row == 1) {
+                open_cartridge_dialog(overlay, 0);
+                return;
+            }
+            if (overlay->row == 2) {
+                change_cartridge_mapper(overlay, 0);
+                return;
+            }
+            if (overlay->row == 3) {
+                open_cartridge_dialog(overlay, 1);
+                return;
+            }
+            if (overlay->row == 4) {
+                change_cartridge_mapper(overlay, 1);
+                return;
+            }
             notify_post("%s loading is not implemented yet",
                         media[overlay->row]);
             return;
@@ -338,6 +554,7 @@ static void activate_item(Overlay *overlay) {
 void overlay_init(Overlay *overlay, Config *config, Display *display,
                   MsxMachine *msx) {
     memset(overlay, 0, sizeof(*overlay));
+    overlay->dialog_slot = -1;
     overlay->config = config;
     overlay->display = display;
     overlay->msx = msx;
@@ -399,6 +616,16 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
         case SDLK_KP_ENTER:
             activate_item(overlay);
             break;
+        case SDLK_DELETE:
+            if (overlay->section == OVERLAY_MEDIA &&
+                (overlay->row == 1 || overlay->row == 3)) {
+                unsigned slot = overlay->row == 1 ? 0 : 1;
+                msx_eject_cartridge(overlay->msx, slot);
+                overlay->config->cartridge_path[slot][0] = '\0';
+                overlay->dirty = true;
+                notify_post("Cartridge %u ejected", slot + 1);
+            }
+            break;
         case SDLK_ESCAPE:
             if (overlay->dirty)
                 overlay->state = OVERLAY_STATE_CONFIRM;
@@ -416,7 +643,7 @@ static const char *section_hint(OverlaySection section) {
         case OVERLAY_GENERAL:
             return "Machine changes reset the current scaffold state.";
         case OVERLAY_MEDIA:
-            return "Media rows reserve the shared loader workflow.";
+            return "Enter loads/selects; Delete ejects a cartridge.";
         case OVERLAY_AUDIO:
             return "Volume zero mutes the built-in PSG.";
         case OVERLAY_EXTENSIONS:
@@ -427,6 +654,48 @@ static const char *section_hint(OverlaySection section) {
             break;
     }
     return "";
+}
+
+void overlay_tick(Overlay *overlay) {
+    int slot;
+
+    if (overlay->dialog_failed) {
+        SDL_MemoryBarrierAcquire();
+        overlay->dialog_failed = false;
+        overlay->dialog_slot = -1;
+        notify_post("File picker unavailable: %s",
+                    overlay->dialog_error[0]
+                    ? overlay->dialog_error : "unknown SDL error");
+        return;
+    }
+    if (!overlay->dialog_ready)
+        return;
+    SDL_MemoryBarrierAcquire();
+    overlay->dialog_ready = false;
+    slot = overlay->dialog_slot;
+    overlay->dialog_slot = -1;
+    if (!overlay->dialog_path[0] || !overlay->visible || slot < 0 ||
+        slot >= (int)MSX_CARTRIDGE_SLOTS)
+        return;
+    if (msx_load_cartridge_slot(
+            overlay->msx, (unsigned)slot, overlay->dialog_path,
+            overlay->config->cartridge_mapper[slot]) != 0) {
+        notify_post("Could not mount cartridge %d: %s",
+                    slot + 1, path_basename(overlay->dialog_path));
+        return;
+    }
+    snprintf(overlay->config->cartridge_path[slot],
+             sizeof(overlay->config->cartridge_path[slot]), "%s",
+             overlay->dialog_path);
+    copy_dirname(overlay->config->last_media_dir,
+                 sizeof(overlay->config->last_media_dir),
+                 overlay->dialog_path);
+    overlay->dirty = true;
+    notify_post("Cartridge %d mounted: %s (%s)", slot + 1,
+                path_basename(overlay->dialog_path),
+                msx_cartridge_mapper_display_name(
+                    msx_get_cartridge(overlay->msx,
+                                      (unsigned)slot)->mapper));
 }
 
 void overlay_render(const Overlay *overlay) {

@@ -25,7 +25,9 @@ typedef struct {
     const char *logo_path;
     const char *subrom_path;
     const char *disk_rom_path;
-    const char *cartridge_path;
+    const char *cartridge_path[MSX_CARTRIDGE_SLOTS];
+    MsxCartridgeMapper cartridge_mapper[MSX_CARTRIDGE_SLOTS];
+    bool cartridge_mapper_set[MSX_CARTRIDGE_SLOTS];
     int model;
     int region;
     int scale;
@@ -44,7 +46,13 @@ static const char *usage =
     "  --logo PATH         load a 16 KB C-BIOS logo ROM in slot 0/page 2\n"
     "  --subrom PATH       load a 16 KB MSX2 Sub-ROM in slot 3-0\n"
     "  --disk-rom PATH     load a 16 KB disk ROM in slot 3-3/page 1\n"
-    "  --cart PATH         load a plain cartridge ROM in primary slot 1\n"
+    "  --cart PATH         alias for --cart1\n"
+    "  --cart1 PATH        load a cartridge ROM in primary slot 1\n"
+    "  --cart2 PATH        load a cartridge ROM in primary slot 2\n"
+    "  --mapper NAME       alias for --mapper1\n"
+    "  --mapper1 NAME      slot 1 mapper: auto, linear, ascii8, ascii16,\n"
+    "                      konami, or konami-scc\n"
+    "  --mapper2 NAME      slot 2 mapper (same names as --mapper1)\n"
     "  --scale N           initial window scale (1 through 4)\n"
     "  --headless          use SDL's offscreen video backend\n"
     "  --exit-after N      exit after N host frames (for smoke tests)\n"
@@ -86,6 +94,16 @@ static int parse_region(const char *text) {
     return -1;
 }
 
+static int parse_mapper(const char *text, const char *option,
+                        MsxCartridgeMapper *mapper) {
+    if (msx_cartridge_mapper_from_name(text, mapper))
+        return 0;
+    fprintf(stderr,
+            "%s: expected auto, linear, ascii8, ascii16, konami, "
+            "or konami-scc\n", option);
+    return -1;
+}
+
 static int parse_cli(int argc, char **argv, Cli *cli) {
     memset(cli, 0, sizeof(*cli));
     cli->model = -1;
@@ -124,6 +142,11 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--subrom") == 0 ||
              strcmp(argument, "--disk-rom") == 0 ||
              strcmp(argument, "--cart") == 0 ||
+             strcmp(argument, "--cart1") == 0 ||
+             strcmp(argument, "--cart2") == 0 ||
+             strcmp(argument, "--mapper") == 0 ||
+             strcmp(argument, "--mapper1") == 0 ||
+             strcmp(argument, "--mapper2") == 0 ||
              strcmp(argument, "--scale") == 0 ||
              strcmp(argument, "--exit-after") == 0) &&
             i + 1 >= argc) {
@@ -140,8 +163,22 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->subrom_path = argv[++i];
         } else if (strcmp(argument, "--disk-rom") == 0) {
             cli->disk_rom_path = argv[++i];
-        } else if (strcmp(argument, "--cart") == 0) {
-            cli->cartridge_path = argv[++i];
+        } else if (strcmp(argument, "--cart") == 0 ||
+                   strcmp(argument, "--cart1") == 0) {
+            cli->cartridge_path[0] = argv[++i];
+        } else if (strcmp(argument, "--cart2") == 0) {
+            cli->cartridge_path[1] = argv[++i];
+        } else if (strcmp(argument, "--mapper") == 0 ||
+                   strcmp(argument, "--mapper1") == 0) {
+            if (parse_mapper(argv[++i], argument,
+                             &cli->cartridge_mapper[0]) != 0)
+                return -1;
+            cli->cartridge_mapper_set[0] = true;
+        } else if (strcmp(argument, "--mapper2") == 0) {
+            if (parse_mapper(argv[++i], argument,
+                             &cli->cartridge_mapper[1]) != 0)
+                return -1;
+            cli->cartridge_mapper_set[1] = true;
         } else if (strcmp(argument, "--model") == 0) {
             cli->model = parse_model(argv[++i]);
             if (cli->model < 0)
@@ -265,6 +302,14 @@ int main(int argc, char **argv) {
         config.region = (MsxRegion)cli.region;
     if (cli.scale >= 0)
         config.scale = cli.scale;
+    for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+        if (cli.cartridge_path[slot])
+            snprintf(config.cartridge_path[slot],
+                     sizeof(config.cartridge_path[slot]), "%s",
+                     cli.cartridge_path[slot]);
+        if (cli.cartridge_mapper_set[slot])
+            config.cartridge_mapper[slot] = cli.cartridge_mapper[slot];
+    }
     config_normalize(&config);
 
     if (cli.headless) {
@@ -295,14 +340,25 @@ int main(int argc, char **argv) {
                 cli.disk_rom_path);
         return 1;
     }
-    if (cli.cartridge_path &&
-        msx_load_cartridge(&msx, cli.cartridge_path) < 0) {
-        fprintf(stderr, "cannot load cartridge ROM: %s\n",
-                cli.cartridge_path);
-        return 1;
+    for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+        const char *path = config.cartridge_path[slot];
+
+        if (!path[0])
+            continue;
+        if (msx_load_cartridge_slot(
+                &msx, slot, path, config.cartridge_mapper[slot]) == 0)
+            continue;
+        fprintf(stderr, "cannot load cartridge %u ROM: %s\n",
+                slot + 1, path);
+        if (cli.cartridge_path[slot] ||
+            cli.cartridge_mapper_set[slot]) {
+            msx_destroy(&msx);
+            return 1;
+        }
     }
     if (display_init(&display, &config, &msx) < 0) {
         display_quit(&display);
+        msx_destroy(&msx);
         return 1;
     }
     audio_output_init(&audio, !cli.headless && !cli.unthrottled);
@@ -328,11 +384,14 @@ int main(int argc, char **argv) {
     printf("Shift+F1..F5 = MSX F1..F5, Shift+F7 = SELECT, "
            "Shift+F8 = STOP\n");
     if (msx_can_boot(&msx))
-        printf("BIOS loaded%s%s%s%s\n",
+        printf("BIOS loaded%s%s%s%s%s\n",
                msx.logo_loaded ? ", logo ROM loaded" : "",
                msx.subrom_loaded ? ", Sub-ROM loaded" : "",
                msx.disk_rom_loaded ? ", disk ROM loaded" : "",
-               msx.cartridge_loaded ? ", cartridge loaded" : "");
+               msx_get_cartridge(&msx, 0)->loaded
+               ? ", cartridge 1 loaded" : "",
+               msx_get_cartridge(&msx, 1)->loaded
+               ? ", cartridge 2 loaded" : "");
     else
         printf("No BIOS loaded; use --bios PATH (and --logo PATH for C-BIOS)\n");
 
@@ -432,6 +491,7 @@ int main(int argc, char **argv) {
             }
         }
 
+        overlay_tick(&overlay);
         msx_run_frame(&msx);
         audio_output_submit(&audio, msx.audio_samples,
                             msx.audio_sample_count);
@@ -501,5 +561,6 @@ int main(int argc, char **argv) {
     }
     audio_output_quit(&audio);
     display_quit(&display);
+    msx_destroy(&msx);
     return 0;
 }

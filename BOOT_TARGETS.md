@@ -102,7 +102,10 @@ Development tests advance through explicit checkpoints:
 1. **Reached:** execute C-BIOS 0.29 reset code and reach a stable cartridge
    startup path. At 180 NTSC frames the current fixture reaches `PC=1A65`,
    `SP=F300`, primary-slot register `F0`, and 5,692 non-zero VRAM bytes. The
-   same test then verifies C-BIOS launching a synthetic plain cartridge. An
+   same test then verifies C-BIOS launching a synthetic linear cartridge.
+   A second synthetic checkpoint executes from an ASCII8 cartridge, changes
+   a mapper register through the primary-slot bus, and reads the selected bank.
+   An
    independent optional fixture boots the GPL-3.0 `msxdiag.rom` built by
    `../msx-diag` directly as an MSX1 replacement BIOS. At 300 PAL frames it
    has completed its VRAM and RAM checks, reaches the menu key scanner with
@@ -141,14 +144,19 @@ and `cbios_logo_msx1.rom` with SHA-256
 
 ## Media and configuration contract
 
-The frontend reserves independent selectors for:
+The frontend provides independent, persistent selectors for both external
+cartridge slots and reserves selectors for:
 
 - the machine profile and its firmware components;
 - recursive system-ROM search roots;
-- cartridge slots;
 - floppy and cassette media;
 - the Nextor kernel ROM;
 - the Sunrise IDE raw hard-disk image.
+
+Each cartridge selector opens the shared SDL3 file-dialog workflow and has an
+adjacent `auto`/manual mapper selector. Delete ejects the selected cartridge.
+The remaining media selectors stay as explicit stubs until their devices are
+implemented.
 
 Selecting the Sunrise extension must not silently replace a cartridge or
 firmware image. The NMS 8250 profile will explicitly reproduce slot 0

@@ -5,6 +5,10 @@
 /test-vdp
 /test-psg
 /test-rtc
+/test-cartridge
+/test-config
+/tests/test-*.log
+/tests/test-*.trs
 /Makefile
 /config.log
 /config.status

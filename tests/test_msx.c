@@ -81,7 +81,98 @@ static void test_slot_bus_and_cpu(void) {
     assert(msx_memory_read(msx, 0x4001) == 'B');
     msx_memory_write(msx, 0x4000, 0);
     assert(msx_memory_read(msx, 0x4000) == 'A');
+    msx_destroy(msx);
     free(msx);
+}
+
+static void test_dual_cartridge_slots_and_mapper_reset(void) {
+    MsxMachine msx;
+    u8 ascii8[0x8000];
+    u8 ascii16[0x10000];
+
+    for (unsigned bank = 0; bank < 4; ++bank) {
+        memset(ascii8 + bank * 0x2000, (int)(0x10 + bank), 0x2000);
+        memset(ascii16 + bank * 0x4000, (int)(0x20 + bank), 0x4000);
+    }
+    ascii8[0] = ascii16[0] = 'A';
+    ascii8[1] = ascii16[1] = 'B';
+
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(msx_install_cartridge_slot(
+               &msx, 0, ascii8, sizeof(ascii8),
+               MSX_CART_MAPPER_ASCII8) == 0);
+    assert(msx_install_cartridge_slot(
+               &msx, 1, ascii16, sizeof(ascii16),
+               MSX_CART_MAPPER_ASCII16) == 0);
+    assert(msx_get_cartridge(&msx, 0)->loaded);
+    assert(msx_get_cartridge(&msx, 1)->loaded);
+
+    /* Primary slot 1 in pages 1/2 exposes cartridge 1. */
+    msx_io_write(&msx, 0xa8, 0x14);
+    msx_memory_write(&msx, 0x6000, 1);
+    msx_memory_write(&msx, 0x7000, 2);
+    assert(msx_memory_read(&msx, 0x4004) == 0x11);
+    assert(msx_memory_read(&msx, 0x8004) == 0x12);
+
+    /* Primary slot 2 in pages 1/2 independently exposes cartridge 2. */
+    msx_io_write(&msx, 0xa8, 0x28);
+    msx_memory_write(&msx, 0x6000, 2);
+    msx_memory_write(&msx, 0x7000, 3);
+    assert(msx_memory_read(&msx, 0x4004) == 0x22);
+    assert(msx_memory_read(&msx, 0x8004) == 0x23);
+
+    msx_reset(&msx);
+    msx_io_write(&msx, 0xa8, 0x14);
+    assert(msx_memory_read(&msx, 0x4004) == 0x10);
+    assert(msx_memory_read(&msx, 0x8004) == 0x10);
+    msx_io_write(&msx, 0xa8, 0x28);
+    assert(msx_memory_read(&msx, 0x4004) == 0x20);
+    assert(msx_memory_read(&msx, 0x8004) == 0x20);
+
+    msx_eject_cartridge(&msx, 1);
+    msx_io_write(&msx, 0xa8, 0x28);
+    assert(msx_memory_read(&msx, 0x4000) == 0xff);
+    assert(!msx_get_cartridge(&msx, 1)->loaded);
+    assert(msx_get_cartridge(&msx, 0)->loaded);
+    msx_destroy(&msx);
+}
+
+static void test_ascii8_cpu_boot_checkpoint(void) {
+    MsxMachine msx;
+    u8 bios[MSX_BIOS_SIZE];
+    u8 cartridge[0x8000];
+    const u8 bios_program[] = {
+        0x3e, 0xd4,       /* slot 1 pages 1/2, RAM in page 3 */
+        0xd3, 0xa8,       /* OUT (A8),A */
+        0xc3, 0x10, 0x60, /* JP 6010 */
+    };
+    const u8 cartridge_program[] = {
+        0x3e, 0x03,       /* LD A,3 */
+        0x32, 0x00, 0x70, /* map bank 3 into 8000-9FFF */
+        0x3a, 0x04, 0x80, /* LD A,(8004) */
+        0x32, 0x00, 0xc0, /* LD (C000),A */
+        0x76,             /* HALT */
+    };
+
+    memset(bios, 0xff, sizeof(bios));
+    memcpy(bios, bios_program, sizeof(bios_program));
+    for (unsigned bank = 0; bank < 4; ++bank)
+        memset(cartridge + bank * 0x2000, (int)(0x50 + bank), 0x2000);
+    cartridge[0] = 'A';
+    cartridge[1] = 'B';
+    memcpy(cartridge + 0x10, cartridge_program,
+           sizeof(cartridge_program));
+
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(msx_install_bios(&msx, bios, sizeof(bios)) == 0);
+    assert(msx_install_cartridge_slot(
+               &msx, 0, cartridge, sizeof(cartridge),
+               MSX_CART_MAPPER_ASCII8) == 0);
+    msx_run_frame(&msx);
+    assert(msx.cpu.halted);
+    assert(msx.ram[0xc000] == 0x53);
+    assert(msx_get_cartridge(&msx, 0)->banks[2] == 3);
+    msx_destroy(&msx);
 }
 
 static void test_msx2_expanded_slots_and_firmware(void) {
@@ -161,6 +252,7 @@ static void test_msx2_expanded_slots_and_firmware(void) {
     assert(msx->secondary_slot[3] == 0);
     assert(msx->mapper_segment[0] == 0);
     assert(msx->ram[0x1c000] == 0);
+    msx_destroy(msx);
     free(msx);
 }
 
@@ -367,6 +459,7 @@ static void test_psg_ports_and_cycle_timed_audio(void) {
     msx_configure(msx, MSX_MODEL_GENERIC_MSX2,
                   MSX_REGION_NTSC, 128);
     assert(msx->psg.variant == PSG_VARIANT_YM2149);
+    msx_destroy(msx);
     free(msx);
 }
 
@@ -436,9 +529,10 @@ static void test_cbios_checkpoint_if_available(void) {
     assert(msx_install_cartridge(msx, cartridge, sizeof(cartridge)) == 0);
     for (int frame = 0; frame < 180; ++frame)
         msx_run_frame(msx);
-    assert(msx->cartridge_loaded);
+    assert(msx_get_cartridge(msx, 0)->loaded);
     assert(msx->vdp.vram[0] == 0xa5);
     assert(msx->cpu.pc >= 0x4010 && msx->cpu.pc < 0x4020);
+    msx_destroy(msx);
     free(msx);
 }
 
@@ -486,6 +580,7 @@ static void test_msx_diag_bios_checkpoint_if_available(void) {
                   "=== MSX DIAG ===", 16) == 0);
     assert(memcmp(&msx->vdp.vram[0x0851],
                   "[0] Monitor", 11) == 0);
+    msx_destroy(msx);
     free(msx);
 }
 
@@ -572,6 +667,7 @@ static void test_nms8250_checkpoint_if_available(void) {
         assert(memcmp(&msx->vdp.vram[0x29],
                       "MSX DIAGNOSTICS", 15) == 0);
     }
+    msx_destroy(msx);
     free(msx);
 }
 
@@ -608,6 +704,8 @@ int main(void) {
     assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX2, 128, 1) == 64);
 
     test_slot_bus_and_cpu();
+    test_dual_cartridge_slots_and_mapper_reset();
+    test_ascii8_cpu_boot_checkpoint();
     test_msx2_expanded_slots_and_firmware();
     test_vdp_ports_and_renderer();
     test_msx2_vdp_extended_ports();
@@ -617,5 +715,6 @@ int main(void) {
     test_cbios_checkpoint_if_available();
     test_msx_diag_bios_checkpoint_if_available();
     test_nms8250_checkpoint_if_available();
+    msx_destroy(&msx);
     return 0;
 }
