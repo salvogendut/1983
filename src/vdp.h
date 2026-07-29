@@ -46,7 +46,7 @@ typedef struct {
     u16 command_line_major;
     u16 command_line_minor;
     u16 command_line_error;
-    u16 command_slot_phase;
+    u16 vram_slot_phase;
     u16 sprite_collision_x;
     u16 sprite_collision_y;
     u8 command_code;
@@ -56,8 +56,11 @@ typedef struct {
     u8 command_operation;
     u8 command_event;
     bool command_transfer_pending;
+    bool cpu_vram_pending;
+    bool cpu_vram_request_read;
     u64 command_ticks_remaining;
-    u64 command_tick_fraction;
+    u64 cpu_vram_ticks_remaining;
+    u64 vram_tick_fraction;
     unsigned timing_cycle;
     unsigned timing_frame_cycles;
     unsigned timing_scanlines;
