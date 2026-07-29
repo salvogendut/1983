@@ -30,7 +30,7 @@ the 1984 and 1985 sibling emulators.
 | Cassette | Standard CAS playback, BIOS motor/comparator wiring, overlay/CLI loading, transport display, and Tape LED are implemented; recording and sampled audio are planned |
 | Disk | Sunrise ATA-IDE/Nextor and Philips WD2793 paths are implemented with safe writable raw images, optional dual floppies, and activity LEDs; protected/flux formats remain planned |
 | Input | International keyboard, dual PSG joystick ports, SDL3 gamepad hotplug/routing, MSX mouse capture/protocols, and persistent Joy Port selections are implemented; alternate matrices and clipboard paste are planned |
-| MSX2 hardware | Internal mapper, RTC, and editable firmware catalogue are implemented; persistent CMOS and more extensions are planned |
+| MSX2 hardware | Internal mapper, RP-5C01 RTC with persistent per-machine CMOS, and editable firmware catalogue are implemented; more extensions are planned |
 | Tools | Screenshots and headless automation exist; snapshots, debugger, disassembler, and deterministic capture are planned |
 
 ## Completed foundations
@@ -54,6 +54,8 @@ the 1984 and 1985 sibling emulators.
    motor/comparator signals, persistent GUI/CLI media workflow, and Tape LED.
 10. Philips NMS 8250 WD2793 emulation with conventional raw DSK images,
     safe sector writes/ejection, and optional Floppy B.
+11. Complete RP-5C01 control/test/calendar behavior with validated,
+    atomically saved per-machine CMOS and offline clock continuity.
 
 ## Near-term targets
 

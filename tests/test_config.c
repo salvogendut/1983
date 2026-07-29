@@ -8,6 +8,7 @@ int main(void) {
     const char *path = "test-config-roundtrip.tmp";
     Config config;
     Config loaded;
+    char rtc_path[PATH_MAX];
 
     config_defaults(&config);
     assert(strcmp(config.machine_id, "msx1") == 0);
@@ -30,6 +31,7 @@ int main(void) {
     assert(config.joy_port_device[0] == JOY_PORT_JOYSTICK);
     assert(config.joy_port_device[1] == JOY_PORT_JOYSTICK);
     assert(!config.extra_hardware);
+    assert(config.rtc_persistence);
     assert(!config.cassette_audible_monitor);
     assert(!config.cassette_visual_monitor);
     assert(config_cartridge_extension_count(&config) == 0);
@@ -40,6 +42,20 @@ int main(void) {
     config.model = MSX_MODEL_PHILIPS_NMS8250;
     snprintf(config.machine_id, sizeof(config.machine_id),
              "my-nms8250");
+    assert(config_rtc_path(
+               &config, rtc_path, sizeof(rtc_path)) == 0);
+    assert(strcmp(rtc_path, "./rtc/my-nms8250.cmos") == 0);
+    snprintf(config.machine_id, sizeof(config.machine_id),
+             "my nms/8250");
+    assert(config_rtc_path(
+               &config, rtc_path, sizeof(rtc_path)) == 0);
+    assert(strcmp(rtc_path, "./rtc/my_nms_8250.cmos") == 0);
+    snprintf(config.machine_id, sizeof(config.machine_id),
+             "my-nms8250");
+    config.rtc_persistence = false;
+    assert(config_rtc_path(
+               &config, rtc_path, sizeof(rtc_path)) == 0);
+    assert(!rtc_path[0]);
     config.memory_kb = 4096;
     snprintf(config.bios_path, sizeof(config.bios_path),
              "/roms/nms8250_basic-bios2.rom");
@@ -106,6 +122,7 @@ int main(void) {
                   "/disks/GBMSX.IMG") == 0);
     assert(loaded.ide_image_mode == ATA_IMAGE_READ_WRITE);
     assert(loaded.second_drive);
+    assert(!loaded.rtc_persistence);
     assert(strcmp(loaded.drive_a_path,
                   "/disks/game-a.dsk") == 0);
     assert(strcmp(loaded.drive_b_path,

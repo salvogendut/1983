@@ -50,6 +50,7 @@ typedef struct {
     bool kanji_rom;
 
     bool       tinker;
+    bool       rtc_persistence;
     bool       cassette_audible_monitor;
     bool       cassette_visual_monitor;
     bool       debug;
@@ -74,6 +75,7 @@ void config_defaults(Config *config);
 void config_normalize(Config *config);
 void config_load(Config *config, const char *path);
 int  config_save(const Config *config);
+int  config_rtc_path(const Config *config, char *path, size_t path_size);
 unsigned config_cartridge_extension_count(const Config *config);
 const char *config_cartridge_slot_owner(const Config *config,
                                         unsigned slot);

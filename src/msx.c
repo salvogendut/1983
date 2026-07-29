@@ -1260,6 +1260,77 @@ bool msx_sunrise_take_activity(MsxMachine *msx) {
            sunrise_take_activity(&msx->sunrise);
 }
 
+int msx_flush_rtc_persistence(MsxMachine *msx, u64 host_seconds) {
+    if (!msx || !msx->rtc_persistence_path[0] ||
+        !rtc_dirty(&msx->rtc))
+        return 0;
+    if (rtc_save_persistence(
+            &msx->rtc, msx->rtc_persistence_path,
+            host_seconds, msx->rtc_persistence_error,
+            sizeof(msx->rtc_persistence_error)) != 0)
+        return -1;
+    msx->rtc_persistence_error[0] = '\0';
+    return 0;
+}
+
+int msx_set_rtc_persistence(MsxMachine *msx, const char *path,
+                            u64 host_seconds) {
+    MsxRtc candidate;
+    int result;
+
+    if (!msx)
+        return -1;
+    if (!path)
+        path = "";
+    if (strcmp(msx->rtc_persistence_path, path) == 0)
+        return 0;
+    if (msx_flush_rtc_persistence(msx, host_seconds) != 0)
+        return -1;
+    if (!path[0] || !msx->profile || !msx->profile->rtc) {
+        msx->rtc_persistence_path[0] = '\0';
+        msx->rtc_persistence_error[0] = '\0';
+        return 0;
+    }
+    if (strlen(path) >= sizeof(msx->rtc_persistence_path)) {
+        snprintf(msx->rtc_persistence_error,
+                 sizeof(msx->rtc_persistence_error),
+                 "RTC persistence path is too long");
+        return -1;
+    }
+
+    rtc_init_at(&candidate, host_seconds);
+    result = rtc_load_persistence(
+        &candidate, path, host_seconds,
+        msx->rtc_persistence_error,
+        sizeof(msx->rtc_persistence_error));
+    if (result != 0)
+        candidate.dirty = true;
+    msx->rtc = candidate;
+    snprintf(msx->rtc_persistence_path,
+             sizeof(msx->rtc_persistence_path), "%s", path);
+    return result < 0 ? -1 : 0;
+}
+
+bool msx_rtc_persistence_active(const MsxMachine *msx) {
+    return msx && msx->rtc_persistence_path[0];
+}
+
+bool msx_rtc_persistence_dirty(const MsxMachine *msx) {
+    return msx && rtc_dirty(&msx->rtc);
+}
+
+bool msx_rtc_persistence_has_error(const MsxMachine *msx) {
+    return msx && msx->rtc_persistence_error[0];
+}
+
+const char *msx_rtc_persistence_error(const MsxMachine *msx) {
+    return msx ? msx->rtc_persistence_error : "";
+}
+
+const char *msx_rtc_persistence_path(const MsxMachine *msx) {
+    return msx ? msx->rtc_persistence_path : "";
+}
+
 bool msx_floppy_supported(const MsxMachine *msx) {
     return msx && msx->profile &&
            msx->profile->model == MSX_MODEL_PHILIPS_NMS8250;

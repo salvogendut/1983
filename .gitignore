@@ -24,6 +24,7 @@
 /autom4te.cache/
 /.local/
 /ROMS/
+/rtc/
 /DOS/*
 !/DOS/NEXTOR.SYS
 /src/.deps/

@@ -307,8 +307,29 @@ clamped to signed 7-bit chunks following openMSX's Philips SBC3810 behavior.
 SCC and MSX-MUSIC audio remain future work.
 
 MSX2 layouts include RP-5C01-compatible latch/data ports at `0xB4` and
-`0xB5`, four register banks, hardware masks, control/reset registers,
-host-time initialization, and emulated-time calendar advancement.
+`0xB5`, four 13-nibble register banks, hardware write masks, 12/24-hour
+conversion, calendar and leap-year rollover, control/reset semantics, and
+the 16,384 Hz seconds/minutes/days/years test modes. Time advances from
+emulated Z80 cycles after its initial host-time seed, so headless and
+unthrottled execution remains deterministic.
+
+The battery-backed banks are stored per configured MSX2 machine in
+`rtc/<machine-id>.cmos` beside `1983.conf`. The small format has a magic
+number, version, payload length, last host timestamp, timer-running flag,
+all 52 nibbles, and checksum. Loads require an exact size, valid checksum,
+supported flags, masked BCD fields, and a valid calendar date. A missing
+file is a normal first run; invalid state leaves the live host-seeded clock
+untouched and reports a warning.
+
+Dirty CMOS is flushed on machine transitions, when persistence is disabled,
+and at normal shutdown. Saves write and synchronize a same-directory
+temporary file before atomically replacing the old copy. Offline elapsed
+host time is applied only when the saved timer was running. Hardware reset
+preserves the battery-backed banks while resetting the latch and control
+state. Tinker exposes the persistent-clock toggle and I/O warning state in
+Advanced. `/dev/null` configurations disable host persistence for
+deterministic frontend runs; component and firmware tests use injected
+timestamps or explicitly pinned register values.
 
 ## Input
 
@@ -354,7 +375,6 @@ frontends.
 - Separate external memory-mapper extensions.
 - Alternate national keyboard layouts.
 - SCC and MSX-MUSIC audio.
-- Persistent RTC CMOS files.
 - Snapshots, debugger/disassembler, and animated capture.
 - Within-scanline fetch timing and further compatibility refinement.
 
