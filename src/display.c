@@ -130,6 +130,8 @@ int display_init(Display *display, const Config *config,
 }
 
 void display_quit(Display *display) {
+    if (display->window && display->mouse_captured)
+        SDL_SetWindowRelativeMouseMode(display->window, false);
     if (display->renderer)
         SDL_SetRenderTarget(display->renderer, NULL);
     if (display->canvas)
@@ -211,14 +213,17 @@ static void draw_footer(Display *display, const MsxMachine *msx,
         "F9=options  F11=fullscreen  F12=quit";
     const char *compact_keys =
         "  F4=shot F5=reset F6=rec F8=mon F9=options F11=full F12=quit";
+    const char *captured_keys =
+        "  Mouse captured  Ctrl+Enter=release";
     const char *model = msx->profile->name;
-    const char *keys = full_keys;
+    const char *keys =
+        display->mouse_captured ? captured_keys : full_keys;
     float total_w = (float)(strlen(model) + strlen(keys)) * 8.0f;
     float strip_y = (float)(output_h - DISPLAY_FOOTER_H);
     float model_x;
     float keys_x;
 
-    if (total_w > (float)output_w) {
+    if (!display->mouse_captured && total_w > (float)output_w) {
         keys = compact_keys;
         total_w = (float)(strlen(model) + strlen(keys)) * 8.0f;
     }
@@ -405,6 +410,21 @@ void display_set_smoothing(Display *display, bool smoothing) {
 void display_set_crt(Display *display, bool enabled, int scanlines) {
     display->real_crt = enabled;
     display->crt_scanlines = clamp_int(scanlines, 0, 95);
+}
+
+bool display_set_mouse_capture(Display *display, bool captured) {
+    if (!display || !display->window)
+        return false;
+    if (display->mouse_captured == captured)
+        return true;
+    if (!SDL_SetWindowRelativeMouseMode(display->window, captured)) {
+        fprintf(stderr, "mouse capture: %s\n", SDL_GetError());
+        return false;
+    }
+    display->mouse_captured = captured;
+    if (captured)
+        leds_set_mouse_position(0.0f, 0.0f, false);
+    return true;
 }
 
 void display_toggle_fullscreen(Display *display) {

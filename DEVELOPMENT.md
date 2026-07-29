@@ -21,7 +21,7 @@ complete MSX hardware specification.
 | `src/models.*` | Editable machine catalogue parsing, firmware-path resolution, and built-in fallback entries |
 | `src/notify.*` | On-screen and console notifications |
 | `src/ui.*` | Small renderer primitives used by the frontend |
-| `src/msx.*` | Machine profiles, slot-aware memory and I/O bus, active-low keyboard matrix, ROM loading, and frame scheduler |
+| `src/msx.*` | Machine profiles, slot-aware memory and I/O bus, keyboard/joystick/mouse protocols, ROM loading, and frame scheduler |
 | `src/psg.*` | Host-independent AY-3-8910/YM2149 tone, noise, envelope, mixer, and sample generation |
 | `src/rtc.*` | Host-independent RP-5C01 register banks, CMOS, control ports, and emulated-time calendar |
 | `src/sunrise.*` | Sunrise IDE cartridge ROM banking, address decode, 16-bit data latch, and ATA bridge |
@@ -334,18 +334,22 @@ SDL3 stream. Headless and unthrottled execution still advances the PSG and is
 covered by component tests, but deliberately does not open a host audio
 device.
 
-PSG register 14 reports the selected connector's six active-low joystick
-lines, the international keyboard-layout signal, and the empty-cassette
-comparator. Register 15 selects Joy Port A or B and supplies their separate
-pin-8 outputs. Port B also drives the active-low Kana LED. The core owns both
-joystick latches and clears them on reset.
+PSG register 14 reports the selected connector's six active-low input lines,
+the international keyboard-layout signal, and the empty-cassette comparator.
+Register 15 selects Joy Port A or B and supplies their separate pin-8
+outputs. A configured mouse advances through signed X/Y nibbles on pin-8
+strobes, including the alternate zero cycle and 1.5 ms resynchronization
+modeled by openMSX. Port B also drives the active-low Kana LED. The core owns
+both joystick latches and both SDL-independent mouse protocol states.
 
 The SDL3 adapter opens the first available gamepad, follows add/remove
 events, and polls its D-pad, left stick, and south/east face buttons once per
 frame. The frontend clears both latches before routing that state through the
 live Main Input setting, but only when the chosen connector is configured as
-Joystick. This prevents stale input after unplugging or changing a port to
-Mouse. MSX mouse and real cassette signals remain future peripheral work.
+Joystick. When it is Mouse, relative motion and two buttons feed that
+connector after a click captures the pointer. Ctrl+Enter follows the sibling
+emulators' release gesture; F9, reset, and focus loss also release and clear
+host input. Real cassette signals remain future peripheral work.
 
 ## Verification
 

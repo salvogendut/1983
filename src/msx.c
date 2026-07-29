@@ -54,6 +54,21 @@ static const int msx2_ram_sizes[] = {
     64, 128, 256, 512, 1024, 2048, 4096
 };
 
+enum {
+    MSX_MOUSE_PHASE_X_HIGH_1 = 0,
+    MSX_MOUSE_PHASE_X_LOW_1,
+    MSX_MOUSE_PHASE_Y_HIGH_1,
+    MSX_MOUSE_PHASE_Y_LOW_1,
+    MSX_MOUSE_PHASE_X_HIGH_2,
+    MSX_MOUSE_PHASE_X_LOW_2,
+    MSX_MOUSE_PHASE_Y_HIGH_2,
+    MSX_MOUSE_PHASE_Y_LOW_2,
+};
+
+#define MSX_MOUSE_STROBE 0x04u
+#define MSX_MOUSE_TIMEOUT_CYCLES \
+    ((MSX_CPU_HZ * 1500ULL + 999999ULL) / 1000000ULL)
+
 void msx_keyboard_clear(MsxMachine *msx) {
     if (!msx)
         return;
@@ -104,12 +119,189 @@ u8 msx_joystick_read_port(const MsxMachine *msx, unsigned port) {
     return (u8)(~msx->joystick_pressed[port]) & MSX_JOY_MASK;
 }
 
+static u8 msx_mouse_port_output(u8 psg_port_b, unsigned port) {
+    return port == 0
+         ? (psg_port_b & 0x03) |
+           ((psg_port_b & 0x10) >> 2)
+         : ((psg_port_b & 0x0c) >> 2) |
+           ((psg_port_b & 0x20) >> 3);
+}
+
+static void msx_mouse_reset_state(MsxMachine *msx, unsigned port,
+                                  bool enabled) {
+    MsxMouse *mouse = &msx->mouse[port];
+
+    memset(mouse, 0, sizeof(*mouse));
+    mouse->enabled = enabled;
+    mouse->phase = MSX_MOUSE_PHASE_Y_LOW_2;
+    mouse->last_write_cycle = msx->cycles;
+}
+
+void msx_mouse_set_enabled(MsxMachine *msx, unsigned port, bool enabled) {
+    if (!msx || port >= MSX_JOYSTICK_PORTS ||
+        msx->mouse[port].enabled == enabled)
+        return;
+    msx_mouse_reset_state(msx, port, enabled);
+}
+
+bool msx_mouse_enabled(const MsxMachine *msx, unsigned port) {
+    return msx && port < MSX_JOYSTICK_PORTS &&
+           msx->mouse[port].enabled;
+}
+
+static int msx_mouse_scale_axis(int delta, int *fractional) {
+    int total = delta + *fractional;
+    int quotient = total / 2;
+    int remainder = total % 2;
+
+    if (remainder < 0) {
+        --quotient;
+        remainder += 2;
+    }
+    *fractional = remainder;
+    return -quotient;
+}
+
+void msx_mouse_add_host_motion(MsxMachine *msx, unsigned port,
+                               int delta_x, int delta_y) {
+    MsxMouse *mouse;
+
+    if (!msx || port >= MSX_JOYSTICK_PORTS ||
+        !msx->mouse[port].enabled)
+        return;
+    mouse = &msx->mouse[port];
+    mouse->pending_x +=
+        msx_mouse_scale_axis(delta_x, &mouse->fractional_x);
+    mouse->pending_y +=
+        msx_mouse_scale_axis(delta_y, &mouse->fractional_y);
+}
+
+void msx_mouse_set_button(MsxMachine *msx, unsigned port,
+                          unsigned button, bool pressed) {
+    u8 mask;
+
+    if (!msx || port >= MSX_JOYSTICK_PORTS ||
+        !msx->mouse[port].enabled || button > 1)
+        return;
+    mask = button == 0 ? MSX_JOY_TRIGGER_A : MSX_JOY_TRIGGER_B;
+    if (pressed)
+        msx->mouse[port].buttons_pressed |= mask;
+    else
+        msx->mouse[port].buttons_pressed &= (u8)~mask;
+}
+
+void msx_mouse_clear_input(MsxMachine *msx, unsigned port) {
+    MsxMouse *mouse;
+
+    if (!msx || port >= MSX_JOYSTICK_PORTS)
+        return;
+    mouse = &msx->mouse[port];
+    mouse->latched_x = 0;
+    mouse->latched_y = 0;
+    mouse->pending_x = 0;
+    mouse->pending_y = 0;
+    mouse->fractional_x = 0;
+    mouse->fractional_y = 0;
+    mouse->buttons_pressed = 0;
+}
+
+static int msx_mouse_clamp_delta(int delta) {
+    if (delta < -127)
+        return -127;
+    if (delta > 127)
+        return 127;
+    return delta;
+}
+
+static void msx_mouse_latch(MsxMouse *mouse) {
+    int delta_x = msx_mouse_clamp_delta(mouse->pending_x);
+    int delta_y = msx_mouse_clamp_delta(mouse->pending_y);
+
+    mouse->latched_x = (s8)delta_x;
+    mouse->latched_y = (s8)delta_y;
+    mouse->pending_x -= delta_x;
+    mouse->pending_y -= delta_y;
+}
+
+static void msx_mouse_write_port(MsxMachine *msx, unsigned port,
+                                 u8 output) {
+    MsxMouse *mouse = &msx->mouse[port];
+    bool strobe;
+
+    if (!mouse->enabled)
+        return;
+    if (msx->cycles - mouse->last_write_cycle >
+        MSX_MOUSE_TIMEOUT_CYCLES)
+        mouse->phase = MSX_MOUSE_PHASE_Y_LOW_2;
+    mouse->last_write_cycle = msx->cycles;
+    strobe = (output & MSX_MOUSE_STROBE) != 0;
+
+    switch (mouse->phase) {
+        case MSX_MOUSE_PHASE_X_HIGH_1:
+        case MSX_MOUSE_PHASE_Y_HIGH_1:
+        case MSX_MOUSE_PHASE_X_HIGH_2:
+        case MSX_MOUSE_PHASE_Y_HIGH_2:
+            if (!strobe)
+                ++mouse->phase;
+            break;
+        case MSX_MOUSE_PHASE_X_LOW_1:
+        case MSX_MOUSE_PHASE_X_LOW_2:
+            if (strobe)
+                ++mouse->phase;
+            break;
+        case MSX_MOUSE_PHASE_Y_LOW_1:
+            if (strobe) {
+                mouse->phase = MSX_MOUSE_PHASE_X_HIGH_2;
+                mouse->latched_x = 0;
+                mouse->latched_y = 0;
+            }
+            break;
+        case MSX_MOUSE_PHASE_Y_LOW_2:
+            if (strobe) {
+                mouse->phase = MSX_MOUSE_PHASE_X_HIGH_1;
+                msx_mouse_latch(mouse);
+            }
+            break;
+    }
+}
+
+static u8 msx_mouse_read_port(const MsxMouse *mouse) {
+    u8 movement;
+    u8 status =
+        (u8)(~mouse->buttons_pressed) &
+        (MSX_JOY_TRIGGER_A | MSX_JOY_TRIGGER_B);
+
+    switch (mouse->phase) {
+        case MSX_MOUSE_PHASE_X_HIGH_1:
+        case MSX_MOUSE_PHASE_X_HIGH_2:
+            movement = ((u8)mouse->latched_x >> 4) & 0x0f;
+            break;
+        case MSX_MOUSE_PHASE_X_LOW_1:
+        case MSX_MOUSE_PHASE_X_LOW_2:
+            movement = (u8)mouse->latched_x & 0x0f;
+            break;
+        case MSX_MOUSE_PHASE_Y_HIGH_1:
+        case MSX_MOUSE_PHASE_Y_HIGH_2:
+            movement = ((u8)mouse->latched_y >> 4) & 0x0f;
+            break;
+        case MSX_MOUSE_PHASE_Y_LOW_1:
+        case MSX_MOUSE_PHASE_Y_LOW_2:
+        default:
+            movement = (u8)mouse->latched_y & 0x0f;
+            break;
+    }
+    return movement | status;
+}
+
 static u8 msx_joystick_read_psg(const MsxMachine *msx) {
     u8 port_b = msx->psg.registers[15];
     unsigned port = (port_b >> 6) & 1u;
     u8 pin_8_mask = port ? 0x20 : 0x10;
-    u8 joystick = (port_b & pin_8_mask)
-                ? MSX_JOY_MASK : msx_joystick_read_port(msx, port);
+    u8 joystick =
+        msx->mouse[port].enabled
+        ? msx_mouse_read_port(&msx->mouse[port])
+        : (port_b & pin_8_mask)
+          ? MSX_JOY_MASK : msx_joystick_read_port(msx, port);
 
     /*
      * Bits 0-5 are the selected joystick's active-low lines. The generic
@@ -330,6 +522,7 @@ void msx_reset(MsxMachine *msx) {
     msx->ppi_port_c = 0xff;
     msx_keyboard_clear(msx);
     memset(msx->joystick_pressed, 0, sizeof(msx->joystick_pressed));
+    msx->cycles = 0;
     psg_reset(&msx->psg);
     rtc_reset(&msx->rtc);
     /*
@@ -337,12 +530,14 @@ void msx_reset(MsxMachine *msx) {
      * even on engines which ignore software attempts to reverse them.
      */
     psg_write_register(&msx->psg, 7, 0x80);
+    for (unsigned port = 0; port < MSX_JOYSTICK_PORTS; ++port)
+        msx_mouse_reset_state(
+            msx, port, msx->mouse[port].enabled);
     if (msx->ram)
         memset(msx->ram, 0, msx->ram_capacity);
     msx->audio_sample_count = 0;
     msx->audio_sample_cycles = 0;
     msx->bus_ticked_in_step = 0;
-    msx->cycles = 0;
     msx->instructions = 0;
     msx->cycle_fraction = 0;
     msx->cycle_balance = 0;
@@ -680,8 +875,14 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
             if (reg == 7)
                 value = (value & 0x3f) | 0x80;
             psg_write_data(&msx->psg, value);
-            if (reg == 15)
+            if (reg == 15) {
                 msx->kana_led = !(value & 0x80);
+                for (unsigned port = 0;
+                     port < MSX_JOYSTICK_PORTS; ++port)
+                    msx_mouse_write_port(
+                        msx, port,
+                        msx_mouse_port_output(value, port));
+            }
             break;
         }
         case 0xa8:

@@ -549,6 +549,94 @@ static void test_dual_joystick_psg_ports(void) {
     msx_destroy(&msx);
 }
 
+static void write_psg_register(MsxMachine *msx, u8 reg, u8 value) {
+    msx_io_write(msx, 0xa0, reg);
+    msx_io_write(msx, 0xa1, value);
+}
+
+static u8 read_psg_joystick_port(MsxMachine *msx) {
+    msx_io_write(msx, 0xa0, 14);
+    return msx_io_read(msx, 0xa2);
+}
+
+static void test_msx_mouse_psg_protocol(void) {
+    MsxMachine msx;
+
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(!msx_mouse_enabled(&msx, 0));
+    assert(!msx_mouse_enabled(&msx, 1));
+    msx_mouse_set_enabled(&msx, 0, true);
+    assert(msx_mouse_enabled(&msx, 0));
+
+    /*
+     * Host movement is halved and negated like openMSX. The first rising
+     * pin-8 strobe latches X=-16 (F0) and Y=8 (08).
+     */
+    msx_mouse_add_host_motion(&msx, 0, 32, -16);
+    msx_mouse_set_button(&msx, 0, 0, true);
+    write_psg_register(&msx, 15, 0x10);
+    assert(read_psg_joystick_port(&msx) == 0xaf);
+    write_psg_register(&msx, 15, 0x00);
+    assert(read_psg_joystick_port(&msx) == 0xa0);
+    write_psg_register(&msx, 15, 0x10);
+    assert(read_psg_joystick_port(&msx) == 0xa0);
+    write_psg_register(&msx, 15, 0x00);
+    assert(read_psg_joystick_port(&msx) == 0xa8);
+
+    /*
+     * The alternate four-nibble cycle is zero for trackball detection,
+     * while button state remains live.
+     */
+    write_psg_register(&msx, 15, 0x10);
+    assert(read_psg_joystick_port(&msx) == 0xa0);
+    msx_mouse_set_button(&msx, 0, 0, false);
+    assert(read_psg_joystick_port(&msx) == 0xb0);
+
+    /*
+     * Port B uses R15 bit 5 as pin 8 and bit 6 for selection. Its state
+     * and two-button input remain independent from port A.
+     */
+    msx_mouse_set_enabled(&msx, 1, true);
+    msx_mouse_add_host_motion(&msx, 1, -8, 8);
+    msx_mouse_set_button(&msx, 1, 1, true);
+    write_psg_register(&msx, 15, 0x60);
+    assert(read_psg_joystick_port(&msx) == 0x90);
+    write_psg_register(&msx, 15, 0x40);
+    assert(read_psg_joystick_port(&msx) == 0x94);
+    write_psg_register(&msx, 15, 0x60);
+    assert(read_psg_joystick_port(&msx) == 0x9f);
+    write_psg_register(&msx, 15, 0x40);
+    assert(read_psg_joystick_port(&msx) == 0x9c);
+
+    /* A long pause resynchronizes the next rising strobe to X high. */
+    msx_mouse_set_button(&msx, 1, 1, false);
+    msx_mouse_add_host_motion(&msx, 1, -40, 0);
+    msx.cycles += MSX_CPU_HZ;
+    write_psg_register(&msx, 15, 0x60);
+    assert(read_psg_joystick_port(&msx) == 0xb1);
+
+    /*
+     * Every PSG write refreshes the timeout, even when pin 8 remains at
+     * the same level. Two sub-timeout pauses therefore continue the
+     * current scan instead of forcing another synchronization.
+     */
+    msx.cycles += MSX_CPU_HZ / 1000;
+    write_psg_register(&msx, 15, 0x60);
+    msx.cycles += MSX_CPU_HZ / 1000;
+    write_psg_register(&msx, 15, 0x40);
+    assert(read_psg_joystick_port(&msx) == 0xb4);
+
+    msx_mouse_clear_input(&msx, 1);
+    assert(read_psg_joystick_port(&msx) == 0xb0);
+    msx_reset(&msx);
+    assert(msx_mouse_enabled(&msx, 0));
+    assert(msx_mouse_enabled(&msx, 1));
+    assert(read_psg_joystick_port(&msx) == 0xb0);
+    msx_mouse_set_enabled(&msx, 0, false);
+    assert(!msx_mouse_enabled(&msx, 0));
+    msx_destroy(&msx);
+}
+
 static void test_psg_ports_and_cycle_timed_audio(void) {
     MsxMachine *msx = malloc(sizeof(*msx));
     u8 bios[MSX_BIOS_SIZE];
@@ -994,6 +1082,7 @@ int main(void) {
     test_rtc_ports_and_reset_persistence();
     test_keyboard_matrix_and_ppi();
     test_dual_joystick_psg_ports();
+    test_msx_mouse_psg_protocol();
     test_psg_ports_and_cycle_timed_audio();
     test_cbios_checkpoint_if_available();
     test_msx_diag_bios_checkpoint_if_available();

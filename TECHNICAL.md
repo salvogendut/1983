@@ -220,13 +220,19 @@ audio through SDL3.
 
 PSG port A reads the selected joystick connector through register 14. Bits
 0 through 5 are active-low Up, Down, Left, Right, trigger A, and trigger B.
-Register 15 bit 6 selects connector A or B; bits 4 and 5 drive the respective
-pin-8 lines, with a high pin returning neutral input. Register 14 bit 6 is
-the low international keyboard-layout signal and bit 7 is the high empty
-cassette input. PSG port B also drives the Kana LED.
+Register 15 bit 6 selects connector A or B; bits 4 and 5 drive their
+respective pin-8 lines. Joysticks retain the existing pin-8 gating, while an
+MSX mouse uses pin 8 as its nibble strobe. Register 14 bit 6 is the low
+international keyboard-layout signal and bit 7 is the high empty cassette
+input. PSG port B also drives the Kana LED.
 
-The host-independent machine stores both joystick states separately. Mouse,
-real cassette signals, SCC, and MSX-MUSIC audio remain future work.
+The host-independent machine stores both joystick and mouse states separately
+for both connectors. Each mouse reports signed X-high, X-low, Y-high, and
+Y-low nibbles, exposes two active-low buttons, performs the alternate zero
+cycle used for trackball detection, and resynchronizes after 1.5 ms without a
+strobe. Host motion is accumulated, divided by two, direction-adjusted, and
+clamped to signed 7-bit chunks following openMSX's Philips SBC3810 behavior.
+Real cassette signals, SCC, and MSX-MUSIC audio remain future work.
 
 MSX2 layouts include RP-5C01-compatible latch/data ports at `0xB4` and
 `0xB5`, four register banks, hardware masks, control/reset registers,
@@ -246,8 +252,11 @@ model-specific electrical ghosting are not implemented.
 
 The SDL3 controller adapter applies a 16,000-unit analogue dead zone and
 normalizes opposing directions to neutral before passing a six-bit state to
-the machine core. Both joystick ports, PSG selection, and pin gating remain
-independent of SDL and are covered by deterministic tests.
+the machine core. Relative SDL mouse input is captured by clicking the window
+when the selected connector is configured as Mouse. Left/right host buttons
+map to MSX buttons A/B; Ctrl+Enter, F9, reset, and focus loss release capture.
+Both connector protocols, PSG selection, and pin handling remain independent
+of SDL and are covered by deterministic tests.
 
 ## Frontend
 
@@ -271,7 +280,6 @@ frontends.
 - WD2793 disk controller.
 - Writable ATA images, CHS-only edge cases, and additional ATA commands.
 - Separate external memory-mapper extensions.
-- MSX mouse input.
 - Alternate national keyboard layouts.
 - SCC and MSX-MUSIC audio.
 - Persistent RTC CMOS files.
