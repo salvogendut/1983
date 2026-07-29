@@ -93,8 +93,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = 1983$(EXEEXT)
-check_PROGRAMS = test-cartridge$(EXEEXT) test-ata$(EXEEXT) \
-	test-sunrise$(EXEEXT) test-config$(EXEEXT) \
+check_PROGRAMS = test-cartridge$(EXEEXT) test-cassette$(EXEEXT) \
+	test-ata$(EXEEXT) test-sunrise$(EXEEXT) test-config$(EXEEXT) \
 	test-models$(EXEEXT) test-msx$(EXEEXT) test-gamepad$(EXEEXT) \
 	test-kbd$(EXEEXT) test-overlay$(EXEEXT) test-vdp$(EXEEXT) \
 	test-psg$(EXEEXT) test-rtc$(EXEEXT)
@@ -123,15 +123,16 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(desktopdir)" \
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_1983_OBJECTS = src/1983-config.$(OBJEXT) \
-	src/1983-cartridge.$(OBJEXT) src/1983-ata.$(OBJEXT) \
-	src/1983-audio.$(OBJEXT) src/1983-display.$(OBJEXT) \
-	src/1983-gamepad.$(OBJEXT) src/1983-kbd.$(OBJEXT) \
-	src/1983-leds.$(OBJEXT) src/1983-main.$(OBJEXT) \
-	src/1983-models.$(OBJEXT) src/1983-msx.$(OBJEXT) \
-	src/1983-notify.$(OBJEXT) src/1983-overlay.$(OBJEXT) \
-	src/1983-psg.$(OBJEXT) src/1983-rtc.$(OBJEXT) \
-	src/1983-sunrise.$(OBJEXT) src/1983-ui.$(OBJEXT) \
-	src/1983-vdp.$(OBJEXT) src/1983-z80.$(OBJEXT)
+	src/1983-cartridge.$(OBJEXT) src/1983-cassette.$(OBJEXT) \
+	src/1983-ata.$(OBJEXT) src/1983-audio.$(OBJEXT) \
+	src/1983-display.$(OBJEXT) src/1983-gamepad.$(OBJEXT) \
+	src/1983-kbd.$(OBJEXT) src/1983-leds.$(OBJEXT) \
+	src/1983-main.$(OBJEXT) src/1983-models.$(OBJEXT) \
+	src/1983-msx.$(OBJEXT) src/1983-notify.$(OBJEXT) \
+	src/1983-overlay.$(OBJEXT) src/1983-psg.$(OBJEXT) \
+	src/1983-rtc.$(OBJEXT) src/1983-sunrise.$(OBJEXT) \
+	src/1983-ui.$(OBJEXT) src/1983-vdp.$(OBJEXT) \
+	src/1983-z80.$(OBJEXT)
 1983_OBJECTS = $(am_1983_OBJECTS)
 am__DEPENDENCIES_1 =
 1983_LINK = $(CCLD) $(1983_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
@@ -149,9 +150,17 @@ test_cartridge_OBJECTS = $(am_test_cartridge_OBJECTS)
 test_cartridge_LDADD = $(LDADD)
 test_cartridge_LINK = $(CCLD) $(test_cartridge_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_test_cassette_OBJECTS =  \
+	tests/test_cassette-test_cassette.$(OBJEXT) \
+	src/test_cassette-cassette.$(OBJEXT)
+test_cassette_OBJECTS = $(am_test_cassette_OBJECTS)
+test_cassette_LDADD = $(LDADD)
+test_cassette_LINK = $(CCLD) $(test_cassette_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_config_OBJECTS = tests/test_config-test_config.$(OBJEXT) \
 	src/test_config-config.$(OBJEXT) \
 	src/test_config-cartridge.$(OBJEXT) \
+	src/test_config-cassette.$(OBJEXT) \
 	src/test_config-ata.$(OBJEXT) src/test_config-msx.$(OBJEXT) \
 	src/test_config-psg.$(OBJEXT) src/test_config-rtc.$(OBJEXT) \
 	src/test_config-sunrise.$(OBJEXT) \
@@ -167,7 +176,8 @@ test_gamepad_DEPENDENCIES = $(am__DEPENDENCIES_1)
 test_gamepad_LINK = $(CCLD) $(test_gamepad_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_kbd_OBJECTS = tests/test_kbd-test_kbd.$(OBJEXT) \
-	src/test_kbd-cartridge.$(OBJEXT) src/test_kbd-ata.$(OBJEXT) \
+	src/test_kbd-cartridge.$(OBJEXT) \
+	src/test_kbd-cassette.$(OBJEXT) src/test_kbd-ata.$(OBJEXT) \
 	src/test_kbd-kbd.$(OBJEXT) src/test_kbd-msx.$(OBJEXT) \
 	src/test_kbd-psg.$(OBJEXT) src/test_kbd-rtc.$(OBJEXT) \
 	src/test_kbd-sunrise.$(OBJEXT) src/test_kbd-vdp.$(OBJEXT) \
@@ -179,6 +189,7 @@ test_kbd_LINK = $(CCLD) $(test_kbd_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 am_test_models_OBJECTS = tests/test_models-test_models.$(OBJEXT) \
 	src/test_models-models.$(OBJEXT) \
 	src/test_models-cartridge.$(OBJEXT) \
+	src/test_models-cassette.$(OBJEXT) \
 	src/test_models-ata.$(OBJEXT) src/test_models-msx.$(OBJEXT) \
 	src/test_models-psg.$(OBJEXT) src/test_models-rtc.$(OBJEXT) \
 	src/test_models-sunrise.$(OBJEXT) \
@@ -188,7 +199,8 @@ test_models_LDADD = $(LDADD)
 test_models_LINK = $(CCLD) $(test_models_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_msx_OBJECTS = tests/test_msx-test_msx.$(OBJEXT) \
-	src/test_msx-cartridge.$(OBJEXT) src/test_msx-ata.$(OBJEXT) \
+	src/test_msx-cartridge.$(OBJEXT) \
+	src/test_msx-cassette.$(OBJEXT) src/test_msx-ata.$(OBJEXT) \
 	src/test_msx-msx.$(OBJEXT) src/test_msx-psg.$(OBJEXT) \
 	src/test_msx-rtc.$(OBJEXT) src/test_msx-sunrise.$(OBJEXT) \
 	src/test_msx-vdp.$(OBJEXT) src/test_msx-z80.$(OBJEXT)
@@ -199,6 +211,7 @@ test_msx_LINK = $(CCLD) $(test_msx_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 am_test_overlay_OBJECTS = tests/test_overlay-test_overlay.$(OBJEXT) \
 	src/test_overlay-config.$(OBJEXT) \
 	src/test_overlay-cartridge.$(OBJEXT) \
+	src/test_overlay-cassette.$(OBJEXT) \
 	src/test_overlay-ata.$(OBJEXT) \
 	src/test_overlay-display.$(OBJEXT) \
 	src/test_overlay-leds.$(OBJEXT) \
@@ -256,18 +269,20 @@ depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/1983-audio.Po src/$(DEPDIR)/1983-cartridge.Po \
-	src/$(DEPDIR)/1983-config.Po src/$(DEPDIR)/1983-display.Po \
-	src/$(DEPDIR)/1983-gamepad.Po src/$(DEPDIR)/1983-kbd.Po \
-	src/$(DEPDIR)/1983-leds.Po src/$(DEPDIR)/1983-main.Po \
-	src/$(DEPDIR)/1983-models.Po src/$(DEPDIR)/1983-msx.Po \
-	src/$(DEPDIR)/1983-notify.Po src/$(DEPDIR)/1983-overlay.Po \
-	src/$(DEPDIR)/1983-psg.Po src/$(DEPDIR)/1983-rtc.Po \
-	src/$(DEPDIR)/1983-sunrise.Po src/$(DEPDIR)/1983-ui.Po \
-	src/$(DEPDIR)/1983-vdp.Po src/$(DEPDIR)/1983-z80.Po \
-	src/$(DEPDIR)/test_ata-ata.Po \
+	src/$(DEPDIR)/1983-cassette.Po src/$(DEPDIR)/1983-config.Po \
+	src/$(DEPDIR)/1983-display.Po src/$(DEPDIR)/1983-gamepad.Po \
+	src/$(DEPDIR)/1983-kbd.Po src/$(DEPDIR)/1983-leds.Po \
+	src/$(DEPDIR)/1983-main.Po src/$(DEPDIR)/1983-models.Po \
+	src/$(DEPDIR)/1983-msx.Po src/$(DEPDIR)/1983-notify.Po \
+	src/$(DEPDIR)/1983-overlay.Po src/$(DEPDIR)/1983-psg.Po \
+	src/$(DEPDIR)/1983-rtc.Po src/$(DEPDIR)/1983-sunrise.Po \
+	src/$(DEPDIR)/1983-ui.Po src/$(DEPDIR)/1983-vdp.Po \
+	src/$(DEPDIR)/1983-z80.Po src/$(DEPDIR)/test_ata-ata.Po \
 	src/$(DEPDIR)/test_cartridge-cartridge.Po \
+	src/$(DEPDIR)/test_cassette-cassette.Po \
 	src/$(DEPDIR)/test_config-ata.Po \
 	src/$(DEPDIR)/test_config-cartridge.Po \
+	src/$(DEPDIR)/test_config-cassette.Po \
 	src/$(DEPDIR)/test_config-config.Po \
 	src/$(DEPDIR)/test_config-msx.Po \
 	src/$(DEPDIR)/test_config-psg.Po \
@@ -278,12 +293,14 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_gamepad-gamepad.Po \
 	src/$(DEPDIR)/test_kbd-ata.Po \
 	src/$(DEPDIR)/test_kbd-cartridge.Po \
+	src/$(DEPDIR)/test_kbd-cassette.Po \
 	src/$(DEPDIR)/test_kbd-kbd.Po src/$(DEPDIR)/test_kbd-msx.Po \
 	src/$(DEPDIR)/test_kbd-psg.Po src/$(DEPDIR)/test_kbd-rtc.Po \
 	src/$(DEPDIR)/test_kbd-sunrise.Po \
 	src/$(DEPDIR)/test_kbd-vdp.Po src/$(DEPDIR)/test_kbd-z80.Po \
 	src/$(DEPDIR)/test_models-ata.Po \
 	src/$(DEPDIR)/test_models-cartridge.Po \
+	src/$(DEPDIR)/test_models-cassette.Po \
 	src/$(DEPDIR)/test_models-models.Po \
 	src/$(DEPDIR)/test_models-msx.Po \
 	src/$(DEPDIR)/test_models-psg.Po \
@@ -292,12 +309,14 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_models-vdp.Po \
 	src/$(DEPDIR)/test_models-z80.Po src/$(DEPDIR)/test_msx-ata.Po \
 	src/$(DEPDIR)/test_msx-cartridge.Po \
+	src/$(DEPDIR)/test_msx-cassette.Po \
 	src/$(DEPDIR)/test_msx-msx.Po src/$(DEPDIR)/test_msx-psg.Po \
 	src/$(DEPDIR)/test_msx-rtc.Po \
 	src/$(DEPDIR)/test_msx-sunrise.Po \
 	src/$(DEPDIR)/test_msx-vdp.Po src/$(DEPDIR)/test_msx-z80.Po \
 	src/$(DEPDIR)/test_overlay-ata.Po \
 	src/$(DEPDIR)/test_overlay-cartridge.Po \
+	src/$(DEPDIR)/test_overlay-cassette.Po \
 	src/$(DEPDIR)/test_overlay-config.Po \
 	src/$(DEPDIR)/test_overlay-display.Po \
 	src/$(DEPDIR)/test_overlay-leds.Po \
@@ -317,6 +336,7 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_vdp-vdp.Po \
 	tests/$(DEPDIR)/test_ata-test_ata.Po \
 	tests/$(DEPDIR)/test_cartridge-test_cartridge.Po \
+	tests/$(DEPDIR)/test_cassette-test_cassette.Po \
 	tests/$(DEPDIR)/test_config-test_config.Po \
 	tests/$(DEPDIR)/test_gamepad-test_gamepad.Po \
 	tests/$(DEPDIR)/test_kbd-test_kbd.Po \
@@ -345,16 +365,16 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 =
 SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
-	$(test_cartridge_SOURCES) $(test_config_SOURCES) \
-	$(test_gamepad_SOURCES) $(test_kbd_SOURCES) \
-	$(test_models_SOURCES) $(test_msx_SOURCES) \
+	$(test_cartridge_SOURCES) $(test_cassette_SOURCES) \
+	$(test_config_SOURCES) $(test_gamepad_SOURCES) \
+	$(test_kbd_SOURCES) $(test_models_SOURCES) $(test_msx_SOURCES) \
 	$(test_overlay_SOURCES) $(test_psg_SOURCES) \
 	$(test_rtc_SOURCES) $(test_sunrise_SOURCES) \
 	$(test_vdp_SOURCES)
 DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
-	$(test_cartridge_SOURCES) $(test_config_SOURCES) \
-	$(test_gamepad_SOURCES) $(test_kbd_SOURCES) \
-	$(test_models_SOURCES) $(test_msx_SOURCES) \
+	$(test_cartridge_SOURCES) $(test_cassette_SOURCES) \
+	$(test_config_SOURCES) $(test_gamepad_SOURCES) \
+	$(test_kbd_SOURCES) $(test_models_SOURCES) $(test_msx_SOURCES) \
 	$(test_overlay_SOURCES) $(test_psg_SOURCES) \
 	$(test_rtc_SOURCES) $(test_sunrise_SOURCES) \
 	$(test_vdp_SOURCES)
@@ -736,6 +756,7 @@ top_srcdir = @top_srcdir@
 1983_SOURCES = \
 	src/config.c \
 	src/cartridge.c \
+	src/cassette.c \
 	src/ata.c \
 	src/audio.c \
 	src/display.c \
@@ -757,6 +778,7 @@ top_srcdir = @top_srcdir@
 noinst_HEADERS = \
 	src/config.h \
 	src/cartridge.h \
+	src/cassette.h \
 	src/ata.h \
 	src/audio.h \
 	src/display.h \
@@ -786,30 +808,33 @@ TESTS = $(check_PROGRAMS) tests/test-cli.sh
 test_cartridge_SOURCES = tests/test_cartridge.c src/cartridge.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
 test_cartridge_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_cassette_SOURCES = tests/test_cassette.c src/cassette.c
+test_cassette_CPPFLAGS = -I$(top_srcdir)/src
+test_cassette_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_ata_SOURCES = tests/test_ata.c src/ata.c
 test_ata_CPPFLAGS = -I$(top_srcdir)/src
 test_ata_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_sunrise_SOURCES = tests/test_sunrise.c src/ata.c src/sunrise.c
 test_sunrise_CPPFLAGS = -I$(top_srcdir)/src
 test_sunrise_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/ata.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
+test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
 test_config_CPPFLAGS = -I$(top_srcdir)/src
 test_config_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/ata.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
+test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
 test_models_CPPFLAGS = -I$(top_srcdir)/src
 test_models_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/ata.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
+test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_SOURCES = tests/test_gamepad.c src/gamepad.c
 test_gamepad_CPPFLAGS = -I$(top_srcdir)/src
 test_gamepad_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_LDADD = $(SDL3_LIBS)
-test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/ata.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
+test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
-test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/ata.c src/display.c src/leds.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/sunrise.c src/ui.c src/vdp.c src/z80.c
+test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/display.c src/leds.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/sunrise.c src/ui.c src/vdp.c src/z80.c
 test_overlay_CPPFLAGS = -I$(top_srcdir)/src
 test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_overlay_LDADD = $(SDL3_LIBS) -lm
@@ -949,6 +974,8 @@ src/1983-config.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-cassette.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-ata.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-audio.$(OBJEXT): src/$(am__dirstamp) \
@@ -1009,11 +1036,21 @@ src/test_cartridge-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 test-cartridge$(EXEEXT): $(test_cartridge_OBJECTS) $(test_cartridge_DEPENDENCIES) $(EXTRA_test_cartridge_DEPENDENCIES)
 	@rm -f test-cartridge$(EXEEXT)
 	$(AM_V_CCLD)$(test_cartridge_LINK) $(test_cartridge_OBJECTS) $(test_cartridge_LDADD) $(LIBS)
+tests/test_cassette-test_cassette.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_cassette-cassette.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-cassette$(EXEEXT): $(test_cassette_OBJECTS) $(test_cassette_DEPENDENCIES) $(EXTRA_test_cassette_DEPENDENCIES)
+	@rm -f test-cassette$(EXEEXT)
+	$(AM_V_CCLD)$(test_cassette_LINK) $(test_cassette_OBJECTS) $(test_cassette_LDADD) $(LIBS)
 tests/test_config-test_config.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_config-config.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-cartridge.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-cassette.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-ata.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1045,6 +1082,8 @@ tests/test_kbd-test_kbd.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_kbd-cassette.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-ata.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-kbd.$(OBJEXT): src/$(am__dirstamp) \
@@ -1071,6 +1110,8 @@ src/test_models-models.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_models-cassette.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-ata.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-msx.$(OBJEXT): src/$(am__dirstamp) \
@@ -1092,6 +1133,8 @@ test-models$(EXEEXT): $(test_models_OBJECTS) $(test_models_DEPENDENCIES) $(EXTRA
 tests/test_msx-test_msx.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-cartridge.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_msx-cassette.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-ata.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1116,6 +1159,8 @@ tests/test_overlay-test_overlay.$(OBJEXT): tests/$(am__dirstamp) \
 src/test_overlay-config.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-cartridge.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-cassette.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-ata.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1193,6 +1238,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-audio.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-display.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-gamepad.Po@am__quote@ # am--include-marker
@@ -1211,8 +1257,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-z80.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_ata-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_cartridge-cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_cassette-cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-psg.Po@am__quote@ # am--include-marker
@@ -1223,6 +1271,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_gamepad-gamepad.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-kbd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-psg.Po@am__quote@ # am--include-marker
@@ -1232,6 +1281,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-z80.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-models.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-psg.Po@am__quote@ # am--include-marker
@@ -1241,6 +1291,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-z80.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-rtc.Po@am__quote@ # am--include-marker
@@ -1249,6 +1300,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-z80.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-display.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-leds.Po@am__quote@ # am--include-marker
@@ -1269,6 +1321,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_vdp-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_ata-test_ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_cartridge-test_cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_cassette-test_cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_config-test_config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_gamepad-test_gamepad.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_kbd-test_kbd.Po@am__quote@ # am--include-marker
@@ -1329,6 +1382,20 @@ src/1983-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/1983-cartridge.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
+
+src/1983-cassette.o: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-cassette.o -MD -MP -MF src/$(DEPDIR)/1983-cassette.Tpo -c -o src/1983-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-cassette.Tpo src/$(DEPDIR)/1983-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/1983-cassette.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+
+src/1983-cassette.obj: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-cassette.obj -MD -MP -MF src/$(DEPDIR)/1983-cassette.Tpo -c -o src/1983-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-cassette.Tpo src/$(DEPDIR)/1983-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/1983-cassette.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
 
 src/1983-ata.o: src/ata.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-ata.o -MD -MP -MF src/$(DEPDIR)/1983-ata.Tpo -c -o src/1983-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
@@ -1624,6 +1691,34 @@ src/test_cartridge-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -c -o src/test_cartridge-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
 
+tests/test_cassette-test_cassette.o: tests/test_cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -MT tests/test_cassette-test_cassette.o -MD -MP -MF tests/$(DEPDIR)/test_cassette-test_cassette.Tpo -c -o tests/test_cassette-test_cassette.o `test -f 'tests/test_cassette.c' || echo '$(srcdir)/'`tests/test_cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_cassette-test_cassette.Tpo tests/$(DEPDIR)/test_cassette-test_cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_cassette.c' object='tests/test_cassette-test_cassette.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -c -o tests/test_cassette-test_cassette.o `test -f 'tests/test_cassette.c' || echo '$(srcdir)/'`tests/test_cassette.c
+
+tests/test_cassette-test_cassette.obj: tests/test_cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -MT tests/test_cassette-test_cassette.obj -MD -MP -MF tests/$(DEPDIR)/test_cassette-test_cassette.Tpo -c -o tests/test_cassette-test_cassette.obj `if test -f 'tests/test_cassette.c'; then $(CYGPATH_W) 'tests/test_cassette.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_cassette.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_cassette-test_cassette.Tpo tests/$(DEPDIR)/test_cassette-test_cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_cassette.c' object='tests/test_cassette-test_cassette.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -c -o tests/test_cassette-test_cassette.obj `if test -f 'tests/test_cassette.c'; then $(CYGPATH_W) 'tests/test_cassette.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_cassette.c'; fi`
+
+src/test_cassette-cassette.o: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -MT src/test_cassette-cassette.o -MD -MP -MF src/$(DEPDIR)/test_cassette-cassette.Tpo -c -o src/test_cassette-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_cassette-cassette.Tpo src/$(DEPDIR)/test_cassette-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/test_cassette-cassette.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -c -o src/test_cassette-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+
+src/test_cassette-cassette.obj: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -MT src/test_cassette-cassette.obj -MD -MP -MF src/$(DEPDIR)/test_cassette-cassette.Tpo -c -o src/test_cassette-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_cassette-cassette.Tpo src/$(DEPDIR)/test_cassette-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/test_cassette-cassette.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -c -o src/test_cassette-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
+
 tests/test_config-test_config.o: tests/test_config.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT tests/test_config-test_config.o -MD -MP -MF tests/$(DEPDIR)/test_config-test_config.Tpo -c -o tests/test_config-test_config.o `test -f 'tests/test_config.c' || echo '$(srcdir)/'`tests/test_config.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_config-test_config.Tpo tests/$(DEPDIR)/test_config-test_config.Po
@@ -1665,6 +1760,20 @@ src/test_config-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/test_config-cartridge.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
+
+src/test_config-cassette.o: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-cassette.o -MD -MP -MF src/$(DEPDIR)/test_config-cassette.Tpo -c -o src/test_config-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-cassette.Tpo src/$(DEPDIR)/test_config-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/test_config-cassette.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+
+src/test_config-cassette.obj: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-cassette.obj -MD -MP -MF src/$(DEPDIR)/test_config-cassette.Tpo -c -o src/test_config-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-cassette.Tpo src/$(DEPDIR)/test_config-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/test_config-cassette.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
 
 src/test_config-ata.o: src/ata.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-ata.o -MD -MP -MF src/$(DEPDIR)/test_config-ata.Tpo -c -o src/test_config-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
@@ -1820,6 +1929,20 @@ src/test_kbd-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
 
+src/test_kbd-cassette.o: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-cassette.o -MD -MP -MF src/$(DEPDIR)/test_kbd-cassette.Tpo -c -o src/test_kbd-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-cassette.Tpo src/$(DEPDIR)/test_kbd-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/test_kbd-cassette.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+
+src/test_kbd-cassette.obj: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-cassette.obj -MD -MP -MF src/$(DEPDIR)/test_kbd-cassette.Tpo -c -o src/test_kbd-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-cassette.Tpo src/$(DEPDIR)/test_kbd-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/test_kbd-cassette.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
+
 src/test_kbd-ata.o: src/ata.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-ata.o -MD -MP -MF src/$(DEPDIR)/test_kbd-ata.Tpo -c -o src/test_kbd-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-ata.Tpo src/$(DEPDIR)/test_kbd-ata.Po
@@ -1974,6 +2097,20 @@ src/test_models-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
 
+src/test_models-cassette.o: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-cassette.o -MD -MP -MF src/$(DEPDIR)/test_models-cassette.Tpo -c -o src/test_models-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-cassette.Tpo src/$(DEPDIR)/test_models-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/test_models-cassette.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+
+src/test_models-cassette.obj: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-cassette.obj -MD -MP -MF src/$(DEPDIR)/test_models-cassette.Tpo -c -o src/test_models-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-cassette.Tpo src/$(DEPDIR)/test_models-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/test_models-cassette.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
+
 src/test_models-ata.o: src/ata.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-ata.o -MD -MP -MF src/$(DEPDIR)/test_models-ata.Tpo -c -o src/test_models-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-ata.Tpo src/$(DEPDIR)/test_models-ata.Po
@@ -2099,6 +2236,20 @@ src/test_msx-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/test_msx-cartridge.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
+
+src/test_msx-cassette.o: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-cassette.o -MD -MP -MF src/$(DEPDIR)/test_msx-cassette.Tpo -c -o src/test_msx-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-cassette.Tpo src/$(DEPDIR)/test_msx-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/test_msx-cassette.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+
+src/test_msx-cassette.obj: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-cassette.obj -MD -MP -MF src/$(DEPDIR)/test_msx-cassette.Tpo -c -o src/test_msx-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-cassette.Tpo src/$(DEPDIR)/test_msx-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/test_msx-cassette.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
 
 src/test_msx-ata.o: src/ata.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-ata.o -MD -MP -MF src/$(DEPDIR)/test_msx-ata.Tpo -c -o src/test_msx-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
@@ -2239,6 +2390,20 @@ src/test_overlay-cartridge.obj: src/cartridge.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/test_overlay-cartridge.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
+
+src/test_overlay-cassette.o: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-cassette.o -MD -MP -MF src/$(DEPDIR)/test_overlay-cassette.Tpo -c -o src/test_overlay-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-cassette.Tpo src/$(DEPDIR)/test_overlay-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/test_overlay-cassette.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
+
+src/test_overlay-cassette.obj: src/cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-cassette.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-cassette.Tpo -c -o src/test_overlay-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-cassette.Tpo src/$(DEPDIR)/test_overlay-cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cassette.c' object='src/test_overlay-cassette.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
 
 src/test_overlay-ata.o: src/ata.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-ata.o -MD -MP -MF src/$(DEPDIR)/test_overlay-ata.Tpo -c -o src/test_overlay-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
@@ -2990,6 +3155,13 @@ test-cartridge.log: test-cartridge$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-cassette.log: test-cassette$(EXEEXT)
+	@p='test-cassette$(EXEEXT)'; \
+	b='test-cassette'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-ata.log: test-ata$(EXEEXT)
 	@p='test-ata$(EXEEXT)'; \
 	b='test-ata'; \
@@ -3324,6 +3496,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-ata.Po
 	-rm -f src/$(DEPDIR)/1983-audio.Po
 	-rm -f src/$(DEPDIR)/1983-cartridge.Po
+	-rm -f src/$(DEPDIR)/1983-cassette.Po
 	-rm -f src/$(DEPDIR)/1983-config.Po
 	-rm -f src/$(DEPDIR)/1983-display.Po
 	-rm -f src/$(DEPDIR)/1983-gamepad.Po
@@ -3342,8 +3515,10 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-z80.Po
 	-rm -f src/$(DEPDIR)/test_ata-ata.Po
 	-rm -f src/$(DEPDIR)/test_cartridge-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_cassette-cassette.Po
 	-rm -f src/$(DEPDIR)/test_config-ata.Po
 	-rm -f src/$(DEPDIR)/test_config-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_config-cassette.Po
 	-rm -f src/$(DEPDIR)/test_config-config.Po
 	-rm -f src/$(DEPDIR)/test_config-msx.Po
 	-rm -f src/$(DEPDIR)/test_config-psg.Po
@@ -3354,6 +3529,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_gamepad-gamepad.Po
 	-rm -f src/$(DEPDIR)/test_kbd-ata.Po
 	-rm -f src/$(DEPDIR)/test_kbd-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_kbd-cassette.Po
 	-rm -f src/$(DEPDIR)/test_kbd-kbd.Po
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
 	-rm -f src/$(DEPDIR)/test_kbd-psg.Po
@@ -3363,6 +3539,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_kbd-z80.Po
 	-rm -f src/$(DEPDIR)/test_models-ata.Po
 	-rm -f src/$(DEPDIR)/test_models-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_models-cassette.Po
 	-rm -f src/$(DEPDIR)/test_models-models.Po
 	-rm -f src/$(DEPDIR)/test_models-msx.Po
 	-rm -f src/$(DEPDIR)/test_models-psg.Po
@@ -3372,6 +3549,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_models-z80.Po
 	-rm -f src/$(DEPDIR)/test_msx-ata.Po
 	-rm -f src/$(DEPDIR)/test_msx-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_msx-cassette.Po
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
 	-rm -f src/$(DEPDIR)/test_msx-psg.Po
 	-rm -f src/$(DEPDIR)/test_msx-rtc.Po
@@ -3380,6 +3558,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_msx-z80.Po
 	-rm -f src/$(DEPDIR)/test_overlay-ata.Po
 	-rm -f src/$(DEPDIR)/test_overlay-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_overlay-cassette.Po
 	-rm -f src/$(DEPDIR)/test_overlay-config.Po
 	-rm -f src/$(DEPDIR)/test_overlay-display.Po
 	-rm -f src/$(DEPDIR)/test_overlay-leds.Po
@@ -3400,6 +3579,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f tests/$(DEPDIR)/test_ata-test_ata.Po
 	-rm -f tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
+	-rm -f tests/$(DEPDIR)/test_cassette-test_cassette.Po
 	-rm -f tests/$(DEPDIR)/test_config-test_config.Po
 	-rm -f tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
 	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po
@@ -3464,6 +3644,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-ata.Po
 	-rm -f src/$(DEPDIR)/1983-audio.Po
 	-rm -f src/$(DEPDIR)/1983-cartridge.Po
+	-rm -f src/$(DEPDIR)/1983-cassette.Po
 	-rm -f src/$(DEPDIR)/1983-config.Po
 	-rm -f src/$(DEPDIR)/1983-display.Po
 	-rm -f src/$(DEPDIR)/1983-gamepad.Po
@@ -3482,8 +3663,10 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-z80.Po
 	-rm -f src/$(DEPDIR)/test_ata-ata.Po
 	-rm -f src/$(DEPDIR)/test_cartridge-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_cassette-cassette.Po
 	-rm -f src/$(DEPDIR)/test_config-ata.Po
 	-rm -f src/$(DEPDIR)/test_config-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_config-cassette.Po
 	-rm -f src/$(DEPDIR)/test_config-config.Po
 	-rm -f src/$(DEPDIR)/test_config-msx.Po
 	-rm -f src/$(DEPDIR)/test_config-psg.Po
@@ -3494,6 +3677,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_gamepad-gamepad.Po
 	-rm -f src/$(DEPDIR)/test_kbd-ata.Po
 	-rm -f src/$(DEPDIR)/test_kbd-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_kbd-cassette.Po
 	-rm -f src/$(DEPDIR)/test_kbd-kbd.Po
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
 	-rm -f src/$(DEPDIR)/test_kbd-psg.Po
@@ -3503,6 +3687,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_kbd-z80.Po
 	-rm -f src/$(DEPDIR)/test_models-ata.Po
 	-rm -f src/$(DEPDIR)/test_models-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_models-cassette.Po
 	-rm -f src/$(DEPDIR)/test_models-models.Po
 	-rm -f src/$(DEPDIR)/test_models-msx.Po
 	-rm -f src/$(DEPDIR)/test_models-psg.Po
@@ -3512,6 +3697,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_models-z80.Po
 	-rm -f src/$(DEPDIR)/test_msx-ata.Po
 	-rm -f src/$(DEPDIR)/test_msx-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_msx-cassette.Po
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
 	-rm -f src/$(DEPDIR)/test_msx-psg.Po
 	-rm -f src/$(DEPDIR)/test_msx-rtc.Po
@@ -3520,6 +3706,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_msx-z80.Po
 	-rm -f src/$(DEPDIR)/test_overlay-ata.Po
 	-rm -f src/$(DEPDIR)/test_overlay-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_overlay-cassette.Po
 	-rm -f src/$(DEPDIR)/test_overlay-config.Po
 	-rm -f src/$(DEPDIR)/test_overlay-display.Po
 	-rm -f src/$(DEPDIR)/test_overlay-leds.Po
@@ -3540,6 +3727,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f tests/$(DEPDIR)/test_ata-test_ata.Po
 	-rm -f tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
+	-rm -f tests/$(DEPDIR)/test_cassette-test_cassette.Po
 	-rm -f tests/$(DEPDIR)/test_config-test_config.Po
 	-rm -f tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
 	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po

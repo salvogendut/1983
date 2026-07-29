@@ -30,6 +30,7 @@ typedef struct {
     const char *disk_rom_path;
     const char *sunrise_rom_path;
     const char *ide_image_path;
+    const char *cassette_path;
     const char *screenshot_path;
     const char *cartridge_path[MSX_CARTRIDGE_SLOTS];
     MsxCartridgeMapper cartridge_mapper[MSX_CARTRIDGE_SLOTS];
@@ -55,6 +56,7 @@ static const char *usage =
     "  --disk-rom PATH     load a 16 KB disk ROM in slot 3-3/page 1\n"
     "  --sunrise-rom PATH  load a 128 KB Sunrise IDE/Nextor kernel ROM\n"
     "  --ide PATH          mount a raw IDE disk image read-only\n"
+    "  --cassette PATH     insert a standard MSX CAS cassette image\n"
     "  --screenshot PATH   save the final rendered frame as a PPM file\n"
     "  --cart PATH         alias for --cart1\n"
     "  --cart1 PATH        load a cartridge ROM in primary slot 1\n"
@@ -144,6 +146,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--disk-rom") == 0 ||
              strcmp(argument, "--sunrise-rom") == 0 ||
              strcmp(argument, "--ide") == 0 ||
+             strcmp(argument, "--cassette") == 0 ||
              strcmp(argument, "--screenshot") == 0 ||
              strcmp(argument, "--cart") == 0 ||
              strcmp(argument, "--cart1") == 0 ||
@@ -173,6 +176,8 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->sunrise_rom_path = argv[++i];
         } else if (strcmp(argument, "--ide") == 0) {
             cli->ide_image_path = argv[++i];
+        } else if (strcmp(argument, "--cassette") == 0) {
+            cli->cassette_path = argv[++i];
         } else if (strcmp(argument, "--screenshot") == 0) {
             cli->screenshot_path = argv[++i];
         } else if (strcmp(argument, "--cart") == 0 ||
@@ -430,6 +435,10 @@ int main(int argc, char **argv) {
         config.extra_hardware = true;
         config.sunrise_ide = true;
     }
+    if (cli.cassette_path)
+        snprintf(config.cassette_path,
+                 sizeof(config.cassette_path),
+                 "%s", cli.cassette_path);
     for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
         if (cli.cartridge_path[slot])
             snprintf(config.cartridge_path[slot],
@@ -459,6 +468,15 @@ int main(int argc, char **argv) {
         if (cli.bios_path || cli.logo_path ||
             cli.subrom_path || cli.disk_rom_path ||
             cli.model_name) {
+            msx_destroy(&msx);
+            return 1;
+        }
+    }
+    if (config.cassette_path[0] &&
+        msx_load_cassette(&msx, config.cassette_path) != 0) {
+        fprintf(stderr, "cannot load MSX CAS cassette image: %s\n",
+                config.cassette_path);
+        if (cli.cassette_path) {
             msx_destroy(&msx);
             return 1;
         }
@@ -585,6 +603,14 @@ int main(int argc, char **argv) {
                msx_sunrise_slot(&msx) + 1,
                msx_sunrise_disk_mounted(&msx)
                ? ", raw disk mounted read-only" : ", no disk mounted");
+    if (msx_cassette_mounted(&msx)) {
+        CassetteFileType type = msx_cassette_file_type(&msx);
+
+        printf("Cassette inserted: %s (%s; %s)\n",
+               config.cassette_path,
+               cassette_file_type_name(type),
+               cassette_load_command(type));
+    }
 
     next_frame_ns = SDL_GetTicksNS();
     paced_frame_hz = msx.frame_hz;
@@ -777,12 +803,14 @@ int main(int argc, char **argv) {
                             msx.audio_sample_count);
         leds_set_state(LED_CAPS, msx.caps_led);
         leds_set_state(LED_KANA, msx.kana_led);
+        leds_set_state(LED_TAPE, msx_cassette_rolling(&msx));
         if (msx_sunrise_take_activity(&msx))
             leds_ping(LED_IDE);
         notify_tick(1000 / msx.frame_hz);
         display_draw(&display, &msx);
         draw_debug(&config, &msx, &display);
         draw_paused(&msx, &display);
+        overlay_render_cassette_scope(&overlay);
         overlay_render(&overlay);
         notify_render(display.renderer, DISPLAY_SCREEN_H);
         display_present(&display, &msx);

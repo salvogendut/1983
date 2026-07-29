@@ -11,6 +11,7 @@ complete MSX hardware specification.
 | `src/main.c` | Process lifetime, command line, SDL event loop, and shared function-key bindings |
 | `src/ata.*` | Host-independent ATA task file, IDENTIFY/read commands, and read-only raw-image lifetime |
 | `src/cartridge.*` | Host-independent cartridge image ownership, mapper detection, bank registers, and SCC register window |
+| `src/cassette.*` | Host-independent MSX CAS parser, type detection, waveform synthesis, motor-controlled transport, comparator, and monitor signal |
 | `src/audio.*` | SDL3 audio-stream lifetime and host sample submission |
 | `src/config.*` | Defaults, normalization, persistent settings, and platform-specific configuration path |
 | `src/display.*` | SDL window and renderer, fixed logical canvas, framebuffer presentation, footer, and screenshots |
@@ -31,10 +32,11 @@ complete MSX hardware specification.
 | `tests/test_sunrise.c` | Sunrise banking, overlay decode, data latch, master/slave, soft reset, and disk lifetime |
 | `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/Nextor boot checks |
 | `tests/test_cartridge.c` | Linear, ASCII8/16, Konami, Konami SCC, detection, bank wrapping, reset, and eject checks |
-| `tests/test_config.c` | Persistent cartridge, mapper, extension, and Joy Port settings |
+| `tests/test_cassette.c` | CAS type and command detection, waveform layout and monitor sampling, emulated-time transport, reset, rewind, eject, and conservative mounts |
+| `tests/test_config.c` | Persistent cartridge, cassette, mapper, extension, and Joy Port settings |
 | `tests/test_gamepad.c` | SDL-independent direction, trigger, dead-zone, and opposing-input mapping |
 | `tests/test_models.c` | Machine-catalogue parsing, hardware mapping, relative paths, and invalid-entry filtering |
-| `tests/test_overlay.c` | Overlay navigation, guided Sunrise setup, dynamic hardware rows, cartridge-slot LEDs, and model editing |
+| `tests/test_overlay.c` | Overlay navigation, cassette transport, guided Sunrise setup, dynamic hardware rows, cartridge-slot LEDs, and model editing |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
 | `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
 | `tests/test_rtc.c` | RP-5C01 banks, masks, reset behavior, calendar rollover, and clock advancement |
@@ -163,7 +165,8 @@ relationships:
 - The address space is four 16 KB pages. PPI port A at `0xA8` selects one of
   four primary slots independently for each page.
 - PPI port B at `0xA9` reads the active-low keyboard row selected by the low
-  nibble of port C at `0xAA`; `0xAB` provides bit set/reset control.
+  nibble of port C at `0xAA`; `0xAB` provides bit set/reset control. Port C
+  bit 4 is the active-low cassette motor and bit 5 is cassette output.
 - The TMS9918-family and V9938 use the standard `0x98`/`0x99` data and control
   ports; the V9938 additionally exposes its MSX2 command and palette paths.
 - The AY-compatible PSG uses the standard `0xA0` through `0xA2` register,
@@ -183,8 +186,7 @@ V9938 VR/HR status follows the emulated beam and the VDP IRQ is level
 sensitive. V9938 sprite mode 2 is rendered in SCREEN 4 through SCREEN 8.
 Completed V9938 display rows are committed progressively before timed VRAM
 mutations and relevant register or palette writes. Alternate national
-keyboard matrices, MSX mouse input, and within-scanline pixel timing are not
-implemented.
+keyboard matrices and within-scanline pixel timing are not implemented.
 
 ## Keyboard input
 
@@ -335,7 +337,7 @@ covered by component tests, but deliberately does not open a host audio
 device.
 
 PSG register 14 reports the selected connector's six active-low input lines,
-the international keyboard-layout signal, and the empty-cassette comparator.
+the international keyboard-layout signal, and the cassette comparator.
 Register 15 selects Joy Port A or B and supplies their separate pin-8
 outputs. A configured mouse advances through signed X/Y nibbles on pin-8
 strobes, including the alternate zero cycle and 1.5 ms resynchronization
@@ -349,7 +351,14 @@ live Main Input setting, but only when the chosen connector is configured as
 Joystick. When it is Mouse, relative motion and two buttons feed that
 connector after a click captures the pointer. Ctrl+Enter follows the sibling
 emulators' release gesture; F9, reset, and focus loss also release and clear
-host input. Real cassette signals remain future peripheral work.
+host input.
+
+`src/cassette.c` converts standard CAS byte streams to a deterministic
+14,976 Hz signed waveform. It follows the BIOS-visible 3,744 baud framing
+and leader conventions used by openMSX, but has no dependency on SDL or host
+wall time. PPI motor/output changes and PSG comparator reads synchronize the
+transport to the current machine cycle. Tests use generated CAS fixtures so
+no copyrighted tape software is required.
 
 ## Verification
 

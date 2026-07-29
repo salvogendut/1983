@@ -293,7 +293,7 @@ static u8 msx_mouse_read_port(const MsxMouse *mouse) {
     return movement | status;
 }
 
-static u8 msx_joystick_read_psg(const MsxMachine *msx) {
+static u8 msx_joystick_read_psg(MsxMachine *msx) {
     u8 port_b = msx->psg.registers[15];
     unsigned port = (port_b >> 6) & 1u;
     u8 pin_8_mask = port ? 0x20 : 0x10;
@@ -305,10 +305,11 @@ static u8 msx_joystick_read_psg(const MsxMachine *msx) {
 
     /*
      * Bits 0-5 are the selected joystick's active-low lines. The generic
-     * international keyboard layout drives bit 6 low, while an empty
-     * cassette input rests high on bit 7.
+     * international keyboard layout drives bit 6 low. Bit 7 is the
+     * comparator output from the cassette input waveform.
      */
-    return 0x80 | joystick;
+    return (cassette_input(&msx->cassette, msx->cycles)
+            ? 0x80 : 0x00) | joystick;
 }
 
 static u8 bus_memory_read(void *context, u16 address) {
@@ -345,6 +346,16 @@ static void advance_machine(MsxMachine *msx, int cycles) {
 
         psg_render(&msx->psg, sample, 1,
                    MSX_PSG_CLOCK_HZ, MSX_AUDIO_SAMPLE_RATE);
+        if (msx->cassette_audible_monitor) {
+            int mixed = (int)*sample +
+                cassette_monitor_sample(&msx->cassette, msx->cycles);
+
+            if (mixed > 32767)
+                mixed = 32767;
+            else if (mixed < -32768)
+                mixed = -32768;
+            *sample = (s16)mixed;
+        }
         if (msx->audio_sample_count < MSX_AUDIO_FRAME_CAPACITY)
             ++msx->audio_sample_count;
         msx->audio_sample_cycles -= MSX_CPU_HZ;
@@ -520,6 +531,7 @@ void msx_reset(MsxMachine *msx) {
     msx->caps_led = false;
     msx->kana_led = false;
     msx->ppi_port_c = 0xff;
+    cassette_reset(&msx->cassette, msx->cycles);
     msx_keyboard_clear(msx);
     memset(msx->joystick_pressed, 0, sizeof(msx->joystick_pressed));
     msx->cycles = 0;
@@ -582,6 +594,7 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     msx->ram_capacity = sizeof(msx->internal_ram);
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_init(&msx->cartridges[i]);
+    cassette_init(&msx->cassette);
     sunrise_init(&msx->sunrise);
     msx->sunrise_slot = -1;
     z80_init(&msx->cpu);
@@ -603,6 +616,7 @@ void msx_destroy(MsxMachine *msx) {
         return;
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_destroy(&msx->cartridges[i]);
+    cassette_destroy(&msx->cassette);
     sunrise_destroy(&msx->sunrise);
     msx->sunrise_slot = -1;
     if (msx->ram && msx->ram != msx->internal_ram)
@@ -890,6 +904,10 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
             break;
         case 0xaa:
             msx->ppi_port_c = value;
+            cassette_set_motor(
+                &msx->cassette, !(value & 0x10), msx->cycles);
+            cassette_set_output(
+                &msx->cassette, (value & 0x20) != 0, msx->cycles);
             msx->caps_led = !(value & 0x40);
             break;
         case 0xab:
@@ -899,6 +917,13 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
                     msx->ppi_port_c |= mask;
                 else
                     msx->ppi_port_c &= (u8)~mask;
+                cassette_set_motor(
+                    &msx->cassette,
+                    !(msx->ppi_port_c & 0x10), msx->cycles);
+                cassette_set_output(
+                    &msx->cassette,
+                    (msx->ppi_port_c & 0x20) != 0,
+                    msx->cycles);
                 msx->caps_led = !(msx->ppi_port_c & 0x40);
             }
             break;
@@ -921,6 +946,70 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
         default:
             break;
     }
+}
+
+int msx_load_cassette(MsxMachine *msx, const char *path) {
+    if (!msx)
+        return -1;
+    return cassette_mount_file(
+        &msx->cassette, path, msx->cycles);
+}
+
+void msx_eject_cassette(MsxMachine *msx) {
+    if (!msx)
+        return;
+    cassette_eject(&msx->cassette, msx->cycles);
+}
+
+void msx_rewind_cassette(MsxMachine *msx) {
+    if (!msx)
+        return;
+    cassette_rewind(&msx->cassette, msx->cycles);
+}
+
+bool msx_cassette_mounted(const MsxMachine *msx) {
+    return msx && cassette_is_mounted(&msx->cassette);
+}
+
+bool msx_cassette_rolling(MsxMachine *msx) {
+    return msx &&
+           cassette_is_rolling(&msx->cassette, msx->cycles);
+}
+
+bool msx_cassette_at_end(MsxMachine *msx) {
+    return msx &&
+           cassette_at_end(&msx->cassette, msx->cycles);
+}
+
+u64 msx_cassette_position_ms(MsxMachine *msx) {
+    return msx
+         ? cassette_position_ms(&msx->cassette, msx->cycles)
+         : 0;
+}
+
+u64 msx_cassette_duration_ms(const MsxMachine *msx) {
+    return msx
+         ? cassette_duration_ms(&msx->cassette)
+         : 0;
+}
+
+CassetteFileType msx_cassette_file_type(const MsxMachine *msx) {
+    return msx
+         ? cassette_file_type(&msx->cassette)
+         : CASSETTE_FILE_UNKNOWN;
+}
+
+void msx_set_cassette_audible_monitor(MsxMachine *msx, bool enabled) {
+    if (msx)
+        msx->cassette_audible_monitor = enabled;
+}
+
+size_t msx_cassette_waveform_copy(MsxMachine *msx, s16 *samples,
+                                  size_t capacity) {
+    return msx
+         ? cassette_waveform_copy(
+               &msx->cassette, msx->cycles, samples, capacity)
+         : 0;
 }
 
 int msx_install_bios(MsxMachine *msx, const u8 *data, size_t size) {

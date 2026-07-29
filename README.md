@@ -18,8 +18,9 @@ SDL3 allows.
 > the international keyboard matrix, SDL3 joystick input, dual cartridge
 > slots with common mappers, MSX2 expanded slots, memory mapper, RTC, and
 > read-only Sunrise IDE disks. The official Sunrise Nextor kernel can boot
-> the GeoBench raw image to its desktop. Cassette, floppy, writable disks,
-> SCC audio, and other extensions remain in development.
+> the GeoBench raw image to its desktop. Standard MSX CAS cassette playback
+> is integrated with the BIOS motor and input path. Floppy, writable disks,
+> cassette recording, SCC audio, and other extensions remain in development.
 
 ## Highlights
 
@@ -35,6 +36,8 @@ SDL3 allows.
 - Cartridge I/II presence LEDs, with a split network-access form.
 - Sunrise IDE cartridge emulation, read-only raw ATA images, IDE activity,
   and Nextor boot.
+- Standard MSX CAS playback with emulated motor control, transport status,
+  rewind/eject controls, and the Tape LED.
 - Headless execution and deterministic component and firmware tests.
 
 The detailed implementation and remaining limitations are recorded in
@@ -65,6 +68,7 @@ Useful options:
 ./1983 --model msx2 --region pal
 ./1983 --cart ROMS/game.rom
 ./1983 --models ./my-models.conf --model my-msx
+./1983 --model msx1 --cassette /path/to/program.cas
 ./1983 --sunrise-rom /path/to/Nextor.SunriseIDE.ROM \
   --ide /path/to/disk.img
 ./1983 --config ./test.conf
@@ -150,6 +154,22 @@ Ctrl+Enter, F9, reset, or losing window focus releases capture.
 
 **General > Extra Hardware** reveals Extensions; **General > Tinker**
 reveals Advanced.
+
+**Media > Cassette** inserts a standard `.cas` image and rewinds it. The
+row shows its type, transport state, and elapsed/total time. Press R on that
+row to rewind and Delete to eject. Playback advances only while guest
+software turns on the cassette motor; the Tape LED follows that signal.
+1983 also identifies the appropriate BIOS command: use `RUN"CAS:"` for an
+ASCII tape, `BLOAD"CAS:",R` for a binary tape, or `CLOAD` followed by plain
+`RUN` for a tokenized BASIC tape. Rewind before trying a different command
+after an unsuccessful load, because the first attempt may have consumed
+part of the stream.
+
+With Tinker enabled, Advanced provides independent Tape Audio Monitor and
+Tape Visual Monitor toggles. The audio monitor mixes the data tone with PSG
+output. The translucent visual scope appears while the tape motor is running
+and shows the waveform, detected type, required command, and elapsed/total
+time. Recording and sampled audio formats are not implemented yet.
 
 Sunrise IDE, SCC, and MSX-MUSIC are cartridge-connected extensions. The
 first configured device reserves cartridge slot 2 and the second reserves

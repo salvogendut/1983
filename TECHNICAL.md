@@ -90,8 +90,8 @@ These choices are persisted in `1983.conf`. The first SDL3 gamepad is routed
 to Main Input when that connector is set to Joystick. Its D-pad and left
 stick drive the four directions; south and east drive triggers A and B.
 Hot-plug removal clears the input, and another available gamepad is selected
-automatically. A connector set to Mouse remains idle until the MSX mouse
-protocol is implemented.
+automatically. A connector set to Mouse receives relative motion and its two
+buttons after the host pointer is captured by clicking the emulator window.
 
 ## Cartridges
 
@@ -108,9 +108,10 @@ persistent manual override. The SCC register window is mapped, but SCC audio
 is not implemented yet.
 
 The Media overlay can load, eject, and independently configure both
-cartridges. Cassette and floppy rows remain explicit stubs. The IDE
-hard-disk selector appears only when Sunrise IDE is connected; the Nextor
-kernel is cartridge firmware and therefore has no separate Media row.
+cartridges. Cassette is a working transport; floppy rows remain explicit
+stubs. The IDE hard-disk selector appears only when Sunrise IDE is connected;
+the Nextor kernel is cartridge firmware and therefore has no separate Media
+row.
 
 General > Extra Hardware reveals the Extensions section. Sunrise IDE, SCC,
 and MSX-MUSIC are treated as cartridge-connected devices: the first enabled
@@ -124,6 +125,36 @@ Power and Caps Lock. An occupied ROM slot or a slot owned by Sunrise IDE is
 orange. IDE reads use the dedicated Sunrise IDE indicator. The cartridge
 renderer also supports an orange/white network-cartridge form, whose white
 half reports network access when a network device is added.
+
+## Cassette
+
+The host-independent cassette device accepts standard MSX `.cas` byte
+streams. It recognizes the eight-byte CAS marker, groups ASCII, binary, and
+BASIC blocks using their standard ten-byte type headers, and converts them
+to the 14,976 Hz waveform used by the BIOS cassette routines. A zero bit is
+encoded as one 3,744 Hz cycle, a one as two 7,488 Hz cycles, with LSB-first
+data, one start bit, two stop bits, and the standard long/short leaders and
+silences.
+
+PPI port C bit 4 controls the active-low cassette motor and bit 5 carries
+the output signal. PSG register 14 bit 7 reads the waveform comparator.
+Transport advances against emulated Z80 time only while the motor is on, so
+headless and unthrottled runs remain deterministic. Reset stops the motor
+without ejecting or rewinding the tape.
+
+Media > Cassette loads a `.cas` file atomically, retains the first file's
+ASCII, binary, or tokenized BASIC type, displays stopped/playing/end state
+and elapsed time, supports R to rewind and Delete to eject, and persists the
+selected path. The detected type selects the `RUN"CAS:"`, `BLOAD"CAS:",R`,
+or `CLOAD` followed by `RUN` hint. `--cassette PATH` provides the same
+startup mount.
+
+The Tape LED reports guest motor activity. Tinker exposes independent
+audible and visual monitor settings in Advanced. The audible path samples
+the synthesized waveform in emulated CPU time and mixes it into the
+44.1 kHz PSG stream. The visual monitor copies the waveform immediately
+behind the tape head into a translucent oscilloscope with transport time and
+command guidance. Recording, WAV input, and seeking are not implemented.
 
 ## Sunrise IDE and ATA storage
 
@@ -229,8 +260,9 @@ PSG port A reads the selected joystick connector through register 14. Bits
 Register 15 bit 6 selects connector A or B; bits 4 and 5 drive their
 respective pin-8 lines. Joysticks retain the existing pin-8 gating, while an
 MSX mouse uses pin 8 as its nibble strobe. Register 14 bit 6 is the low
-international keyboard-layout signal and bit 7 is the high empty cassette
-input. PSG port B also drives the Kana LED.
+international keyboard-layout signal and bit 7 is the cassette waveform
+comparator, high when no tape is inserted. PSG port B also drives the Kana
+LED.
 
 The host-independent machine stores both joystick and mouse states separately
 for both connectors. Each mouse reports signed X-high, X-low, Y-high, and
@@ -238,7 +270,7 @@ Y-low nibbles, exposes two active-low buttons, performs the alternate zero
 cycle used for trackball detection, and resynchronizes after 1.5 ms without a
 strobe. Host motion is accumulated, divided by two, direction-adjusted, and
 clamped to signed 7-bit chunks following openMSX's Philips SBC3810 behavior.
-Real cassette signals, SCC, and MSX-MUSIC audio remain future work.
+SCC and MSX-MUSIC audio remain future work.
 
 MSX2 layouts include RP-5C01-compatible latch/data ports at `0xB4` and
 `0xB5`, four register banks, hardware masks, control/reset registers,
@@ -282,7 +314,7 @@ frontends.
 
 ## Known major gaps
 
-- Cassette and floppy devices and image formats.
+- Floppy devices and images; cassette recording and sampled audio input.
 - WD2793 disk controller.
 - Writable ATA images, CHS-only edge cases, and additional ATA commands.
 - Separate external memory-mapper extensions.

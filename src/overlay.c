@@ -34,6 +34,19 @@ enum {
 };
 
 enum {
+    ADVANCED_MODEL_EDITOR = 0,
+    ADVANCED_SMOOTHING,
+    ADVANCED_REAL_CRT,
+    ADVANCED_CRT_SCANLINES,
+    ADVANCED_CASSETTE_AUDIBLE,
+    ADVANCED_CASSETTE_VISUAL,
+    ADVANCED_NOTIFICATIONS,
+    ADVANCED_DEBUG,
+    ADVANCED_VERSION,
+    ADVANCED_ROWS
+};
+
+enum {
     MODEL_FIELD_ID = 0,
     MODEL_FIELD_NAME,
     MODEL_FIELD_HARDWARE,
@@ -77,7 +90,7 @@ static int section_rows(const Overlay *overlay,
         case OVERLAY_MEDIA:
             return overlay->config->sunrise_ide ? 8 : 7;
         case OVERLAY_EXTENSIONS: return 4;
-        case OVERLAY_ADVANCED:   return 7;
+        case OVERLAY_ADVANCED:   return ADVANCED_ROWS;
         case OVERLAY_SECTION_COUNT: break;
     }
     return 0;
@@ -164,6 +177,35 @@ static void ide_image_text(const Overlay *overlay,
                  path_basename(path));
     else
         snprintf(value, value_size, "[not mounted]");
+}
+
+static void cassette_text(const Overlay *overlay,
+                          char *value, size_t value_size) {
+    const char *path = overlay->config->cassette_path;
+
+    if (msx_cassette_mounted(overlay->msx)) {
+        u64 position = msx_cassette_position_ms(overlay->msx) / 1000u;
+        u64 duration = msx_cassette_duration_ms(overlay->msx) / 1000u;
+        const char *state =
+            msx_cassette_rolling(overlay->msx) ? "playing" :
+            msx_cassette_at_end(overlay->msx) ? "end" : "stopped";
+
+        snprintf(value, value_size,
+                 "%s [%s, %s %llu:%02llu/%llu:%02llu]",
+                 path_basename(path),
+                 cassette_file_type_name(
+                     msx_cassette_file_type(overlay->msx)),
+                 state,
+                 (unsigned long long)(position / 60u),
+                 (unsigned long long)(position % 60u),
+                 (unsigned long long)(duration / 60u),
+                 (unsigned long long)(duration % 60u));
+    } else if (path[0]) {
+        snprintf(value, value_size, "%s [not mounted]",
+                 path_basename(path));
+    } else {
+        snprintf(value, value_size, "[not mounted]");
+    }
 }
 
 static const char *notification_name(NotifyMode mode) {
@@ -335,8 +377,7 @@ static void item_text(const Overlay *overlay, int row,
                     break;
                 case 4:
                     snprintf(label, label_size, "Cassette");
-                    snprintf(value, value_size,
-                             "[not mounted - loader planned]");
+                    cassette_text(overlay, value, value_size);
                     break;
                 case 5:
                     snprintf(label, label_size, "Drive A");
@@ -382,39 +423,53 @@ static void item_text(const Overlay *overlay, int row,
             break;
         case OVERLAY_ADVANCED:
             switch (row) {
-                case 0:
+                case ADVANCED_MODEL_EDITOR:
                     snprintf(label, label_size,
                              "Machine model editor");
                     snprintf(value, value_size, "%zu models",
                              overlay->models->count);
                     break;
-                case 1:
+                case ADVANCED_SMOOTHING:
                     snprintf(label, label_size, "Smoothing");
                     snprintf(value, value_size, "%s",
                              toggle_name(config->smoothing));
                     break;
-                case 2:
+                case ADVANCED_REAL_CRT:
                     snprintf(label, label_size, "Real CRT");
                     snprintf(value, value_size, "%s",
                              toggle_name(config->real_crt));
                     break;
-                case 3:
+                case ADVANCED_CRT_SCANLINES:
                     snprintf(label, label_size, "CRT scanlines");
                     snprintf(value, value_size,
                              config->real_crt ? "%d%%" : "%d%% (inactive)",
                              config->crt_scanlines);
                     break;
-                case 4:
+                case ADVANCED_CASSETTE_AUDIBLE:
+                    snprintf(label, label_size,
+                             "Tape Audio Monitor");
+                    snprintf(value, value_size, "%s",
+                             toggle_name(
+                                 config->cassette_audible_monitor));
+                    break;
+                case ADVANCED_CASSETTE_VISUAL:
+                    snprintf(label, label_size,
+                             "Tape Visual Monitor");
+                    snprintf(value, value_size, "%s",
+                             toggle_name(
+                                 config->cassette_visual_monitor));
+                    break;
+                case ADVANCED_NOTIFICATIONS:
                     snprintf(label, label_size, "Notifications");
                     snprintf(value, value_size, "%s",
                              notification_name(config->notifications));
                     break;
-                case 5:
+                case ADVANCED_DEBUG:
                     snprintf(label, label_size, "Debug overlay");
                     snprintf(value, value_size, "%s",
                              toggle_name(config->debug));
                     break;
-                case 6:
+                case ADVANCED_VERSION:
                     snprintf(label, label_size, "Version");
                     snprintf(value, value_size, "0.1.0 (git %s)",
                              PROG_GIT_COMMIT);
@@ -477,6 +532,9 @@ static void apply_config(Overlay *overlay) {
     display_set_crt(overlay->display, config->real_crt,
                     config->crt_scanlines);
     psg_set_volume(&msx->psg, config->audio_volume);
+    msx_set_cassette_audible_monitor(
+        msx, config->tinker &&
+             config->cassette_audible_monitor);
     notify_set_mode(config->notifications);
     configure_leds(config, msx);
 }
@@ -567,6 +625,25 @@ static void restore_sunrise(Overlay *overlay) {
         notify_post("Could not restore Sunrise IDE disk");
 }
 
+static void restore_cassette(Overlay *overlay) {
+    const char *current = overlay->config->cassette_path;
+    const char *saved = overlay->saved.cassette_path;
+    bool should_be_mounted = saved[0] != '\0';
+    bool changed =
+        strcmp(current, saved) != 0 ||
+        msx_cassette_mounted(overlay->msx) != should_be_mounted;
+
+    if (!changed)
+        return;
+    if (!should_be_mounted) {
+        msx_eject_cassette(overlay->msx);
+    } else if (msx_load_cassette(overlay->msx, saved) != 0) {
+        msx_eject_cassette(overlay->msx);
+        notify_post("Could not restore cassette: %s",
+                    path_basename(saved));
+    }
+}
+
 static void close_overlay(Overlay *overlay, bool save) {
     if (overlay->state == OVERLAY_STATE_MODEL_TEXT &&
         overlay->display && overlay->display->window)
@@ -582,6 +659,7 @@ static void close_overlay(Overlay *overlay, bool save) {
     } else {
         restore_cartridges(overlay);
         restore_sunrise(overlay);
+        restore_cassette(overlay);
         restore_firmware(overlay);
         *overlay->config = overlay->saved;
         apply_config(overlay);
@@ -674,6 +752,27 @@ static void open_cartridge_dialog(Overlay *overlay, unsigned slot) {
     overlay->dialog_target =
         slot == 0 ? OVERLAY_DIALOG_CARTRIDGE_1
                   : OVERLAY_DIALOG_CARTRIDGE_2;
+    overlay->dialog_ready = false;
+    overlay->dialog_failed = false;
+    overlay->dialog_error[0] = '\0';
+    SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
+                           overlay->display
+                           ? overlay->display->window : NULL,
+                           filters, 2, location, false);
+}
+
+static void open_cassette_dialog(Overlay *overlay) {
+    static const SDL_DialogFileFilter filters[] = {
+        { "MSX cassette images", "cas;CAS" },
+        { "All files", "*" },
+    };
+    const char *location =
+        overlay->config->last_media_dir[0]
+        ? overlay->config->last_media_dir : NULL;
+
+    if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
+        return;
+    overlay->dialog_target = OVERLAY_DIALOG_CASSETTE;
     overlay->dialog_ready = false;
     overlay->dialog_failed = false;
     overlay->dialog_error[0] = '\0';
@@ -1465,6 +1564,10 @@ static void activate_item(Overlay *overlay) {
                 change_cartridge_mapper(overlay, 1);
                 return;
             }
+            if (overlay->row == 4) {
+                open_cassette_dialog(overlay);
+                return;
+            }
             if (overlay->row == 7) {
                 open_ide_image_dialog(overlay);
                 return;
@@ -1511,19 +1614,36 @@ static void activate_item(Overlay *overlay) {
             break;
         case OVERLAY_ADVANCED:
             switch (overlay->row) {
-                case 0:
+                case ADVANCED_MODEL_EDITOR:
                     begin_model_editor(overlay);
                     return;
-                case 1: config->smoothing = !config->smoothing; break;
-                case 2: config->real_crt = !config->real_crt; break;
-                case 3:
+                case ADVANCED_SMOOTHING:
+                    config->smoothing = !config->smoothing;
+                    break;
+                case ADVANCED_REAL_CRT:
+                    config->real_crt = !config->real_crt;
+                    break;
+                case ADVANCED_CRT_SCANLINES:
                     config->crt_scanlines += 5;
                     if (config->crt_scanlines > 95)
                         config->crt_scanlines = 0;
                     break;
-                case 4: change_notification_mode(config); break;
-                case 5: config->debug = !config->debug; break;
-                case 6: return;
+                case ADVANCED_CASSETTE_AUDIBLE:
+                    config->cassette_audible_monitor =
+                        !config->cassette_audible_monitor;
+                    break;
+                case ADVANCED_CASSETTE_VISUAL:
+                    config->cassette_visual_monitor =
+                        !config->cassette_visual_monitor;
+                    break;
+                case ADVANCED_NOTIFICATIONS:
+                    change_notification_mode(config);
+                    break;
+                case ADVANCED_DEBUG:
+                    config->debug = !config->debug;
+                    break;
+                case ADVANCED_VERSION:
+                    return;
             }
             break;
         case OVERLAY_SECTION_COUNT:
@@ -1828,6 +1948,14 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
         case SDLK_KP_ENTER:
             activate_item(overlay);
             break;
+        case SDLK_R:
+            if (overlay->section == OVERLAY_MEDIA &&
+                overlay->row == 4 &&
+                msx_cassette_mounted(overlay->msx)) {
+                msx_rewind_cassette(overlay->msx);
+                notify_post("Cassette rewound");
+            }
+            break;
         case SDLK_DELETE:
             if (overlay->section == OVERLAY_GENERAL &&
                 overlay->row == GENERAL_MACHINE) {
@@ -1856,6 +1984,13 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                     overlay->dirty = true;
                     notify_post("Cartridge %u ejected", slot + 1);
                 }
+            } else if (overlay->section == OVERLAY_MEDIA &&
+                       overlay->row == 4) {
+                msx_eject_cassette(overlay->msx);
+                overlay->config->cassette_path[0] = '\0';
+                overlay->dirty = true;
+                leds_set_state(LED_TAPE, false);
+                notify_post("Cassette ejected");
             } else if (overlay->section == OVERLAY_MEDIA &&
                        overlay->row == 7 &&
                        overlay->config->sunrise_ide) {
@@ -1891,7 +2026,7 @@ static const char *section_hint(OverlaySection section) {
         case OVERLAY_GENERAL:
             return "Machine, memory, audio, input, and optional controls.";
         case OVERLAY_MEDIA:
-            return "Enter loads/selects; Delete ejects mounted media.";
+            return "Enter loads; R rewinds cassette; Delete ejects.";
         case OVERLAY_EXTENSIONS:
             return "Enter toggles; Delete forgets Sunrise firmware.";
         case OVERLAY_ADVANCED:
@@ -1938,6 +2073,30 @@ void overlay_tick(Overlay *overlay) {
             notify_post("Sunrise IDE ROM selection cancelled");
         else if (target == OVERLAY_DIALOG_IDE_IMAGE)
             notify_post("IDE disk selection cancelled");
+        else if (target == OVERLAY_DIALOG_CASSETTE)
+            notify_post("Cassette selection cancelled");
+        return;
+    }
+
+    if (target == OVERLAY_DIALOG_CASSETTE) {
+        if (msx_load_cassette(
+                overlay->msx, overlay->dialog_path) != 0) {
+            notify_post("Could not load MSX CAS image: %s",
+                        path_basename(overlay->dialog_path));
+            return;
+        }
+        snprintf(overlay->config->cassette_path,
+                 sizeof(overlay->config->cassette_path), "%s",
+                 overlay->dialog_path);
+        copy_dirname(overlay->config->last_media_dir,
+                     sizeof(overlay->config->last_media_dir),
+                     overlay->dialog_path);
+        overlay->dirty = true;
+        notify_post("%s cassette ready: %s",
+                    cassette_file_type_name(
+                        msx_cassette_file_type(overlay->msx)),
+                    cassette_load_command(
+                        msx_cassette_file_type(overlay->msx)));
         return;
     }
 
@@ -2387,6 +2546,74 @@ static void render_sunrise_setup(const Overlay *overlay,
     ui_draw_text(renderer, box_x + 54.0f, box_y + box_h - 24.0f,
                  "Up/Down choose  Enter select  Delete clear  Esc cancel",
                  160, 180, 210);
+}
+
+void overlay_render_cassette_scope(const Overlay *overlay) {
+    enum { SCOPE_SAMPLES = 608 };
+    SDL_Renderer *renderer;
+    SDL_FPoint points[SCOPE_SAMPLES];
+    s16 samples[SCOPE_SAMPLES];
+    size_t sample_count;
+    u64 position;
+    u64 duration;
+    char status[96];
+    const float panel_x = 10.0f;
+    const float panel_y = 408.0f;
+    const float panel_w = 620.0f;
+    const float panel_h = 62.0f;
+    const float plot_x = panel_x + 6.0f;
+    const float plot_y = panel_y + 23.0f;
+    const float plot_w = panel_w - 12.0f;
+    const float plot_h = panel_h - 29.0f;
+    const float center_y = plot_y + plot_h * 0.5f;
+
+    if (!overlay || !overlay->display || !overlay->msx ||
+        overlay->visible || !overlay->config->tinker ||
+        !overlay->config->cassette_visual_monitor ||
+        !msx_cassette_rolling(overlay->msx))
+        return;
+    renderer = overlay->display->renderer;
+    position = msx_cassette_position_ms(overlay->msx) / 1000u;
+    duration = msx_cassette_duration_ms(overlay->msx) / 1000u;
+    snprintf(
+        status, sizeof(status),
+        "CAS %s  %02llu:%02llu / %02llu:%02llu  %s  AUDIO %s",
+        cassette_file_type_name(
+            msx_cassette_file_type(overlay->msx)),
+        (unsigned long long)(position / 60u),
+        (unsigned long long)(position % 60u),
+        (unsigned long long)(duration / 60u),
+        (unsigned long long)(duration % 60u),
+        cassette_load_command(
+            msx_cassette_file_type(overlay->msx)),
+        overlay->config->cassette_audible_monitor ? "ON" : "OFF");
+
+    ui_fill_rect(renderer, panel_x, panel_y, panel_w, panel_h,
+                 0, 0, 0, 180);
+    ui_draw_rect(renderer, panel_x, panel_y, panel_w, panel_h,
+                 235, 145, 45);
+    ui_draw_text(renderer, panel_x + 6.0f, panel_y + 6.0f,
+                 status, 255, 205, 110);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 135, 145, 165, 120);
+    SDL_RenderLine(renderer, plot_x, center_y,
+                   plot_x + plot_w, center_y);
+
+    sample_count = msx_cassette_waveform_copy(
+        overlay->msx, samples, SDL_arraysize(samples));
+    if (sample_count >= 2) {
+        float amplitude = plot_h * 0.5f - 2.0f;
+
+        for (size_t i = 0; i < sample_count; ++i) {
+            points[i].x = plot_x +
+                (float)i * plot_w / (float)(sample_count - 1u);
+            points[i].y = center_y -
+                (float)samples[i] * amplitude / 32768.0f;
+        }
+        SDL_SetRenderDrawColor(renderer, 255, 180, 70, 235);
+        SDL_RenderLines(renderer, points, (int)sample_count);
+    }
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 }
 
 void overlay_render(const Overlay *overlay) {

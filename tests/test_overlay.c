@@ -182,10 +182,16 @@ static void test_vdp_presentation_geometry(void) {
 }
 
 int main(void) {
+    static const u8 cassette_image[] = {
+        0x1f, 0xa6, 0xde, 0xba, 0xcc, 0x13, 0x7d, 0x74,
+        0xea, 0xea, 0xea, 0xea, 0xea,
+        0xea, 0xea, 0xea, 0xea, 0xea, 0x1a
+    };
     const char *editor_path = "tests/test-model-editor.tmp";
     const char *sunrise_rom_path = "tests/test-sunrise-rom.tmp";
     const char *sunrise_rom_path_2 = "tests/test-sunrise-rom-2.tmp";
     const char *ide_image_path = "tests/test-sunrise-disk.tmp";
+    const char *cassette_path = "tests/test-cassette.tmp";
     Config config;
     ModelCatalog models;
     MsxMachine msx;
@@ -236,6 +242,11 @@ int main(void) {
     memset(sunrise_rom, 0x83, ATA_SECTOR_SIZE);
     assert(fwrite(sunrise_rom, 1, ATA_SECTOR_SIZE, fixture) ==
            ATA_SECTOR_SIZE);
+    assert(fclose(fixture) == 0);
+    fixture = fopen(cassette_path, "wb");
+    assert(fixture);
+    assert(fwrite(cassette_image, 1, sizeof(cassette_image), fixture) ==
+           sizeof(cassette_image));
     assert(fclose(fixture) == 0);
     model_catalog_defaults(&models);
     snprintf(models.entries[models.count].id,
@@ -443,7 +454,32 @@ int main(void) {
     render_overlay(&display, &msx, &overlay);
     send_key(&overlay, SDLK_RETURN);
     assert(overlay.dialog_target == OVERLAY_DIALOG_NONE);
-    for (int row = 0; row < 7; ++row)
+    for (int row = 0; row < 4; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 4);
+    overlay.dialog_target = OVERLAY_DIALOG_CASSETTE;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", cassette_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(msx_cassette_mounted(&msx));
+    assert(msx_cassette_file_type(&msx) == CASSETTE_FILE_ASCII);
+    assert(strcmp(config.cassette_path, cassette_path) == 0);
+    render_overlay(&display, &msx, &overlay);
+    msx.cassette.position = 10;
+    send_key(&overlay, SDLK_R);
+    assert(msx_cassette_position_ms(&msx) == 0);
+    send_key(&overlay, SDLK_DELETE);
+    assert(!msx_cassette_mounted(&msx));
+    assert(!config.cassette_path[0]);
+    overlay.dialog_target = OVERLAY_DIALOG_CASSETTE;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", cassette_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(msx_cassette_mounted(&msx));
+    assert(strcmp(config.cassette_path, cassette_path) == 0);
+    for (int row = 0; row < 3; ++row)
         send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 7);
     assert(msx_sunrise_disk_mounted(&msx));
@@ -492,6 +528,17 @@ int main(void) {
     assert(overlay.section == OVERLAY_MEDIA);
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
+    assert(overlay.row == 0);
+    for (int row = 0; row < 4; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.cassette_audible_monitor);
+    assert(msx.cassette_audible_monitor);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.cassette_visual_monitor);
+    for (int row = 0; row < 5; ++row)
+        send_key(&overlay, SDLK_UP);
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_RETURN);
     assert(overlay.state == OVERLAY_STATE_MODEL_LIST);
@@ -550,10 +597,17 @@ int main(void) {
 
     send_key(&overlay, SDLK_ESCAPE);
     assert(overlay.state == OVERLAY_STATE_MENU);
+    send_key(&overlay, SDLK_ESCAPE);
+    assert(overlay.state == OVERLAY_STATE_CONFIRM);
+    send_key(&overlay, SDLK_N);
+    assert(!overlay.visible);
+    assert(!msx_cassette_mounted(&msx));
+    assert(!config.cassette_path[0]);
     assert(remove(editor_path) == 0);
     assert(remove(sunrise_rom_path) == 0);
     assert(remove(sunrise_rom_path_2) == 0);
     assert(remove(ide_image_path) == 0);
+    assert(remove(cassette_path) == 0);
 
     display_quit(&display);
     msx_destroy(&msx);

@@ -31,6 +31,7 @@ typedef enum {
     OVERLAY_DIALOG_NONE = 0,
     OVERLAY_DIALOG_CARTRIDGE_1,
     OVERLAY_DIALOG_CARTRIDGE_2,
+    OVERLAY_DIALOG_CASSETTE,
     OVERLAY_DIALOG_SUNRISE_ROM,
     OVERLAY_DIALOG_IDE_IMAGE,
     OVERLAY_DIALOG_BIOS,
@@ -89,4 +90,5 @@ void overlay_init(Overlay *overlay, Config *config,
                   MsxMachine *msx);
 bool overlay_handle_event(Overlay *overlay, const SDL_Event *event);
 void overlay_tick(Overlay *overlay);
+void overlay_render_cassette_scope(const Overlay *overlay);
 void overlay_render(const Overlay *overlay);

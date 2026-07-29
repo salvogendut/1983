@@ -549,6 +549,89 @@ static void test_dual_joystick_psg_ports(void) {
     msx_destroy(&msx);
 }
 
+static void test_cassette_ppi_and_psg_path(void) {
+    static const u8 cas[] = {
+        0x1f, 0xa6, 0xde, 0xba, 0xcc, 0x13, 0x7d, 0x74,
+        0x00
+    };
+    const u64 first_negative_sample =
+        (u64)CASSETTE_SAMPLE_RATE * 2u + 1u;
+    MsxMachine msx;
+    size_t position_before_reset;
+
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(cassette_mount(
+               &msx.cassette, cas, sizeof(cas), msx.cycles) == 0);
+    assert(msx_cassette_mounted(&msx));
+    assert(!cassette_is_motor_on(&msx.cassette));
+    assert(msx.cassette.output);
+
+    /* PSG R14 bit 7 is the cassette comparator; silence rests high. */
+    msx_io_write(&msx, 0xa0, 14);
+    assert(msx_io_read(&msx, 0xa2) & 0x80);
+
+    /* PPI C bit 4 is the active-low motor relay; bit 5 is output. */
+    msx_io_write(&msx, 0xaa, 0xef);
+    assert(cassette_is_motor_on(&msx.cassette));
+    assert(msx_cassette_rolling(&msx));
+    msx.cycles =
+        (first_negative_sample * MSX_CPU_HZ +
+         CASSETTE_SAMPLE_RATE - 1u) /
+        CASSETTE_SAMPLE_RATE;
+    assert(!(msx_io_read(&msx, 0xa2) & 0x80));
+
+    /* The 8255 bit set/reset form controls the same physical lines. */
+    msx_io_write(&msx, 0xab, 0x09); /* set bit 4: motor off */
+    assert(!cassette_is_motor_on(&msx.cassette));
+    msx_io_write(&msx, 0xab, 0x0a); /* reset bit 5: output low */
+    assert(!msx.cassette.output);
+
+    position_before_reset = msx.cassette.position;
+    msx_reset(&msx);
+    assert(msx_cassette_mounted(&msx));
+    assert(msx.cassette.position == position_before_reset);
+    assert(!cassette_is_motor_on(&msx.cassette));
+    assert(msx.cassette.output);
+
+    msx_rewind_cassette(&msx);
+    assert(msx_cassette_position_ms(&msx) == 0);
+    msx_eject_cassette(&msx);
+    assert(!msx_cassette_mounted(&msx));
+    msx_io_write(&msx, 0xa0, 14);
+    assert(msx_io_read(&msx, 0xa2) & 0x80);
+    msx_destroy(&msx);
+}
+
+static void test_cassette_audible_monitor_mix(void) {
+    static const u8 cas[] = {
+        0x1f, 0xa6, 0xde, 0xba, 0xcc, 0x13, 0x7d, 0x74,
+        0xea, 0xea, 0xea, 0xea, 0xea,
+        0xea, 0xea, 0xea, 0xea, 0xea, 0x1a
+    };
+    u8 bios[MSX_BIOS_SIZE] = { 0 };
+    MsxMachine msx;
+    bool heard_tape = false;
+
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(msx_install_bios(&msx, bios, sizeof(bios)) == 0);
+    assert(cassette_mount(
+               &msx.cassette, cas, sizeof(cas), msx.cycles) == 0);
+    msx.cassette.position = CASSETTE_SAMPLE_RATE * 2u;
+    cassette_set_motor(&msx.cassette, true, msx.cycles);
+    msx_set_cassette_audible_monitor(&msx, true);
+    msx_run_frame(&msx);
+    for (size_t i = 0; i < msx.audio_sample_count; ++i)
+        if (msx.audio_samples[i] != 0)
+            heard_tape = true;
+    assert(heard_tape);
+
+    msx_set_cassette_audible_monitor(&msx, false);
+    msx_run_frame(&msx);
+    for (size_t i = 0; i < msx.audio_sample_count; ++i)
+        assert(msx.audio_samples[i] == 0);
+    msx_destroy(&msx);
+}
+
 static void write_psg_register(MsxMachine *msx, u8 reg, u8 value) {
     msx_io_write(msx, 0xa0, reg);
     msx_io_write(msx, 0xa1, value);
@@ -1082,6 +1165,8 @@ int main(void) {
     test_rtc_ports_and_reset_persistence();
     test_keyboard_matrix_and_ppi();
     test_dual_joystick_psg_ports();
+    test_cassette_ppi_and_psg_path();
+    test_cassette_audible_monitor_mix();
     test_msx_mouse_psg_protocol();
     test_psg_ports_and_cycle_timed_audio();
     test_cbios_checkpoint_if_available();
