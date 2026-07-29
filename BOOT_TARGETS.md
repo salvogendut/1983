@@ -70,6 +70,27 @@ conventional raw DSK images through Floppy A:
 Enable Tinker and use **Advanced > Second floppy** to add Floppy B to Media.
 Both drives support explicit read-only/read/write policy and safe ejection.
 
+### Graphical floppy workflow
+
+1. Select **General > Machine > Philips NMS 8250** and provide its BIOS,
+   Sub-ROM, and disk ROM through the machine catalogue.
+2. Open **Media > Floppy A** and select a conventional raw `.dsk` image.
+3. Press F5 to reset. The internal disk ROM will boot the inserted image when
+   it is bootable; the Floppy A LED reports sector activity.
+4. For a second drive, enable **General > Tinker**, then
+   **Advanced > Second floppy**. **Media > Floppy B** appears immediately and
+   has its own selector and activity LED.
+5. Read-only is the safe default for both drives. To permit guest writes,
+   select **Advanced > Floppy access mode > Read/write**. Delete on a Media
+   row safely ejects that image.
+
+The second-drive setting controls both the emulated Philips drive-select
+target and the presence of the Floppy B Media row. Disabling it safely ejects
+Floppy B but retains its configured path, so enabling it again can restore the
+same image. The access mode is shared by A and B and changes mounted images
+conservatively: if either image cannot be reopened, the previous usable mode
+is retained where possible and the failure is reported.
+
 Boot the local diagnostic cartridge with:
 
 ```sh

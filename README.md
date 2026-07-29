@@ -171,6 +171,9 @@ sector writes are flushed on replacement, ejection, and shutdown. Reset
 discards only an incomplete sector transfer and preserves mounted media.
 Host I/O failures remain visible and block unsafe ejection. Command-line
 equivalents are `--disk-a`, `--disk-b`, and `--floppy-mode`.
+The current backend accepts conventional raw 320, 360, 640, and 720 KiB
+sector images. Extended DSK, protected, and flux-level formats are not yet
+supported.
 
 **Media > Cassette** inserts a standard `.cas` image and rewinds it. The
 row shows its type, transport state, and elapsed/total time. Press R on that
