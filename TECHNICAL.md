@@ -142,11 +142,16 @@ kernel. Raw images must be a non-empty multiple of 512 bytes. They are opened
 read-only; guest write commands return ABRT and cannot modify the host file.
 Failed mounts preserve the previously mounted image.
 
-The Extensions overlay selects the 128 KiB Sunrise/Nextor ROM and reserves
-its physical cartridge slot. Media > IDE hard disk then mounts or ejects the
-raw image. Both paths persist in `1983.conf`; command-line equivalents are
-`--sunrise-rom` and `--ide`. Sector reads pulse both the IDE indicator and
-the green half of the owning cartridge LED.
+On first activation, Extensions > Sunrise IDE opens a device-specific setup
+panel which distinguishes the required 128 KiB controller ROM from its
+optional raw disk image. Nothing is connected or reserved until Connect is
+chosen and both selected files have been validated. The firmware path is
+then retained so later activations are simple disconnect/reconnect toggles;
+Delete on the extension forgets it and re-enables setup for replacement.
+Media > IDE hard disk owns subsequent mounting and ejection while the
+controller is connected. Both paths persist in `1983.conf`; command-line
+equivalents are `--sunrise-rom` and `--ide`. Sector reads pulse both the IDE
+indicator and the green half of the owning cartridge LED.
 
 The current reference run uses the NMS 8250 BIOS and Sub-ROM without its
 internal disk ROM, because that ROM expects the not-yet-implemented WD2793.

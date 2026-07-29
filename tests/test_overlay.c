@@ -111,6 +111,7 @@ static void test_cartridge_led_rendering(SDL_Renderer *renderer) {
 int main(void) {
     const char *editor_path = "tests/test-model-editor.tmp";
     const char *sunrise_rom_path = "tests/test-sunrise-rom.tmp";
+    const char *sunrise_rom_path_2 = "tests/test-sunrise-rom-2.tmp";
     const char *ide_image_path = "tests/test-sunrise-disk.tmp";
     Config config;
     ModelCatalog models;
@@ -151,15 +152,17 @@ int main(void) {
     assert(fwrite(sunrise_rom, 1, sizeof(sunrise_rom), fixture) ==
            sizeof(sunrise_rom));
     assert(fclose(fixture) == 0);
+    fixture = fopen(sunrise_rom_path_2, "wb");
+    assert(fixture);
+    assert(fwrite(sunrise_rom, 1, sizeof(sunrise_rom), fixture) ==
+           sizeof(sunrise_rom));
+    assert(fclose(fixture) == 0);
     fixture = fopen(ide_image_path, "wb");
     assert(fixture);
     memset(sunrise_rom, 0x83, ATA_SECTOR_SIZE);
     assert(fwrite(sunrise_rom, 1, ATA_SECTOR_SIZE, fixture) ==
            ATA_SECTOR_SIZE);
     assert(fclose(fixture) == 0);
-    snprintf(config.sunrise_rom_path,
-             sizeof(config.sunrise_rom_path), "%s",
-             sunrise_rom_path);
     model_catalog_defaults(&models);
     snprintf(models.entries[models.count].id,
              sizeof(models.entries[models.count].id), "custom-msx2");
@@ -262,8 +265,41 @@ int main(void) {
 
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);
+    assert(!config.sunrise_ide);
+    assert(msx_get_cartridge(&msx, 1)->loaded);
+    assert(config.cartridge_path[1][0]);
+    render_overlay(&display, &msx, &overlay);
+    send_key(&overlay, SDLK_ESCAPE);
+    assert(overlay.state == OVERLAY_STATE_MENU);
+    assert(!config.sunrise_ide);
+    assert(!config.sunrise_rom_path[0]);
+    assert(msx_get_cartridge(&msx, 1)->loaded);
+
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);
+    assert(overlay.sunrise_setup_row == 0);
+    overlay.dialog_target = OVERLAY_DIALOG_SUNRISE_ROM;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", sunrise_rom_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);
+    assert(overlay.sunrise_setup_row == 1);
+    assert(strcmp(overlay.pending_sunrise_rom_path,
+                  sunrise_rom_path) == 0);
+    assert(!config.sunrise_rom_path[0]);
+    assert(!config.sunrise_ide);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.sunrise_setup_row == 2);
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_MENU);
     assert(config.sunrise_ide);
     assert(msx_sunrise_connected(&msx));
+    assert(!msx_sunrise_disk_mounted(&msx));
+    assert(strcmp(config.sunrise_rom_path,
+                  sunrise_rom_path) == 0);
+    assert(!config.ide_image_path[0]);
     assert(msx_sunrise_slot(&msx) == 1);
     assert(strcmp(config_cartridge_slot_owner(&config, 1),
                   "Sunrise IDE") == 0);
@@ -273,6 +309,46 @@ int main(void) {
            LED_CARTRIDGE_IDE);
     assert(leds_get_cartridge_state(1).present);
     assert(!leds_get_cartridge_state(1).activity);
+
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.sunrise_ide);
+    assert(!msx_sunrise_connected(&msx));
+    assert(strcmp(config.sunrise_rom_path,
+                  sunrise_rom_path) == 0);
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_MENU);
+    assert(config.sunrise_ide);
+    assert(msx_sunrise_connected(&msx));
+    send_key(&overlay, SDLK_DELETE);
+    assert(!config.sunrise_ide);
+    assert(!msx_sunrise_connected(&msx));
+    assert(!config.sunrise_rom_path[0]);
+
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);
+    overlay.dialog_target = OVERLAY_DIALOG_SUNRISE_ROM;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", sunrise_rom_path_2);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(overlay.sunrise_setup_row == 1);
+    overlay.dialog_target = OVERLAY_DIALOG_IDE_IMAGE;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", ide_image_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);
+    assert(overlay.sunrise_setup_row == 2);
+    assert(strcmp(overlay.pending_ide_image_path,
+                  ide_image_path) == 0);
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_MENU);
+    assert(config.sunrise_ide);
+    assert(strcmp(config.sunrise_rom_path,
+                  sunrise_rom_path_2) == 0);
+    assert(strcmp(config.ide_image_path,
+                  ide_image_path) == 0);
+    assert(msx_sunrise_disk_mounted(&msx));
 
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
@@ -296,6 +372,11 @@ int main(void) {
     for (int row = 0; row < 7; ++row)
         send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 7);
+    assert(msx_sunrise_disk_mounted(&msx));
+    assert(strcmp(config.ide_image_path, ide_image_path) == 0);
+    send_key(&overlay, SDLK_DELETE);
+    assert(!msx_sunrise_disk_mounted(&msx));
+    assert(!config.ide_image_path[0]);
     overlay.dialog_target = OVERLAY_DIALOG_IDE_IMAGE;
     snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
              "%s", ide_image_path);
@@ -303,9 +384,6 @@ int main(void) {
     overlay_tick(&overlay);
     assert(msx_sunrise_disk_mounted(&msx));
     assert(strcmp(config.ide_image_path, ide_image_path) == 0);
-    send_key(&overlay, SDLK_DELETE);
-    assert(!msx_sunrise_disk_mounted(&msx));
-    assert(!config.ide_image_path[0]);
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 0);
 
@@ -400,6 +478,7 @@ int main(void) {
     assert(overlay.state == OVERLAY_STATE_MENU);
     assert(remove(editor_path) == 0);
     assert(remove(sunrise_rom_path) == 0);
+    assert(remove(sunrise_rom_path_2) == 0);
     assert(remove(ide_image_path) == 0);
 
     display_quit(&display);

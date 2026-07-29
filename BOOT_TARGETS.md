@@ -78,10 +78,14 @@ make -C ../msx-diag
 
 ### Sunrise IDE and Nextor
 
-Enable **General > Extra Hardware**, choose **Extensions > Sunrise IDE**, and
-select the 128 KiB official Sunrise Nextor ROM. **Media > IDE hard disk** then
-accepts a non-empty raw image whose size is a multiple of 512 bytes. The image
-is mounted read-only.
+Enable **General > Extra Hardware** and choose **Extensions > Sunrise IDE**.
+On first activation, its setup panel asks for the required 128 KiB official
+Sunrise Nextor controller ROM and an optional IDE disk image. Choose Connect
+after making the selections. Later activations simply disconnect or reconnect
+that configuration; Delete forgets the stored controller firmware and opens
+the setup path again next time. **Media > IDE hard disk** handles later disk
+changes while the controller is connected. Images must be non-empty multiples
+of 512 bytes and are mounted read-only.
 
 The current NMS 8250 reference command deliberately suppresses the internal
 disk ROM: that firmware expects a WD2793, while the boot device here is the
@@ -265,7 +269,7 @@ The frontend provides an editable catalogue-backed machine selector and
 independent, persistent selectors for both external cartridge slots. It
 also provides:
 
-- a Sunrise IDE ROM selector under Extensions;
+- a guided Sunrise IDE controller setup under Extensions;
 - a raw IDE hard-disk selector under Media while Sunrise is connected;
 - explicit floppy and cassette placeholders for their future devices.
 
@@ -273,10 +277,12 @@ Each cartridge selector opens the shared SDL3 file-dialog workflow and has an
 adjacent `auto`/manual mapper selector. Delete ejects the selected cartridge.
 General > Machine enumerates `1983-models.conf`, loads complete mappings
 directly, and opens sequential file dialogs for missing required components.
-The firmware set is applied atomically. Sunrise ROM and disk paths persist in
-`1983.conf`; mounting is conservative and a failed replacement leaves the
-previous image active. Floppy and cassette selectors stay as explicit stubs
-until their devices are implemented.
+The firmware set is applied atomically. Sunrise setup validates its controller
+ROM and optional disk before reserving a cartridge slot; canceling it leaves
+the live machine unchanged. Sunrise ROM and disk paths persist in `1983.conf`;
+mounting is conservative and a failed replacement leaves the previous image
+active. Floppy and cassette selectors stay as explicit stubs until their
+devices are implemented.
 
 Selecting the Sunrise extension must not silently replace a cartridge or
 firmware image. It reserves a physical cartridge slot through the same

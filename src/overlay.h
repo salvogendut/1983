@@ -20,6 +20,7 @@ typedef enum {
     OVERLAY_STATE_MENU = 0,
     OVERLAY_STATE_CONFIRM,
     OVERLAY_STATE_MACHINE,
+    OVERLAY_STATE_SUNRISE_SETUP,
     OVERLAY_STATE_MODEL_LIST,
     OVERLAY_STATE_MODEL_EDIT,
     OVERLAY_STATE_MODEL_TEXT,
@@ -69,6 +70,10 @@ typedef struct {
     char pending_subrom_path[PATH_MAX];
     char pending_disk_rom_path[PATH_MAX];
     char pending_firmware_dir[PATH_MAX];
+
+    int sunrise_setup_row;
+    char pending_sunrise_rom_path[PATH_MAX];
+    char pending_ide_image_path[PATH_MAX];
 
     int model_editor_row;
     int model_edit_index;
