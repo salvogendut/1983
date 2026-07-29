@@ -28,7 +28,7 @@ the 1984 and 1985 sibling emulators.
 | Audio | AY/YM PSG and SDL3 output are implemented; SCC and MSX-MUSIC are planned |
 | Cartridges | Dual Linear, ASCII8/16, Konami, and Konami SCC devices with persistent mapper controls are implemented |
 | Cassette | Standard CAS playback, BIOS motor/comparator wiring, overlay/CLI loading, transport display, and Tape LED are implemented; recording and sampled audio are planned |
-| Disk | Sunrise ATA-IDE, safe read-only/read-write raw images, Nextor boot, and activity LEDs are implemented; DSK images, WD2793, and multiple drives are planned |
+| Disk | Sunrise ATA-IDE/Nextor and Philips WD2793 paths are implemented with safe writable raw images, optional dual floppies, and activity LEDs; protected/flux formats remain planned |
 | Input | International keyboard, dual PSG joystick ports, SDL3 gamepad hotplug/routing, MSX mouse capture/protocols, and persistent Joy Port selections are implemented; alternate matrices and clipboard paste are planned |
 | MSX2 hardware | Internal mapper, RTC, and editable firmware catalogue are implemented; persistent CMOS and more extensions are planned |
 | Tools | Screenshots and headless automation exist; snapshots, debugger, disassembler, and deterministic capture are planned |
@@ -52,6 +52,8 @@ the 1984 and 1985 sibling emulators.
    Nextor/GeoBench boot checkpoint and GUI media workflow.
 9. Standard MSX CAS playback with cycle-timed transport, firmware-visible
    motor/comparator signals, persistent GUI/CLI media workflow, and Tape LED.
+10. Philips NMS 8250 WD2793 emulation with conventional raw DSK images,
+    safe sector writes/ejection, and optional Floppy B.
 
 ## Near-term targets
 
@@ -83,7 +85,8 @@ read/write access with flush and safe-ejection handling.
 
 The external mapper remains a distinct future device rather than being
 folded into a fictitious 640 KiB internal mapper. The internal WD2793 path
-and floppy images are the next storage layers.
+now boots conventional 720 KiB media; protected disk formats and
+track-formatting commands remain later storage layers.
 
 The staged storage checkpoints are defined in
 [`BOOT_TARGETS.md`](BOOT_TARGETS.md).

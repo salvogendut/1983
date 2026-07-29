@@ -10,6 +10,7 @@
 #include "sunrise.h"
 #include "types.h"
 #include "vdp.h"
+#include "wd2793.h"
 #include "z80.h"
 
 #define MSX_CPU_HZ 3579545u
@@ -110,6 +111,7 @@ typedef struct {
     MsxCartridge cartridges[MSX_CARTRIDGE_SLOTS];
     Cassette cassette;
     MsxSunriseIde sunrise;
+    Wd2793 fdc;
     int sunrise_slot;
     bool bios_loaded;
     bool logo_loaded;
@@ -223,6 +225,27 @@ bool msx_sunrise_disk_dirty(const MsxMachine *msx);
 bool msx_sunrise_disk_has_error(const MsxMachine *msx);
 const char *msx_sunrise_disk_error(const MsxMachine *msx);
 bool msx_sunrise_take_activity(MsxMachine *msx);
+bool msx_floppy_supported(const MsxMachine *msx);
+int msx_mount_drive_a(MsxMachine *msx, const char *path,
+                      FloppyImageMode mode);
+int msx_flush_drive_a(MsxMachine *msx);
+int msx_eject_drive_a(MsxMachine *msx);
+bool msx_drive_a_mounted(const MsxMachine *msx);
+bool msx_drive_a_writable(const MsxMachine *msx);
+bool msx_drive_a_dirty(const MsxMachine *msx);
+bool msx_drive_a_has_error(const MsxMachine *msx);
+const char *msx_drive_a_error(const MsxMachine *msx);
+bool msx_drive_a_take_activity(MsxMachine *msx);
+int msx_mount_drive_b(MsxMachine *msx, const char *path,
+                      FloppyImageMode mode);
+int msx_flush_drive_b(MsxMachine *msx);
+int msx_eject_drive_b(MsxMachine *msx);
+bool msx_drive_b_mounted(const MsxMachine *msx);
+bool msx_drive_b_writable(const MsxMachine *msx);
+bool msx_drive_b_dirty(const MsxMachine *msx);
+bool msx_drive_b_has_error(const MsxMachine *msx);
+const char *msx_drive_b_error(const MsxMachine *msx);
+bool msx_drive_b_take_activity(MsxMachine *msx);
 int msx_load_firmware_set(MsxMachine *msx, const char *bios_path,
                           const char *logo_path,
                           const char *subrom_path,

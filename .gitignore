@@ -8,6 +8,8 @@
 /test-cartridge
 /test-cassette
 /test-ata
+/test-floppy
+/test-wd2793
 /test-sunrise
 /test-config
 /test-models

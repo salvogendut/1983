@@ -36,6 +36,11 @@ cartridge2 =
 cartridge2_mapper = auto
 # Standard MSX CAS image; playback is read-only.
 cassette =
+# Raw sector-based MSX floppy images.
+drive_a =
+drive_b =
+# read-only (safe default) or read-write; applies to both floppies.
+floppy_image_mode = read-only
 # Raw, 512-byte-sector image.
 ide_image =
 # read-only (safe default) or read-write.
@@ -44,7 +49,6 @@ last_media_dir =
 
 [extensions]
 extra_hardware = false
-second_drive = false
 sunrise_ide = false
 # Exact 128 KiB Sunrise IDE/Nextor kernel ROM.
 sunrise_rom =
@@ -53,6 +57,8 @@ msx_music = false
 kanji_rom = false
 
 [advanced]
+# Adds Floppy B to Media on Philips NMS 8250 machines.
+second_drive = false
 tinker = false
 # These monitors are active only while Tinker is enabled.
 cassette_audible_monitor = false

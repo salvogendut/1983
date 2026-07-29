@@ -16,6 +16,9 @@ int main(void) {
     assert(!config.subrom_path[0]);
     assert(!config.disk_rom_path[0]);
     assert(!config.sunrise_rom_path[0]);
+    assert(!config.drive_a_path[0]);
+    assert(!config.drive_b_path[0]);
+    assert(config.floppy_image_mode == FLOPPY_IMAGE_READ_ONLY);
     assert(!config.ide_image_path[0]);
     assert(config.ide_image_mode == ATA_IMAGE_READ_ONLY);
     assert(!config.cassette_path[0]);
@@ -65,6 +68,14 @@ int main(void) {
              sizeof(config.ide_image_path),
              "/disks/GBMSX.IMG");
     config.ide_image_mode = ATA_IMAGE_READ_WRITE;
+    config.second_drive = true;
+    snprintf(config.drive_a_path,
+             sizeof(config.drive_a_path),
+             "/disks/game-a.dsk");
+    snprintf(config.drive_b_path,
+             sizeof(config.drive_b_path),
+             "/disks/game-b.dsk");
+    config.floppy_image_mode = FLOPPY_IMAGE_READ_WRITE;
     snprintf(config.cassette_path,
              sizeof(config.cassette_path),
              "/tapes/software.cas");
@@ -94,6 +105,13 @@ int main(void) {
     assert(strcmp(loaded.ide_image_path,
                   "/disks/GBMSX.IMG") == 0);
     assert(loaded.ide_image_mode == ATA_IMAGE_READ_WRITE);
+    assert(loaded.second_drive);
+    assert(strcmp(loaded.drive_a_path,
+                  "/disks/game-a.dsk") == 0);
+    assert(strcmp(loaded.drive_b_path,
+                  "/disks/game-b.dsk") == 0);
+    assert(loaded.floppy_image_mode ==
+           FLOPPY_IMAGE_READ_WRITE);
     assert(strcmp(loaded.cassette_path,
                   "/tapes/software.cas") == 0);
     assert(loaded.scc);

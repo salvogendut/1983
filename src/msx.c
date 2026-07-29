@@ -527,6 +527,7 @@ void msx_reset(MsxMachine *msx) {
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_reset(&msx->cartridges[i]);
     sunrise_reset(&msx->sunrise);
+    wd2793_reset(&msx->fdc);
     msx->paused = false;
     msx->caps_led = false;
     msx->kana_led = false;
@@ -596,6 +597,7 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
         msx_cartridge_init(&msx->cartridges[i]);
     cassette_init(&msx->cassette);
     sunrise_init(&msx->sunrise);
+    wd2793_init(&msx->fdc);
     msx->sunrise_slot = -1;
     z80_init(&msx->cpu);
     vdp_init(&msx->vdp);
@@ -618,6 +620,7 @@ void msx_destroy(MsxMachine *msx) {
         msx_cartridge_destroy(&msx->cartridges[i]);
     cassette_destroy(&msx->cassette);
     sunrise_destroy(&msx->sunrise);
+    wd2793_destroy(&msx->fdc);
     msx->sunrise_slot = -1;
     if (msx->ram && msx->ram != msx->internal_ram)
         free(msx->ram);
@@ -758,6 +761,10 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
                 return msx->subrom[address & 0x3fff];
             if (secondary == 2 && msx_has_memory_mapper(msx))
                 return msx->ram[mapper_address(msx, address)];
+            if (secondary == 3 &&
+                msx_floppy_supported(msx) &&
+                wd2793_handles_address(address))
+                return wd2793_read_memory(&msx->fdc, address);
             if (secondary == 3 && msx->disk_rom_loaded &&
                 address >= 0x4000 && address < 0x8000)
                 return msx->disk_rom[address - 0x4000];
@@ -802,6 +809,10 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
     secondary = selected_subslot(msx, primary, address);
     if (secondary == 2 && msx_has_memory_mapper(msx))
         msx->ram[mapper_address(msx, address)] = value;
+    else if (secondary == 3 &&
+             msx_floppy_supported(msx) &&
+             wd2793_handles_address(address))
+        wd2793_write_memory(&msx->fdc, address, value);
 }
 
 u8 msx_io_read(MsxMachine *msx, u16 port) {
@@ -1247,6 +1258,89 @@ const char *msx_sunrise_disk_error(const MsxMachine *msx) {
 bool msx_sunrise_take_activity(MsxMachine *msx) {
     return msx_sunrise_connected(msx) &&
            sunrise_take_activity(&msx->sunrise);
+}
+
+bool msx_floppy_supported(const MsxMachine *msx) {
+    return msx && msx->profile &&
+           msx->profile->model == MSX_MODEL_PHILIPS_NMS8250;
+}
+
+int msx_mount_drive_a(MsxMachine *msx, const char *path,
+                      FloppyImageMode mode) {
+    if (!msx || !msx_floppy_supported(msx))
+        return -1;
+    return wd2793_mount_drive_a(&msx->fdc, path, mode);
+}
+
+int msx_flush_drive_a(MsxMachine *msx) {
+    return msx ? wd2793_flush_drive_a(&msx->fdc) : -1;
+}
+
+int msx_eject_drive_a(MsxMachine *msx) {
+    return msx ? wd2793_eject_drive_a(&msx->fdc) : -1;
+}
+
+bool msx_drive_a_mounted(const MsxMachine *msx) {
+    return msx && wd2793_drive_a_mounted(&msx->fdc);
+}
+
+bool msx_drive_a_writable(const MsxMachine *msx) {
+    return msx && wd2793_drive_a_writable(&msx->fdc);
+}
+
+bool msx_drive_a_dirty(const MsxMachine *msx) {
+    return msx && wd2793_drive_a_dirty(&msx->fdc);
+}
+
+bool msx_drive_a_has_error(const MsxMachine *msx) {
+    return msx && wd2793_drive_a_has_error(&msx->fdc);
+}
+
+const char *msx_drive_a_error(const MsxMachine *msx) {
+    return msx ? wd2793_drive_a_error(&msx->fdc) : "";
+}
+
+bool msx_drive_a_take_activity(MsxMachine *msx) {
+    return msx && wd2793_take_drive_a_activity(&msx->fdc);
+}
+
+int msx_mount_drive_b(MsxMachine *msx, const char *path,
+                      FloppyImageMode mode) {
+    if (!msx || !msx_floppy_supported(msx))
+        return -1;
+    return wd2793_mount_drive_b(&msx->fdc, path, mode);
+}
+
+int msx_flush_drive_b(MsxMachine *msx) {
+    return msx ? wd2793_flush_drive_b(&msx->fdc) : -1;
+}
+
+int msx_eject_drive_b(MsxMachine *msx) {
+    return msx ? wd2793_eject_drive_b(&msx->fdc) : -1;
+}
+
+bool msx_drive_b_mounted(const MsxMachine *msx) {
+    return msx && wd2793_drive_b_mounted(&msx->fdc);
+}
+
+bool msx_drive_b_writable(const MsxMachine *msx) {
+    return msx && wd2793_drive_b_writable(&msx->fdc);
+}
+
+bool msx_drive_b_dirty(const MsxMachine *msx) {
+    return msx && wd2793_drive_b_dirty(&msx->fdc);
+}
+
+bool msx_drive_b_has_error(const MsxMachine *msx) {
+    return msx && wd2793_drive_b_has_error(&msx->fdc);
+}
+
+const char *msx_drive_b_error(const MsxMachine *msx) {
+    return msx ? wd2793_drive_b_error(&msx->fdc) : "";
+}
+
+bool msx_drive_b_take_activity(MsxMachine *msx) {
+    return msx && wd2793_take_drive_b_activity(&msx->fdc);
 }
 
 int msx_set_cartridge_mapper(MsxMachine *msx, unsigned slot,

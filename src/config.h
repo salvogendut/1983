@@ -43,6 +43,7 @@ typedef struct {
     bool extra_hardware;
     bool second_drive;
     bool sunrise_ide;
+    FloppyImageMode floppy_image_mode;
     AtaImageMode ide_image_mode;
     bool scc;
     bool msx_music;
@@ -59,6 +60,8 @@ typedef struct {
     char subrom_path[PATH_MAX];
     char disk_rom_path[PATH_MAX];
     char sunrise_rom_path[PATH_MAX];
+    char drive_a_path[PATH_MAX];
+    char drive_b_path[PATH_MAX];
     char ide_image_path[PATH_MAX];
     char cassette_path[PATH_MAX];
     char cartridge_path[MSX_CARTRIDGE_SLOTS][PATH_MAX];

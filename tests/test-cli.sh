@@ -52,6 +52,12 @@ if ./1983 --ide-mode unsafe >"$log" 2>&1; then
 fi
 grep -q "expected read-only or read-write" "$log"
 
+if ./1983 --floppy-mode unsafe >"$log" 2>&1; then
+    echo "invalid floppy image mode was accepted" >&2
+    exit 1
+fi
+grep -q "expected read-only or read-write" "$log"
+
 if ./1983 --config /dev/null --cassette missing.cas >"$log" 2>&1; then
     echo "missing cassette was accepted" >&2
     exit 1
@@ -72,6 +78,9 @@ grep -q -- "--cart2 PATH" "$log"
 grep -q -- "--mapper1 NAME" "$log"
 grep -q -- "--mapper2 NAME" "$log"
 grep -q -- "--sunrise-rom PATH" "$log"
+grep -q -- "--disk-a PATH" "$log"
+grep -q -- "--disk-b PATH" "$log"
+grep -q -- "--floppy-mode MODE" "$log"
 grep -q -- "--ide PATH" "$log"
 grep -q -- "--ide-mode MODE" "$log"
 grep -q -- "--cassette PATH" "$log"

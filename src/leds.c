@@ -48,8 +48,8 @@ static const char *label_for(LedId id) {
         case LED_CARTRIDGE_II: return "Cartridge II";
         case LED_CAPS:  return "Caps Lock";
         case LED_KANA:  return "Kana";
-        case LED_FDC_A: return "Drive A";
-        case LED_FDC_B: return "Drive B";
+        case LED_FDC_A: return "Floppy A";
+        case LED_FDC_B: return "Floppy B";
         case LED_TAPE:  return "Cassette";
         case LED_IDE:   return "Sunrise IDE";
         case LED_COUNT: break;

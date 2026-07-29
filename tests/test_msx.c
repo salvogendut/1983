@@ -317,7 +317,10 @@ static void test_msx2_expanded_slots_and_firmware(void) {
     assert(msx_memory_read(msx, 0xffff) == 0x73);
     assert(msx_memory_read(msx, 0x0000) == subrom[0]);
     assert(msx_memory_read(msx, 0x4000) == disk_rom[0]);
-    assert(msx_memory_read(msx, 0x7fff) == disk_rom[0x3fff]);
+    assert(msx_memory_read(msx, 0x7ff7) == disk_rom[0x3ff7]);
+    assert(msx_memory_read(msx, 0x7ff8) &
+           WD2793_STATUS_NOT_READY);
+    assert(msx_memory_read(msx, 0x7fff) == 0xff);
     assert(msx_memory_read(msx, 0x8000) == subrom[0]);
     msx_memory_write(msx, 0xc000, 0x44);
     assert(msx_memory_read(msx, 0xc000) == 0x44);
@@ -923,7 +926,7 @@ static void test_nms8250_checkpoint_if_available(void) {
 
     msx = malloc(sizeof(*msx));
     assert(msx);
-    msx_init(msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
+    msx_init(msx, MSX_MODEL_PHILIPS_NMS8250, MSX_REGION_PAL, 128);
     assert(msx_load_bios(msx, bios_path) == 0);
     assert(msx_load_subrom(msx, subrom_path) == 0);
     assert(msx_load_disk_rom(msx, disk_rom_path) == 0);
@@ -1002,6 +1005,67 @@ static u64 vdp_frame_hash(const MsxVdp *vdp) {
         hash *= 1099511628211ULL;
     }
     return hash;
+}
+
+static void test_nms8250_floppy_checkpoint_if_available(void) {
+    const char *directory = getenv("MSX_NMS8250_DIR");
+    const char *image_path = getenv("MSX_NMS8250_DSK");
+    MsxMachine *msx;
+    char bios_path[4096];
+    char subrom_path[4096];
+    char disk_rom_path[4096];
+    size_t nonzero_vram = 0;
+    u64 framebuffer_hash;
+
+    if (!directory || !directory[0] ||
+        !image_path || !image_path[0])
+        return;
+    snprintf(bios_path, sizeof(bios_path),
+             "%s/nms8250_basic-bios2.rom", directory);
+    snprintf(subrom_path, sizeof(subrom_path),
+             "%s/nms8250_msx2sub.rom", directory);
+    snprintf(disk_rom_path, sizeof(disk_rom_path),
+             "%s/nms8250_disk.rom", directory);
+
+    msx = malloc(sizeof(*msx));
+    assert(msx);
+    msx_init(msx, MSX_MODEL_PHILIPS_NMS8250,
+             MSX_REGION_PAL, 128);
+    assert(msx_load_firmware_set(
+               msx, bios_path, "", subrom_path,
+               disk_rom_path) == 0);
+    assert(msx_mount_drive_a(
+               msx, image_path,
+               FLOPPY_IMAGE_READ_ONLY) == 0);
+    for (int frame = 0; frame < 3000; ++frame)
+        msx_run_frame(msx);
+    for (size_t i = 0; i < sizeof(msx->vdp.vram); ++i)
+        if (msx->vdp.vram[i])
+            ++nonzero_vram;
+    framebuffer_hash = vdp_frame_hash(&msx->vdp);
+
+    fprintf(stderr,
+            "NMS 8250 floppy checkpoint: frame=%llu PC=%04X "
+            "slot=%02X subslot=%02X track=%u side=%u sector=%u "
+            "instructions=%llu VRAM=%zu framebuffer=%016llX\n",
+            (unsigned long long)msx->frame, msx->cpu.pc,
+            msx->primary_slot, msx->secondary_slot[3],
+            msx->fdc.physical_track, msx->fdc.side_reg & 1,
+            msx->fdc.sector,
+            (unsigned long long)msx->instructions,
+            nonzero_vram,
+            (unsigned long long)framebuffer_hash);
+    assert(msx->frame == 3000);
+    assert(msx_drive_a_mounted(msx));
+    assert(msx_drive_a_take_activity(msx));
+    assert(msx->instructions > 1000000);
+    assert(nonzero_vram > 1000);
+    assert(framebuffer_hash != 0);
+    assert(msx->fdc.drive_a.tracks == 80);
+    assert(msx->fdc.drive_a.sides == 2);
+    assert(msx->fdc.drive_a.sectors_per_track == 9);
+    msx_destroy(msx);
+    free(msx);
 }
 
 static void set_nextor_fixture_rtc(MsxRtc *rtc) {
@@ -1178,6 +1242,7 @@ int main(void) {
     test_cbios_checkpoint_if_available();
     test_msx_diag_bios_checkpoint_if_available();
     test_nms8250_checkpoint_if_available();
+    test_nms8250_floppy_checkpoint_if_available();
     test_nextor_sunrise_checkpoint_if_available();
     msx_destroy(&msx);
     return 0;
