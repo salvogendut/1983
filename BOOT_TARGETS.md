@@ -18,6 +18,76 @@ C-BIOS and a vendor-compatible BIOS/BASIC set are alternatives at the machine
 firmware layer. Nextor is not a replacement for that layer: it is a disk
 operating system, supplied as a kernel ROM plus files on a guest volume.
 
+## Running current firmware
+
+The local `ROMS/` directory is ignored by Git and is available for
+user-supplied firmware, cartridges, and diagnostics. Nothing placed there is
+included in commits or release archives.
+
+### C-BIOS
+
+Download C-BIOS from the
+[C-BIOS project](https://cbios.sourceforge.net/) and start the generic
+60 Hz MSX machine with:
+
+```sh
+./1983 --region ntsc \
+  --bios /path/to/cbios_main_msx1.rom \
+  --logo /path/to/cbios_logo_msx1.rom
+```
+
+Add a cartridge with `--cart`, or mount it through the Media overlay:
+
+```sh
+./1983 --region ntsc \
+  --bios /path/to/cbios_main_msx1.rom \
+  --logo /path/to/cbios_logo_msx1.rom \
+  --cart /path/to/game.rom
+```
+
+C-BIOS runs cartridge software but does not provide BASIC, cassette, or disk
+services.
+
+### MSX2 and Philips NMS 8250
+
+With the firmware names referenced by `1983-models.conf` placed in `ROMS/`,
+start the supplied layouts with:
+
+```sh
+./1983 --model msx2 --region pal
+./1983 --model nms8250 --region pal
+```
+
+The NMS 8250 BIOS, Sub-ROM, and disk ROM reproduce the implemented expanded
+slot and internal mapper layout. The WD2793 controller is not implemented
+yet, so the disk ROM does not currently provide disk access.
+
+Boot the local diagnostic cartridge with:
+
+```sh
+./1983 --model msx2 --region pal --cart ROMS/diag.rom
+```
+
+The `msxdiag.rom` built by sibling project `../msx-diag` is a replacement
+MSX1 BIOS rather than a cartridge:
+
+```sh
+make -C ../msx-diag
+./1983 --model msx1 --region pal --bios ../msx-diag/msxdiag.rom
+```
+
+### Optional firmware tests
+
+```sh
+MSX_CBIOS_DIR=/path/to/cbios make check
+MSX_DIAG_BIOS_ROM=../msx-diag/msxdiag.rom make check
+MSX_NMS8250_DIR=ROMS make check
+MSX_NMS8250_DIR=ROMS MSX_DIAG_ROM=ROMS/diag.rom make check
+```
+
+The corresponding CPU, VRAM, and diagnostic-menu milestones are documented
+under Boot checkpoints below.
+
 ## GeoBench MSX2 reference target
 
 The first Nextor target deliberately matches
@@ -66,12 +136,13 @@ MSX-specific Sunrise register wrapper.
 
 ### Local system ROM contract
 
-1983 will reuse ROMs from the user's openMSX setup without copying them into
-the source tree. On Unix-like systems the first search root will be
-`~/.openMSX/share/systemroms`; configured additional roots and explicit file
-overrides will take precedence. Search roots will be recursive, and known
-components will be selected by checksum rather than depending on their
-filenames.
+1983 reuses user-supplied ROMs without copying them into the source tree.
+`1983-models.conf` currently maps each selectable model to explicit BIOS,
+logo, Sub-ROM, and disk-ROM paths; those paths can point into an existing
+openMSX ROM pool or the ignored local `ROMS/` directory. A later catalogue
+editor and discovery pass can search roots such as
+`~/.openMSX/share/systemroms` recursively and select known contents by
+checksum rather than filename.
 
 The pinned reference set is:
 
@@ -144,10 +215,10 @@ and `cbios_logo_msx1.rom` with SHA-256
 
 ## Media and configuration contract
 
-The frontend provides independent, persistent selectors for both external
-cartridge slots and reserves selectors for:
+The frontend provides an editable catalogue-backed machine selector and
+independent, persistent selectors for both external cartridge slots. It
+reserves selectors for:
 
-- the machine profile and its firmware components;
 - recursive system-ROM search roots;
 - floppy and cassette media;
 - the Nextor kernel ROM;
@@ -155,8 +226,10 @@ cartridge slots and reserves selectors for:
 
 Each cartridge selector opens the shared SDL3 file-dialog workflow and has an
 adjacent `auto`/manual mapper selector. Delete ejects the selected cartridge.
-The remaining media selectors stay as explicit stubs until their devices are
-implemented.
+General > Machine enumerates `1983-models.conf`, loads complete mappings
+directly, and opens sequential file dialogs for missing required components.
+The firmware set is applied atomically. The remaining media selectors stay as
+explicit stubs until their devices are implemented.
 
 Selecting the Sunrise extension must not silently replace a cartridge or
 firmware image. The NMS 8250 profile will explicitly reproduce slot 0

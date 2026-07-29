@@ -10,7 +10,16 @@ if ./1983 --mapper definitely-not-a-mapper >"$log" 2>&1; then
 fi
 grep -q "expected auto, linear, ascii8, ascii16, konami" "$log"
 
+if ./1983 --config /dev/null --model definitely-not-a-model \
+        >"$log" 2>&1; then
+    echo "unknown catalogue model was accepted" >&2
+    exit 1
+fi
+grep -q "unknown catalogue model" "$log"
+
 ./1983 --help >"$log"
+grep -q -- "--model NAME" "$log"
+grep -q -- "--models PATH" "$log"
 grep -q -- "--cart1 PATH" "$log"
 grep -q -- "--cart2 PATH" "$log"
 grep -q -- "--mapper1 NAME" "$log"

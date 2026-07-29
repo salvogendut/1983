@@ -27,6 +27,7 @@
 typedef enum {
     MSX_MODEL_GENERIC_MSX1 = 0,
     MSX_MODEL_GENERIC_MSX2,
+    MSX_MODEL_PHILIPS_NMS8250,
     MSX_MODEL_COUNT
 } MsxModel;
 
@@ -44,6 +45,8 @@ typedef struct {
     bool       memory_mapper;
     bool       rtc;
     PsgVariant psg_variant;
+    bool       requires_subrom;
+    bool       requires_disk_rom;
 } MsxProfile;
 
 typedef struct {
@@ -101,6 +104,9 @@ typedef struct {
 
 const MsxProfile *msx_profile(MsxModel model);
 const char *msx_model_name(MsxModel model);
+const char *msx_model_config_name(MsxModel model);
+bool msx_model_from_name(const char *name, MsxModel *model);
+bool msx_model_is_msx2(MsxModel model);
 const char *msx_region_name(MsxRegion region);
 const char *msx_vdp_name(const MsxMachine *msx);
 
@@ -144,4 +150,9 @@ int msx_set_cartridge_mapper(MsxMachine *msx, unsigned slot,
                              MsxCartridgeMapper mapper);
 void msx_eject_cartridge(MsxMachine *msx, unsigned slot);
 const MsxCartridge *msx_get_cartridge(const MsxMachine *msx, unsigned slot);
+int msx_load_firmware_set(MsxMachine *msx, const char *bios_path,
+                          const char *logo_path,
+                          const char *subrom_path,
+                          const char *disk_rom_path);
+void msx_eject_firmware(MsxMachine *msx);
 bool msx_can_boot(const MsxMachine *msx);

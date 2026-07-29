@@ -7,6 +7,8 @@
 /test-rtc
 /test-cartridge
 /test-config
+/test-models
+/test-overlay
 /tests/test-*.log
 /tests/test-*.trs
 /Makefile

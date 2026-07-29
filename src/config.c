@@ -29,14 +29,10 @@ static const char *bool_name(bool value) {
 }
 
 static MsxModel parse_model(const char *value, MsxModel fallback) {
-    if (!value)
-        return fallback;
-    if (strcasecmp(value, "msx1") == 0 ||
-        strcasecmp(value, "generic-msx1") == 0)
-        return MSX_MODEL_GENERIC_MSX1;
-    if (strcasecmp(value, "msx2") == 0 ||
-        strcasecmp(value, "generic-msx2") == 0)
-        return MSX_MODEL_GENERIC_MSX2;
+    MsxModel model;
+
+    if (msx_model_from_name(value, &model))
+        return model;
     return fallback;
 }
 
@@ -120,6 +116,7 @@ static void ensure_parent(const char *path) {
 void config_defaults(Config *config) {
     memset(config, 0, sizeof(*config));
     config->model = MSX_MODEL_GENERIC_MSX1;
+    snprintf(config->machine_id, sizeof(config->machine_id), "msx1");
     config->region = MSX_REGION_PAL;
     config->memory_kb = msx_default_ram_kb(config->model);
     config->scale = 1;
@@ -196,9 +193,13 @@ void config_load(Config *config, const char *path) {
                 end[-1] == '\r' || end[-1] == '\n'))
             *--end = '\0';
 
-        if (strcmp(key, "model") == 0)
+        if (strcmp(key, "model") == 0) {
+            snprintf(config->machine_id,
+                     sizeof(config->machine_id), "%s", value);
             config->model = parse_model(value, config->model);
-        else if (strcmp(key, "region") == 0)
+        } else if (strcmp(key, "hardware") == 0) {
+            config->model = parse_model(value, config->model);
+        } else if (strcmp(key, "region") == 0)
             config->region = parse_region(value, config->region);
         else if (strcmp(key, "memory_kb") == 0)
             config->memory_kb = atoi(value);
@@ -231,6 +232,18 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "notifications") == 0)
             config->notifications =
                 parse_notifications(value, config->notifications);
+        else if (strcmp(key, "bios") == 0)
+            snprintf(config->bios_path,
+                     sizeof(config->bios_path), "%s", value);
+        else if (strcmp(key, "logo") == 0)
+            snprintf(config->logo_path,
+                     sizeof(config->logo_path), "%s", value);
+        else if (strcmp(key, "subrom") == 0)
+            snprintf(config->subrom_path,
+                     sizeof(config->subrom_path), "%s", value);
+        else if (strcmp(key, "disk_rom") == 0)
+            snprintf(config->disk_rom_path,
+                     sizeof(config->disk_rom_path), "%s", value);
         else if (strcmp(key, "cartridge1") == 0)
             snprintf(config->cartridge_path[0],
                      sizeof(config->cartridge_path[0]), "%s", value);
@@ -267,10 +280,18 @@ int config_save(const Config *config) {
     fprintf(file, "# Edited automatically by the F9 overlay.\n\n");
     fprintf(file, "[machine]\n");
     fprintf(file, "model = %s\n",
-            config->model == MSX_MODEL_GENERIC_MSX2 ? "msx2" : "msx1");
+            config->machine_id[0]
+            ? config->machine_id : msx_model_config_name(config->model));
+    fprintf(file, "hardware = %s\n",
+            msx_model_config_name(config->model));
     fprintf(file, "region = %s\n",
             config->region == MSX_REGION_NTSC ? "ntsc" : "pal");
     fprintf(file, "memory_kb = %d\n\n", config->memory_kb);
+    fprintf(file, "[firmware]\n");
+    fprintf(file, "bios = %s\n", config->bios_path);
+    fprintf(file, "logo = %s\n", config->logo_path);
+    fprintf(file, "subrom = %s\n", config->subrom_path);
+    fprintf(file, "disk_rom = %s\n\n", config->disk_rom_path);
     fprintf(file, "[display]\n");
     fprintf(file, "scale = %d\n", config->scale);
     fprintf(file, "fullscreen = %s\n", bool_name(config->fullscreen));

@@ -15,15 +15,18 @@ static int clamp_int(int value, int minimum, int maximum) {
     return value;
 }
 
-void display_set_title(Display *display, const MsxMachine *msx) {
+void display_set_title(Display *display, const MsxMachine *msx,
+                       const char *model_name) {
     char title[96];
     snprintf(title, sizeof(title), "1983 - %s (%s)",
-             msx->profile->name, msx_vdp_name(msx));
+             model_name && model_name[0]
+             ? model_name : msx->profile->name,
+             msx_vdp_name(msx));
     SDL_SetWindowTitle(display->window, title);
 }
 
 int display_init(Display *display, const Config *config,
-                 const MsxMachine *msx) {
+                 const MsxMachine *msx, const char *model_name) {
     SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE;
 
     memset(display, 0, sizeof(*display));
@@ -75,7 +78,7 @@ int display_init(Display *display, const Config *config,
         return -1;
     }
     display_set_smoothing(display, display->smoothing);
-    display_set_title(display, msx);
+    display_set_title(display, msx, model_name);
     display_prepare_scaffold(display, msx);
     return 0;
 }
@@ -100,7 +103,7 @@ void display_prepare_scaffold(Display *display, const MsxMachine *msx) {
         0xB766B5, 0xCCCCCC, 0xFFFFFF,
     };
     u32 background =
-        msx->profile->model == MSX_MODEL_GENERIC_MSX2
+        msx_model_is_msx2(msx->profile->model)
         ? 0x111A45 : 0x16245C;
 
     for (int y = 0; y < DISPLAY_FB_H; ++y) {

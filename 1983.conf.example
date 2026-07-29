@@ -3,8 +3,15 @@
 
 [machine]
 model = msx1
+hardware = msx1
 region = pal
 memory_kb = 64
+
+[firmware]
+bios =
+logo =
+subrom =
+disk_rom =
 
 [display]
 scale = 1

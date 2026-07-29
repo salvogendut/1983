@@ -30,12 +30,13 @@ typedef struct {
 } Display;
 
 int  display_init(Display *display, const Config *config,
-                  const MsxMachine *msx);
+                  const MsxMachine *msx, const char *model_name);
 void display_quit(Display *display);
 void display_prepare_scaffold(Display *display, const MsxMachine *msx);
 void display_draw(Display *display, const MsxMachine *msx);
 void display_present(Display *display);
-void display_set_title(Display *display, const MsxMachine *msx);
+void display_set_title(Display *display, const MsxMachine *msx,
+                       const char *model_name);
 void display_set_scale(Display *display, int scale);
 void display_set_smoothing(Display *display, bool smoothing);
 void display_set_crt(Display *display, bool enabled, int scanlines);
