@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "cartridge.h"
 #include "psg.h"
 #include "rtc.h"
 #include "types.h"
@@ -20,7 +21,6 @@
 #define MSX_SUBROM_SIZE 0x4000u
 #define MSX_DISK_ROM_SIZE 0x4000u
 #define MSX_RAM_MAX_SIZE 0x20000u
-#define MSX_CART_MAX_SIZE 0x10000u
 #define MSX_KEYBOARD_ROWS 11u
 #define MSX_KEYBOARD_COLUMNS 8u
 
@@ -78,14 +78,11 @@ typedef struct {
     u8 subrom[MSX_SUBROM_SIZE];
     u8 disk_rom[MSX_DISK_ROM_SIZE];
     u8 ram[MSX_RAM_MAX_SIZE];
-    u8 cartridge[MSX_CART_MAX_SIZE];
-    size_t cartridge_size;
-    u16 cartridge_base;
+    MsxCartridge cartridges[MSX_CARTRIDGE_SLOTS];
     bool bios_loaded;
     bool logo_loaded;
     bool subrom_loaded;
     bool disk_rom_loaded;
-    bool cartridge_loaded;
 
     u8 ppi_port_c;
     u8 keyboard_rows[MSX_KEYBOARD_ROWS];
@@ -112,6 +109,7 @@ int  msx_normalize_ram_kb(MsxModel model, int ram_kb);
 int  msx_next_ram_kb(MsxModel model, int ram_kb, int direction);
 
 void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb);
+void msx_destroy(MsxMachine *msx);
 void msx_configure(MsxMachine *msx, MsxModel model, MsxRegion region,
                    int ram_kb);
 void msx_reset(MsxMachine *msx);
@@ -132,9 +130,18 @@ int msx_install_logo(MsxMachine *msx, const u8 *data, size_t size);
 int msx_install_subrom(MsxMachine *msx, const u8 *data, size_t size);
 int msx_install_disk_rom(MsxMachine *msx, const u8 *data, size_t size);
 int msx_install_cartridge(MsxMachine *msx, const u8 *data, size_t size);
+int msx_install_cartridge_slot(MsxMachine *msx, unsigned slot,
+                               const u8 *data, size_t size,
+                               MsxCartridgeMapper mapper);
 int msx_load_bios(MsxMachine *msx, const char *path);
 int msx_load_logo(MsxMachine *msx, const char *path);
 int msx_load_subrom(MsxMachine *msx, const char *path);
 int msx_load_disk_rom(MsxMachine *msx, const char *path);
 int msx_load_cartridge(MsxMachine *msx, const char *path);
+int msx_load_cartridge_slot(MsxMachine *msx, unsigned slot,
+                            const char *path, MsxCartridgeMapper mapper);
+int msx_set_cartridge_mapper(MsxMachine *msx, unsigned slot,
+                             MsxCartridgeMapper mapper);
+void msx_eject_cartridge(MsxMachine *msx, unsigned slot);
+const MsxCartridge *msx_get_cartridge(const MsxMachine *msx, unsigned slot);
 bool msx_can_boot(const MsxMachine *msx);

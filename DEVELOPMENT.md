@@ -9,6 +9,7 @@ hardware specification.
 | Files | Responsibility |
 |-------|----------------|
 | `src/main.c` | Process lifetime, command line, SDL event loop, and shared function-key bindings |
+| `src/cartridge.*` | Host-independent cartridge image ownership, mapper detection, bank registers, and SCC register window |
 | `src/audio.*` | SDL3 audio-stream lifetime and host sample submission |
 | `src/config.*` | Defaults, normalization, persistent settings, and platform-specific configuration path |
 | `src/display.*` | SDL window and renderer, fixed logical canvas, framebuffer presentation, footer, and screenshots |
@@ -23,6 +24,8 @@ hardware specification.
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
 | `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, sprite-mode-2, and command engine |
 | `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/diagnostic boot checks |
+| `tests/test_cartridge.c` | Linear, ASCII8/16, Konami, Konami SCC, detection, bank wrapping, reset, and eject checks |
+| `tests/test_config.c` | Persistent cartridge paths and mapper overrides |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
 | `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
 | `tests/test_rtc.c` | RP-5C01 banks, masks, reset behavior, calendar rollover, and clock advancement |
@@ -63,9 +66,10 @@ vendor machine:
 | RTC | No | Yes |
 
 The MSX1 executable layout follows the C-BIOS machine definition: slot 0
-contains a 32 KB main ROM and optional 16 KB logo ROM, slot 1 contains one
-external plain cartridge, slot 2 is open, and slot 3 contains RAM. Vendor and
-firmware layouts should eventually become data-driven rather than
+contains a 32 KB main ROM and optional 16 KB logo ROM, primary slots 1 and 2
+contain independent external cartridge devices, and slot 3 contains RAM.
+Each cartridge can be linear, ASCII8, ASCII16, Konami, or Konami SCC. Vendor
+and firmware layouts should eventually become data-driven rather than
 accumulating model checks throughout device code.
 
 The first concrete MSX2 layout matches the Philips NMS 8250 used by
@@ -273,15 +277,18 @@ PPI slot selection, external firmware loading, and a repeatable C-BIOS/VDP
 checkpoint—are now represented in code and focused tests. The next sequence
 is:
 
-1. Add ASCII8/ASCII16, Konami, and Konami SCC cartridge mappers with explicit
-   override hooks.
-2. Reach a deterministic BASIC prompt with a user-supplied BIOS/BASIC set.
-3. Add joystick input, cassette loading, alternate national keyboard layouts,
+1. Reach a deterministic BASIC prompt with a user-supplied BIOS/BASIC set.
+2. Add joystick input, cassette loading, alternate national keyboard layouts,
    and a small redistributable MSX1 compatibility corpus.
-4. Refine the progressive VDP renderer from completed-scanline state changes
+3. Refine the progressive VDP renderer from completed-scanline state changes
    to within-scanline fetch timing where software depends on raster effects.
-5. Add deterministic snapshot and audio-capture surfaces for compatibility
+4. Add deterministic snapshot and audio-capture surfaces for compatibility
    investigations.
+
+The preceding cartridge target is complete: both external primary slots have
+Linear, ASCII8, ASCII16, Konami, and Konami SCC mapping, auto/manual selection,
+saved media paths, command-line overrides, and functional F9 Media rows. SCC
+register mapping is present; SCC audio is intentionally a separate target.
 
 The firmware decision is to support both C-BIOS and user-supplied BIOS/BASIC
 sets with clearly different capabilities. C-BIOS is the redistributable
@@ -325,8 +332,10 @@ MSX_NMS8250_DIR=/path/to/nms8250-roms make check
 ```
 
 The C-BIOS test runs 180 NTSC frames to a stable no-cartridge state, then
-resets and verifies that C-BIOS discovers and launches a synthetic plain ROM
-cartridge. The NMS 8250 test currently verifies firmware loading, expanded
+resets and verifies that C-BIOS discovers and launches a synthetic linear ROM
+cartridge. A separate CPU checkpoint executes from an ASCII8 window, switches
+a bank through the MSX bus, and copies a banked sentinel into RAM. The NMS
+8250 test currently verifies firmware loading, expanded
 slot discovery, mapper setup, and SCREEN 6 startup after 200 PAL frames.
 When the MSX Diagnostics cartridge is available, its MSX2 startup and menu
 handoff can be included with:

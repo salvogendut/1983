@@ -35,6 +35,9 @@ typedef struct {
     bool       debug;
     NotifyMode notifications;
 
+    char cartridge_path[MSX_CARTRIDGE_SLOTS][PATH_MAX];
+    MsxCartridgeMapper cartridge_mapper[MSX_CARTRIDGE_SLOTS];
+    char last_media_dir[PATH_MAX];
     char path[PATH_MAX];
 } Config;
 

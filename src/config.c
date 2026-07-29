@@ -150,10 +150,15 @@ void config_normalize(Config *config) {
         config->audio_volume = 100;
     if ((unsigned)config->notifications > NOTIFY_MODE_CONSOLE)
         config->notifications = NOTIFY_MODE_SCREEN;
+    for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+        if ((unsigned)config->cartridge_mapper[slot] >=
+            MSX_CART_MAPPER_COUNT)
+            config->cartridge_mapper[slot] = MSX_CART_MAPPER_AUTO;
+    }
 }
 
 void config_load(Config *config, const char *path) {
-    char line[512];
+    char line[PATH_MAX + 64];
     FILE *file;
 
     config_defaults(config);
@@ -226,6 +231,23 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "notifications") == 0)
             config->notifications =
                 parse_notifications(value, config->notifications);
+        else if (strcmp(key, "cartridge1") == 0)
+            snprintf(config->cartridge_path[0],
+                     sizeof(config->cartridge_path[0]), "%s", value);
+        else if (strcmp(key, "cartridge2") == 0)
+            snprintf(config->cartridge_path[1],
+                     sizeof(config->cartridge_path[1]), "%s", value);
+        else if (strcmp(key, "cartridge1_mapper") == 0) {
+            MsxCartridgeMapper mapper;
+            if (msx_cartridge_mapper_from_name(value, &mapper))
+                config->cartridge_mapper[0] = mapper;
+        } else if (strcmp(key, "cartridge2_mapper") == 0) {
+            MsxCartridgeMapper mapper;
+            if (msx_cartridge_mapper_from_name(value, &mapper))
+                config->cartridge_mapper[1] = mapper;
+        } else if (strcmp(key, "last_media_dir") == 0)
+            snprintf(config->last_media_dir,
+                     sizeof(config->last_media_dir), "%s", value);
     }
     fclose(file);
     config_normalize(config);
@@ -257,6 +279,14 @@ int config_save(const Config *config) {
     fprintf(file, "crt_scanlines = %d\n\n", config->crt_scanlines);
     fprintf(file, "[audio]\n");
     fprintf(file, "audio_volume = %d\n\n", config->audio_volume);
+    fprintf(file, "[media]\n");
+    fprintf(file, "cartridge1 = %s\n", config->cartridge_path[0]);
+    fprintf(file, "cartridge1_mapper = %s\n",
+            msx_cartridge_mapper_name(config->cartridge_mapper[0]));
+    fprintf(file, "cartridge2 = %s\n", config->cartridge_path[1]);
+    fprintf(file, "cartridge2_mapper = %s\n",
+            msx_cartridge_mapper_name(config->cartridge_mapper[1]));
+    fprintf(file, "last_media_dir = %s\n\n", config->last_media_dir);
     fprintf(file, "[extensions]\n");
     fprintf(file, "second_drive = %s\n", bool_name(config->second_drive));
     fprintf(file, "sunrise_ide = %s\n", bool_name(config->sunrise_ide));

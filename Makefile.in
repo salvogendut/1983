@@ -93,7 +93,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = 1983$(EXEEXT)
-check_PROGRAMS = test-msx$(EXEEXT) test-kbd$(EXEEXT) test-vdp$(EXEEXT) \
+check_PROGRAMS = test-cartridge$(EXEEXT) test-config$(EXEEXT) \
+	test-msx$(EXEEXT) test-kbd$(EXEEXT) test-vdp$(EXEEXT) \
 	test-psg$(EXEEXT) test-rtc$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -118,7 +119,8 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(desktopdir)" \
 	"$(DESTDIR)$(icon64dir)" "$(DESTDIR)$(metainfodir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
-am_1983_OBJECTS = src/1983-config.$(OBJEXT) src/1983-audio.$(OBJEXT) \
+am_1983_OBJECTS = src/1983-config.$(OBJEXT) \
+	src/1983-cartridge.$(OBJEXT) src/1983-audio.$(OBJEXT) \
 	src/1983-display.$(OBJEXT) src/1983-kbd.$(OBJEXT) \
 	src/1983-leds.$(OBJEXT) src/1983-main.$(OBJEXT) \
 	src/1983-msx.$(OBJEXT) src/1983-notify.$(OBJEXT) \
@@ -129,18 +131,36 @@ am_1983_OBJECTS = src/1983-config.$(OBJEXT) src/1983-audio.$(OBJEXT) \
 am__DEPENDENCIES_1 =
 1983_LINK = $(CCLD) $(1983_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
+am_test_cartridge_OBJECTS =  \
+	tests/test_cartridge-test_cartridge.$(OBJEXT) \
+	src/test_cartridge-cartridge.$(OBJEXT)
+test_cartridge_OBJECTS = $(am_test_cartridge_OBJECTS)
+test_cartridge_LDADD = $(LDADD)
+test_cartridge_LINK = $(CCLD) $(test_cartridge_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_test_config_OBJECTS = tests/test_config-test_config.$(OBJEXT) \
+	src/test_config-config.$(OBJEXT) \
+	src/test_config-cartridge.$(OBJEXT) \
+	src/test_config-msx.$(OBJEXT) src/test_config-psg.$(OBJEXT) \
+	src/test_config-rtc.$(OBJEXT) src/test_config-vdp.$(OBJEXT) \
+	src/test_config-z80.$(OBJEXT)
+test_config_OBJECTS = $(am_test_config_OBJECTS)
+test_config_LDADD = $(LDADD)
+test_config_LINK = $(CCLD) $(test_config_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_kbd_OBJECTS = tests/test_kbd-test_kbd.$(OBJEXT) \
-	src/test_kbd-kbd.$(OBJEXT) src/test_kbd-msx.$(OBJEXT) \
-	src/test_kbd-psg.$(OBJEXT) src/test_kbd-rtc.$(OBJEXT) \
-	src/test_kbd-vdp.$(OBJEXT) src/test_kbd-z80.$(OBJEXT)
+	src/test_kbd-cartridge.$(OBJEXT) src/test_kbd-kbd.$(OBJEXT) \
+	src/test_kbd-msx.$(OBJEXT) src/test_kbd-psg.$(OBJEXT) \
+	src/test_kbd-rtc.$(OBJEXT) src/test_kbd-vdp.$(OBJEXT) \
+	src/test_kbd-z80.$(OBJEXT)
 test_kbd_OBJECTS = $(am_test_kbd_OBJECTS)
 test_kbd_DEPENDENCIES = $(am__DEPENDENCIES_1)
 test_kbd_LINK = $(CCLD) $(test_kbd_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_test_msx_OBJECTS = tests/test_msx-test_msx.$(OBJEXT) \
-	src/test_msx-msx.$(OBJEXT) src/test_msx-psg.$(OBJEXT) \
-	src/test_msx-rtc.$(OBJEXT) src/test_msx-vdp.$(OBJEXT) \
-	src/test_msx-z80.$(OBJEXT)
+	src/test_msx-cartridge.$(OBJEXT) src/test_msx-msx.$(OBJEXT) \
+	src/test_msx-psg.$(OBJEXT) src/test_msx-rtc.$(OBJEXT) \
+	src/test_msx-vdp.$(OBJEXT) src/test_msx-z80.$(OBJEXT)
 test_msx_OBJECTS = $(am_test_msx_OBJECTS)
 test_msx_LDADD = $(LDADD)
 test_msx_LINK = $(CCLD) $(test_msx_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -170,29 +190,41 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 = 
+am__v_GEN_1 =
 AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
-am__v_at_1 = 
+am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = src/$(DEPDIR)/1983-audio.Po \
-	src/$(DEPDIR)/1983-config.Po src/$(DEPDIR)/1983-display.Po \
-	src/$(DEPDIR)/1983-kbd.Po src/$(DEPDIR)/1983-leds.Po \
-	src/$(DEPDIR)/1983-main.Po src/$(DEPDIR)/1983-msx.Po \
-	src/$(DEPDIR)/1983-notify.Po src/$(DEPDIR)/1983-overlay.Po \
-	src/$(DEPDIR)/1983-psg.Po src/$(DEPDIR)/1983-rtc.Po \
-	src/$(DEPDIR)/1983-ui.Po src/$(DEPDIR)/1983-vdp.Po \
-	src/$(DEPDIR)/1983-z80.Po src/$(DEPDIR)/test_kbd-kbd.Po \
-	src/$(DEPDIR)/test_kbd-msx.Po src/$(DEPDIR)/test_kbd-psg.Po \
-	src/$(DEPDIR)/test_kbd-rtc.Po src/$(DEPDIR)/test_kbd-vdp.Po \
-	src/$(DEPDIR)/test_kbd-z80.Po src/$(DEPDIR)/test_msx-msx.Po \
-	src/$(DEPDIR)/test_msx-psg.Po src/$(DEPDIR)/test_msx-rtc.Po \
-	src/$(DEPDIR)/test_msx-vdp.Po src/$(DEPDIR)/test_msx-z80.Po \
-	src/$(DEPDIR)/test_psg-psg.Po src/$(DEPDIR)/test_rtc-rtc.Po \
-	src/$(DEPDIR)/test_vdp-vdp.Po \
+	src/$(DEPDIR)/1983-cartridge.Po src/$(DEPDIR)/1983-config.Po \
+	src/$(DEPDIR)/1983-display.Po src/$(DEPDIR)/1983-kbd.Po \
+	src/$(DEPDIR)/1983-leds.Po src/$(DEPDIR)/1983-main.Po \
+	src/$(DEPDIR)/1983-msx.Po src/$(DEPDIR)/1983-notify.Po \
+	src/$(DEPDIR)/1983-overlay.Po src/$(DEPDIR)/1983-psg.Po \
+	src/$(DEPDIR)/1983-rtc.Po src/$(DEPDIR)/1983-ui.Po \
+	src/$(DEPDIR)/1983-vdp.Po src/$(DEPDIR)/1983-z80.Po \
+	src/$(DEPDIR)/test_cartridge-cartridge.Po \
+	src/$(DEPDIR)/test_config-cartridge.Po \
+	src/$(DEPDIR)/test_config-config.Po \
+	src/$(DEPDIR)/test_config-msx.Po \
+	src/$(DEPDIR)/test_config-psg.Po \
+	src/$(DEPDIR)/test_config-rtc.Po \
+	src/$(DEPDIR)/test_config-vdp.Po \
+	src/$(DEPDIR)/test_config-z80.Po \
+	src/$(DEPDIR)/test_kbd-cartridge.Po \
+	src/$(DEPDIR)/test_kbd-kbd.Po src/$(DEPDIR)/test_kbd-msx.Po \
+	src/$(DEPDIR)/test_kbd-psg.Po src/$(DEPDIR)/test_kbd-rtc.Po \
+	src/$(DEPDIR)/test_kbd-vdp.Po src/$(DEPDIR)/test_kbd-z80.Po \
+	src/$(DEPDIR)/test_msx-cartridge.Po \
+	src/$(DEPDIR)/test_msx-msx.Po src/$(DEPDIR)/test_msx-psg.Po \
+	src/$(DEPDIR)/test_msx-rtc.Po src/$(DEPDIR)/test_msx-vdp.Po \
+	src/$(DEPDIR)/test_msx-z80.Po src/$(DEPDIR)/test_psg-psg.Po \
+	src/$(DEPDIR)/test_rtc-rtc.Po src/$(DEPDIR)/test_vdp-vdp.Po \
+	tests/$(DEPDIR)/test_cartridge-test_cartridge.Po \
+	tests/$(DEPDIR)/test_config-test_config.Po \
 	tests/$(DEPDIR)/test_kbd-test_kbd.Po \
 	tests/$(DEPDIR)/test_msx-test_msx.Po \
 	tests/$(DEPDIR)/test_psg-test_psg.Po \
@@ -202,22 +234,24 @@ am__mv = mv -f
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
-am__v_lt_1 = 
+am__v_lt_1 =
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
 am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
+am__v_CC_1 =
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
-SOURCES = $(1983_SOURCES) $(test_kbd_SOURCES) $(test_msx_SOURCES) \
+am__v_CCLD_1 =
+SOURCES = $(1983_SOURCES) $(test_cartridge_SOURCES) \
+	$(test_config_SOURCES) $(test_kbd_SOURCES) $(test_msx_SOURCES) \
 	$(test_psg_SOURCES) $(test_rtc_SOURCES) $(test_vdp_SOURCES)
-DIST_SOURCES = $(1983_SOURCES) $(test_kbd_SOURCES) $(test_msx_SOURCES) \
+DIST_SOURCES = $(1983_SOURCES) $(test_cartridge_SOURCES) \
+	$(test_config_SOURCES) $(test_kbd_SOURCES) $(test_msx_SOURCES) \
 	$(test_psg_SOURCES) $(test_rtc_SOURCES) $(test_vdp_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -595,6 +629,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 1983_SOURCES = \
 	src/config.c \
+	src/cartridge.c \
 	src/audio.c \
 	src/display.c \
 	src/kbd.c \
@@ -611,6 +646,7 @@ top_srcdir = @top_srcdir@
 
 noinst_HEADERS = \
 	src/config.h \
+	src/cartridge.h \
 	src/audio.h \
 	src/display.h \
 	src/kbd.h \
@@ -631,11 +667,17 @@ noinst_HEADERS = \
 1983_LDADD = $(SDL3_LIBS) -lm $(WIN_RC_OBJ)
 1983_DEPENDENCIES = $(WIN_RC_OBJ)
 CLEANFILES = icons/1983-rc.o
-TESTS = $(check_PROGRAMS)
-test_msx_SOURCES = tests/test_msx.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
+TESTS = $(check_PROGRAMS) tests/test-cli.sh
+test_cartridge_SOURCES = tests/test_cartridge.c src/cartridge.c
+test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
+test_cartridge_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
+test_config_CPPFLAGS = -I$(top_srcdir)/src
+test_config_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_kbd_SOURCES = tests/test_kbd.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
+test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
@@ -672,6 +714,7 @@ EXTRA_DIST = \
 	DEVELOPMENT.md \
 	BOOT_TARGETS.md \
 	1983.conf.example \
+	tests/test-cli.sh \
 	DOS/NEXTOR.SYS \
 	icons/1983.png \
 	icons/README.md \
@@ -768,6 +811,8 @@ src/$(DEPDIR)/$(am__dirstamp):
 	@: >>src/$(DEPDIR)/$(am__dirstamp)
 src/1983-config.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-cartridge.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-audio.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-display.$(OBJEXT): src/$(am__dirstamp) \
@@ -795,7 +840,7 @@ src/1983-vdp.$(OBJEXT): src/$(am__dirstamp) \
 src/1983-z80.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-1983$(EXEEXT): $(1983_OBJECTS) $(1983_DEPENDENCIES) $(EXTRA_1983_DEPENDENCIES) 
+1983$(EXEEXT): $(1983_OBJECTS) $(1983_DEPENDENCIES) $(EXTRA_1983_DEPENDENCIES)
 	@rm -f 1983$(EXEEXT)
 	$(AM_V_CCLD)$(1983_LINK) $(1983_OBJECTS) $(1983_LDADD) $(LIBS)
 tests/$(am__dirstamp):
@@ -804,8 +849,38 @@ tests/$(am__dirstamp):
 tests/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) tests/$(DEPDIR)
 	@: >>tests/$(DEPDIR)/$(am__dirstamp)
+tests/test_cartridge-test_cartridge.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_cartridge-cartridge.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-cartridge$(EXEEXT): $(test_cartridge_OBJECTS) $(test_cartridge_DEPENDENCIES) $(EXTRA_test_cartridge_DEPENDENCIES)
+	@rm -f test-cartridge$(EXEEXT)
+	$(AM_V_CCLD)$(test_cartridge_LINK) $(test_cartridge_OBJECTS) $(test_cartridge_LDADD) $(LIBS)
+tests/test_config-test_config.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_config-config.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-cartridge.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-msx.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-psg.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-rtc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-vdp.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-z80.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-config$(EXEEXT): $(test_config_OBJECTS) $(test_config_DEPENDENCIES) $(EXTRA_test_config_DEPENDENCIES)
+	@rm -f test-config$(EXEEXT)
+	$(AM_V_CCLD)$(test_config_LINK) $(test_config_OBJECTS) $(test_config_LDADD) $(LIBS)
 tests/test_kbd-test_kbd.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_kbd-cartridge.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-kbd.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-msx.$(OBJEXT): src/$(am__dirstamp) \
@@ -824,6 +899,8 @@ test-kbd$(EXEEXT): $(test_kbd_OBJECTS) $(test_kbd_DEPENDENCIES) $(EXTRA_test_kbd
 	$(AM_V_CCLD)$(test_kbd_LINK) $(test_kbd_OBJECTS) $(test_kbd_LDADD) $(LIBS)
 tests/test_msx-test_msx.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_msx-cartridge.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-psg.$(OBJEXT): src/$(am__dirstamp) \
@@ -835,7 +912,7 @@ src/test_msx-vdp.$(OBJEXT): src/$(am__dirstamp) \
 src/test_msx-z80.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-msx$(EXEEXT): $(test_msx_OBJECTS) $(test_msx_DEPENDENCIES) $(EXTRA_test_msx_DEPENDENCIES) 
+test-msx$(EXEEXT): $(test_msx_OBJECTS) $(test_msx_DEPENDENCIES) $(EXTRA_test_msx_DEPENDENCIES)
 	@rm -f test-msx$(EXEEXT)
 	$(AM_V_CCLD)$(test_msx_LINK) $(test_msx_OBJECTS) $(test_msx_LDADD) $(LIBS)
 tests/test_psg-test_psg.$(OBJEXT): tests/$(am__dirstamp) \
@@ -872,6 +949,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-audio.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-display.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-kbd.Po@am__quote@ # am--include-marker
@@ -885,12 +963,22 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-ui.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-z80.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_cartridge-cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-config.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-msx.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-psg.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-vdp.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-z80.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-kbd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-z80.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-rtc.Po@am__quote@ # am--include-marker
@@ -899,6 +987,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_psg-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_rtc-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_vdp-vdp.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_cartridge-test_cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_config-test_config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_kbd-test_kbd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_msx-test_msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_psg-test_psg.Po@am__quote@ # am--include-marker
@@ -940,6 +1030,20 @@ src/1983-config.obj: src/config.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/config.c' object='src/1983-config.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-config.obj `if test -f 'src/config.c'; then $(CYGPATH_W) 'src/config.c'; else $(CYGPATH_W) '$(srcdir)/src/config.c'; fi`
+
+src/1983-cartridge.o: src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-cartridge.o -MD -MP -MF src/$(DEPDIR)/1983-cartridge.Tpo -c -o src/1983-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-cartridge.Tpo src/$(DEPDIR)/1983-cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/1983-cartridge.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
+
+src/1983-cartridge.obj: src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-cartridge.obj -MD -MP -MF src/$(DEPDIR)/1983-cartridge.Tpo -c -o src/1983-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-cartridge.Tpo src/$(DEPDIR)/1983-cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/1983-cartridge.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
 
 src/1983-audio.o: src/audio.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-audio.o -MD -MP -MF src/$(DEPDIR)/1983-audio.Tpo -c -o src/1983-audio.o `test -f 'src/audio.c' || echo '$(srcdir)/'`src/audio.c
@@ -1123,6 +1227,146 @@ src/1983-z80.obj: src/z80.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
 
+tests/test_cartridge-test_cartridge.o: tests/test_cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -MT tests/test_cartridge-test_cartridge.o -MD -MP -MF tests/$(DEPDIR)/test_cartridge-test_cartridge.Tpo -c -o tests/test_cartridge-test_cartridge.o `test -f 'tests/test_cartridge.c' || echo '$(srcdir)/'`tests/test_cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_cartridge-test_cartridge.Tpo tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_cartridge.c' object='tests/test_cartridge-test_cartridge.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -c -o tests/test_cartridge-test_cartridge.o `test -f 'tests/test_cartridge.c' || echo '$(srcdir)/'`tests/test_cartridge.c
+
+tests/test_cartridge-test_cartridge.obj: tests/test_cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -MT tests/test_cartridge-test_cartridge.obj -MD -MP -MF tests/$(DEPDIR)/test_cartridge-test_cartridge.Tpo -c -o tests/test_cartridge-test_cartridge.obj `if test -f 'tests/test_cartridge.c'; then $(CYGPATH_W) 'tests/test_cartridge.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_cartridge.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_cartridge-test_cartridge.Tpo tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_cartridge.c' object='tests/test_cartridge-test_cartridge.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -c -o tests/test_cartridge-test_cartridge.obj `if test -f 'tests/test_cartridge.c'; then $(CYGPATH_W) 'tests/test_cartridge.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_cartridge.c'; fi`
+
+src/test_cartridge-cartridge.o: src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -MT src/test_cartridge-cartridge.o -MD -MP -MF src/$(DEPDIR)/test_cartridge-cartridge.Tpo -c -o src/test_cartridge-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_cartridge-cartridge.Tpo src/$(DEPDIR)/test_cartridge-cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/test_cartridge-cartridge.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -c -o src/test_cartridge-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
+
+src/test_cartridge-cartridge.obj: src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -MT src/test_cartridge-cartridge.obj -MD -MP -MF src/$(DEPDIR)/test_cartridge-cartridge.Tpo -c -o src/test_cartridge-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_cartridge-cartridge.Tpo src/$(DEPDIR)/test_cartridge-cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/test_cartridge-cartridge.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -c -o src/test_cartridge-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
+
+tests/test_config-test_config.o: tests/test_config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT tests/test_config-test_config.o -MD -MP -MF tests/$(DEPDIR)/test_config-test_config.Tpo -c -o tests/test_config-test_config.o `test -f 'tests/test_config.c' || echo '$(srcdir)/'`tests/test_config.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_config-test_config.Tpo tests/$(DEPDIR)/test_config-test_config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_config.c' object='tests/test_config-test_config.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o tests/test_config-test_config.o `test -f 'tests/test_config.c' || echo '$(srcdir)/'`tests/test_config.c
+
+tests/test_config-test_config.obj: tests/test_config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT tests/test_config-test_config.obj -MD -MP -MF tests/$(DEPDIR)/test_config-test_config.Tpo -c -o tests/test_config-test_config.obj `if test -f 'tests/test_config.c'; then $(CYGPATH_W) 'tests/test_config.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_config.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_config-test_config.Tpo tests/$(DEPDIR)/test_config-test_config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_config.c' object='tests/test_config-test_config.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o tests/test_config-test_config.obj `if test -f 'tests/test_config.c'; then $(CYGPATH_W) 'tests/test_config.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_config.c'; fi`
+
+src/test_config-config.o: src/config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-config.o -MD -MP -MF src/$(DEPDIR)/test_config-config.Tpo -c -o src/test_config-config.o `test -f 'src/config.c' || echo '$(srcdir)/'`src/config.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-config.Tpo src/$(DEPDIR)/test_config-config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/config.c' object='src/test_config-config.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-config.o `test -f 'src/config.c' || echo '$(srcdir)/'`src/config.c
+
+src/test_config-config.obj: src/config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-config.obj -MD -MP -MF src/$(DEPDIR)/test_config-config.Tpo -c -o src/test_config-config.obj `if test -f 'src/config.c'; then $(CYGPATH_W) 'src/config.c'; else $(CYGPATH_W) '$(srcdir)/src/config.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-config.Tpo src/$(DEPDIR)/test_config-config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/config.c' object='src/test_config-config.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-config.obj `if test -f 'src/config.c'; then $(CYGPATH_W) 'src/config.c'; else $(CYGPATH_W) '$(srcdir)/src/config.c'; fi`
+
+src/test_config-cartridge.o: src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-cartridge.o -MD -MP -MF src/$(DEPDIR)/test_config-cartridge.Tpo -c -o src/test_config-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-cartridge.Tpo src/$(DEPDIR)/test_config-cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/test_config-cartridge.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
+
+src/test_config-cartridge.obj: src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-cartridge.obj -MD -MP -MF src/$(DEPDIR)/test_config-cartridge.Tpo -c -o src/test_config-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-cartridge.Tpo src/$(DEPDIR)/test_config-cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/test_config-cartridge.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
+
+src/test_config-msx.o: src/msx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-msx.o -MD -MP -MF src/$(DEPDIR)/test_config-msx.Tpo -c -o src/test_config-msx.o `test -f 'src/msx.c' || echo '$(srcdir)/'`src/msx.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-msx.Tpo src/$(DEPDIR)/test_config-msx.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx.c' object='src/test_config-msx.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-msx.o `test -f 'src/msx.c' || echo '$(srcdir)/'`src/msx.c
+
+src/test_config-msx.obj: src/msx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-msx.obj -MD -MP -MF src/$(DEPDIR)/test_config-msx.Tpo -c -o src/test_config-msx.obj `if test -f 'src/msx.c'; then $(CYGPATH_W) 'src/msx.c'; else $(CYGPATH_W) '$(srcdir)/src/msx.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-msx.Tpo src/$(DEPDIR)/test_config-msx.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx.c' object='src/test_config-msx.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-msx.obj `if test -f 'src/msx.c'; then $(CYGPATH_W) 'src/msx.c'; else $(CYGPATH_W) '$(srcdir)/src/msx.c'; fi`
+
+src/test_config-psg.o: src/psg.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-psg.o -MD -MP -MF src/$(DEPDIR)/test_config-psg.Tpo -c -o src/test_config-psg.o `test -f 'src/psg.c' || echo '$(srcdir)/'`src/psg.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-psg.Tpo src/$(DEPDIR)/test_config-psg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/psg.c' object='src/test_config-psg.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-psg.o `test -f 'src/psg.c' || echo '$(srcdir)/'`src/psg.c
+
+src/test_config-psg.obj: src/psg.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-psg.obj -MD -MP -MF src/$(DEPDIR)/test_config-psg.Tpo -c -o src/test_config-psg.obj `if test -f 'src/psg.c'; then $(CYGPATH_W) 'src/psg.c'; else $(CYGPATH_W) '$(srcdir)/src/psg.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-psg.Tpo src/$(DEPDIR)/test_config-psg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/psg.c' object='src/test_config-psg.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-psg.obj `if test -f 'src/psg.c'; then $(CYGPATH_W) 'src/psg.c'; else $(CYGPATH_W) '$(srcdir)/src/psg.c'; fi`
+
+src/test_config-rtc.o: src/rtc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-rtc.o -MD -MP -MF src/$(DEPDIR)/test_config-rtc.Tpo -c -o src/test_config-rtc.o `test -f 'src/rtc.c' || echo '$(srcdir)/'`src/rtc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-rtc.Tpo src/$(DEPDIR)/test_config-rtc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_config-rtc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-rtc.o `test -f 'src/rtc.c' || echo '$(srcdir)/'`src/rtc.c
+
+src/test_config-rtc.obj: src/rtc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-rtc.obj -MD -MP -MF src/$(DEPDIR)/test_config-rtc.Tpo -c -o src/test_config-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-rtc.Tpo src/$(DEPDIR)/test_config-rtc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_config-rtc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+src/test_config-vdp.o: src/vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-vdp.o -MD -MP -MF src/$(DEPDIR)/test_config-vdp.Tpo -c -o src/test_config-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-vdp.Tpo src/$(DEPDIR)/test_config-vdp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/vdp.c' object='src/test_config-vdp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
+
+src/test_config-vdp.obj: src/vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-vdp.obj -MD -MP -MF src/$(DEPDIR)/test_config-vdp.Tpo -c -o src/test_config-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-vdp.Tpo src/$(DEPDIR)/test_config-vdp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/vdp.c' object='src/test_config-vdp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
+
+src/test_config-z80.o: src/z80.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-z80.o -MD -MP -MF src/$(DEPDIR)/test_config-z80.Tpo -c -o src/test_config-z80.o `test -f 'src/z80.c' || echo '$(srcdir)/'`src/z80.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-z80.Tpo src/$(DEPDIR)/test_config-z80.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/z80.c' object='src/test_config-z80.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-z80.o `test -f 'src/z80.c' || echo '$(srcdir)/'`src/z80.c
+
+src/test_config-z80.obj: src/z80.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-z80.obj -MD -MP -MF src/$(DEPDIR)/test_config-z80.Tpo -c -o src/test_config-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-z80.Tpo src/$(DEPDIR)/test_config-z80.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/z80.c' object='src/test_config-z80.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
+
 tests/test_kbd-test_kbd.o: tests/test_kbd.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT tests/test_kbd-test_kbd.o -MD -MP -MF tests/$(DEPDIR)/test_kbd-test_kbd.Tpo -c -o tests/test_kbd-test_kbd.o `test -f 'tests/test_kbd.c' || echo '$(srcdir)/'`tests/test_kbd.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_kbd-test_kbd.Tpo tests/$(DEPDIR)/test_kbd-test_kbd.Po
@@ -1136,6 +1380,20 @@ tests/test_kbd-test_kbd.obj: tests/test_kbd.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_kbd.c' object='tests/test_kbd-test_kbd.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o tests/test_kbd-test_kbd.obj `if test -f 'tests/test_kbd.c'; then $(CYGPATH_W) 'tests/test_kbd.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_kbd.c'; fi`
+
+src/test_kbd-cartridge.o: src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-cartridge.o -MD -MP -MF src/$(DEPDIR)/test_kbd-cartridge.Tpo -c -o src/test_kbd-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-cartridge.Tpo src/$(DEPDIR)/test_kbd-cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/test_kbd-cartridge.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
+
+src/test_kbd-cartridge.obj: src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-cartridge.obj -MD -MP -MF src/$(DEPDIR)/test_kbd-cartridge.Tpo -c -o src/test_kbd-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-cartridge.Tpo src/$(DEPDIR)/test_kbd-cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/test_kbd-cartridge.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
 
 src/test_kbd-kbd.o: src/kbd.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-kbd.o -MD -MP -MF src/$(DEPDIR)/test_kbd-kbd.Tpo -c -o src/test_kbd-kbd.o `test -f 'src/kbd.c' || echo '$(srcdir)/'`src/kbd.c
@@ -1234,6 +1492,20 @@ tests/test_msx-test_msx.obj: tests/test_msx.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_msx.c' object='tests/test_msx-test_msx.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o tests/test_msx-test_msx.obj `if test -f 'tests/test_msx.c'; then $(CYGPATH_W) 'tests/test_msx.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_msx.c'; fi`
+
+src/test_msx-cartridge.o: src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-cartridge.o -MD -MP -MF src/$(DEPDIR)/test_msx-cartridge.Tpo -c -o src/test_msx-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-cartridge.Tpo src/$(DEPDIR)/test_msx-cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/test_msx-cartridge.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
+
+src/test_msx-cartridge.obj: src/cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-cartridge.obj -MD -MP -MF src/$(DEPDIR)/test_msx-cartridge.Tpo -c -o src/test_msx-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-cartridge.Tpo src/$(DEPDIR)/test_msx-cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/cartridge.c' object='src/test_msx-cartridge.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-cartridge.obj `if test -f 'src/cartridge.c'; then $(CYGPATH_W) 'src/cartridge.c'; else $(CYGPATH_W) '$(srcdir)/src/cartridge.c'; fi`
 
 src/test_msx-msx.o: src/msx.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-msx.o -MD -MP -MF src/$(DEPDIR)/test_msx-msx.Tpo -c -o src/test_msx-msx.o `test -f 'src/msx.c' || echo '$(srcdir)/'`src/msx.c
@@ -1803,6 +2075,20 @@ recheck: all $(check_PROGRAMS)
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
+test-cartridge.log: test-cartridge$(EXEEXT)
+	@p='test-cartridge$(EXEEXT)'; \
+	b='test-cartridge'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-config.log: test-config$(EXEEXT)
+	@p='test-config$(EXEEXT)'; \
+	b='test-config'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-msx.log: test-msx$(EXEEXT)
 	@p='test-msx$(EXEEXT)'; \
 	b='test-msx'; \
@@ -1834,6 +2120,13 @@ test-psg.log: test-psg$(EXEEXT)
 test-rtc.log: test-rtc$(EXEEXT)
 	@p='test-rtc$(EXEEXT)'; \
 	b='test-rtc'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-cli.sh.log: tests/test-cli.sh
+	@p='tests/test-cli.sh'; \
+	b='tests/test-cli.sh'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -2086,6 +2379,7 @@ clean-am: clean-binPROGRAMS clean-checkPROGRAMS clean-generic \
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -f src/$(DEPDIR)/1983-audio.Po
+	-rm -f src/$(DEPDIR)/1983-cartridge.Po
 	-rm -f src/$(DEPDIR)/1983-config.Po
 	-rm -f src/$(DEPDIR)/1983-display.Po
 	-rm -f src/$(DEPDIR)/1983-kbd.Po
@@ -2099,12 +2393,22 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-ui.Po
 	-rm -f src/$(DEPDIR)/1983-vdp.Po
 	-rm -f src/$(DEPDIR)/1983-z80.Po
+	-rm -f src/$(DEPDIR)/test_cartridge-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_config-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_config-config.Po
+	-rm -f src/$(DEPDIR)/test_config-msx.Po
+	-rm -f src/$(DEPDIR)/test_config-psg.Po
+	-rm -f src/$(DEPDIR)/test_config-rtc.Po
+	-rm -f src/$(DEPDIR)/test_config-vdp.Po
+	-rm -f src/$(DEPDIR)/test_config-z80.Po
+	-rm -f src/$(DEPDIR)/test_kbd-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_kbd-kbd.Po
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
 	-rm -f src/$(DEPDIR)/test_kbd-psg.Po
 	-rm -f src/$(DEPDIR)/test_kbd-rtc.Po
 	-rm -f src/$(DEPDIR)/test_kbd-vdp.Po
 	-rm -f src/$(DEPDIR)/test_kbd-z80.Po
+	-rm -f src/$(DEPDIR)/test_msx-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
 	-rm -f src/$(DEPDIR)/test_msx-psg.Po
 	-rm -f src/$(DEPDIR)/test_msx-rtc.Po
@@ -2113,6 +2417,8 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_psg-psg.Po
 	-rm -f src/$(DEPDIR)/test_rtc-rtc.Po
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
+	-rm -f tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
+	-rm -f tests/$(DEPDIR)/test_config-test_config.Po
 	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po
 	-rm -f tests/$(DEPDIR)/test_msx-test_msx.Po
 	-rm -f tests/$(DEPDIR)/test_psg-test_psg.Po
@@ -2170,6 +2476,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
 	-rm -f src/$(DEPDIR)/1983-audio.Po
+	-rm -f src/$(DEPDIR)/1983-cartridge.Po
 	-rm -f src/$(DEPDIR)/1983-config.Po
 	-rm -f src/$(DEPDIR)/1983-display.Po
 	-rm -f src/$(DEPDIR)/1983-kbd.Po
@@ -2183,12 +2490,22 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-ui.Po
 	-rm -f src/$(DEPDIR)/1983-vdp.Po
 	-rm -f src/$(DEPDIR)/1983-z80.Po
+	-rm -f src/$(DEPDIR)/test_cartridge-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_config-cartridge.Po
+	-rm -f src/$(DEPDIR)/test_config-config.Po
+	-rm -f src/$(DEPDIR)/test_config-msx.Po
+	-rm -f src/$(DEPDIR)/test_config-psg.Po
+	-rm -f src/$(DEPDIR)/test_config-rtc.Po
+	-rm -f src/$(DEPDIR)/test_config-vdp.Po
+	-rm -f src/$(DEPDIR)/test_config-z80.Po
+	-rm -f src/$(DEPDIR)/test_kbd-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_kbd-kbd.Po
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
 	-rm -f src/$(DEPDIR)/test_kbd-psg.Po
 	-rm -f src/$(DEPDIR)/test_kbd-rtc.Po
 	-rm -f src/$(DEPDIR)/test_kbd-vdp.Po
 	-rm -f src/$(DEPDIR)/test_kbd-z80.Po
+	-rm -f src/$(DEPDIR)/test_msx-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
 	-rm -f src/$(DEPDIR)/test_msx-psg.Po
 	-rm -f src/$(DEPDIR)/test_msx-rtc.Po
@@ -2197,6 +2514,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_psg-psg.Po
 	-rm -f src/$(DEPDIR)/test_rtc-rtc.Po
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
+	-rm -f tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
+	-rm -f tests/$(DEPDIR)/test_config-test_config.Po
 	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po
 	-rm -f tests/$(DEPDIR)/test_msx-test_msx.Po
 	-rm -f tests/$(DEPDIR)/test_psg-test_psg.Po

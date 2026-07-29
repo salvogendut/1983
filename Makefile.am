@@ -2,6 +2,7 @@ bin_PROGRAMS = 1983
 
 1983_SOURCES = \
 	src/config.c \
+	src/cartridge.c \
 	src/audio.c \
 	src/display.c \
 	src/kbd.c \
@@ -18,6 +19,7 @@ bin_PROGRAMS = 1983
 
 noinst_HEADERS = \
 	src/config.h \
+	src/cartridge.h \
 	src/audio.h \
 	src/display.h \
 	src/kbd.h \
@@ -43,13 +45,21 @@ icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 
 CLEANFILES = icons/1983-rc.o
 
-check_PROGRAMS = test-msx test-kbd test-vdp test-psg test-rtc
-TESTS = $(check_PROGRAMS)
-test_msx_SOURCES = tests/test_msx.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
+check_PROGRAMS = test-cartridge test-config test-msx test-kbd test-vdp test-psg test-rtc
+TESTS = $(check_PROGRAMS) tests/test-cli.sh
+test_cartridge_SOURCES = tests/test_cartridge.c src/cartridge.c
+test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
+test_cartridge_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+
+test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
+test_config_CPPFLAGS = -I$(top_srcdir)/src
+test_config_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+
+test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_kbd_SOURCES = tests/test_kbd.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
+test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
@@ -93,6 +103,7 @@ EXTRA_DIST = \
 	DEVELOPMENT.md \
 	BOOT_TARGETS.md \
 	1983.conf.example \
+	tests/test-cli.sh \
 	DOS/NEXTOR.SYS \
 	icons/1983.png \
 	icons/README.md \

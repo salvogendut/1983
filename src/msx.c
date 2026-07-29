@@ -200,6 +200,8 @@ void msx_reset(MsxMachine *msx) {
     msx->primary_slot = 0;
     memset(msx->secondary_slot, 0, sizeof(msx->secondary_slot));
     memset(msx->mapper_segment, 0, sizeof(msx->mapper_segment));
+    for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
+        msx_cartridge_reset(&msx->cartridges[i]);
     msx->paused = false;
     msx->caps_led = false;
     msx->kana_led = false;
@@ -245,6 +247,8 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     if (!msx)
         return;
     memset(msx, 0, sizeof(*msx));
+    for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
+        msx_cartridge_init(&msx->cartridges[i]);
     z80_init(&msx->cpu);
     vdp_init(&msx->vdp);
     psg_init(&msx->psg, PSG_VARIANT_AY8910);
@@ -257,6 +261,13 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     msx->bus.ticked_in_step = &msx->bus_ticked_in_step;
     msx->bus.ctx = msx;
     msx_configure(msx, model, region, ram_kb);
+}
+
+void msx_destroy(MsxMachine *msx) {
+    if (!msx)
+        return;
+    for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
+        msx_cartridge_destroy(&msx->cartridges[i]);
 }
 
 void msx_run_frame(MsxMachine *msx) {
@@ -356,7 +367,6 @@ static void write_plain_ram(MsxMachine *msx, u16 address, u8 value) {
 }
 
 u8 msx_memory_read(MsxMachine *msx, u16 address) {
-    size_t offset;
     unsigned primary;
 
     if (!msx)
@@ -373,13 +383,9 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
                 return msx->logo[address - 0x8000];
             break;
         case 1:
-            if (msx->cartridge_loaded &&
-                address >= msx->cartridge_base) {
-                offset = (size_t)(address - msx->cartridge_base);
-                if (offset < msx->cartridge_size)
-                    return msx->cartridge[offset];
-            }
-            break;
+            return msx_cartridge_read(&msx->cartridges[0], address);
+        case 2:
+            return msx_cartridge_read(&msx->cartridges[1], address);
         case 3: {
             unsigned secondary;
 
@@ -410,6 +416,11 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
     primary = selected_slot(msx, address);
     if (address == 0xffff && slot_is_expanded(msx, primary)) {
         msx->secondary_slot[primary] = value;
+        return;
+    }
+    if (primary == 1 || primary == 2) {
+        msx_cartridge_write(&msx->cartridges[primary - 1],
+                            address, value);
         return;
     }
     if (primary != 3)
@@ -590,29 +601,19 @@ int msx_install_disk_rom(MsxMachine *msx, const u8 *data, size_t size) {
     return 0;
 }
 
-static u16 cartridge_base(const u8 *data, size_t size) {
-    u16 init;
-
-    if (size > 0x8000)
-        return 0x0000;
-    if (size > 0x4000)
-        return 0x4000;
-    if (size >= 4 && data[0] == 'A' && data[1] == 'B') {
-        init = data[2] | ((u16)data[3] << 8);
-        if (init >= 0x8000 && init < 0xc000)
-            return 0x8000;
-    }
-    return 0x4000;
+int msx_install_cartridge(MsxMachine *msx, const u8 *data, size_t size) {
+    return msx_install_cartridge_slot(
+        msx, 0, data, size, MSX_CART_MAPPER_AUTO);
 }
 
-int msx_install_cartridge(MsxMachine *msx, const u8 *data, size_t size) {
-    if (!msx || !data || size == 0 || size > MSX_CART_MAX_SIZE)
+int msx_install_cartridge_slot(MsxMachine *msx, unsigned slot,
+                               const u8 *data, size_t size,
+                               MsxCartridgeMapper mapper) {
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS)
         return -1;
-    memset(msx->cartridge, 0xff, sizeof(msx->cartridge));
-    memcpy(msx->cartridge, data, size);
-    msx->cartridge_size = size;
-    msx->cartridge_base = cartridge_base(data, size);
-    msx->cartridge_loaded = true;
+    if (msx_cartridge_install(&msx->cartridges[slot], data, size,
+                              mapper) != 0)
+        return -1;
     msx_reset(msx);
     return 0;
 }
@@ -675,7 +676,70 @@ int msx_load_disk_rom(MsxMachine *msx, const char *path) {
 }
 
 int msx_load_cartridge(MsxMachine *msx, const char *path) {
-    return load_rom(msx, path, MSX_CART_MAX_SIZE, msx_install_cartridge);
+    return msx_load_cartridge_slot(
+        msx, 0, path, MSX_CART_MAPPER_AUTO);
+}
+
+int msx_load_cartridge_slot(MsxMachine *msx, unsigned slot,
+                            const char *path, MsxCartridgeMapper mapper) {
+    FILE *file;
+    u8 *data;
+    long length;
+    size_t got;
+    int result;
+
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        !path || !path[0])
+        return -1;
+    file = fopen(path, "rb");
+    if (!file)
+        return -1;
+    if (fseek(file, 0, SEEK_END) != 0) {
+        fclose(file);
+        return -1;
+    }
+    length = ftell(file);
+    if (length <= 0 || (unsigned long)length > MSX_CART_MAX_SIZE ||
+        fseek(file, 0, SEEK_SET) != 0) {
+        fclose(file);
+        return -1;
+    }
+    data = malloc((size_t)length);
+    if (!data) {
+        fclose(file);
+        return -1;
+    }
+    got = fread(data, 1, (size_t)length, file);
+    result = fclose(file);
+    if (got != (size_t)length || result != 0) {
+        free(data);
+        return -1;
+    }
+    result = msx_install_cartridge_slot(msx, slot, data, got, mapper);
+    free(data);
+    return result;
+}
+
+int msx_set_cartridge_mapper(MsxMachine *msx, unsigned slot,
+                             MsxCartridgeMapper mapper) {
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        msx_cartridge_set_mapper(&msx->cartridges[slot], mapper) != 0)
+        return -1;
+    msx_reset(msx);
+    return 0;
+}
+
+void msx_eject_cartridge(MsxMachine *msx, unsigned slot) {
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS)
+        return;
+    msx_cartridge_eject(&msx->cartridges[slot]);
+    msx_reset(msx);
+}
+
+const MsxCartridge *msx_get_cartridge(const MsxMachine *msx, unsigned slot) {
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS)
+        return NULL;
+    return &msx->cartridges[slot];
 }
 
 bool msx_can_boot(const MsxMachine *msx) {
