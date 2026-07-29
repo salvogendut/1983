@@ -215,11 +215,49 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
     return 0;
 }
 
+static unsigned main_input_port(const Config *config) {
+    return config->main_input == INPUT_PORT_B ? 1u : 0u;
+}
+
+static bool mouse_input_enabled(const Config *config) {
+    unsigned port = main_input_port(config);
+
+    return config->joy_port_device[port] == JOY_PORT_MOUSE;
+}
+
+static void sync_mouse_ports(MsxMachine *msx, const Config *config) {
+    for (unsigned port = 0; port < MSX_JOYSTICK_PORTS; ++port)
+        msx_mouse_set_enabled(
+            msx, port,
+            config->joy_port_device[port] == JOY_PORT_MOUSE);
+}
+
+static void clear_mouse_input(MsxMachine *msx) {
+    for (unsigned port = 0; port < MSX_JOYSTICK_PORTS; ++port)
+        msx_mouse_clear_input(msx, port);
+}
+
+static void set_mouse_capture(Display *display, MsxMachine *msx,
+                              bool captured) {
+    if (!display_set_mouse_capture(display, captured))
+        return;
+    if (!captured)
+        clear_mouse_input(msx);
+}
+
 static void track_led_mouse(Display *display, SDL_WindowID window_id,
                             const SDL_Event *event) {
     float x;
     float y;
 
+    if (display->mouse_captured) {
+        if (event->type == SDL_EVENT_MOUSE_MOTION ||
+            event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+            event->type == SDL_EVENT_MOUSE_BUTTON_UP ||
+            event->type == SDL_EVENT_WINDOW_MOUSE_LEAVE)
+            leds_set_mouse_position(0.0f, 0.0f, false);
+        return;
+    }
     if (event->type == SDL_EVENT_MOUSE_MOTION &&
         event->motion.windowID == window_id &&
         SDL_RenderCoordinatesFromWindow(display->renderer,
@@ -410,6 +448,7 @@ int main(int argc, char **argv) {
     }
 
     msx_init(&msx, config.model, config.region, config.memory_kb);
+    sync_mouse_ports(&msx, &config);
     kbd_init(&keyboard);
     if (config.bios_path[0] &&
         msx_load_firmware_set(
@@ -551,6 +590,10 @@ int main(int argc, char **argv) {
     paced_frame_hz = msx.frame_hz;
     while (running) {
         SDL_Event event;
+
+        sync_mouse_ports(&msx, &config);
+        if (display.mouse_captured && !mouse_input_enabled(&config))
+            set_mouse_capture(&display, &msx, false);
         while (SDL_PollEvent(&event)) {
             bool overlay_was_visible = overlay.visible;
 
@@ -570,9 +613,25 @@ int main(int argc, char **argv) {
                 continue;
             }
             if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST &&
-                event.window.windowID == window_id)
+                event.window.windowID == window_id) {
                 kbd_release_all(&keyboard, &msx);
+                set_mouse_capture(&display, &msx, false);
+            }
+            if (display.mouse_captured &&
+                event.type == SDL_EVENT_KEY_DOWN &&
+                (event.key.mod & SDL_KMOD_CTRL) &&
+                (event.key.key == SDLK_RETURN ||
+                 event.key.key == SDLK_KP_ENTER)) {
+                kbd_release_all(&keyboard, &msx);
+                set_mouse_capture(&display, &msx, false);
+                continue;
+            }
             if (overlay_handle_event(&overlay, &event)) {
+                sync_mouse_ports(&msx, &config);
+                if (display.mouse_captured &&
+                    (overlay.visible ||
+                     !mouse_input_enabled(&config)))
+                    set_mouse_capture(&display, &msx, false);
                 if (!overlay_was_visible && overlay.visible)
                     kbd_release_all(&keyboard, &msx);
                 if (overlay.visible)
@@ -580,6 +639,50 @@ int main(int argc, char **argv) {
                 continue;
             }
             track_led_mouse(&display, window_id, &event);
+            if (event.type == SDL_EVENT_MOUSE_MOTION &&
+                display.mouse_captured &&
+                event.motion.windowID == window_id) {
+                msx_mouse_add_host_motion(
+                    &msx, main_input_port(&config),
+                    (int)event.motion.xrel,
+                    (int)event.motion.yrel);
+                continue;
+            }
+            if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+                event.button.windowID == window_id &&
+                mouse_input_enabled(&config)) {
+                unsigned button;
+
+                if (!display.mouse_captured) {
+                    set_mouse_capture(&display, &msx, true);
+                    if (!display.mouse_captured)
+                        continue;
+                }
+                if (event.button.button == SDL_BUTTON_LEFT)
+                    button = 0;
+                else if (event.button.button == SDL_BUTTON_RIGHT)
+                    button = 1;
+                else
+                    continue;
+                msx_mouse_set_button(
+                    &msx, main_input_port(&config), button, true);
+                continue;
+            }
+            if (event.type == SDL_EVENT_MOUSE_BUTTON_UP &&
+                display.mouse_captured &&
+                event.button.windowID == window_id) {
+                unsigned button;
+
+                if (event.button.button == SDL_BUTTON_LEFT)
+                    button = 0;
+                else if (event.button.button == SDL_BUTTON_RIGHT)
+                    button = 1;
+                else
+                    continue;
+                msx_mouse_set_button(
+                    &msx, main_input_port(&config), button, false);
+                continue;
+            }
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
                 continue;
@@ -626,6 +729,7 @@ int main(int argc, char **argv) {
                 }
                 case SDLK_F5:
                     kbd_release_all(&keyboard, &msx);
+                    set_mouse_capture(&display, &msx, false);
                     msx_reset(&msx);
                     psg_set_volume(&msx.psg, config.audio_volume);
                     audio_output_clear(&audio);
@@ -662,8 +766,7 @@ int main(int argc, char **argv) {
         for (unsigned port = 0; port < MSX_JOYSTICK_PORTS; ++port)
             msx_joystick_set_pressed(&msx, port, 0);
         {
-            unsigned port =
-                config.main_input == INPUT_PORT_B ? 1u : 0u;
+            unsigned port = main_input_port(&config);
 
             if (config.joy_port_device[port] == JOY_PORT_JOYSTICK)
                 msx_joystick_set_pressed(
@@ -743,6 +846,7 @@ int main(int argc, char **argv) {
     }
     audio_output_quit(&audio);
     gamepad_input_destroy(&gamepad);
+    set_mouse_capture(&display, &msx, false);
     display_quit(&display);
     msx_destroy(&msx);
     return 0;

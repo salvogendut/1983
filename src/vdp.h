@@ -87,3 +87,5 @@ void vdp_begin_frame(MsxVdp *vdp, unsigned frame_cycles,
 void vdp_advance(MsxVdp *vdp, unsigned cycles);
 void vdp_end_frame(MsxVdp *vdp);
 void vdp_render(MsxVdp *vdp);
+/* SCREEN 6 alternates its two border colours on high-resolution dots. */
+u32  vdp_border_colour(const MsxVdp *vdp, unsigned high_res_phase);

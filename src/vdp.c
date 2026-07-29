@@ -254,6 +254,35 @@ static u32 palette_colour(const MsxVdp *vdp, u8 index) {
     return ((u32)red << 16) | ((u32)green << 8) | blue;
 }
 
+static u32 screen8_colour(u8 colour) {
+    u8 red = expand_three_bits((colour >> 2) & 0x07);
+    u8 green = expand_three_bits((colour >> 5) & 0x07);
+    unsigned blue_bits = colour & 0x03;
+    u8 blue = expand_three_bits(
+        blue_bits == 3 ? 7 : blue_bits * 2);
+
+    return ((u32)red << 16) | ((u32)green << 8) | blue;
+}
+
+u32 vdp_border_colour(const MsxVdp *vdp, unsigned high_res_phase) {
+    u8 mode;
+    u8 background;
+
+    if (!vdp)
+        return 0;
+    mode = display_mode(vdp);
+    background = vdp->registers[7];
+    if (vdp->type == MSX_VDP_V9938 && mode == 0x10) {
+        u8 index = high_res_phase & 1
+                 ? background & 0x03
+                 : (background >> 2) & 0x03;
+        return palette_colour(vdp, index);
+    }
+    if (vdp->type == MSX_VDP_V9938 && mode == 0x1c)
+        return screen8_colour(background);
+    return palette_colour(vdp, background & 0x0f);
+}
+
 static u8 visible_colour(const MsxVdp *vdp, u8 colour) {
     if ((colour & 0x0f) == 0 &&
         (vdp->type != MSX_VDP_V9938 ||
@@ -2198,16 +2227,6 @@ static void execute_vdp_command(MsxVdp *vdp) {
     }
 }
 
-static u32 screen8_colour(u8 colour) {
-    u8 red = expand_three_bits((colour >> 2) & 0x07);
-    u8 green = expand_three_bits((colour >> 5) & 0x07);
-    unsigned blue_bits = colour & 0x03;
-    u8 blue = expand_three_bits(
-        blue_bits == 3 ? 7 : blue_bits * 2);
-
-    return ((u32)red << 16) | ((u32)green << 8) | blue;
-}
-
 static void render_bitmap(MsxVdp *vdp, u8 mode,
                           unsigned first_y, unsigned limit_y) {
     unsigned page_y = bitmap_page_y(vdp, mode);
@@ -2276,7 +2295,6 @@ static void configure_render_geometry(MsxVdp *vdp) {
 static void render_line_range(MsxVdp *vdp, unsigned first_y,
                               unsigned limit_y) {
     u8 mode = display_mode(vdp);
-    u8 backdrop = vdp->registers[7] & 0x0f;
     int sprites = render_sprite_mode(vdp, mode);
 
     if (limit_y > vdp->render_height)
@@ -2286,7 +2304,9 @@ static void render_line_range(MsxVdp *vdp, unsigned first_y,
     for (unsigned y = first_y; y < limit_y; ++y)
         for (unsigned x = 0; x < vdp->render_width; ++x)
             vdp->pixels[y * vdp->render_width + x] =
-                palette_colour(vdp, backdrop);
+                vdp_border_colour(
+                    vdp,
+                    vdp->render_width == MSX2_VIDEO_W ? x : x * 2);
     if (!(vdp->registers[1] & 0x40))
         return;
     if (vdp->type == MSX_VDP_V9938 &&
