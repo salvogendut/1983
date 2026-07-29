@@ -13,6 +13,16 @@
 
 #define DISPLAY_CRT_SCANLINES_DEFAULT 35
 
+typedef enum {
+    INPUT_PORT_A = 0,
+    INPUT_PORT_B
+} InputPort;
+
+typedef enum {
+    JOY_PORT_JOYSTICK = 0,
+    JOY_PORT_MOUSE
+} JoyPortDevice;
+
 typedef struct {
     MsxModel  model;
     char      machine_id[MODEL_ID_MAX];
@@ -26,6 +36,9 @@ typedef struct {
     int  crt_scanlines;
 
     int audio_volume;
+
+    InputPort     main_input;
+    JoyPortDevice joy_port_device[2];
 
     bool extra_hardware;
     bool second_drive;

@@ -29,7 +29,7 @@ the 1984 and 1985 sibling emulators.
 | Cartridges | Dual Linear, ASCII8/16, Konami, and Konami SCC devices with persistent mapper controls are implemented |
 | Cassette | CAS images and the standard BIOS cassette path are planned |
 | Disk | DSK images, WD2793 behavior, Sunrise ATA-IDE, guest writes, and multiple drives are planned |
-| Input | International keyboard is implemented; joysticks, mouse, alternate matrices, and clipboard paste are planned |
+| Input | International keyboard and persistent Joy Port A/B device selections are implemented; joystick and mouse protocols, alternate matrices, and clipboard paste are planned |
 | MSX2 hardware | Internal mapper, RTC, and editable firmware catalogue are implemented; persistent CMOS and more extensions are planned |
 | Tools | Screenshots and headless automation exist; snapshots, debugger, disassembler, and deterministic capture are planned |
 

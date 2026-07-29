@@ -82,6 +82,13 @@ The selected model ID, resolved hardware layout, and per-user firmware
 overrides are stored in `1983.conf`. Explicit command-line options take
 precedence.
 
+## Input
+
+General exposes a Main Input selection between Joy Port A and Joy Port B,
+plus independent Joystick/Mouse device selections for both connectors.
+These choices are persisted in `1983.conf`; controller and MSX mouse
+protocol emulation remain to be connected to them.
+
 ## Cartridges
 
 Both external primary slots support:
@@ -107,6 +114,13 @@ device reserves cartridge slot 2 and the second reserves slot 1. A third is
 refused. Mounting, ejecting, mapper changes, asynchronous picker completion,
 and command-line startup all honor the same reservation state. Enabling an
 extension ejects and forgets media in the newly reserved slot.
+
+The footer always shows Cartridge I and Cartridge II indicators between
+Power and Caps Lock. An occupied ordinary ROM slot is orange. A slot owned
+by Sunrise IDE is split orange/green, with orange showing the connected
+cartridge and green reserved for disk activity. The same renderer supports
+an orange/white network-cartridge form, whose white half reports network
+access when a network device is added.
 
 ## MSX1 video
 

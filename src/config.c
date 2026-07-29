@@ -59,6 +59,30 @@ static NotifyMode parse_notifications(const char *value,
     return fallback;
 }
 
+static InputPort parse_input_port(const char *value,
+                                  InputPort fallback) {
+    if (!value)
+        return fallback;
+    if (strcasecmp(value, "joy_port_a") == 0 ||
+        strcasecmp(value, "a") == 0)
+        return INPUT_PORT_A;
+    if (strcasecmp(value, "joy_port_b") == 0 ||
+        strcasecmp(value, "b") == 0)
+        return INPUT_PORT_B;
+    return fallback;
+}
+
+static JoyPortDevice parse_joy_port_device(
+    const char *value, JoyPortDevice fallback) {
+    if (!value)
+        return fallback;
+    if (strcasecmp(value, "joystick") == 0)
+        return JOY_PORT_JOYSTICK;
+    if (strcasecmp(value, "mouse") == 0)
+        return JOY_PORT_MOUSE;
+    return fallback;
+}
+
 static void default_path(char *out, size_t out_size) {
 #ifdef _WIN32
     const char *base = getenv("APPDATA");
@@ -123,6 +147,9 @@ void config_defaults(Config *config) {
     config->smoothing = false;
     config->crt_scanlines = DISPLAY_CRT_SCANLINES_DEFAULT;
     config->audio_volume = 80;
+    config->main_input = INPUT_PORT_A;
+    config->joy_port_device[0] = JOY_PORT_JOYSTICK;
+    config->joy_port_device[1] = JOY_PORT_JOYSTICK;
     config->notifications = NOTIFY_MODE_SCREEN;
 }
 
@@ -152,6 +179,12 @@ void config_normalize(Config *config) {
         config->audio_volume = 0;
     if (config->audio_volume > 100)
         config->audio_volume = 100;
+    if (config->main_input != INPUT_PORT_B)
+        config->main_input = INPUT_PORT_A;
+    for (unsigned port = 0; port < 2; ++port) {
+        if (config->joy_port_device[port] != JOY_PORT_MOUSE)
+            config->joy_port_device[port] = JOY_PORT_JOYSTICK;
+    }
     if ((unsigned)config->notifications > NOTIFY_MODE_CONSOLE)
         config->notifications = NOTIFY_MODE_SCREEN;
     for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
@@ -233,6 +266,17 @@ void config_load(Config *config, const char *path) {
             config->crt_scanlines = atoi(value);
         else if (strcmp(key, "audio_volume") == 0)
             config->audio_volume = atoi(value);
+        else if (strcmp(key, "main_input") == 0)
+            config->main_input =
+                parse_input_port(value, config->main_input);
+        else if (strcmp(key, "joy_port_a") == 0)
+            config->joy_port_device[0] =
+                parse_joy_port_device(
+                    value, config->joy_port_device[0]);
+        else if (strcmp(key, "joy_port_b") == 0)
+            config->joy_port_device[1] =
+                parse_joy_port_device(
+                    value, config->joy_port_device[1]);
         else if (strcmp(key, "extra_hardware") == 0)
             config->extra_hardware =
                 parse_bool(value, config->extra_hardware);
@@ -321,6 +365,16 @@ int config_save(const Config *config) {
     fprintf(file, "crt_scanlines = %d\n\n", config->crt_scanlines);
     fprintf(file, "[audio]\n");
     fprintf(file, "audio_volume = %d\n\n", config->audio_volume);
+    fprintf(file, "[input]\n");
+    fprintf(file, "main_input = %s\n",
+            config->main_input == INPUT_PORT_B
+            ? "joy_port_b" : "joy_port_a");
+    fprintf(file, "joy_port_a = %s\n",
+            config->joy_port_device[0] == JOY_PORT_MOUSE
+            ? "mouse" : "joystick");
+    fprintf(file, "joy_port_b = %s\n\n",
+            config->joy_port_device[1] == JOY_PORT_MOUSE
+            ? "mouse" : "joystick");
     fprintf(file, "[media]\n");
     fprintf(file, "cartridge1 = %s\n", config->cartridge_path[0]);
     fprintf(file, "cartridge1_mapper = %s\n",

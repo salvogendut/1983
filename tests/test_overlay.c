@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "leds.h"
+
 static void send_key(Overlay *overlay, SDL_Keycode key) {
     SDL_Event event;
 
@@ -41,6 +43,69 @@ static void render_overlay(Display *display, MsxMachine *msx,
     display_draw(display, msx);
     overlay_render(overlay);
     display_present(display, msx);
+}
+
+static void assert_pixel(SDL_Surface *surface, int x, int y,
+                         Uint8 expected_red, Uint8 expected_green,
+                         Uint8 expected_blue) {
+    Uint8 red;
+    Uint8 green;
+    Uint8 blue;
+
+    assert(SDL_ReadSurfacePixel(
+        surface, x, y, &red, &green, &blue, NULL));
+    assert(red == expected_red);
+    assert(green == expected_green);
+    assert(blue == expected_blue);
+}
+
+static void test_cartridge_led_rendering(SDL_Renderer *renderer) {
+    SDL_Surface *pixels;
+
+    assert(LED_CARTRIDGE_I == LED_POWER + 1);
+    assert(LED_CARTRIDGE_II == LED_CARTRIDGE_I + 1);
+    assert(LED_CAPS == LED_CARTRIDGE_II + 1);
+
+    leds_init();
+    leds_set_cartridge(0, LED_CARTRIDGE_STANDARD, true);
+    leds_render(renderer, 0, 0, 64, 24);
+    pixels = SDL_RenderReadPixels(renderer, NULL);
+    assert(pixels);
+    assert_pixel(pixels, 26, 12, 255, 160, 30);
+    assert_pixel(pixels, 38, 12, 255, 160, 30);
+    SDL_DestroySurface(pixels);
+
+    leds_set_cartridge(0, LED_CARTRIDGE_IDE, true);
+    leds_render(renderer, 0, 0, 64, 24);
+    pixels = SDL_RenderReadPixels(renderer, NULL);
+    assert(pixels);
+    assert_pixel(pixels, 26, 12, 255, 160, 30);
+    assert_pixel(pixels, 38, 12, 18, 60, 18);
+    SDL_DestroySurface(pixels);
+
+    leds_set_cartridge_activity(0, true);
+    leds_render(renderer, 0, 0, 64, 24);
+    pixels = SDL_RenderReadPixels(renderer, NULL);
+    assert(pixels);
+    assert_pixel(pixels, 26, 12, 255, 160, 30);
+    assert_pixel(pixels, 38, 12, 80, 255, 80);
+    SDL_DestroySurface(pixels);
+
+    leds_set_cartridge(0, LED_CARTRIDGE_NETWORK, true);
+    leds_render(renderer, 0, 0, 64, 24);
+    pixels = SDL_RenderReadPixels(renderer, NULL);
+    assert(pixels);
+    assert_pixel(pixels, 26, 12, 255, 160, 30);
+    assert_pixel(pixels, 38, 12, 48, 48, 48);
+    SDL_DestroySurface(pixels);
+
+    leds_set_cartridge_activity(0, true);
+    leds_render(renderer, 0, 0, 64, 24);
+    pixels = SDL_RenderReadPixels(renderer, NULL);
+    assert(pixels);
+    assert_pixel(pixels, 26, 12, 255, 160, 30);
+    assert_pixel(pixels, 38, 12, 245, 245, 245);
+    SDL_DestroySurface(pixels);
 }
 
 int main(void) {
@@ -98,7 +163,21 @@ int main(void) {
     SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen",
                             SDL_HINT_OVERRIDE);
     assert(display_init(&display, &config, &msx, "Test MSX") == 0);
+    test_cartridge_led_rendering(display.renderer);
+    leds_init();
+    leds_set_cartridge(0, LED_CARTRIDGE_NETWORK, true);
+    leds_set_cartridge_activity(0, true);
+    assert(leds_get_cartridge_state(0).type ==
+           LED_CARTRIDGE_NETWORK);
+    assert(leds_get_cartridge_state(0).present);
+    assert(leds_get_cartridge_state(0).activity);
     overlay_init(&overlay, &config, &models, &display, &msx);
+    assert(leds_get_cartridge_state(0).type ==
+           LED_CARTRIDGE_STANDARD);
+    assert(!leds_get_cartridge_state(0).present);
+    assert(leds_get_cartridge_state(1).type ==
+           LED_CARTRIDGE_STANDARD);
+    assert(leds_get_cartridge_state(1).present);
 
     send_key(&overlay, SDLK_F9);
     assert(overlay.visible);
@@ -141,6 +220,18 @@ int main(void) {
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 5);
     send_key(&overlay, SDLK_RETURN);
+    assert(config.main_input == INPUT_PORT_B);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 6);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.joy_port_device[0] == JOY_PORT_MOUSE);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 7);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.joy_port_device[1] == JOY_PORT_MOUSE);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 8);
+    send_key(&overlay, SDLK_RETURN);
     assert(config.extra_hardware);
 
     send_key(&overlay, SDLK_RIGHT);
@@ -157,12 +248,19 @@ int main(void) {
                   "Sunrise IDE") == 0);
     assert(!msx_get_cartridge(&msx, 1)->loaded);
     assert(!config.cartridge_path[1][0]);
+    assert(leds_get_cartridge_state(1).type ==
+           LED_CARTRIDGE_IDE);
+    assert(leds_get_cartridge_state(1).present);
+    assert(!leds_get_cartridge_state(1).activity);
 
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.scc);
     assert(strcmp(config_cartridge_slot_owner(&config, 0),
                   "Konami SCC") == 0);
+    assert(leds_get_cartridge_state(0).type ==
+           LED_CARTRIDGE_STANDARD);
+    assert(leds_get_cartridge_state(0).present);
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(!config.msx_music);
@@ -188,6 +286,10 @@ int main(void) {
     assert(config_cartridge_slot_available(&config, 0));
     assert(strcmp(config_cartridge_slot_owner(&config, 1),
                   "Konami SCC") == 0);
+    assert(!leds_get_cartridge_state(0).present);
+    assert(leds_get_cartridge_state(1).type ==
+           LED_CARTRIDGE_STANDARD);
+    assert(leds_get_cartridge_state(1).present);
 
     send_key(&overlay, SDLK_LEFT);
     assert(overlay.section == OVERLAY_MEDIA);
@@ -198,9 +300,9 @@ int main(void) {
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_LEFT);
     assert(overlay.section == OVERLAY_GENERAL);
-    for (int row = 0; row < 5; ++row)
+    for (int row = 0; row < 8; ++row)
         send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 5);
+    assert(overlay.row == 8);
     send_key(&overlay, SDLK_RETURN);
     assert(!config.extra_hardware);
     send_key(&overlay, SDLK_RIGHT);

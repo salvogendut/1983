@@ -24,6 +24,11 @@ crt_scanlines = 35
 [audio]
 audio_volume = 80
 
+[input]
+main_input = joy_port_a
+joy_port_a = joystick
+joy_port_b = joystick
+
 [media]
 cartridge1 =
 cartridge1_mapper = auto

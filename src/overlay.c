@@ -20,6 +20,20 @@
 #define MODEL_EDITOR_VISIBLE_ROWS 15
 
 enum {
+    GENERAL_MACHINE = 0,
+    GENERAL_VIDEO_STANDARD,
+    GENERAL_RAM,
+    GENERAL_VRAM,
+    GENERAL_PSG_VOLUME,
+    GENERAL_MAIN_INPUT,
+    GENERAL_JOY_PORT_A,
+    GENERAL_JOY_PORT_B,
+    GENERAL_EXTRA_HARDWARE,
+    GENERAL_TINKER,
+    GENERAL_ROWS
+};
+
+enum {
     MODEL_FIELD_ID = 0,
     MODEL_FIELD_NAME,
     MODEL_FIELD_HARDWARE,
@@ -52,7 +66,7 @@ static bool section_available(const Overlay *overlay,
 static int section_rows(const Overlay *overlay,
                         OverlaySection section) {
     switch (section) {
-        case OVERLAY_GENERAL:    return 7;
+        case OVERLAY_GENERAL:    return GENERAL_ROWS;
         case OVERLAY_MEDIA:
             return overlay->config->sunrise_ide ? 8 : 7;
         case OVERLAY_EXTENSIONS: return 4;
@@ -68,6 +82,14 @@ static const char *toggle_name(bool enabled) {
 
 static const char *stub_toggle_name(bool enabled) {
     return enabled ? "On (device stub)" : "Off";
+}
+
+static const char *input_port_name(InputPort port) {
+    return port == INPUT_PORT_B ? "Joy Port B" : "Joy Port A";
+}
+
+static const char *joy_port_device_name(JoyPortDevice device) {
+    return device == JOY_PORT_MOUSE ? "Mouse" : "Joystick";
 }
 
 static void cartridge_extension_text(const Config *config,
@@ -185,35 +207,54 @@ static void item_text(const Overlay *overlay, int row,
     switch (overlay->section) {
         case OVERLAY_GENERAL:
             switch (row) {
-                case 0:
+                case GENERAL_MACHINE:
                     snprintf(label, label_size, "Machine");
                     machine_text(overlay, value, value_size);
                     break;
-                case 1:
+                case GENERAL_VIDEO_STANDARD:
                     snprintf(label, label_size, "Video standard");
                     snprintf(value, value_size, "%s",
                              msx_region_name(config->region));
                     break;
-                case 2:
+                case GENERAL_RAM:
                     snprintf(label, label_size, "RAM");
                     snprintf(value, value_size, "%d KB", config->memory_kb);
                     break;
-                case 3:
+                case GENERAL_VRAM:
                     snprintf(label, label_size, "VRAM");
                     snprintf(value, value_size, "%d KB (%s)",
                              msx->profile->vram_kb, msx_vdp_name(msx));
                     break;
-                case 4:
+                case GENERAL_PSG_VOLUME:
                     snprintf(label, label_size, "PSG volume");
                     snprintf(value, value_size, "%d%%",
                              config->audio_volume);
                     break;
-                case 5:
+                case GENERAL_MAIN_INPUT:
+                    snprintf(label, label_size, "Main Input");
+                    snprintf(value, value_size, "%s",
+                             input_port_name(config->main_input));
+                    break;
+                case GENERAL_JOY_PORT_A:
+                    snprintf(label, label_size, "Joy Port A");
+                    snprintf(
+                        value, value_size, "%s",
+                        joy_port_device_name(
+                            config->joy_port_device[0]));
+                    break;
+                case GENERAL_JOY_PORT_B:
+                    snprintf(label, label_size, "Joy Port B");
+                    snprintf(
+                        value, value_size, "%s",
+                        joy_port_device_name(
+                            config->joy_port_device[1]));
+                    break;
+                case GENERAL_EXTRA_HARDWARE:
                     snprintf(label, label_size, "Extra Hardware");
                     snprintf(value, value_size, "%s",
                              toggle_name(config->extra_hardware));
                     break;
-                case 6:
+                case GENERAL_TINKER:
                     snprintf(label, label_size, "Tinker");
                     snprintf(value, value_size, "%s",
                              toggle_name(config->tinker));
@@ -335,6 +376,17 @@ static void item_text(const Overlay *overlay, int row,
 
 static void configure_leds(const Config *config, const MsxMachine *msx) {
     leds_set_enabled(LED_POWER, true);
+    for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+        const char *owner =
+            config_cartridge_slot_owner(config, slot);
+        LedCartridgeType type =
+            owner && strcmp(owner, "Sunrise IDE") == 0
+            ? LED_CARTRIDGE_IDE : LED_CARTRIDGE_STANDARD;
+
+        leds_set_cartridge(
+            slot, type,
+            owner != NULL || msx_get_cartridge(msx, slot)->loaded);
+    }
     leds_set_enabled(LED_CAPS, true);
     leds_set_enabled(LED_KANA, true);
     leds_set_enabled(LED_FDC_A, true);
@@ -1124,34 +1176,51 @@ static void activate_item(Overlay *overlay) {
     switch (overlay->section) {
         case OVERLAY_GENERAL:
             switch (overlay->row) {
-                case 0:
+                case GENERAL_MACHINE:
                     overlay->machine_row = (int)model_catalog_index(
                         overlay->models, config->machine_id);
                     overlay->state = OVERLAY_STATE_MACHINE;
                     return;
-                case 1:
+                case GENERAL_VIDEO_STANDARD:
                     config->region =
                         config->region == MSX_REGION_PAL
                         ? MSX_REGION_NTSC : MSX_REGION_PAL;
                     break;
-                case 2:
+                case GENERAL_RAM:
                     config->memory_kb =
                         msx_next_ram_kb(config->model,
                                         config->memory_kb, 1);
                     break;
-                case 3:
+                case GENERAL_VRAM:
                     notify_post("VRAM follows the selected MSX generation");
                     return;
-                case 4:
+                case GENERAL_PSG_VOLUME:
                     config->audio_volume += 10;
                     if (config->audio_volume > 100)
                         config->audio_volume = 0;
                     break;
-                case 5:
+                case GENERAL_MAIN_INPUT:
+                    config->main_input =
+                        config->main_input == INPUT_PORT_A
+                        ? INPUT_PORT_B : INPUT_PORT_A;
+                    break;
+                case GENERAL_JOY_PORT_A:
+                    config->joy_port_device[0] =
+                        config->joy_port_device[0] ==
+                            JOY_PORT_JOYSTICK
+                        ? JOY_PORT_MOUSE : JOY_PORT_JOYSTICK;
+                    break;
+                case GENERAL_JOY_PORT_B:
+                    config->joy_port_device[1] =
+                        config->joy_port_device[1] ==
+                            JOY_PORT_JOYSTICK
+                        ? JOY_PORT_MOUSE : JOY_PORT_JOYSTICK;
+                    break;
+                case GENERAL_EXTRA_HARDWARE:
                     config->extra_hardware =
                         !config->extra_hardware;
                     break;
-                case 6:
+                case GENERAL_TINKER:
                     config->tinker = !config->tinker;
                     break;
             }
@@ -1489,7 +1558,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
             break;
         case SDLK_DELETE:
             if (overlay->section == OVERLAY_GENERAL &&
-                overlay->row == 0) {
+                overlay->row == GENERAL_MACHINE) {
                 msx_eject_firmware(overlay->msx);
                 overlay->config->bios_path[0] = '\0';
                 overlay->config->logo_path[0] = '\0';
@@ -1511,6 +1580,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 } else {
                     msx_eject_cartridge(overlay->msx, slot);
                     overlay->config->cartridge_path[slot][0] = '\0';
+                    configure_leds(overlay->config, overlay->msx);
                     overlay->dirty = true;
                     notify_post("Cartridge %u ejected", slot + 1);
                 }
@@ -1531,7 +1601,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
 static const char *section_hint(OverlaySection section) {
     switch (section) {
         case OVERLAY_GENERAL:
-            return "Machine, memory, audio, and optional menu controls.";
+            return "Machine, memory, audio, input, and optional controls.";
         case OVERLAY_MEDIA:
             return "Enter loads/selects; Delete ejects a cartridge.";
         case OVERLAY_EXTENSIONS:
@@ -1646,6 +1716,7 @@ void overlay_tick(Overlay *overlay) {
     copy_dirname(overlay->config->last_media_dir,
                  sizeof(overlay->config->last_media_dir),
                  overlay->dialog_path);
+    configure_leds(overlay->config, overlay->msx);
     overlay->dirty = true;
     notify_post("Cartridge %d mounted: %s (%s)", slot + 1,
                 path_basename(overlay->dialog_path),
