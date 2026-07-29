@@ -674,13 +674,8 @@ int main(int argc, char **argv) {
                             msx.audio_sample_count);
         leds_set_state(LED_CAPS, msx.caps_led);
         leds_set_state(LED_KANA, msx.kana_led);
-        if (msx_sunrise_take_activity(&msx)) {
-            int slot = msx_sunrise_slot(&msx);
-
+        if (msx_sunrise_take_activity(&msx))
             leds_ping(LED_IDE);
-            if (slot >= 0)
-                leds_ping_cartridge_activity((unsigned)slot);
-        }
         notify_tick(1000 / msx.frame_hz);
         display_draw(&display, &msx);
         draw_debug(&config, &msx, &display);

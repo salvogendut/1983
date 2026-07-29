@@ -75,20 +75,13 @@ static void test_cartridge_led_rendering(SDL_Renderer *renderer) {
     assert_pixel(pixels, 38, 12, 255, 160, 30);
     SDL_DestroySurface(pixels);
 
-    leds_set_cartridge(0, LED_CARTRIDGE_IDE, true);
-    leds_render(renderer, 0, 0, 64, 24);
-    pixels = SDL_RenderReadPixels(renderer, NULL);
-    assert(pixels);
-    assert_pixel(pixels, 26, 12, 255, 160, 30);
-    assert_pixel(pixels, 38, 12, 18, 60, 18);
-    SDL_DestroySurface(pixels);
-
     leds_set_cartridge_activity(0, true);
+    assert(!leds_get_cartridge_state(0).activity);
     leds_render(renderer, 0, 0, 64, 24);
     pixels = SDL_RenderReadPixels(renderer, NULL);
     assert(pixels);
     assert_pixel(pixels, 26, 12, 255, 160, 30);
-    assert_pixel(pixels, 38, 12, 80, 255, 80);
+    assert_pixel(pixels, 38, 12, 255, 160, 30);
     SDL_DestroySurface(pixels);
 
     leds_set_cartridge(0, LED_CARTRIDGE_NETWORK, true);
@@ -306,7 +299,7 @@ int main(void) {
     assert(!msx_get_cartridge(&msx, 1)->loaded);
     assert(!config.cartridge_path[1][0]);
     assert(leds_get_cartridge_state(1).type ==
-           LED_CARTRIDGE_IDE);
+           LED_CARTRIDGE_STANDARD);
     assert(leds_get_cartridge_state(1).present);
     assert(!leds_get_cartridge_state(1).activity);
 

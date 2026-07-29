@@ -242,7 +242,7 @@ Development tests advance through explicit checkpoints:
 6. **Reached beyond the prompt:** Nextor loads the system files from the
    GeoBench image and executes its startup, reaching the GeoBench desktop.
 7. **Partially reached:** reset preserves the mounted read-only device and
-   disk reads pulse the IDE and split cartridge LEDs. Guest writes
+   disk reads pulse the dedicated IDE LED. Guest writes
    deliberately return ATA ABRT; writable media and FAT12 coverage remain.
 
 Each checkpoint should be scriptable in headless mode and should record the
@@ -292,9 +292,10 @@ MSX2 Sub-ROM, internal mapper, and disk ROM; Sunrise remains an independent
 external cartridge. The separate external mapper is future work.
 
 Hard-disk images are currently opened read-only and guest write commands
-abort. Read activity drives both the global IDE status and the green half of
-the owning cartridge LED. Writable mode will require an explicit user choice
-and stronger persistence/error tests before it is enabled.
+abort. Read activity drives the dedicated IDE status LED while the owning
+cartridge LED remains monochrome orange. Writable mode will require an
+explicit user choice and stronger persistence/error tests before it is
+enabled.
 
 ## Distribution and licensing
 

@@ -120,11 +120,10 @@ and command-line startup all honor the same reservation state. Enabling an
 extension ejects and forgets media in the newly reserved slot.
 
 The footer always shows Cartridge I and Cartridge II indicators between
-Power and Caps Lock. An occupied ordinary ROM slot is orange. A slot owned
-by Sunrise IDE is split orange/green, with orange showing the connected
-cartridge and green showing disk reads. The same renderer supports
-an orange/white network-cartridge form, whose white half reports network
-access when a network device is added.
+Power and Caps Lock. An occupied ROM slot or a slot owned by Sunrise IDE is
+orange. IDE reads use the dedicated Sunrise IDE indicator. The cartridge
+renderer also supports an orange/white network-cartridge form, whose white
+half reports network access when a network device is added.
 
 ## Sunrise IDE and ATA storage
 
@@ -150,8 +149,9 @@ then retained so later activations are simple disconnect/reconnect toggles;
 Delete on the extension forgets it and re-enables setup for replacement.
 Media > IDE hard disk owns subsequent mounting and ejection while the
 controller is connected. Both paths persist in `1983.conf`; command-line
-equivalents are `--sunrise-rom` and `--ide`. Sector reads pulse both the IDE
-indicator and the green half of the owning cartridge LED.
+equivalents are `--sunrise-rom` and `--ide`. Sector reads pulse the
+dedicated Sunrise IDE indicator; the owning cartridge LED remains orange to
+show physical presence.
 
 The current reference run uses the NMS 8250 BIOS and Sub-ROM without its
 internal disk ROM, because that ROM expects the not-yet-implemented WD2793.

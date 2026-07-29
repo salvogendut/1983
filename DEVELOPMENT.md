@@ -119,9 +119,10 @@ to model GeoBench's internal and external mappers as distinct devices.
 cartridge-port reservations. Sunrise IDE, SCC, and MSX-MUSIC reserve slot 2
 then slot 1 in deterministic order. Startup and overlay media operations
 must consult that function rather than duplicating extension policy.
-`configure_leds()` maps the resolved owner and mounted-media state onto the
-two physical slot indicators. Storage and network backends should report
-access through `leds_ping_cartridge_activity()` for their owning slot.
+`configure_leds()` maps the resolved owner and cartridge presence onto the
+two physical slot indicators. Sunrise storage activity uses the dedicated
+IDE LED. Future network backends should report access through
+`leds_ping_cartridge_activity()` for their owning slot.
 
 ## Sunrise and ATA boundaries
 
