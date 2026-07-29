@@ -21,6 +21,7 @@ typedef enum {
     OVERLAY_STATE_CONFIRM,
     OVERLAY_STATE_MACHINE,
     OVERLAY_STATE_SUNRISE_SETUP,
+    OVERLAY_STATE_SD_MAPPER_SETUP,
     OVERLAY_STATE_MODEL_LIST,
     OVERLAY_STATE_MODEL_EDIT,
     OVERLAY_STATE_MODEL_TEXT,
@@ -36,6 +37,9 @@ typedef enum {
     OVERLAY_DIALOG_DRIVE_B,
     OVERLAY_DIALOG_SUNRISE_ROM,
     OVERLAY_DIALOG_IDE_IMAGE,
+    OVERLAY_DIALOG_SD_MAPPER_ROM,
+    OVERLAY_DIALOG_SD_CARD_A,
+    OVERLAY_DIALOG_SD_CARD_B,
     OVERLAY_DIALOG_BIOS,
     OVERLAY_DIALOG_LOGO,
     OVERLAY_DIALOG_SUBROM,
@@ -77,6 +81,12 @@ typedef struct {
     int sunrise_setup_row;
     char pending_sunrise_rom_path[PATH_MAX];
     char pending_ide_image_path[PATH_MAX];
+
+    int sd_mapper_setup_row;
+    char pending_sd_mapper_rom_path[PATH_MAX];
+    char pending_sd_card_path[MSX_SD_MAPPER_CARDS][PATH_MAX];
+    bool pending_sd_mapper_ram;
+    bool pending_sd_mapper_alternate_driver;
 
     int model_editor_row;
     int model_edit_index;

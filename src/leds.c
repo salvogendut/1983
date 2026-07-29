@@ -24,6 +24,8 @@ static const LedPalette palette[LED_COUNT] = {
     [LED_FDC_B]       = { 70, 18, 18, 255, 70, 70 },
     [LED_TAPE]        = { 18, 35, 65, 70, 150, 255 },
     [LED_IDE]         = { 55, 45,  8, 255, 220, 40 },
+    [LED_SD_A]        = { 12, 45, 20, 70, 255, 100 },
+    [LED_SD_B]        = { 12, 45, 20, 70, 255, 100 },
 };
 
 static const LedPalette cartridge_network_activity =
@@ -52,6 +54,8 @@ static const char *label_for(LedId id) {
         case LED_FDC_B: return "Floppy B";
         case LED_TAPE:  return "Cassette";
         case LED_IDE:   return "Sunrise IDE";
+        case LED_SD_A:  return "SD Card A";
+        case LED_SD_B:  return "SD Card B";
         case LED_COUNT: break;
     }
     return "";

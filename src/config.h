@@ -43,8 +43,12 @@ typedef struct {
     bool extra_hardware;
     bool second_drive;
     bool sunrise_ide;
+    bool sd_mapper;
+    bool sd_mapper_ram;
+    bool sd_mapper_alternate_driver;
     FloppyImageMode floppy_image_mode;
     AtaImageMode ide_image_mode;
+    SdImageMode sd_image_mode;
     bool scc;
     bool msx_music;
     bool kanji_rom;
@@ -61,6 +65,8 @@ typedef struct {
     char subrom_path[PATH_MAX];
     char disk_rom_path[PATH_MAX];
     char sunrise_rom_path[PATH_MAX];
+    char sd_mapper_rom_path[PATH_MAX];
+    char sd_card_path[MSX_SD_MAPPER_CARDS][PATH_MAX];
     char drive_a_path[PATH_MAX];
     char drive_b_path[PATH_MAX];
     char ide_image_path[PATH_MAX];

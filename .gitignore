@@ -11,6 +11,8 @@
 /test-floppy
 /test-wd2793
 /test-sunrise
+/test-sdcard
+/test-sd-mapper
 /test-config
 /test-models
 /test-gamepad

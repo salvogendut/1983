@@ -336,6 +336,7 @@ static void advance_machine(MsxMachine *msx, int cycles) {
     vdp_advance(&msx->vdp, (unsigned)cycles);
     if (msx->profile && msx->profile->rtc)
         rtc_advance(&msx->rtc, (unsigned)cycles, MSX_CPU_HZ);
+    sd_mapper_tick(&msx->sd_mapper, (unsigned)cycles, MSX_CPU_HZ);
     msx->audio_sample_cycles +=
         (u64)(unsigned)cycles * MSX_AUDIO_SAMPLE_RATE;
     while (msx->audio_sample_cycles >= MSX_CPU_HZ) {
@@ -526,6 +527,7 @@ void msx_reset(MsxMachine *msx) {
     memset(msx->mapper_segment, 0, sizeof(msx->mapper_segment));
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_reset(&msx->cartridges[i]);
+    sd_mapper_reset(&msx->sd_mapper);
     sunrise_reset(&msx->sunrise);
     wd2793_reset(&msx->fdc);
     msx->paused = false;
@@ -596,8 +598,10 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_init(&msx->cartridges[i]);
     cassette_init(&msx->cassette);
+    sd_mapper_init(&msx->sd_mapper);
     sunrise_init(&msx->sunrise);
     wd2793_init(&msx->fdc);
+    msx->sd_mapper_slot = -1;
     msx->sunrise_slot = -1;
     z80_init(&msx->cpu);
     vdp_init(&msx->vdp);
@@ -619,8 +623,10 @@ void msx_destroy(MsxMachine *msx) {
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_destroy(&msx->cartridges[i]);
     cassette_destroy(&msx->cassette);
+    sd_mapper_destroy(&msx->sd_mapper);
     sunrise_destroy(&msx->sunrise);
     wd2793_destroy(&msx->fdc);
+    msx->sd_mapper_slot = -1;
     msx->sunrise_slot = -1;
     if (msx->ram && msx->ram != msx->internal_ram)
         free(msx->ram);
@@ -672,7 +678,11 @@ static unsigned selected_slot(const MsxMachine *msx, u16 address) {
 }
 
 static bool slot_is_expanded(const MsxMachine *msx, unsigned primary) {
-    return msx->profile->expanded_slots && primary == 3;
+    if (msx->profile->expanded_slots && primary == 3)
+        return true;
+    return (primary == 1 || primary == 2) &&
+           msx->sd_mapper_slot == (int)(primary - 1) &&
+           sd_mapper_slot_expanded(&msx->sd_mapper);
 }
 
 static unsigned selected_subslot(const MsxMachine *msx, unsigned primary,
@@ -730,8 +740,12 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
     if (!msx)
         return 0xff;
     primary = selected_slot(msx, address);
-    if (address == 0xffff && slot_is_expanded(msx, primary))
+    if (address == 0xffff && slot_is_expanded(msx, primary)) {
+        if ((primary == 1 || primary == 2) &&
+            msx->sd_mapper_slot == (int)(primary - 1))
+            return sd_mapper_secondary_read(&msx->sd_mapper);
         return msx->secondary_slot[primary] ^ 0xff;
+    }
 
     switch (primary) {
         case 0:
@@ -744,6 +758,8 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
         case 2: {
             unsigned slot = primary - 1;
 
+            if (msx->sd_mapper_slot == (int)slot)
+                return sd_mapper_read(&msx->sd_mapper, address);
             if (msx->sunrise_slot == (int)slot)
                 return sunrise_read(&msx->sunrise, address);
             return msx_cartridge_read(&msx->cartridges[slot], address);
@@ -784,13 +800,19 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
         return;
     primary = selected_slot(msx, address);
     if (address == 0xffff && slot_is_expanded(msx, primary)) {
-        msx->secondary_slot[primary] = value;
+        if ((primary == 1 || primary == 2) &&
+            msx->sd_mapper_slot == (int)(primary - 1))
+            sd_mapper_secondary_write(&msx->sd_mapper, value);
+        else
+            msx->secondary_slot[primary] = value;
         return;
     }
     if (primary == 1 || primary == 2) {
         unsigned slot = primary - 1;
 
-        if (msx->sunrise_slot == (int)slot)
+        if (msx->sd_mapper_slot == (int)slot)
+            sd_mapper_write(&msx->sd_mapper, address, value);
+        else if (msx->sunrise_slot == (int)slot)
             sunrise_write(&msx->sunrise, address, value);
         else
             msx_cartridge_write(&msx->cartridges[slot],
@@ -857,10 +879,17 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
         case 0xfd:
         case 0xfe:
         case 0xff:
+        {
+            u8 result = 0xff;
+
             if (msx_has_memory_mapper(msx))
-                return msx->mapper_segment[low & 3] |
-                       (u8)~mapper_segment_mask(msx);
-            break;
+                result &= msx->mapper_segment[low & 3] |
+                          (u8)~mapper_segment_mask(msx);
+            if (msx_sd_mapper_connected(msx))
+                result &= sd_mapper_io_read(
+                    &msx->sd_mapper, low & 3);
+            return result;
+        }
         default:
             break;
     }
@@ -953,6 +982,9 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
             if (msx_has_memory_mapper(msx))
                 msx->mapper_segment[low & 3] =
                     value & mapper_segment_mask(msx);
+            if (msx_sd_mapper_connected(msx))
+                sd_mapper_io_write(
+                    &msx->sd_mapper, low & 3, value);
             break;
         default:
             break;
@@ -1258,6 +1290,113 @@ const char *msx_sunrise_disk_error(const MsxMachine *msx) {
 bool msx_sunrise_take_activity(MsxMachine *msx) {
     return msx_sunrise_connected(msx) &&
            sunrise_take_activity(&msx->sunrise);
+}
+
+int msx_install_sd_mapper(MsxMachine *msx, unsigned slot,
+                          const u8 *data, size_t size) {
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        sd_mapper_install_rom(&msx->sd_mapper, data, size) != 0)
+        return -1;
+    msx_cartridge_eject(&msx->cartridges[slot]);
+    msx->sd_mapper_slot = (int)slot;
+    msx_reset(msx);
+    return 0;
+}
+
+int msx_load_sd_mapper(MsxMachine *msx, unsigned slot,
+                       const char *path) {
+    u8 *data;
+    size_t size;
+    int result;
+
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        read_rom_file(path, MSX_SD_MAPPER_ROM_SIZE,
+                      &data, &size) != 0)
+        return -1;
+    result = msx_install_sd_mapper(msx, slot, data, size);
+    free(data);
+    return result;
+}
+
+int msx_eject_sd_mapper(MsxMachine *msx) {
+    if (!msx)
+        return -1;
+    if (sd_mapper_eject_rom(&msx->sd_mapper) != 0)
+        return -1;
+    msx->sd_mapper_slot = -1;
+    msx_reset(msx);
+    return 0;
+}
+
+bool msx_sd_mapper_connected(const MsxMachine *msx) {
+    return msx && msx->sd_mapper_slot >= 0 &&
+           msx->sd_mapper_slot < (int)MSX_CARTRIDGE_SLOTS &&
+           msx->sd_mapper.rom_loaded;
+}
+
+int msx_sd_mapper_slot(const MsxMachine *msx) {
+    return msx_sd_mapper_connected(msx)
+         ? msx->sd_mapper_slot : -1;
+}
+
+void msx_sd_mapper_set_ram_enabled(MsxMachine *msx, bool enabled) {
+    if (msx)
+        sd_mapper_set_mapper_enabled(&msx->sd_mapper, enabled);
+}
+
+void msx_sd_mapper_set_alternate_driver(MsxMachine *msx,
+                                        bool alternate) {
+    if (msx)
+        sd_mapper_set_alternate_driver(
+            &msx->sd_mapper, alternate);
+}
+
+int msx_mount_sd_card(MsxMachine *msx, unsigned card,
+                      const char *path, SdImageMode mode) {
+    if (!msx_sd_mapper_connected(msx))
+        return -1;
+    return sd_mapper_mount_card(
+        &msx->sd_mapper, card, path, mode);
+}
+
+int msx_flush_sd_card(MsxMachine *msx, unsigned card) {
+    return msx ? sd_mapper_flush_card(
+        &msx->sd_mapper, card) : -1;
+}
+
+int msx_eject_sd_card(MsxMachine *msx, unsigned card) {
+    return msx ? sd_mapper_eject_card(
+        &msx->sd_mapper, card) : -1;
+}
+
+bool msx_sd_card_mounted(const MsxMachine *msx, unsigned card) {
+    return msx_sd_mapper_connected(msx) &&
+           sd_mapper_card_mounted(&msx->sd_mapper, card);
+}
+
+bool msx_sd_card_writable(const MsxMachine *msx, unsigned card) {
+    return msx_sd_mapper_connected(msx) &&
+           sd_mapper_card_writable(&msx->sd_mapper, card);
+}
+
+bool msx_sd_card_dirty(const MsxMachine *msx, unsigned card) {
+    return msx_sd_mapper_connected(msx) &&
+           sd_mapper_card_dirty(&msx->sd_mapper, card);
+}
+
+bool msx_sd_card_has_error(const MsxMachine *msx, unsigned card) {
+    return msx &&
+           sd_mapper_card_has_error(&msx->sd_mapper, card);
+}
+
+const char *msx_sd_card_error(const MsxMachine *msx, unsigned card) {
+    return msx
+         ? sd_mapper_card_error(&msx->sd_mapper, card) : "";
+}
+
+bool msx_sd_card_take_activity(MsxMachine *msx, unsigned card) {
+    return msx_sd_mapper_connected(msx) &&
+           sd_mapper_take_activity(&msx->sd_mapper, card);
 }
 
 int msx_flush_rtc_persistence(MsxMachine *msx, u64 host_seconds) {

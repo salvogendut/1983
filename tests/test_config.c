@@ -17,6 +17,13 @@ int main(void) {
     assert(!config.subrom_path[0]);
     assert(!config.disk_rom_path[0]);
     assert(!config.sunrise_rom_path[0]);
+    assert(!config.sd_mapper);
+    assert(!config.sd_mapper_rom_path[0]);
+    assert(!config.sd_card_path[0][0]);
+    assert(!config.sd_card_path[1][0]);
+    assert(config.sd_mapper_ram);
+    assert(!config.sd_mapper_alternate_driver);
+    assert(config.sd_image_mode == SD_IMAGE_READ_ONLY);
     assert(!config.drive_a_path[0]);
     assert(!config.drive_b_path[0]);
     assert(config.floppy_image_mode == FLOPPY_IMAGE_READ_ONLY);
@@ -95,13 +102,25 @@ int main(void) {
     snprintf(config.cassette_path,
              sizeof(config.cassette_path),
              "/tapes/software.cas");
-    config.scc = true;
+    config.sd_mapper = true;
+    snprintf(config.sd_mapper_rom_path,
+             sizeof(config.sd_mapper_rom_path),
+             "/roms/SDXC110.ROM");
+    snprintf(config.sd_card_path[0],
+             sizeof(config.sd_card_path[0]),
+             "/disks/NEXTOR-A.IMG");
+    snprintf(config.sd_card_path[1],
+             sizeof(config.sd_card_path[1]),
+             "/disks/NEXTOR-B.IMG");
+    config.sd_image_mode = SD_IMAGE_READ_WRITE;
+    config.sd_mapper_ram = false;
+    config.sd_mapper_alternate_driver = true;
     config.tinker = true;
     config.cassette_audible_monitor = true;
     config.cassette_visual_monitor = true;
     assert(config_cartridge_extension_count(&config) == 2);
     assert(strcmp(config_cartridge_slot_owner(&config, 0),
-                  "Konami SCC") == 0);
+                  "SD Mapper V2") == 0);
     assert(strcmp(config_cartridge_slot_owner(&config, 1),
                   "Sunrise IDE") == 0);
     assert(!config_cartridge_slot_available(&config, 0));
@@ -131,7 +150,16 @@ int main(void) {
            FLOPPY_IMAGE_READ_WRITE);
     assert(strcmp(loaded.cassette_path,
                   "/tapes/software.cas") == 0);
-    assert(loaded.scc);
+    assert(loaded.sd_mapper);
+    assert(strcmp(loaded.sd_mapper_rom_path,
+                  "/roms/SDXC110.ROM") == 0);
+    assert(strcmp(loaded.sd_card_path[0],
+                  "/disks/NEXTOR-A.IMG") == 0);
+    assert(strcmp(loaded.sd_card_path[1],
+                  "/disks/NEXTOR-B.IMG") == 0);
+    assert(loaded.sd_image_mode == SD_IMAGE_READ_WRITE);
+    assert(!loaded.sd_mapper_ram);
+    assert(loaded.sd_mapper_alternate_driver);
     assert(loaded.tinker);
     assert(loaded.cassette_audible_monitor);
     assert(loaded.cassette_visual_monitor);
@@ -155,16 +183,16 @@ int main(void) {
     assert(loaded.joy_port_device[1] == JOY_PORT_JOYSTICK);
     assert(strcmp(loaded.last_media_dir, "/roms") == 0);
 
-    loaded.msx_music = true;
+    loaded.scc = true;
     config_normalize(&loaded);
     assert(loaded.sunrise_ide);
-    assert(loaded.scc);
-    assert(!loaded.msx_music);
+    assert(loaded.sd_mapper);
+    assert(!loaded.scc);
     loaded.sunrise_ide = false;
     config_normalize(&loaded);
     assert(config_cartridge_slot_available(&loaded, 0));
     assert(strcmp(config_cartridge_slot_owner(&loaded, 1),
-                  "Konami SCC") == 0);
+                  "SD Mapper V2") == 0);
     loaded.main_input = (InputPort)99;
     loaded.joy_port_device[0] = (JoyPortDevice)99;
     config_normalize(&loaded);

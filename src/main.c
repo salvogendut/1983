@@ -29,6 +29,8 @@ typedef struct {
     const char *subrom_path;
     const char *disk_rom_path;
     const char *sunrise_rom_path;
+    const char *sd_mapper_rom_path;
+    const char *sd_card_path[MSX_SD_MAPPER_CARDS];
     const char *drive_a_path;
     const char *drive_b_path;
     const char *ide_image_path;
@@ -41,6 +43,7 @@ typedef struct {
     int region;
     int floppy_image_mode;
     int ide_image_mode;
+    int sd_image_mode;
     int scale;
     int exit_after;
     bool headless;
@@ -59,6 +62,10 @@ static const char *usage =
     "  --subrom PATH       load a 16 KB MSX2 Sub-ROM in slot 3-0\n"
     "  --disk-rom PATH     load a 16 KB disk ROM in slot 3-3/page 1\n"
     "  --sunrise-rom PATH  load a 128 KB Sunrise IDE/Nextor kernel ROM\n"
+    "  --sd-mapper-rom PATH load a 128/256 KB MSX SD Mapper V2 ROM\n"
+    "  --sd-a PATH          insert a raw image in SD Mapper card A\n"
+    "  --sd-b PATH          insert a raw image in SD Mapper card B\n"
+    "  --sd-mode MODE       SD access: read-only (default) or read-write\n"
     "  --disk-a PATH       insert a raw MSX DSK image in Drive A\n"
     "  --disk-b PATH       insert a raw MSX DSK image in Drive B\n"
     "  --floppy-mode MODE  DSK access: read-only (default) or read-write\n"
@@ -139,11 +146,24 @@ static int parse_floppy_mode(const char *text) {
     return -1;
 }
 
+static int parse_sd_mode(const char *text) {
+    if (strcmp(text, "read-only") == 0 ||
+        strcmp(text, "ro") == 0)
+        return SD_IMAGE_READ_ONLY;
+    if (strcmp(text, "read-write") == 0 ||
+        strcmp(text, "rw") == 0)
+        return SD_IMAGE_READ_WRITE;
+    fprintf(stderr,
+            "--sd-mode: expected read-only or read-write\n");
+    return -1;
+}
+
 static int parse_cli(int argc, char **argv, Cli *cli) {
     memset(cli, 0, sizeof(*cli));
     cli->region = -1;
     cli->floppy_image_mode = -1;
     cli->ide_image_mode = -1;
+    cli->sd_image_mode = -1;
     cli->scale = -1;
     cli->exit_after = -1;
 
@@ -179,6 +199,10 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--subrom") == 0 ||
              strcmp(argument, "--disk-rom") == 0 ||
              strcmp(argument, "--sunrise-rom") == 0 ||
+             strcmp(argument, "--sd-mapper-rom") == 0 ||
+             strcmp(argument, "--sd-a") == 0 ||
+             strcmp(argument, "--sd-b") == 0 ||
+             strcmp(argument, "--sd-mode") == 0 ||
              strcmp(argument, "--disk-a") == 0 ||
              strcmp(argument, "--disk-b") == 0 ||
              strcmp(argument, "--floppy-mode") == 0 ||
@@ -212,6 +236,16 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->disk_rom_path = argv[++i];
         } else if (strcmp(argument, "--sunrise-rom") == 0) {
             cli->sunrise_rom_path = argv[++i];
+        } else if (strcmp(argument, "--sd-mapper-rom") == 0) {
+            cli->sd_mapper_rom_path = argv[++i];
+        } else if (strcmp(argument, "--sd-a") == 0) {
+            cli->sd_card_path[0] = argv[++i];
+        } else if (strcmp(argument, "--sd-b") == 0) {
+            cli->sd_card_path[1] = argv[++i];
+        } else if (strcmp(argument, "--sd-mode") == 0) {
+            cli->sd_image_mode = parse_sd_mode(argv[++i]);
+            if (cli->sd_image_mode < 0)
+                return -1;
         } else if (strcmp(argument, "--disk-a") == 0) {
             cli->drive_a_path = argv[++i];
         } else if (strcmp(argument, "--disk-b") == 0) {
@@ -479,6 +513,22 @@ int main(int argc, char **argv) {
         config.extra_hardware = true;
         config.sunrise_ide = true;
     }
+    if (cli.sd_mapper_rom_path) {
+        snprintf(config.sd_mapper_rom_path,
+                 sizeof(config.sd_mapper_rom_path),
+                 "%s", cli.sd_mapper_rom_path);
+        config.extra_hardware = true;
+        config.sd_mapper = true;
+    }
+    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card) {
+        if (!cli.sd_card_path[card])
+            continue;
+        snprintf(config.sd_card_path[card],
+                 sizeof(config.sd_card_path[card]),
+                 "%s", cli.sd_card_path[card]);
+        config.extra_hardware = true;
+        config.sd_mapper = true;
+    }
     if (cli.ide_image_path) {
         snprintf(config.ide_image_path,
                  sizeof(config.ide_image_path),
@@ -502,6 +552,9 @@ int main(int argc, char **argv) {
     if (cli.ide_image_mode >= 0)
         config.ide_image_mode =
             (AtaImageMode)cli.ide_image_mode;
+    if (cli.sd_image_mode >= 0)
+        config.sd_image_mode =
+            (SdImageMode)cli.sd_image_mode;
     if (cli.cassette_path)
         snprintf(config.cassette_path,
                  sizeof(config.cassette_path),
@@ -638,6 +691,58 @@ int main(int argc, char **argv) {
             }
         }
     }
+    if (config.sd_mapper) {
+        int mapper_slot = -1;
+
+        for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+            const char *owner =
+                config_cartridge_slot_owner(&config, slot);
+
+            if (owner && strcmp(owner, "SD Mapper V2") == 0) {
+                mapper_slot = (int)slot;
+                break;
+            }
+        }
+        if (mapper_slot < 0 || !config.sd_mapper_rom_path[0] ||
+            msx_load_sd_mapper(
+                &msx, (unsigned)mapper_slot,
+                config.sd_mapper_rom_path) != 0) {
+            fprintf(stderr,
+                    "cannot load 128/256 KB SD Mapper V2 ROM: %s\n",
+                    config.sd_mapper_rom_path[0]
+                    ? config.sd_mapper_rom_path : "[not configured]");
+            if (cli.sd_mapper_rom_path ||
+                cli.sd_card_path[0] || cli.sd_card_path[1]) {
+                msx_destroy(&msx);
+                return 1;
+            }
+            config.sd_mapper = false;
+            config_normalize(&config);
+        } else {
+            msx_sd_mapper_set_ram_enabled(
+                &msx, config.sd_mapper_ram);
+            msx_sd_mapper_set_alternate_driver(
+                &msx, config.sd_mapper_alternate_driver);
+            for (unsigned card = 0;
+                 card < MSX_SD_MAPPER_CARDS; ++card) {
+                if (!config.sd_card_path[card][0])
+                    continue;
+                if (msx_mount_sd_card(
+                        &msx, card, config.sd_card_path[card],
+                        config.sd_image_mode) == 0)
+                    continue;
+                fprintf(stderr,
+                        "cannot mount SD Mapper card %c image %s: %s\n",
+                        'A' + (int)card,
+                        config.sd_card_path[card],
+                        msx_sd_card_error(&msx, card));
+                if (cli.sd_card_path[card]) {
+                    msx_destroy(&msx);
+                    return 1;
+                }
+            }
+        }
+    }
     for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
         const char *path = config.cartridge_path[slot];
         const char *owner =
@@ -725,6 +830,22 @@ int main(int argc, char **argv) {
                   ? ", raw disk mounted read/write"
                   : ", raw disk mounted read-only")
                : ", no disk mounted");
+    if (msx_sd_mapper_connected(&msx)) {
+        printf("SD Mapper V2 loaded in cartridge slot %d "
+               "(%s512 KB mapper)\n",
+               msx_sd_mapper_slot(&msx) + 1,
+               config.sd_mapper_ram ? "" : "no ");
+        for (unsigned card = 0;
+             card < MSX_SD_MAPPER_CARDS; ++card) {
+            printf("  SD %c: %s%s\n", 'A' + (int)card,
+                   msx_sd_card_mounted(&msx, card)
+                   ? config.sd_card_path[card] : "empty",
+                   msx_sd_card_mounted(&msx, card)
+                   ? (msx_sd_card_writable(&msx, card)
+                      ? " (read/write)" : " (read-only)")
+                   : "");
+        }
+    }
     if (msx_drive_a_mounted(&msx))
         printf("Floppy A: %s (%s, %u tracks, %u sides, %u sectors)\n",
                config.drive_a_path,
@@ -949,6 +1070,10 @@ int main(int argc, char **argv) {
         leds_set_state(LED_TAPE, msx_cassette_rolling(&msx));
         if (msx_sunrise_take_activity(&msx))
             leds_ping(LED_IDE);
+        if (msx_sd_card_take_activity(&msx, 0))
+            leds_ping(LED_SD_A);
+        if (msx_sd_card_take_activity(&msx, 1))
+            leds_ping(LED_SD_B);
         if (msx_drive_a_take_activity(&msx))
             leds_ping(LED_FDC_A);
         if (msx_drive_b_take_activity(&msx))
@@ -1030,6 +1155,17 @@ int main(int argc, char **argv) {
         msx_flush_sunrise_disk(&msx) != 0) {
         fprintf(stderr, "cannot flush IDE image at shutdown: %s\n",
                 msx_sunrise_disk_error(&msx));
+        shutdown_status = 1;
+    }
+    for (unsigned card = 0;
+         card < MSX_SD_MAPPER_CARDS; ++card) {
+        if (!msx_sd_card_mounted(&msx, card) ||
+            msx_flush_sd_card(&msx, card) == 0)
+            continue;
+        fprintf(stderr,
+                "cannot flush SD Mapper card %c at shutdown: %s\n",
+                'A' + (int)card,
+                msx_sd_card_error(&msx, card));
         shutdown_status = 1;
     }
     if (msx_drive_a_mounted(&msx) &&

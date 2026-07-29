@@ -109,21 +109,24 @@ persistent manual override. The SCC register window is mapped, but SCC audio
 is not implemented yet.
 
 The Media overlay can load, eject, and independently configure both
-cartridges, the cassette, and the active floppy drives. The IDE hard-disk
-selector appears only when Sunrise IDE is connected;
-the Nextor kernel is cartridge firmware and therefore has no separate Media
-row.
+cartridges, the cassette, the active floppy drives, and media belonging to
+connected storage extensions. The IDE hard-disk selector appears only when
+Sunrise IDE is connected; SD Card A and SD Card B appear only when SD Mapper
+V2 is connected. Nextor controller kernels are cartridge firmware and
+therefore have no separate Media row.
 
-General > Extra Hardware reveals the Extensions section. Sunrise IDE, SCC,
-and MSX-MUSIC are treated as cartridge-connected devices: the first enabled
-device reserves cartridge slot 2 and the second reserves slot 1. A third is
-refused. Mounting, ejecting, mapper changes, asynchronous picker completion,
-and command-line startup all honor the same reservation state. Enabling an
-extension ejects and forgets media in the newly reserved slot.
+General > Extra Hardware reveals the Extensions section. Sunrise IDE, SD
+Mapper V2, SCC, and MSX-MUSIC are treated as cartridge-connected devices:
+the first enabled device reserves cartridge slot 2 and the second reserves
+slot 1. A third is refused. Mounting, ejecting, mapper changes, asynchronous
+picker completion, and command-line startup all honor the same reservation
+state. Enabling an extension ejects and forgets media in the newly reserved
+slot.
 
 The footer always shows Cartridge I and Cartridge II indicators between
-Power and Caps Lock. An occupied ROM slot or a slot owned by Sunrise IDE is
-orange. IDE reads use the dedicated Sunrise IDE indicator. The cartridge
+Power and Caps Lock. An occupied ROM slot or a slot owned by Sunrise IDE or
+SD Mapper V2 is orange. IDE reads use the dedicated Sunrise IDE indicator;
+SD traffic uses independent green SD A and SD B indicators. The cartridge
 renderer also supports an orange/white network-cartridge form, whose white
 half reports network access when a network device is added.
 
@@ -222,6 +225,45 @@ external controller owns boot. The Sunrise kernel boots the 32 MiB GeoBench
 FAT16 image through Nextor to the GeoBench desktop using the stock 128 KiB
 mapper. Independently, the NMS 8250 disk ROM boots conventional floppy
 images through its native WD2793 path.
+
+## MSX SD Mapper V2
+
+The SD Mapper V2 is modeled as the single composite cartridge described by
+the open hardware project, not as an unrelated SD controller plus a generic
+RAM expansion. With its mapper switch enabled, the cartridge makes its
+physical primary slot expanded. Subslot 0 contains a 128 or 256 KiB
+controller ROM and both SD interfaces; subslot 1 contains an independent
+512 KiB memory mapper. Disabling the mapper switch leaves the controller as
+an ordinary cartridge. The alternate-driver switch selects the second
+128 KiB half of a 256 KiB ROM.
+
+The controller uses two 16 KiB firmware bank registers. When firmware bank 1
+selects bank 7, `0x7B00` through `0x7EFF` become the SPI data window,
+`0x7FF0` reports card presence/change/write-protect state and selects either
+or both cards, and `0x7FF1` exposes the 16-bit 25 MHz timer latch. The mapper
+uses standard ports `0xFC` through `0xFF`, resets to segments `3,2,1,0`, and
+shares those ports electrically with another mapper through the MSX
+active-low, wired-AND read convention.
+
+`src/sdcard.c` implements the SPI-mode commands needed by the reference
+firmware and Nextor, including initialization, card identification, capacity,
+single/multiple block reads, single/multiple block writes, application
+commands, stop, and status. It supports conventional and high-capacity card
+addressing. The card backend is independent of the cartridge wrapper so the
+same conservative image lifetime applies to both sockets: read-only by
+default, complete 512-byte writes, explicit flush and host synchronization,
+failed-mount preservation, failed-flush retention, and safe ejection.
+
+The guided Extensions setup distinguishes controller firmware from removable
+SD media. Once connected, Media owns card insertion/ejection, while Advanced
+owns read-only/read-write access and the two cartridge switches. Configuration
+and command-line startup preserve the same separation through
+`sd_mapper_rom`, `sd_card_a`, `sd_card_b`, and `sd_image_mode`, or
+`--sd-mapper-rom`, `--sd-a`, `--sd-b`, and `--sd-mode`.
+
+The reference `SDXC110.ROM` from MSX SD Mapper V2 release 1.1.0 with Nextor
+2.1.2 boots a FAT16 card to its command prompt on the generic MSX1 profile.
+Neither the ROM nor the card image is distributed by 1983.
 
 ## MSX1 video
 

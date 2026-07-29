@@ -39,6 +39,9 @@ enum {
     ADVANCED_SECOND_FLOPPY,
     ADVANCED_FLOPPY_IMAGE_ACCESS,
     ADVANCED_IDE_IMAGE_ACCESS,
+    ADVANCED_SD_IMAGE_ACCESS,
+    ADVANCED_SD_MAPPER_RAM,
+    ADVANCED_SD_MAPPER_DRIVER,
     ADVANCED_SMOOTHING,
     ADVANCED_REAL_CRT,
     ADVANCED_CRT_SCANLINES,
@@ -58,6 +61,16 @@ enum {
     MODEL_FIELD_LOGO,
     MODEL_FIELD_SUBROM,
     MODEL_FIELD_DISK_ROM
+};
+
+enum {
+    SD_MAPPER_SETUP_FIRMWARE = 0,
+    SD_MAPPER_SETUP_CARD_A,
+    SD_MAPPER_SETUP_CARD_B,
+    SD_MAPPER_SETUP_RAM,
+    SD_MAPPER_SETUP_DRIVER,
+    SD_MAPPER_SETUP_CONNECT,
+    SD_MAPPER_SETUP_ROWS
 };
 
 enum {
@@ -94,8 +107,9 @@ static int section_rows(const Overlay *overlay,
         case OVERLAY_MEDIA:
             return 6 +
                    (overlay->config->second_drive ? 1 : 0) +
-                   (overlay->config->sunrise_ide ? 1 : 0);
-        case OVERLAY_EXTENSIONS: return 3;
+                   (overlay->config->sunrise_ide ? 1 : 0) +
+                   (overlay->config->sd_mapper ? 2 : 0);
+        case OVERLAY_EXTENSIONS: return 4;
         case OVERLAY_ADVANCED:   return ADVANCED_ROWS;
         case OVERLAY_SECTION_COUNT: break;
     }
@@ -123,6 +137,11 @@ static const char *floppy_mode_name(FloppyImageMode mode) {
          ? "Read/write" : "Read-only";
 }
 
+static const char *sd_mode_name(SdImageMode mode) {
+    return mode == SD_IMAGE_READ_WRITE
+         ? "Read/write" : "Read-only";
+}
+
 static const char *path_basename(const char *path);
 
 static int media_floppy_b_row(const Config *config) {
@@ -132,6 +151,19 @@ static int media_floppy_b_row(const Config *config) {
 static int media_ide_row(const Config *config) {
     return config->sunrise_ide
          ? 6 + (config->second_drive ? 1 : 0) : -1;
+}
+
+static int media_sd_a_row(const Config *config) {
+    if (!config->sd_mapper)
+        return -1;
+    return 6 + (config->second_drive ? 1 : 0) +
+           (config->sunrise_ide ? 1 : 0);
+}
+
+static int media_sd_b_row(const Config *config) {
+    int row = media_sd_a_row(config);
+
+    return row < 0 ? -1 : row + 1;
 }
 
 static int cartridge_extension_slot(const Config *config,
@@ -182,6 +214,31 @@ static void sunrise_extension_text(const Overlay *overlay,
                  "On (Cartridge %d, ROM not loaded)", slot + 1);
     } else {
         snprintf(value, value_size, "On (Cartridge %d)", slot + 1);
+    }
+}
+
+static bool sd_mapper_rom_file_is_valid(const char *path);
+
+static void sd_mapper_extension_text(const Overlay *overlay,
+                                     char *value, size_t value_size) {
+    const Config *config = overlay->config;
+    int slot = cartridge_extension_slot(config, "SD Mapper V2");
+
+    if (!config->sd_mapper) {
+        snprintf(value, value_size, "%s",
+                 sd_mapper_rom_file_is_valid(
+                     config->sd_mapper_rom_path)
+                 ? "Off (configured)" : "Off (setup required)");
+    } else if (slot < 0) {
+        snprintf(value, value_size, "Off (no free cartridge slot)");
+    } else if (!msx_sd_mapper_connected(overlay->msx)) {
+        snprintf(value, value_size,
+                 "On (Cartridge %d, ROM not loaded)", slot + 1);
+    } else {
+        snprintf(value, value_size,
+                 "On (Cartridge %d, %s)", slot + 1,
+                 config->sd_mapper_ram
+                 ? "512 KB RAM" : "storage only");
     }
 }
 
@@ -291,6 +348,30 @@ static void drive_b_text(const Overlay *overlay,
                  path_basename(path),
                  floppy_mode_name(
                      overlay->config->floppy_image_mode));
+    } else {
+        snprintf(value, value_size, "[not mounted]");
+    }
+}
+
+static void sd_card_text(const Overlay *overlay, unsigned card,
+                         char *value, size_t value_size) {
+    const char *path = overlay->config->sd_card_path[card];
+
+    if (msx_sd_card_mounted(overlay->msx, card)) {
+        const char *state =
+            msx_sd_card_has_error(overlay->msx, card)
+            ? ", I/O error" :
+            msx_sd_card_dirty(overlay->msx, card)
+            ? ", dirty" : "";
+
+        snprintf(value, value_size, "%s [%s%s]",
+                 path_basename(path),
+                 msx_sd_card_writable(overlay->msx, card)
+                 ? "read/write" : "read-only", state);
+    } else if (path[0]) {
+        snprintf(value, value_size, "%s [not mounted, %s]",
+                 path_basename(path),
+                 sd_mode_name(overlay->config->sd_image_mode));
     } else {
         snprintf(value, value_size, "[not mounted]");
     }
@@ -470,6 +551,12 @@ static void item_text(const Overlay *overlay, int row,
             } else if (row == media_ide_row(config)) {
                 snprintf(label, label_size, "IDE hard disk");
                 ide_image_text(overlay, value, value_size);
+            } else if (row == media_sd_a_row(config)) {
+                snprintf(label, label_size, "SD Card A");
+                sd_card_text(overlay, 0, value, value_size);
+            } else if (row == media_sd_b_row(config)) {
+                snprintf(label, label_size, "SD Card B");
+                sd_card_text(overlay, 1, value, value_size);
             }
             break;
         case OVERLAY_EXTENSIONS:
@@ -480,12 +567,17 @@ static void item_text(const Overlay *overlay, int row,
                         overlay, value, value_size);
                     break;
                 case 1:
+                    snprintf(label, label_size, "SD Mapper V2");
+                    sd_mapper_extension_text(
+                        overlay, value, value_size);
+                    break;
+                case 2:
                     snprintf(label, label_size, "Konami SCC");
                     cartridge_extension_text(
                         config, "Konami SCC", config->scc,
                         value, value_size);
                     break;
-                case 2:
+                case 3:
                     snprintf(label, label_size, "MSX-MUSIC");
                     cartridge_extension_text(
                         config, "MSX-MUSIC", config->msx_music,
@@ -533,6 +625,25 @@ static void item_text(const Overlay *overlay, int row,
                              "IDE access mode");
                     snprintf(value, value_size, "%s",
                              ide_mode_name(config->ide_image_mode));
+                    break;
+                case ADVANCED_SD_IMAGE_ACCESS:
+                    snprintf(label, label_size,
+                             "SD access mode");
+                    snprintf(value, value_size, "%s",
+                             sd_mode_name(config->sd_image_mode));
+                    break;
+                case ADVANCED_SD_MAPPER_RAM:
+                    snprintf(label, label_size,
+                             "SD Mapper 512 KB RAM");
+                    snprintf(value, value_size, "%s",
+                             toggle_name(config->sd_mapper_ram));
+                    break;
+                case ADVANCED_SD_MAPPER_DRIVER:
+                    snprintf(label, label_size,
+                             "SD Mapper driver");
+                    snprintf(value, value_size, "%s",
+                             config->sd_mapper_alternate_driver
+                             ? "Alternate" : "Primary");
                     break;
                 case ADVANCED_SMOOTHING:
                     snprintf(label, label_size, "Smoothing");
@@ -602,6 +713,8 @@ static void configure_leds(const Config *config, const MsxMachine *msx) {
     leds_set_enabled(LED_FDC_B, config->second_drive);
     leds_set_enabled(LED_TAPE, true);
     leds_set_enabled(LED_IDE, config->sunrise_ide);
+    leds_set_enabled(LED_SD_A, config->sd_mapper);
+    leds_set_enabled(LED_SD_B, config->sd_mapper);
     leds_set_state(LED_POWER, true);
     leds_set_state(LED_CAPS, msx->caps_led);
     leds_set_state(LED_KANA, msx->kana_led);
@@ -672,6 +785,9 @@ static void apply_config(Overlay *overlay) {
     msx_set_cassette_audible_monitor(
         msx, config->tinker &&
              config->cassette_audible_monitor);
+    msx_sd_mapper_set_ram_enabled(msx, config->sd_mapper_ram);
+    msx_sd_mapper_set_alternate_driver(
+        msx, config->sd_mapper_alternate_driver);
     notify_set_mode(config->notifications);
     configure_leds(config, msx);
 }
@@ -775,6 +891,70 @@ static bool restore_sunrise(Overlay *overlay) {
     return true;
 }
 
+static bool restore_sd_mapper(Overlay *overlay) {
+    const Config *current = overlay->config;
+    const Config *saved = &overlay->saved;
+    int saved_slot =
+        cartridge_extension_slot(saved, "SD Mapper V2");
+    bool changed =
+        current->sd_mapper != saved->sd_mapper ||
+        strcmp(current->sd_mapper_rom_path,
+               saved->sd_mapper_rom_path) != 0 ||
+        strcmp(current->sd_card_path[0],
+               saved->sd_card_path[0]) != 0 ||
+        strcmp(current->sd_card_path[1],
+               saved->sd_card_path[1]) != 0 ||
+        current->sd_image_mode != saved->sd_image_mode ||
+        current->sd_mapper_ram != saved->sd_mapper_ram ||
+        current->sd_mapper_alternate_driver !=
+            saved->sd_mapper_alternate_driver ||
+        msx_sd_mapper_slot(overlay->msx) !=
+            (saved->sd_mapper ? saved_slot : -1);
+
+    for (unsigned card = 0;
+         card < MSX_SD_MAPPER_CARDS && !changed; ++card) {
+        if (msx_sd_card_mounted(overlay->msx, card) &&
+            msx_sd_card_writable(overlay->msx, card) !=
+                (saved->sd_image_mode == SD_IMAGE_READ_WRITE))
+            changed = true;
+    }
+    if (!changed)
+        return true;
+    if (msx_eject_sd_mapper(overlay->msx) != 0) {
+        notify_post("Could not restore SD Mapper V2: %s",
+                    msx_sd_card_has_error(overlay->msx, 0)
+                    ? msx_sd_card_error(overlay->msx, 0)
+                    : msx_sd_card_error(overlay->msx, 1));
+        return false;
+    }
+    if (!saved->sd_mapper || saved_slot < 0)
+        return true;
+    if (msx_load_sd_mapper(
+            overlay->msx, (unsigned)saved_slot,
+            saved->sd_mapper_rom_path) != 0) {
+        notify_post("Could not restore SD Mapper V2 ROM");
+        return false;
+    }
+    msx_sd_mapper_set_ram_enabled(
+        overlay->msx, saved->sd_mapper_ram);
+    msx_sd_mapper_set_alternate_driver(
+        overlay->msx, saved->sd_mapper_alternate_driver);
+    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card) {
+        if (!saved->sd_card_path[card][0])
+            continue;
+        if (msx_mount_sd_card(
+                overlay->msx, card,
+                saved->sd_card_path[card],
+                saved->sd_image_mode) != 0) {
+            notify_post("Could not restore SD Card %c: %s",
+                        'A' + (int)card,
+                        msx_sd_card_error(overlay->msx, card));
+            return false;
+        }
+    }
+    return true;
+}
+
 static void restore_cassette(Overlay *overlay) {
     const char *current = overlay->config->cassette_path;
     const char *saved = overlay->saved.cassette_path;
@@ -841,6 +1021,8 @@ static void close_overlay(Overlay *overlay, bool save) {
                 notify_post("Could not save settings");
         }
     } else {
+        if (!restore_sd_mapper(overlay))
+            return;
         if (!restore_sunrise(overlay))
             return;
         restore_cartridges(overlay);
@@ -1045,6 +1227,57 @@ static void open_sunrise_rom_dialog(Overlay *overlay) {
                            filters, 2, location, false);
 }
 
+static void open_sd_mapper_rom_dialog(Overlay *overlay) {
+    static const SDL_DialogFileFilter filters[] = {
+        { "128/256 KB SD Mapper V2 ROM", "rom;ROM" },
+        { "All files", "*" },
+    };
+    const char *location =
+        overlay->config->last_media_dir[0]
+        ? overlay->config->last_media_dir : NULL;
+
+    if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
+        return;
+    overlay->dialog_target = OVERLAY_DIALOG_SD_MAPPER_ROM;
+    overlay->dialog_ready = false;
+    overlay->dialog_failed = false;
+    overlay->dialog_error[0] = '\0';
+    notify_post("Select the SD Mapper V2 driver ROM");
+    SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
+                           overlay->display
+                           ? overlay->display->window : NULL,
+                           filters, 2, location, false);
+}
+
+static void open_sd_card_dialog(Overlay *overlay, unsigned card) {
+    static const SDL_DialogFileFilter filters[] = {
+        { "Raw SD card images", "img;IMG;dsk;DSK;sd;SD" },
+        { "All files", "*" },
+    };
+    const char *location =
+        overlay->config->last_media_dir[0]
+        ? overlay->config->last_media_dir : NULL;
+
+    if (card >= MSX_SD_MAPPER_CARDS ||
+        overlay->dialog_target != OVERLAY_DIALOG_NONE)
+        return;
+    if (overlay->state != OVERLAY_STATE_SD_MAPPER_SETUP &&
+        !msx_sd_mapper_connected(overlay->msx)) {
+        notify_post("Connect SD Mapper V2 before inserting a card");
+        return;
+    }
+    overlay->dialog_target =
+        card ? OVERLAY_DIALOG_SD_CARD_B :
+               OVERLAY_DIALOG_SD_CARD_A;
+    overlay->dialog_ready = false;
+    overlay->dialog_failed = false;
+    overlay->dialog_error[0] = '\0';
+    SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
+                           overlay->display
+                           ? overlay->display->window : NULL,
+                           filters, 2, location, false);
+}
+
 static void open_ide_image_dialog(Overlay *overlay) {
     static const SDL_DialogFileFilter filters[] = {
         { "Raw IDE disk images", "img;IMG;dsk;DSK;hdd;HDD" },
@@ -1176,6 +1409,24 @@ static bool firmware_file_has_size(const char *path, long expected_size) {
     size = ftell(file);
     fclose(file);
     return size == expected_size;
+}
+
+static bool sd_mapper_rom_file_is_valid(const char *path) {
+    return firmware_file_has_size(
+               path, MSX_SD_MAPPER_DRIVER_SIZE) ||
+           firmware_file_has_size(
+               path, MSX_SD_MAPPER_ROM_SIZE);
+}
+
+static bool sd_image_file_is_valid(const char *path) {
+    SdCard card;
+    bool valid;
+
+    sd_card_init(&card);
+    valid = sd_card_mount(
+        &card, path, SD_IMAGE_READ_ONLY) == 0;
+    sd_card_destroy(&card);
+    return valid;
 }
 
 static bool ide_image_file_is_valid(const char *path) {
@@ -1744,6 +1995,164 @@ static bool disconnect_sunrise(Overlay *overlay) {
     return true;
 }
 
+static void begin_sd_mapper_setup(Overlay *overlay) {
+    Config *config = overlay->config;
+
+    overlay->sd_mapper_setup_row = SD_MAPPER_SETUP_FIRMWARE;
+    snprintf(overlay->pending_sd_mapper_rom_path,
+             sizeof(overlay->pending_sd_mapper_rom_path), "%s",
+             config->sd_mapper_rom_path);
+    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card) {
+        snprintf(overlay->pending_sd_card_path[card],
+                 sizeof(overlay->pending_sd_card_path[card]), "%s",
+                 config->sd_card_path[card]);
+    }
+    overlay->pending_sd_mapper_ram = config->sd_mapper_ram;
+    overlay->pending_sd_mapper_alternate_driver =
+        config->sd_mapper_alternate_driver;
+    overlay->state = OVERLAY_STATE_SD_MAPPER_SETUP;
+}
+
+static bool connect_sd_mapper(
+    Overlay *overlay, const char *rom_path,
+    const char *card_a_path, const char *card_b_path,
+    SdImageMode image_mode, bool mapper_ram,
+    bool alternate_driver) {
+    Config *config = overlay->config;
+    const char *cards[MSX_SD_MAPPER_CARDS] = {
+        card_a_path ? card_a_path : "",
+        card_b_path ? card_b_path : ""
+    };
+    char selected_rom[PATH_MAX];
+    int slot;
+
+    snprintf(selected_rom, sizeof(selected_rom), "%s",
+             rom_path ? rom_path : "");
+    if (!sd_mapper_rom_file_is_valid(selected_rom)) {
+        notify_post(
+            "SD Mapper V2 needs an exact 128 or 256 KB ROM");
+        return false;
+    }
+    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card) {
+        if (cards[card][0] &&
+            !sd_image_file_is_valid(cards[card])) {
+            notify_post(
+                "SD Card %c must use complete 512-byte sectors",
+                'A' + (int)card);
+            return false;
+        }
+    }
+    if (!toggle_cartridge_extension(
+            overlay, &config->sd_mapper, "SD Mapper V2"))
+        return false;
+    slot = cartridge_extension_slot(config, "SD Mapper V2");
+    if (slot < 0 || msx_load_sd_mapper(
+            overlay->msx, (unsigned)slot, selected_rom) != 0) {
+        config->sd_mapper = false;
+        notify_post("Could not load SD Mapper V2 ROM: %s",
+                    path_basename(selected_rom));
+        return false;
+    }
+    msx_sd_mapper_set_ram_enabled(overlay->msx, mapper_ram);
+    msx_sd_mapper_set_alternate_driver(
+        overlay->msx, alternate_driver);
+    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card) {
+        if (!cards[card][0])
+            continue;
+        if (msx_mount_sd_card(
+                overlay->msx, card, cards[card], image_mode) == 0)
+            continue;
+        {
+            char error[SD_CARD_ERROR_MAX];
+
+            snprintf(error, sizeof(error), "%s",
+                     msx_sd_card_error(overlay->msx, card));
+            (void)msx_eject_sd_mapper(overlay->msx);
+            config->sd_mapper = false;
+            notify_post("Could not mount SD Card %c: %s",
+                        'A' + (int)card,
+                        error[0] ? error :
+                        path_basename(cards[card]));
+            return false;
+        }
+    }
+    snprintf(config->sd_mapper_rom_path,
+             sizeof(config->sd_mapper_rom_path), "%s",
+             selected_rom);
+    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card) {
+        snprintf(config->sd_card_path[card],
+                 sizeof(config->sd_card_path[card]), "%s",
+                 cards[card]);
+    }
+    config->sd_image_mode = image_mode;
+    config->sd_mapper_ram = mapper_ram;
+    config->sd_mapper_alternate_driver = alternate_driver;
+    notify_post("SD Mapper V2 connected in cartridge slot %d",
+                slot + 1);
+    return true;
+}
+
+static void finish_sd_mapper_setup(Overlay *overlay) {
+    if (!connect_sd_mapper(
+            overlay, overlay->pending_sd_mapper_rom_path,
+            overlay->pending_sd_card_path[0],
+            overlay->pending_sd_card_path[1],
+            overlay->config->sd_image_mode,
+            overlay->pending_sd_mapper_ram,
+            overlay->pending_sd_mapper_alternate_driver))
+        return;
+    overlay->dirty = true;
+    overlay->state = OVERLAY_STATE_MENU;
+    apply_config(overlay);
+}
+
+static bool disconnect_sd_mapper(Overlay *overlay) {
+    if (msx_eject_sd_mapper(overlay->msx) != 0) {
+        const char *error =
+            msx_sd_card_has_error(overlay->msx, 0)
+            ? msx_sd_card_error(overlay->msx, 0)
+            : msx_sd_card_error(overlay->msx, 1);
+
+        notify_post("Could not disconnect SD Mapper V2: %s",
+                    error);
+        return false;
+    }
+    (void)toggle_cartridge_extension(
+        overlay, &overlay->config->sd_mapper, "SD Mapper V2");
+    return true;
+}
+
+static bool set_sd_image_mode(Overlay *overlay, SdImageMode mode) {
+    Config *config = overlay->config;
+
+    if (config->sd_image_mode == mode)
+        return true;
+    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card) {
+        if (!msx_sd_card_mounted(overlay->msx, card))
+            continue;
+        if (msx_mount_sd_card(
+                overlay->msx, card,
+                config->sd_card_path[card], mode) == 0)
+            continue;
+        notify_post("Could not switch SD Card %c access: %s",
+                    'A' + (int)card,
+                    msx_sd_card_error(overlay->msx, card));
+        for (unsigned rollback = 0; rollback < card; ++rollback) {
+            if (msx_sd_card_mounted(overlay->msx, rollback))
+                (void)msx_mount_sd_card(
+                    overlay->msx, rollback,
+                    config->sd_card_path[rollback],
+                    config->sd_image_mode);
+        }
+        return false;
+    }
+    config->sd_image_mode = mode;
+    overlay->dirty = true;
+    notify_post("SD image access set to %s",
+                sd_mode_name(mode));
+    return true;
+}
+
 static bool set_ide_image_mode(Overlay *overlay,
                                AtaImageMode mode) {
     Config *config = overlay->config;
@@ -1920,6 +2329,14 @@ static void activate_item(Overlay *overlay) {
                 open_ide_image_dialog(overlay);
                 return;
             }
+            if (overlay->row == media_sd_a_row(config)) {
+                open_sd_card_dialog(overlay, 0);
+                return;
+            }
+            if (overlay->row == media_sd_b_row(config)) {
+                open_sd_card_dialog(overlay, 1);
+                return;
+            }
             return;
         }
         case OVERLAY_EXTENSIONS:
@@ -1946,12 +2363,38 @@ static void activate_item(Overlay *overlay) {
                     }
                     break;
                 case 1:
+                    if (config->sd_mapper) {
+                        if (!disconnect_sd_mapper(overlay))
+                            return;
+                    } else if (sd_mapper_rom_file_is_valid(
+                                   config->sd_mapper_rom_path) &&
+                               (!config->sd_card_path[0][0] ||
+                                sd_image_file_is_valid(
+                                    config->sd_card_path[0])) &&
+                               (!config->sd_card_path[1][0] ||
+                                sd_image_file_is_valid(
+                                    config->sd_card_path[1]))) {
+                        if (!connect_sd_mapper(
+                                overlay,
+                                config->sd_mapper_rom_path,
+                                config->sd_card_path[0],
+                                config->sd_card_path[1],
+                                config->sd_image_mode,
+                                config->sd_mapper_ram,
+                                config->sd_mapper_alternate_driver))
+                            return;
+                    } else {
+                        begin_sd_mapper_setup(overlay);
+                        return;
+                    }
+                    break;
+                case 2:
                     if (!toggle_cartridge_extension(
                             overlay, &config->scc,
                             "Konami SCC"))
                         return;
                     break;
-                case 2:
+                case 3:
                     if (!toggle_cartridge_extension(
                             overlay, &config->msx_music,
                             "MSX-MUSIC"))
@@ -2003,6 +2446,38 @@ static void activate_item(Overlay *overlay) {
                             ? ATA_IMAGE_READ_WRITE :
                               ATA_IMAGE_READ_ONLY))
                         return;
+                    break;
+                case ADVANCED_SD_IMAGE_ACCESS:
+                    if (!set_sd_image_mode(
+                            overlay,
+                            config->sd_image_mode ==
+                                SD_IMAGE_READ_ONLY
+                            ? SD_IMAGE_READ_WRITE :
+                              SD_IMAGE_READ_ONLY))
+                        return;
+                    break;
+                case ADVANCED_SD_MAPPER_RAM:
+                    config->sd_mapper_ram =
+                        !config->sd_mapper_ram;
+                    msx_sd_mapper_set_ram_enabled(
+                        overlay->msx, config->sd_mapper_ram);
+                    if (msx_sd_mapper_connected(overlay->msx))
+                        msx_reset(overlay->msx);
+                    notify_post("SD Mapper 512 KB RAM %s",
+                                config->sd_mapper_ram
+                                ? "enabled" : "disabled");
+                    break;
+                case ADVANCED_SD_MAPPER_DRIVER:
+                    config->sd_mapper_alternate_driver =
+                        !config->sd_mapper_alternate_driver;
+                    msx_sd_mapper_set_alternate_driver(
+                        overlay->msx,
+                        config->sd_mapper_alternate_driver);
+                    if (msx_sd_mapper_connected(overlay->msx))
+                        msx_reset(overlay->msx);
+                    notify_post("SD Mapper %s driver selected",
+                                config->sd_mapper_alternate_driver
+                                ? "alternate" : "primary");
                     break;
                 case ADVANCED_SMOOTHING:
                     config->smoothing = !config->smoothing;
@@ -2165,6 +2640,57 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
             else if (overlay->sunrise_setup_row ==
                      SUNRISE_SETUP_DISK)
                 overlay->pending_ide_image_path[0] = '\0';
+        } else if (key == SDLK_ESCAPE) {
+            overlay->state = OVERLAY_STATE_MENU;
+        }
+        return true;
+    }
+    if (overlay->state == OVERLAY_STATE_SD_MAPPER_SETUP) {
+        if (key == SDLK_UP) {
+            --overlay->sd_mapper_setup_row;
+            if (overlay->sd_mapper_setup_row < 0)
+                overlay->sd_mapper_setup_row =
+                    SD_MAPPER_SETUP_ROWS - 1;
+        } else if (key == SDLK_DOWN) {
+            ++overlay->sd_mapper_setup_row;
+            if (overlay->sd_mapper_setup_row >=
+                SD_MAPPER_SETUP_ROWS)
+                overlay->sd_mapper_setup_row = 0;
+        } else if (key == SDLK_RETURN ||
+                   key == SDLK_KP_ENTER) {
+            switch (overlay->sd_mapper_setup_row) {
+                case SD_MAPPER_SETUP_FIRMWARE:
+                    open_sd_mapper_rom_dialog(overlay);
+                    break;
+                case SD_MAPPER_SETUP_CARD_A:
+                    open_sd_card_dialog(overlay, 0);
+                    break;
+                case SD_MAPPER_SETUP_CARD_B:
+                    open_sd_card_dialog(overlay, 1);
+                    break;
+                case SD_MAPPER_SETUP_RAM:
+                    overlay->pending_sd_mapper_ram =
+                        !overlay->pending_sd_mapper_ram;
+                    break;
+                case SD_MAPPER_SETUP_DRIVER:
+                    overlay->pending_sd_mapper_alternate_driver =
+                        !overlay->
+                            pending_sd_mapper_alternate_driver;
+                    break;
+                case SD_MAPPER_SETUP_CONNECT:
+                    finish_sd_mapper_setup(overlay);
+                    break;
+            }
+        } else if (key == SDLK_DELETE) {
+            if (overlay->sd_mapper_setup_row ==
+                SD_MAPPER_SETUP_FIRMWARE)
+                overlay->pending_sd_mapper_rom_path[0] = '\0';
+            else if (overlay->sd_mapper_setup_row ==
+                     SD_MAPPER_SETUP_CARD_A)
+                overlay->pending_sd_card_path[0][0] = '\0';
+            else if (overlay->sd_mapper_setup_row ==
+                     SD_MAPPER_SETUP_CARD_B)
+                overlay->pending_sd_card_path[1][0] = '\0';
         } else if (key == SDLK_ESCAPE) {
             overlay->state = OVERLAY_STATE_MENU;
         }
@@ -2411,6 +2937,29 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                     overlay->dirty = true;
                     notify_post("IDE disk safely ejected");
                 }
+            } else if (overlay->section == OVERLAY_MEDIA &&
+                       (overlay->row ==
+                            media_sd_a_row(overlay->config) ||
+                        overlay->row ==
+                            media_sd_b_row(overlay->config)) &&
+                       overlay->config->sd_mapper) {
+                unsigned card =
+                    overlay->row ==
+                        media_sd_b_row(overlay->config) ? 1u : 0u;
+
+                if (msx_eject_sd_card(
+                        overlay->msx, card) != 0) {
+                    notify_post("Could not eject SD Card %c: %s",
+                                'A' + (int)card,
+                                msx_sd_card_error(
+                                    overlay->msx, card));
+                } else {
+                    overlay->config->
+                        sd_card_path[card][0] = '\0';
+                    overlay->dirty = true;
+                    notify_post("SD Card %c safely ejected",
+                                'A' + (int)card);
+                }
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
                        overlay->row == 0 &&
                        overlay->config->sunrise_rom_path[0]) {
@@ -2421,6 +2970,16 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 overlay->dirty = true;
                 apply_config(overlay);
                 notify_post("Sunrise IDE firmware forgotten");
+            } else if (overlay->section == OVERLAY_EXTENSIONS &&
+                       overlay->row == 1 &&
+                       overlay->config->sd_mapper_rom_path[0]) {
+                if (overlay->config->sd_mapper &&
+                    !disconnect_sd_mapper(overlay))
+                    break;
+                overlay->config->sd_mapper_rom_path[0] = '\0';
+                overlay->dirty = true;
+                apply_config(overlay);
+                notify_post("SD Mapper V2 firmware forgotten");
             }
             break;
         case SDLK_ESCAPE:
@@ -2442,7 +3001,7 @@ static const char *section_hint(OverlaySection section) {
         case OVERLAY_MEDIA:
             return "Enter loads; R rewinds tape; Delete safely ejects.";
         case OVERLAY_EXTENSIONS:
-            return "Enter toggles; Delete forgets Sunrise firmware.";
+            return "Enter toggles/setup; Delete forgets controller ROMs.";
         case OVERLAY_ADVANCED:
             return "Machine models, RTC/media safety, and diagnostics.";
         case OVERLAY_SECTION_COUNT:
@@ -2485,6 +3044,11 @@ void overlay_tick(Overlay *overlay) {
             notify_post("Model firmware selection cancelled");
         else if (target == OVERLAY_DIALOG_SUNRISE_ROM)
             notify_post("Sunrise IDE ROM selection cancelled");
+        else if (target == OVERLAY_DIALOG_SD_MAPPER_ROM)
+            notify_post("SD Mapper V2 ROM selection cancelled");
+        else if (target == OVERLAY_DIALOG_SD_CARD_A ||
+                 target == OVERLAY_DIALOG_SD_CARD_B)
+            notify_post("SD card selection cancelled");
         else if (target == OVERLAY_DIALOG_IDE_IMAGE)
             notify_post("IDE disk selection cancelled");
         else if (target == OVERLAY_DIALOG_DRIVE_A)
@@ -2580,6 +3144,79 @@ void overlay_tick(Overlay *overlay) {
                      overlay->dialog_path);
         overlay->sunrise_setup_row = SUNRISE_SETUP_DISK;
         notify_post("Sunrise IDE firmware selected: %s",
+                    path_basename(overlay->dialog_path));
+        return;
+    }
+    if (target == OVERLAY_DIALOG_SD_MAPPER_ROM) {
+        if (overlay->state != OVERLAY_STATE_SD_MAPPER_SETUP)
+            return;
+        if (!sd_mapper_rom_file_is_valid(
+                overlay->dialog_path)) {
+            notify_post(
+                "SD Mapper V2 needs an exact 128 or 256 KB ROM");
+            return;
+        }
+        snprintf(overlay->pending_sd_mapper_rom_path,
+                 sizeof(overlay->pending_sd_mapper_rom_path), "%s",
+                 overlay->dialog_path);
+        copy_dirname(overlay->config->last_media_dir,
+                     sizeof(overlay->config->last_media_dir),
+                     overlay->dialog_path);
+        overlay->sd_mapper_setup_row =
+            SD_MAPPER_SETUP_CARD_A;
+        notify_post("SD Mapper V2 firmware selected: %s",
+                    path_basename(overlay->dialog_path));
+        return;
+    }
+    if (target == OVERLAY_DIALOG_SD_CARD_A ||
+        target == OVERLAY_DIALOG_SD_CARD_B) {
+        unsigned card =
+            target == OVERLAY_DIALOG_SD_CARD_B ? 1u : 0u;
+
+        if (!sd_image_file_is_valid(overlay->dialog_path)) {
+            notify_post(
+                "SD Card %c image must use complete 512-byte sectors",
+                'A' + (int)card);
+            return;
+        }
+        if (overlay->state ==
+            OVERLAY_STATE_SD_MAPPER_SETUP) {
+            snprintf(overlay->pending_sd_card_path[card],
+                     sizeof(
+                         overlay->pending_sd_card_path[card]),
+                     "%s", overlay->dialog_path);
+            copy_dirname(overlay->config->last_media_dir,
+                         sizeof(
+                             overlay->config->last_media_dir),
+                         overlay->dialog_path);
+            overlay->sd_mapper_setup_row =
+                card ? SD_MAPPER_SETUP_RAM :
+                       SD_MAPPER_SETUP_CARD_B;
+            notify_post("SD Card %c selected: %s",
+                        'A' + (int)card,
+                        path_basename(overlay->dialog_path));
+            return;
+        }
+        if (msx_mount_sd_card(
+                overlay->msx, card, overlay->dialog_path,
+                overlay->config->sd_image_mode) != 0) {
+            notify_post("Could not mount SD Card %c: %s",
+                        'A' + (int)card,
+                        msx_sd_card_error(
+                            overlay->msx, card));
+            return;
+        }
+        snprintf(overlay->config->sd_card_path[card],
+                 sizeof(overlay->config->sd_card_path[card]),
+                 "%s", overlay->dialog_path);
+        copy_dirname(overlay->config->last_media_dir,
+                     sizeof(overlay->config->last_media_dir),
+                     overlay->dialog_path);
+        overlay->dirty = true;
+        notify_post("SD Card %c mounted %s: %s",
+                    'A' + (int)card,
+                    sd_mode_name(
+                        overlay->config->sd_image_mode),
                     path_basename(overlay->dialog_path));
         return;
     }
@@ -3016,6 +3653,91 @@ static void render_sunrise_setup(const Overlay *overlay,
                  160, 180, 210);
 }
 
+static void render_sd_mapper_setup(const Overlay *overlay,
+                                   SDL_Renderer *renderer) {
+    static const char *labels[SD_MAPPER_SETUP_ROWS] = {
+        "Firmware ROM", "SD Card A", "SD Card B",
+        "512 KB mapper", "Driver bank", "Connect"
+    };
+    char firmware[52];
+    char card_a[52];
+    char card_b[52];
+    const char *values[SD_MAPPER_SETUP_ROWS];
+    const float box_x = 28.0f;
+    const float box_y = 92.0f;
+    const float box_w = 584.0f;
+    const float box_h = 306.0f;
+    const char *title = "MSX SD Mapper V2 setup";
+
+    if (overlay->pending_sd_mapper_rom_path[0])
+        editor_shorten(
+            firmware, sizeof(firmware),
+            path_basename(
+                overlay->pending_sd_mapper_rom_path), 42);
+    else
+        snprintf(firmware, sizeof(firmware),
+                 "[required - choose 128/256 KiB ROM]");
+    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card) {
+        char *shown = card ? card_b : card_a;
+
+        if (overlay->pending_sd_card_path[card][0])
+            editor_shorten(
+                shown, 52,
+                path_basename(
+                    overlay->pending_sd_card_path[card]), 42);
+        else
+            snprintf(shown, 52, "[optional - empty]");
+    }
+    values[SD_MAPPER_SETUP_FIRMWARE] = firmware;
+    values[SD_MAPPER_SETUP_CARD_A] = card_a;
+    values[SD_MAPPER_SETUP_CARD_B] = card_b;
+    values[SD_MAPPER_SETUP_RAM] =
+        toggle_name(overlay->pending_sd_mapper_ram);
+    values[SD_MAPPER_SETUP_DRIVER] =
+        overlay->pending_sd_mapper_alternate_driver
+        ? "Alternate (SW1 on)" : "Primary (SW1 off)";
+    values[SD_MAPPER_SETUP_CONNECT] = "Connect SD Mapper V2";
+
+    ui_fill_rect(renderer, 0.0f, 0.0f,
+                 (float)DISPLAY_LOGICAL_W,
+                 (float)DISPLAY_LOGICAL_H,
+                 0, 0, 0, 150);
+    ui_fill_rect(renderer, box_x, box_y, box_w, box_h,
+                 20, 22, 52, 255);
+    ui_draw_rect(renderer, box_x, box_y, box_w, box_h,
+                 90, 110, 220);
+    ui_draw_text(
+        renderer,
+        box_x + (box_w - (float)strlen(title) * 8.0f) * 0.5f,
+        box_y + 12.0f, title, 255, 255, 255);
+    ui_draw_text(renderer, box_x + 22.0f, box_y + 42.0f,
+                 "One cartridge provides two SD cards and mapper RAM.",
+                 180, 210, 235);
+    ui_draw_text(renderer, box_x + 22.0f, box_y + 60.0f,
+                 "Images are removable media; the ROM is the controller.",
+                 180, 210, 235);
+
+    for (int row = 0; row < SD_MAPPER_SETUP_ROWS; ++row) {
+        bool selected = row == overlay->sd_mapper_setup_row;
+        Uint8 red = selected ? 255 : 210;
+        Uint8 green = selected ? 255 : 210;
+        Uint8 blue = selected ? 70 : 225;
+        float y = box_y + 94.0f + row * 27.0f;
+
+        if (selected)
+            ui_draw_text(renderer, box_x + 12.0f, y, ">",
+                         red, green, blue);
+        ui_draw_text(renderer, box_x + 28.0f, y, labels[row],
+                     red, green, blue);
+        ui_draw_text(renderer, box_x + 172.0f, y, values[row],
+                     red, green, blue);
+    }
+    ui_draw_text(renderer, box_x + 42.0f,
+                 box_y + box_h - 24.0f,
+                 "Up/Down choose  Enter select  Delete clear  Esc cancel",
+                 160, 180, 210);
+}
+
 void overlay_render_cassette_scope(const Overlay *overlay) {
     enum { SCOPE_SAMPLES = 608 };
     SDL_Renderer *renderer;
@@ -3146,6 +3868,10 @@ void overlay_render(const Overlay *overlay) {
 
     if (overlay->state == OVERLAY_STATE_SUNRISE_SETUP) {
         render_sunrise_setup(overlay, renderer);
+        return;
+    }
+    if (overlay->state == OVERLAY_STATE_SD_MAPPER_SETUP) {
+        render_sd_mapper_setup(overlay, renderer);
         return;
     }
     if (overlay->state == OVERLAY_STATE_MODEL_LIST) {
