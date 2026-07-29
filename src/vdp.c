@@ -52,6 +52,50 @@ enum {
     V9938_COMMAND_EVENT_NONE = 0,
     V9938_COMMAND_EVENT_COMPLETE,
     V9938_COMMAND_EVENT_TRANSFER_READY,
+    V9938_COMMAND_EVENT_STEP,
+};
+
+/*
+ * Free V9938 VRAM access positions measured on real hardware. These are the
+ * bitmap-mode tables used by openMSX 21.0 and the accompanying VDP timing
+ * articles. Values are 21 MHz VDP ticks within a 1368-tick scanline.
+ */
+static const u16 v9938_slots_screen_off[] = {
+       0,    8,   16,   24,   32,   40,   48,   56,   64,   72,
+      80,   88,   96,  104,  112,  120,  164,  172,  180,  188,
+     196,  204,  212,  220,  228,  236,  244,  252,  260,  268,
+     276,  292,  300,  308,  316,  324,  332,  340,  348,  356,
+     364,  372,  380,  388,  396,  404,  420,  428,  436,  444,
+     452,  460,  468,  476,  484,  492,  500,  508,  516,  524,
+     532,  548,  556,  564,  572,  580,  588,  596,  604,  612,
+     620,  628,  636,  644,  652,  660,  676,  684,  692,  700,
+     708,  716,  724,  732,  740,  748,  756,  764,  772,  780,
+     788,  804,  812,  820,  828,  836,  844,  852,  860,  868,
+     876,  884,  892,  900,  908,  916,  932,  940,  948,  956,
+     964,  972,  980,  988,  996, 1004, 1012, 1020, 1028, 1036,
+    1044, 1060, 1068, 1076, 1084, 1092, 1100, 1108, 1116, 1124,
+    1132, 1140, 1148, 1156, 1164, 1172, 1188, 1196, 1204, 1212,
+    1220, 1228, 1268, 1276, 1284, 1292, 1300, 1308, 1316, 1324,
+    1334, 1344, 1352, 1360,
+};
+
+static const u16 v9938_slots_sprites_off[] = {
+       6,   14,   22,   30,   38,   46,   54,   62,   70,   78,
+      86,   94,  102,  110,  118,  162,  170,  182,  188,  214,
+     220,  246,  252,  278,  310,  316,  342,  348,  374,  380,
+     406,  438,  444,  470,  476,  502,  508,  534,  566,  572,
+     598,  604,  630,  636,  662,  694,  700,  726,  732,  758,
+     764,  790,  822,  828,  854,  860,  886,  892,  918,  950,
+     956,  982,  988, 1014, 1020, 1046, 1078, 1084, 1110, 1116,
+    1142, 1148, 1174, 1206, 1212, 1266, 1274, 1282, 1290, 1298,
+    1306, 1314, 1322, 1332, 1342, 1350, 1358, 1366,
+};
+
+static const u16 v9938_slots_sprites_on[] = {
+      28,   92,  162,  170,  188,  220,  252,  316,  348,  380,
+     444,  476,  508,  572,  604,  636,  700,  732,  764,  828,
+     860,  892,  956,  988, 1020, 1084, 1116, 1148, 1212, 1264,
+    1330,
 };
 
 static unsigned bitmap_address(u8 mode, unsigned x, unsigned y);
@@ -61,6 +105,9 @@ static void execute_vdp_command(MsxVdp *vdp);
 static void command_transfer_write(MsxVdp *vdp);
 static u8 command_read_colour(MsxVdp *vdp);
 static void command_engine_advance(MsxVdp *vdp, u64 ticks);
+static void command_execute_step(MsxVdp *vdp);
+static bool command_has_clock(const MsxVdp *vdp);
+static u16 command_current_slot_phase(const MsxVdp *vdp);
 
 static unsigned vram_size(const MsxVdp *vdp) {
     return vdp->type == MSX_VDP_V9938
@@ -592,15 +639,24 @@ void vdp_reset(MsxVdp *vdp) {
     vdp->command_x = 0;
     vdp->command_y = 0;
     vdp->command_origin_x = 0;
+    vdp->command_source_x = 0;
+    vdp->command_source_y = 0;
+    vdp->command_source_origin_x = 0;
     vdp->command_row_length = 0;
     vdp->command_remaining_x = 0;
     vdp->command_remaining_y = 0;
     vdp->command_border_x = 0;
+    vdp->command_line_major = 0;
+    vdp->command_line_minor = 0;
+    vdp->command_line_error = 0;
+    vdp->command_slot_phase = 0;
     vdp->sprite_collision_x = 0;
     vdp->sprite_collision_y = 0;
     vdp->command_code = 0;
     vdp->command_mode = 0;
     vdp->command_argument = 0;
+    vdp->command_colour = 0;
+    vdp->command_operation = 0;
     vdp->command_event = V9938_COMMAND_EVENT_NONE;
     vdp->command_transfer_pending = false;
     vdp->command_ticks_remaining = 0;
@@ -646,8 +702,13 @@ static void write_register(MsxVdp *vdp, unsigned reg, u8 value) {
         update_irq(vdp);
     if (reg == 16)
         vdp->palette_pending = false;
-    if (vdp->type == MSX_VDP_V9938 && reg == 44)
+    if (vdp->type == MSX_VDP_V9938 && reg == 44) {
+        if (command_has_clock(vdp) &&
+            vdp->command_event == V9938_COMMAND_EVENT_NONE)
+            vdp->command_slot_phase =
+                command_current_slot_phase(vdp);
         command_transfer_write(vdp);
+    }
     if (vdp->type == MSX_VDP_V9938 && reg == 46)
         execute_vdp_command(vdp);
 }
@@ -1253,18 +1314,60 @@ static bool command_has_clock(const MsxVdp *vdp) {
     return vdp->timing_frame_cycles && vdp->timing_scanlines;
 }
 
-static void command_schedule_event(MsxVdp *vdp, u8 event, u64 ticks) {
-    vdp->command_event = event;
-    vdp->command_ticks_remaining = ticks ? ticks : 1;
-    vdp->command_tick_fraction = 0;
+static u16 command_current_slot_phase(const MsxVdp *vdp) {
+    u64 frame_ticks =
+        (u64)vdp->timing_scanlines * V9938_TICKS_PER_LINE;
+    u64 beam_ticks =
+        (u64)vdp->timing_cycle * frame_ticks /
+        vdp->timing_frame_cycles;
+
+    return (u16)(beam_ticks % V9938_TICKS_PER_LINE);
 }
 
-static void command_finish_after(MsxVdp *vdp, u64 ticks) {
+static u64 command_access_delay(const MsxVdp *vdp, u64 minimum) {
+    const u16 *slots;
+    size_t slot_count;
+    u64 target = (u64)vdp->command_slot_phase + minimum;
+    u64 lines = target / V9938_TICKS_PER_LINE;
+    unsigned phase = (unsigned)(target % V9938_TICKS_PER_LINE);
+    unsigned selected = 0;
+    bool found = false;
+
+    if (!(vdp->registers[1] & 0x40) || (vdp->status2 & 0x40)) {
+        slots = v9938_slots_screen_off;
+        slot_count = sizeof(v9938_slots_screen_off) /
+                     sizeof(v9938_slots_screen_off[0]);
+    } else if (vdp->registers[8] & 0x02) {
+        slots = v9938_slots_sprites_off;
+        slot_count = sizeof(v9938_slots_sprites_off) /
+                     sizeof(v9938_slots_sprites_off[0]);
+    } else {
+        slots = v9938_slots_sprites_on;
+        slot_count = sizeof(v9938_slots_sprites_on) /
+                     sizeof(v9938_slots_sprites_on[0]);
+    }
+
+    for (size_t i = 0; i < slot_count; ++i) {
+        if (slots[i] >= phase) {
+            selected = slots[i];
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        ++lines;
+        selected = slots[0];
+    }
+    return lines * V9938_TICKS_PER_LINE +
+           selected - vdp->command_slot_phase;
+}
+
+static void command_schedule_event(MsxVdp *vdp, u8 event, u64 ticks) {
+    vdp->command_event = event;
     if (command_has_clock(vdp))
-        command_schedule_event(
-            vdp, V9938_COMMAND_EVENT_COMPLETE, ticks);
-    else
-        command_complete(vdp);
+        ticks = command_access_delay(vdp, ticks);
+    vdp->command_ticks_remaining = ticks ? ticks : 1;
+    vdp->command_tick_fraction = 0;
 }
 
 static u64 command_transfer_ticks(const MsxVdp *vdp) {
@@ -1314,13 +1417,21 @@ static void command_engine_advance(MsxVdp *vdp, u64 ticks) {
     while (ticks &&
            vdp->command_event != V9938_COMMAND_EVENT_NONE) {
         u8 event;
+        u64 event_ticks;
 
         if (ticks < vdp->command_ticks_remaining) {
             vdp->command_ticks_remaining -= ticks;
+            vdp->command_slot_phase = (u16)(
+                (vdp->command_slot_phase + ticks) %
+                V9938_TICKS_PER_LINE);
             return;
         }
-        ticks -= vdp->command_ticks_remaining;
+        event_ticks = vdp->command_ticks_remaining;
+        ticks -= event_ticks;
         event = vdp->command_event;
+        vdp->command_slot_phase = (u16)(
+            (vdp->command_slot_phase + event_ticks) %
+            V9938_TICKS_PER_LINE);
         vdp->command_event = V9938_COMMAND_EVENT_NONE;
         vdp->command_ticks_remaining = 0;
         vdp->command_tick_fraction = 0;
@@ -1336,7 +1447,312 @@ static void command_engine_advance(MsxVdp *vdp, u64 ticks) {
                 (vdp->command_code == 0x0b ||
                  vdp->command_code == 0x0f))
                 command_transfer_write(vdp);
+        } else if (event == V9938_COMMAND_EVENT_STEP &&
+                   (vdp->status2 & V9938_STATUS2_CE)) {
+            command_execute_step(vdp);
         }
+    }
+}
+
+static void command_start_steps(MsxVdp *vdp, u64 first_ticks) {
+    command_schedule_event(
+        vdp, V9938_COMMAND_EVENT_STEP, first_ticks);
+    if (!command_has_clock(vdp))
+        command_engine_advance(vdp, ~(u64)0);
+}
+
+static bool command_advance_block(MsxVdp *vdp,
+                                  unsigned pixels_per_byte,
+                                  bool *new_row) {
+    int x_step = vdp->command_code >= 0x0c
+               ? (int)pixels_per_byte : 1;
+    int y_step = vdp->command_argument & 0x08 ? -1 : 1;
+    bool move_source =
+        vdp->command_code == 0x09 ||
+        vdp->command_code == 0x0d ||
+        vdp->command_code == 0x0e;
+
+    *new_row = false;
+    if (vdp->command_argument & 0x04)
+        x_step = -x_step;
+    if (--vdp->command_remaining_x) {
+        vdp->command_x = (u16)(vdp->command_x + x_step);
+        if (move_source)
+            vdp->command_source_x =
+                (u16)(vdp->command_source_x + x_step);
+        return true;
+    }
+    if (!--vdp->command_remaining_y)
+        return false;
+
+    *new_row = true;
+    vdp->command_x = vdp->command_origin_x;
+    vdp->command_y = (u16)(vdp->command_y + y_step);
+    if (move_source) {
+        vdp->command_source_x = vdp->command_source_origin_x;
+        vdp->command_source_y =
+            (u16)(vdp->command_source_y + y_step);
+    }
+    vdp->command_remaining_x = vdp->command_row_length;
+    return true;
+}
+
+static u64 command_block_ticks(u8 code, bool new_row) {
+    switch (code) {
+        case 0x08:
+            return 96 + (new_row ? 64 : 0);
+        case 0x09:
+            return 120 + (new_row ? 64 : 0);
+        case 0x0c:
+            return 48 + (new_row ? 56 : 0);
+        case 0x0d:
+            return 88 + (new_row ? 64 : 0);
+        case 0x0e:
+            return 64;
+        default:
+            return 1;
+    }
+}
+
+static void command_execute_line_step(MsxVdp *vdp, unsigned width) {
+    int x_step = vdp->command_argument & 0x04 ? -1 : 1;
+    int y_step = vdp->command_argument & 0x08 ? -1 : 1;
+    bool minor_step = false;
+
+    if (!(vdp->command_argument & 0x20))
+        command_write_pixel(
+            vdp, vdp->command_mode, vdp->command_x, vdp->command_y,
+            vdp->command_colour, vdp->command_operation);
+    if (!--vdp->command_remaining_x) {
+        command_complete(vdp);
+        return;
+    }
+
+    if (!(vdp->command_argument & 0x01)) {
+        if (x_step < 0 && vdp->command_x == 0) {
+            command_complete(vdp);
+            return;
+        }
+        vdp->command_x = (u16)(vdp->command_x + x_step);
+        if (vdp->command_line_error < vdp->command_line_minor) {
+            vdp->command_line_error =
+                (u16)(vdp->command_line_error +
+                      vdp->command_line_major);
+            if (y_step < 0 && vdp->command_y == 0) {
+                command_complete(vdp);
+                return;
+            }
+            vdp->command_y = (u16)(vdp->command_y + y_step);
+            minor_step = true;
+        }
+    } else {
+        if (y_step < 0 && vdp->command_y == 0) {
+            command_complete(vdp);
+            return;
+        }
+        vdp->command_y = (u16)(vdp->command_y + y_step);
+        if (vdp->command_line_error < vdp->command_line_minor) {
+            vdp->command_line_error =
+                (u16)(vdp->command_line_error +
+                      vdp->command_line_major);
+            if (x_step < 0 && vdp->command_x == 0) {
+                command_complete(vdp);
+                return;
+            }
+            vdp->command_x = (u16)(vdp->command_x + x_step);
+            minor_step = true;
+        }
+    }
+    vdp->command_line_error =
+        (vdp->command_line_error - vdp->command_line_minor) & 0x03ff;
+    if (vdp->command_x >= width) {
+        command_complete(vdp);
+        return;
+    }
+    command_schedule_event(
+        vdp, V9938_COMMAND_EVENT_STEP, minor_step ? 120 : 88);
+}
+
+static void command_execute_step(MsxVdp *vdp) {
+    unsigned width = 0;
+    unsigned colour_mask = 0;
+    unsigned pixels_per_byte = 1;
+    bool new_row;
+    bool more;
+
+    if (!command_mode_info(
+            vdp->command_mode, &width, &colour_mask, &pixels_per_byte)) {
+        command_complete(vdp);
+        return;
+    }
+    (void)colour_mask;
+
+    switch (vdp->command_code) {
+        case 0x04: /* POINT */
+            vdp->status7 = vdp->command_argument & 0x10
+                         ? 0xff
+                         : bitmap_pixel(
+                               vdp, vdp->command_mode,
+                               vdp->command_source_x,
+                               vdp->command_source_y);
+            vdp->registers[44] = vdp->status7;
+            command_complete(vdp);
+            break;
+
+        case 0x05: /* PSET */
+            if (!(vdp->command_argument & 0x20))
+                command_write_pixel(
+                    vdp, vdp->command_mode,
+                    vdp->command_x, vdp->command_y,
+                    vdp->command_colour, vdp->command_operation);
+            command_complete(vdp);
+            break;
+
+        case 0x06: { /* SRCH */
+            int x = vdp->command_x;
+            u8 found = vdp->command_argument & 0x10
+                     ? 0xff
+                     : bitmap_pixel(
+                           vdp, vdp->command_mode,
+                           vdp->command_x, vdp->command_y);
+            bool unequal = (vdp->command_argument & 0x02) != 0;
+            int x_step = vdp->command_argument & 0x04 ? -1 : 1;
+
+            if ((found == vdp->command_colour) != unequal) {
+                vdp->status2 |= V9938_STATUS2_BD;
+                vdp->command_border_x = vdp->command_x;
+                command_complete(vdp);
+                break;
+            }
+            x += x_step;
+            if (vdp->command_remaining_y ||
+                x < 0 || x >= (int)width) {
+                vdp->command_border_x = (u16)x;
+                command_complete(vdp);
+                break;
+            }
+            vdp->command_x = (u16)x;
+            command_schedule_event(
+                vdp, V9938_COMMAND_EVENT_STEP, 88);
+            break;
+        }
+
+        case 0x07: /* LINE */
+            command_execute_line_step(vdp, width);
+            break;
+
+        case 0x08: /* LMMV */
+            if (!(vdp->command_argument & 0x20))
+                command_write_pixel(
+                    vdp, vdp->command_mode,
+                    vdp->command_x, vdp->command_y,
+                    vdp->command_colour, vdp->command_operation);
+            more = command_advance_block(
+                vdp, pixels_per_byte, &new_row);
+            if (!more)
+                command_complete(vdp);
+            else
+                command_schedule_event(
+                    vdp, V9938_COMMAND_EVENT_STEP,
+                    command_block_ticks(vdp->command_code, new_row));
+            break;
+
+        case 0x09: { /* LMMM */
+            u8 colour = vdp->command_argument & 0x10
+                      ? 0xff
+                      : bitmap_pixel(
+                            vdp, vdp->command_mode,
+                            vdp->command_source_x,
+                            vdp->command_source_y);
+
+            if (!(vdp->command_argument & 0x20))
+                command_write_pixel(
+                    vdp, vdp->command_mode,
+                    vdp->command_x, vdp->command_y,
+                    colour, vdp->command_operation);
+            more = command_advance_block(
+                vdp, pixels_per_byte, &new_row);
+            if (!more)
+                command_complete(vdp);
+            else
+                command_schedule_event(
+                    vdp, V9938_COMMAND_EVENT_STEP,
+                    command_block_ticks(vdp->command_code, new_row));
+            break;
+        }
+
+        case 0x0c: { /* HMMV */
+            if (!(vdp->command_argument & 0x20)) {
+                unsigned address = wrap_address(
+                    vdp, bitmap_address(
+                        vdp->command_mode,
+                        vdp->command_x, vdp->command_y));
+                vdp->vram[address] = vdp->command_colour;
+            }
+            more = command_advance_block(
+                vdp, pixels_per_byte, &new_row);
+            if (!more)
+                command_complete(vdp);
+            else
+                command_schedule_event(
+                    vdp, V9938_COMMAND_EVENT_STEP,
+                    command_block_ticks(vdp->command_code, new_row));
+            break;
+        }
+
+        case 0x0d: { /* HMMM */
+            u8 value = vdp->command_argument & 0x10
+                     ? 0xff
+                     : vdp->vram[wrap_address(
+                           vdp, bitmap_address(
+                               vdp->command_mode,
+                               vdp->command_source_x,
+                               vdp->command_source_y))];
+
+            if (!(vdp->command_argument & 0x20))
+                vdp->vram[wrap_address(
+                    vdp, bitmap_address(
+                        vdp->command_mode,
+                        vdp->command_x, vdp->command_y))] = value;
+            more = command_advance_block(
+                vdp, pixels_per_byte, &new_row);
+            if (!more)
+                command_complete(vdp);
+            else
+                command_schedule_event(
+                    vdp, V9938_COMMAND_EVENT_STEP,
+                    command_block_ticks(vdp->command_code, new_row));
+            break;
+        }
+
+        case 0x0e: { /* YMMM */
+            unsigned source_address = wrap_address(
+                vdp, bitmap_address(
+                    vdp->command_mode,
+                    vdp->command_source_x,
+                    vdp->command_source_y));
+            unsigned destination_address = wrap_address(
+                vdp, bitmap_address(
+                    vdp->command_mode,
+                    vdp->command_x, vdp->command_y));
+
+            if (!(vdp->command_argument & 0x20))
+                vdp->vram[destination_address] =
+                    vdp->vram[source_address];
+            more = command_advance_block(
+                vdp, pixels_per_byte, &new_row);
+            if (!more)
+                command_complete(vdp);
+            else
+                command_schedule_event(
+                    vdp, V9938_COMMAND_EVENT_STEP,
+                    command_block_ticks(vdp->command_code, new_row));
+            break;
+        }
+
+        default:
+            command_complete(vdp);
+            break;
     }
 }
 
@@ -1355,6 +1771,9 @@ static u8 command_read_colour(MsxVdp *vdp) {
                           &pixels_per_byte);
         (void)width;
         (void)colour_mask;
+        if (command_has_clock(vdp))
+            vdp->command_slot_phase =
+                command_current_slot_phase(vdp);
         more = command_advance_transfer(vdp, pixels_per_byte);
         if (!command_has_clock(vdp)) {
             if (more)
@@ -1444,8 +1863,6 @@ static void execute_vdp_command(MsxVdp *vdp) {
     u8 argument = vdp->registers[45];
     bool reverse_x = (argument & 0x04) != 0;
     bool reverse_y = (argument & 0x08) != 0;
-    bool source_external = (argument & 0x10) != 0;
-    bool destination_external = (argument & 0x20) != 0;
     unsigned width;
     unsigned colour_mask;
     unsigned pixels_per_byte;
@@ -1455,8 +1872,6 @@ static void execute_vdp_command(MsxVdp *vdp) {
     unsigned dy = command_coordinate(vdp, 38, 0x03);
     unsigned nx = command_coordinate(vdp, 40, 0x03);
     unsigned ny = command_coordinate(vdp, 42, 0x03);
-    int tx = reverse_x ? -1 : 1;
-    int ty = reverse_y ? -1 : 1;
 
     /*
      * A write to R#46 replaces any command already in progress. Its
@@ -1465,6 +1880,9 @@ static void execute_vdp_command(MsxVdp *vdp) {
     vdp->command_event = V9938_COMMAND_EVENT_NONE;
     vdp->command_ticks_remaining = 0;
     vdp->command_tick_fraction = 0;
+    if (command_has_clock(vdp))
+        vdp->command_slot_phase =
+            command_current_slot_phase(vdp);
     vdp->status2 &= (u8)~V9938_STATUS2_TR;
     if (code < 4 ||
         !command_mode_info(mode, &width, &colour_mask,
@@ -1476,83 +1894,44 @@ static void execute_vdp_command(MsxVdp *vdp) {
     vdp->command_code = code;
     vdp->command_mode = mode;
     vdp->command_argument = argument;
+    vdp->command_colour = vdp->registers[44];
+    vdp->command_operation = command & 0x0f;
 
     switch (code) {
         case 0x04: /* POINT */
-            vdp->status7 = source_external
-                         ? 0xff : bitmap_pixel(vdp, mode, sx, sy);
-            vdp->registers[44] = vdp->status7;
-            command_finish_after(vdp, 32);
+            vdp->command_source_x = (u16)sx;
+            vdp->command_source_y = (u16)sy;
+            command_start_steps(vdp, 32);
             break;
 
         case 0x05: /* PSET */
-            if (!destination_external)
-                command_write_pixel(vdp, mode, dx, dy,
-                                    vdp->registers[44],
-                                    command & 0x0f);
-            command_finish_after(vdp, 48);
+            vdp->command_x = (u16)dx;
+            vdp->command_y = (u16)dy;
+            command_start_steps(vdp, 48);
             break;
 
         case 0x06: { /* SRCH */
-            int x = (int)sx;
-            u8 colour = vdp->registers[44] & (u8)colour_mask;
-            bool find_unequal = (argument & 0x02) != 0;
-            bool outside_at_start = sx >= width;
-            unsigned inspected = 0;
-
-            for (;;) {
-                u8 found = source_external
-                         ? 0xff
-                         : bitmap_pixel(vdp, mode, (unsigned)x, sy);
-                ++inspected;
-                if ((found == colour) != find_unequal) {
-                    vdp->status2 |= V9938_STATUS2_BD;
-                    break;
-                }
-                x += tx;
-                if (outside_at_start ||
-                    x < 0 || x >= (int)width)
-                    break;
-            }
-            vdp->command_border_x = (u16)x;
-            command_finish_after(vdp, (u64)inspected * 88);
+            vdp->command_x = (u16)sx;
+            vdp->command_y = (u16)sy;
+            vdp->command_colour =
+                vdp->registers[44] & (u8)colour_mask;
+            vdp->command_remaining_y = sx >= width ? 1 : 0;
+            command_start_steps(vdp, 88);
             break;
         }
 
         case 0x07: { /* LINE */
             unsigned major = nx & 0x03ff;
             unsigned minor = ny & 0x03ff;
-            unsigned error = major ? (major - 1) >> 1 : 0;
-            int x = (int)dx;
-            int y = (int)dy;
-            unsigned drawn = 0;
 
-            for (unsigned step = 0; step <= major; ++step) {
-                ++drawn;
-                if (!destination_external && y >= 0)
-                    command_write_pixel(
-                        vdp, mode, (unsigned)x, (unsigned)y,
-                        vdp->registers[44], command & 0x0f);
-                if (step == major)
-                    break;
-                if (!(argument & 0x01)) {
-                    x += tx;
-                    if (error < minor) {
-                        error += major;
-                        y += ty;
-                    }
-                } else {
-                    y += ty;
-                    if (error < minor) {
-                        error += major;
-                        x += tx;
-                    }
-                }
-                error = (error - minor) & 0x03ff;
-                if (x < 0 || x >= (int)width || y < 0)
-                    break;
-            }
-            command_finish_after(vdp, (u64)drawn * 88);
+            vdp->command_x = (u16)dx;
+            vdp->command_y = (u16)dy;
+            vdp->command_line_major = (u16)major;
+            vdp->command_line_minor = (u16)minor;
+            vdp->command_line_error =
+                (u16)(major ? (major - 1) >> 1 : 0);
+            vdp->command_remaining_x = (u16)(major + 1);
+            command_start_steps(vdp, 88);
             break;
         }
 
@@ -1560,22 +1939,14 @@ static void execute_vdp_command(MsxVdp *vdp) {
             unsigned columns = command_clip_x1(
                 dx, nx, width, reverse_x, pixels_per_byte, false);
             unsigned rows = command_clip_y1(dy, ny, reverse_y);
-            unsigned y = dy;
 
-            for (unsigned row = 0; row < rows; ++row) {
-                unsigned x = dx;
-                for (unsigned column = 0; column < columns; ++column) {
-                    if (!destination_external)
-                        command_write_pixel(
-                            vdp, mode, x, y, vdp->registers[44],
-                            command & 0x0f);
-                    x = (unsigned)((int)x + tx);
-                }
-                y = (unsigned)((int)y + ty);
-            }
-            command_finish_after(
-                vdp, (u64)columns * rows * 96 +
-                     (rows > 1 ? (u64)(rows - 1) * 64 : 0));
+            vdp->command_x = (u16)dx;
+            vdp->command_y = (u16)dy;
+            vdp->command_origin_x = (u16)dx;
+            vdp->command_row_length = (u16)columns;
+            vdp->command_remaining_x = (u16)columns;
+            vdp->command_remaining_y = (u16)rows;
+            command_start_steps(vdp, command_block_ticks(code, false));
             break;
         }
 
@@ -1583,32 +1954,17 @@ static void execute_vdp_command(MsxVdp *vdp) {
             unsigned columns = command_clip_x2(
                 sx, dx, nx, width, reverse_x, pixels_per_byte, false);
             unsigned rows = command_clip_y2(sy, dy, ny, reverse_y);
-            unsigned source_y = sy;
-            unsigned destination_y = dy;
 
-            for (unsigned row = 0; row < rows; ++row) {
-                unsigned source_x = sx;
-                unsigned destination_x = dx;
-                for (unsigned column = 0; column < columns; ++column) {
-                    u8 colour = source_external
-                              ? 0xff
-                              : bitmap_pixel(vdp, mode, source_x,
-                                             source_y);
-                    if (!destination_external)
-                        command_write_pixel(
-                            vdp, mode, destination_x, destination_y,
-                            colour, command & 0x0f);
-                    source_x = (unsigned)((int)source_x + tx);
-                    destination_x =
-                        (unsigned)((int)destination_x + tx);
-                }
-                source_y = (unsigned)((int)source_y + ty);
-                destination_y =
-                    (unsigned)((int)destination_y + ty);
-            }
-            command_finish_after(
-                vdp, (u64)columns * rows * 120 +
-                     (rows > 1 ? (u64)(rows - 1) * 64 : 0));
+            vdp->command_x = (u16)dx;
+            vdp->command_y = (u16)dy;
+            vdp->command_origin_x = (u16)dx;
+            vdp->command_source_x = (u16)sx;
+            vdp->command_source_y = (u16)sy;
+            vdp->command_source_origin_x = (u16)sx;
+            vdp->command_row_length = (u16)columns;
+            vdp->command_remaining_x = (u16)columns;
+            vdp->command_remaining_y = (u16)rows;
+            command_start_steps(vdp, command_block_ticks(code, false));
             break;
         }
 
@@ -1639,26 +1995,14 @@ static void execute_vdp_command(MsxVdp *vdp) {
             unsigned columns = command_clip_x1(
                 dx, nx, width, reverse_x, pixels_per_byte, true);
             unsigned rows = command_clip_y1(dy, ny, reverse_y);
-            int byte_step = reverse_x
-                          ? -(int)pixels_per_byte
-                          : (int)pixels_per_byte;
-            unsigned y = dy;
 
-            for (unsigned row = 0; row < rows; ++row) {
-                unsigned x = dx;
-                for (unsigned column = 0; column < columns; ++column) {
-                    if (!destination_external) {
-                        unsigned address = wrap_address(
-                            vdp, bitmap_address(mode, x, y));
-                        vdp->vram[address] = vdp->registers[44];
-                    }
-                    x = (unsigned)((int)x + byte_step);
-                }
-                y = (unsigned)((int)y + ty);
-            }
-            command_finish_after(
-                vdp, (u64)columns * rows * 48 +
-                     (rows > 1 ? (u64)(rows - 1) * 56 : 0));
+            vdp->command_x = (u16)dx;
+            vdp->command_y = (u16)dy;
+            vdp->command_origin_x = (u16)dx;
+            vdp->command_row_length = (u16)columns;
+            vdp->command_remaining_x = (u16)columns;
+            vdp->command_remaining_y = (u16)rows;
+            command_start_steps(vdp, command_block_ticks(code, false));
             break;
         }
 
@@ -1666,38 +2010,17 @@ static void execute_vdp_command(MsxVdp *vdp) {
             unsigned columns = command_clip_x2(
                 sx, dx, nx, width, reverse_x, pixels_per_byte, true);
             unsigned rows = command_clip_y2(sy, dy, ny, reverse_y);
-            int byte_step = reverse_x
-                          ? -(int)pixels_per_byte
-                          : (int)pixels_per_byte;
-            unsigned source_y = sy;
-            unsigned destination_y = dy;
 
-            for (unsigned row = 0; row < rows; ++row) {
-                unsigned source_x = sx;
-                unsigned destination_x = dx;
-                for (unsigned column = 0; column < columns; ++column) {
-                    u8 value = source_external
-                             ? 0xff
-                             : vdp->vram[wrap_address(
-                                 vdp, bitmap_address(
-                                     mode, source_x, source_y))];
-                    if (!destination_external)
-                        vdp->vram[wrap_address(
-                            vdp, bitmap_address(
-                                mode, destination_x,
-                                destination_y))] = value;
-                    source_x =
-                        (unsigned)((int)source_x + byte_step);
-                    destination_x =
-                        (unsigned)((int)destination_x + byte_step);
-                }
-                source_y = (unsigned)((int)source_y + ty);
-                destination_y =
-                    (unsigned)((int)destination_y + ty);
-            }
-            command_finish_after(
-                vdp, (u64)columns * rows * 88 +
-                     (rows > 1 ? (u64)(rows - 1) * 64 : 0));
+            vdp->command_x = (u16)dx;
+            vdp->command_y = (u16)dy;
+            vdp->command_origin_x = (u16)dx;
+            vdp->command_source_x = (u16)sx;
+            vdp->command_source_y = (u16)sy;
+            vdp->command_source_origin_x = (u16)sx;
+            vdp->command_row_length = (u16)columns;
+            vdp->command_remaining_x = (u16)columns;
+            vdp->command_remaining_y = (u16)rows;
+            command_start_steps(vdp, command_block_ticks(code, false));
             break;
         }
 
@@ -1705,30 +2028,17 @@ static void execute_vdp_command(MsxVdp *vdp) {
             unsigned columns = command_clip_x1(
                 dx, 512, width, reverse_x, pixels_per_byte, true);
             unsigned rows = command_clip_y2(sy, dy, ny, reverse_y);
-            int byte_step = reverse_x
-                          ? -(int)pixels_per_byte
-                          : (int)pixels_per_byte;
-            unsigned source_y = sy;
-            unsigned destination_y = dy;
 
-            for (unsigned row = 0; row < rows; ++row) {
-                unsigned x = dx;
-                for (unsigned column = 0; column < columns; ++column) {
-                    unsigned source_address = wrap_address(
-                        vdp, bitmap_address(mode, x, source_y));
-                    unsigned destination_address = wrap_address(
-                        vdp, bitmap_address(mode, x, destination_y));
-                    if (!destination_external)
-                        vdp->vram[destination_address] =
-                            vdp->vram[source_address];
-                    x = (unsigned)((int)x + byte_step);
-                }
-                source_y = (unsigned)((int)source_y + ty);
-                destination_y =
-                    (unsigned)((int)destination_y + ty);
-            }
-            command_finish_after(
-                vdp, (u64)columns * rows * 64);
+            vdp->command_x = (u16)dx;
+            vdp->command_y = (u16)dy;
+            vdp->command_origin_x = (u16)dx;
+            vdp->command_source_x = (u16)dx;
+            vdp->command_source_y = (u16)sy;
+            vdp->command_source_origin_x = (u16)dx;
+            vdp->command_row_length = (u16)columns;
+            vdp->command_remaining_x = (u16)columns;
+            vdp->command_remaining_y = (u16)rows;
+            command_start_steps(vdp, command_block_ticks(code, false));
             break;
         }
 
