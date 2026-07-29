@@ -92,6 +92,33 @@ u8 msx_keyboard_read_row(const MsxMachine *msx, unsigned row) {
     return msx->keyboard_rows[row];
 }
 
+void msx_joystick_set_pressed(MsxMachine *msx, unsigned port, u8 pressed) {
+    if (!msx || port >= MSX_JOYSTICK_PORTS)
+        return;
+    msx->joystick_pressed[port] = pressed & MSX_JOY_MASK;
+}
+
+u8 msx_joystick_read_port(const MsxMachine *msx, unsigned port) {
+    if (!msx || port >= MSX_JOYSTICK_PORTS)
+        return MSX_JOY_MASK;
+    return (u8)(~msx->joystick_pressed[port]) & MSX_JOY_MASK;
+}
+
+static u8 msx_joystick_read_psg(const MsxMachine *msx) {
+    u8 port_b = msx->psg.registers[15];
+    unsigned port = (port_b >> 6) & 1u;
+    u8 pin_8_mask = port ? 0x20 : 0x10;
+    u8 joystick = (port_b & pin_8_mask)
+                ? MSX_JOY_MASK : msx_joystick_read_port(msx, port);
+
+    /*
+     * Bits 0-5 are the selected joystick's active-low lines. The generic
+     * international keyboard layout drives bit 6 low, while an empty
+     * cassette input rests high on bit 7.
+     */
+    return 0x80 | joystick;
+}
+
 static u8 bus_memory_read(void *context, u16 address) {
     return msx_memory_read(context, address);
 }
@@ -301,6 +328,7 @@ void msx_reset(MsxMachine *msx) {
     msx->kana_led = false;
     msx->ppi_port_c = 0xff;
     msx_keyboard_clear(msx);
+    memset(msx->joystick_pressed, 0, sizeof(msx->joystick_pressed));
     psg_reset(&msx->psg);
     rtc_reset(&msx->rtc);
     /*
@@ -577,12 +605,7 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
             break;
         case 0xa2:
             if (msx->psg.selected == 14)
-                /*
-                 * No joystick is connected (bits 0-5 high), the generic
-                 * international keyboard layout drives bit 6 low, and an
-                 * empty cassette input rests high on bit 7.
-                 */
-                return 0xbf;
+                return msx_joystick_read_psg(msx);
             return psg_read_data(&msx->psg);
         case 0xa8:
             return msx->primary_slot;

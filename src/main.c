@@ -8,6 +8,7 @@
 #include "audio.h"
 #include "config.h"
 #include "display.h"
+#include "gamepad.h"
 #include "kbd.h"
 #include "leds.h"
 #include "models.h"
@@ -277,6 +278,7 @@ int main(int argc, char **argv) {
     KbdHost keyboard;
     static Display display;
     AudioOutput audio;
+    GamepadInput gamepad;
     Overlay overlay;
     SDL_WindowID window_id;
     bool running = true;
@@ -431,6 +433,7 @@ int main(int argc, char **argv) {
         msx_destroy(&msx);
         return 1;
     }
+    gamepad_input_init(&gamepad);
     audio_output_init(&audio, !cli.headless && !cli.unthrottled);
     window_id = SDL_GetWindowID(display.window);
 
@@ -442,6 +445,9 @@ int main(int argc, char **argv) {
         notify_post("Firmware running - F9 opens options");
     else
         notify_post("Select a BIOS ROM to boot - F9 opens options");
+    if (gamepad_input_connected(&gamepad))
+        notify_post("Gamepad connected: %s",
+                    gamepad_input_name(&gamepad));
 
     printf("1983 - MSX / MSX2 emulator (git %s)\n",
            PROG_GIT_COMMIT);
@@ -456,6 +462,7 @@ int main(int argc, char **argv) {
     printf("F4 screenshot, F5 reset, F9 options, F11 fullscreen, F12 quit\n");
     printf("Shift+F1..F5 = MSX F1..F5, Shift+F7 = SELECT, "
            "Shift+F8 = STOP\n");
+    printf("Gamepad: %s\n", gamepad_input_name(&gamepad));
     if (msx_can_boot(&msx))
         printf("BIOS loaded%s%s%s%s%s\n",
                msx.logo_loaded ? ", logo ROM loaded" : "",
@@ -475,6 +482,21 @@ int main(int argc, char **argv) {
         while (SDL_PollEvent(&event)) {
             bool overlay_was_visible = overlay.visible;
 
+            if (event.type == SDL_EVENT_GAMEPAD_ADDED ||
+                event.type == SDL_EVENT_GAMEPAD_REMOVED) {
+                bool was_connected =
+                    gamepad_input_connected(&gamepad);
+
+                gamepad_input_handle_device_event(&gamepad, &event);
+                if (!was_connected &&
+                    gamepad_input_connected(&gamepad))
+                    notify_post("Gamepad connected: %s",
+                                gamepad_input_name(&gamepad));
+                else if (was_connected &&
+                         !gamepad_input_connected(&gamepad))
+                    notify_post("Gamepad disconnected");
+                continue;
+            }
             if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST &&
                 event.window.windowID == window_id)
                 kbd_release_all(&keyboard, &msx);
@@ -565,6 +587,16 @@ int main(int argc, char **argv) {
         }
 
         overlay_tick(&overlay);
+        for (unsigned port = 0; port < MSX_JOYSTICK_PORTS; ++port)
+            msx_joystick_set_pressed(&msx, port, 0);
+        {
+            unsigned port =
+                config.main_input == INPUT_PORT_B ? 1u : 0u;
+
+            if (config.joy_port_device[port] == JOY_PORT_JOYSTICK)
+                msx_joystick_set_pressed(
+                    &msx, port, gamepad_input_poll(&gamepad));
+        }
         msx_run_frame(&msx);
         audio_output_submit(&audio, msx.audio_samples,
                             msx.audio_sample_count);
@@ -632,6 +664,7 @@ int main(int argc, char **argv) {
                msx.vdp.registers[0], msx.vdp.registers[1]);
     }
     audio_output_quit(&audio);
+    gamepad_input_destroy(&gamepad);
     display_quit(&display);
     msx_destroy(&msx);
     return 0;

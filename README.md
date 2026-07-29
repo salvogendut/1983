@@ -1,5 +1,7 @@
 # 1983 - MSX / MSX2 emulator
 
+![1983](1983.png)
+
 1983 is a compatibility-focused MSX and MSX2 emulator written in C with
 SDL3. It aims to run software for the first two generations of the MSX
 standard without being tied to one manufacturer's machine.
@@ -13,10 +15,10 @@ SDL3 allows.
 
 > **Status:** MSX1 and MSX2 firmware and cartridge software are running.
 > The emulator includes TMS9918-family and V9938 video, AY/YM PSG audio,
-> the international keyboard matrix, dual cartridge slots with common
-> mappers, MSX2 expanded slots, memory mapper, and RTC. Cassette, floppy,
-> Sunrise IDE, Nextor boot storage, SCC audio, and other extensions remain
-> in development.
+> the international keyboard matrix, SDL3 joystick input, dual cartridge
+> slots with common mappers, MSX2 expanded slots, memory mapper, and RTC.
+> Cassette, floppy, Sunrise IDE, Nextor boot storage, SCC audio, and other
+> extensions remain in development.
 
 ## Highlights
 
@@ -131,7 +133,11 @@ Enter activates it, F9 saves, and Escape closes or offers to discard changes.
 PSG volume now lives in General, whose RAM control cycles through supported
 sizes up to 4096 KiB. Main Input selects Joy Port A or B, and the two port
 entries select Joystick or Mouse for each connector. These selections are
-persisted in preparation for the joystick and mouse input backends.
+persisted. The primary SDL3 gamepad drives the selected connector when that
+port is set to Joystick: the D-pad or left stick provides direction, while
+the south and east face buttons provide triggers A and B. Gamepads may be
+connected or removed while 1983 is running. Mouse mode currently leaves its
+port idle while the MSX mouse protocol is developed.
 **General > Extra Hardware** reveals Extensions; **General > Tinker**
 reveals Advanced.
 

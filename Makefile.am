@@ -5,6 +5,7 @@ bin_PROGRAMS = 1983
 	src/cartridge.c \
 	src/audio.c \
 	src/display.c \
+	src/gamepad.c \
 	src/kbd.c \
 	src/leds.c \
 	src/main.c \
@@ -23,6 +24,7 @@ noinst_HEADERS = \
 	src/cartridge.h \
 	src/audio.h \
 	src/display.h \
+	src/gamepad.h \
 	src/kbd.h \
 	src/leds.h \
 	src/models.h \
@@ -48,7 +50,7 @@ icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 
 CLEANFILES = icons/1983-rc.o
 
-check_PROGRAMS = test-cartridge test-config test-models test-msx test-kbd test-overlay test-vdp test-psg test-rtc
+check_PROGRAMS = test-cartridge test-config test-models test-msx test-gamepad test-kbd test-overlay test-vdp test-psg test-rtc
 TESTS = $(check_PROGRAMS) tests/test-cli.sh
 test_cartridge_SOURCES = tests/test_cartridge.c src/cartridge.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
@@ -65,6 +67,11 @@ test_models_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+
+test_gamepad_SOURCES = tests/test_gamepad.c src/gamepad.c
+test_gamepad_CPPFLAGS = -I$(top_srcdir)/src
+test_gamepad_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
+test_gamepad_LDADD = $(SDL3_LIBS)
 
 test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
@@ -114,6 +121,7 @@ dist_icon512_DATA = icons/512x512/apps/io.github.salvogendut.Emulator1983.png
 EXTRA_DIST = \
 	LICENSE \
 	README.md \
+	1983.png \
 	TECHNICAL.md \
 	DEVELOPMENT.md \
 	ROADMAP.md \

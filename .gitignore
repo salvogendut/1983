@@ -8,6 +8,7 @@
 /test-cartridge
 /test-config
 /test-models
+/test-gamepad
 /test-overlay
 /tests/test-*.log
 /tests/test-*.trs

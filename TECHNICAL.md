@@ -86,8 +86,12 @@ precedence.
 
 General exposes a Main Input selection between Joy Port A and Joy Port B,
 plus independent Joystick/Mouse device selections for both connectors.
-These choices are persisted in `1983.conf`; controller and MSX mouse
-protocol emulation remain to be connected to them.
+These choices are persisted in `1983.conf`. The first SDL3 gamepad is routed
+to Main Input when that connector is set to Joystick. Its D-pad and left
+stick drive the four directions; south and east drive triggers A and B.
+Hot-plug removal clears the input, and another available gamepad is selected
+automatically. A connector set to Mouse remains idle until the MSX mouse
+protocol is implemented.
 
 ## Cartridges
 
@@ -186,10 +190,15 @@ behavior, fixed and envelope volume curves, and volume-register DAC output.
 It runs at MSX bus timing and produces filtered 44.1 kHz signed 16-bit mono
 audio through SDL3.
 
-PSG port A currently reports inactive joystick inputs, the international
-keyboard-layout signal, and an empty cassette. Port B drives the Kana LED.
-Joystick, mouse, cassette signals, SCC, and MSX-MUSIC audio remain future
-work.
+PSG port A reads the selected joystick connector through register 14. Bits
+0 through 5 are active-low Up, Down, Left, Right, trigger A, and trigger B.
+Register 15 bit 6 selects connector A or B; bits 4 and 5 drive the respective
+pin-8 lines, with a high pin returning neutral input. Register 14 bit 6 is
+the low international keyboard-layout signal and bit 7 is the high empty
+cassette input. PSG port B also drives the Kana LED.
+
+The host-independent machine stores both joystick states separately. Mouse,
+real cassette signals, SCC, and MSX-MUSIC audio remain future work.
 
 MSX2 layouts include RP-5C01-compatible latch/data ports at `0xB4` and
 `0xB5`, four register banks, hardware masks, control/reset registers,
@@ -206,6 +215,11 @@ SDL input is positional. The frontend reserves unmodified function keys;
 Shift+F1 through Shift+F5 send the guest function keys, Shift+F7 sends
 SELECT, and Shift+F8 sends STOP. Alternate national matrices and
 model-specific electrical ghosting are not implemented.
+
+The SDL3 controller adapter applies a 16,000-unit analogue dead zone and
+normalizes opposing directions to neutral before passing a six-bit state to
+the machine core. Both joystick ports, PSG selection, and pin gating remain
+independent of SDL and are covered by deterministic tests.
 
 ## Frontend
 
