@@ -448,7 +448,7 @@ static void item_text(const Overlay *overlay, int row,
                     break;
                 case ADVANCED_IDE_IMAGE_ACCESS:
                     snprintf(label, label_size,
-                             "IDE image access mode");
+                             "IDE access mode");
                     snprintf(value, value_size, "%s",
                              ide_mode_name(config->ide_image_mode));
                     break;

@@ -182,8 +182,8 @@ Later activations
 simply disconnect or reconnect the configured controller; Delete forgets its
 stored firmware when a replacement is needed. The IDE hard-disk row appears
 in Media only while Sunrise IDE is connected and owns subsequent image
-changes and safe ejection. With Tinker enabled, **Advanced > IDE image
-access mode** explicitly switches the attached image between read-only and
+changes and safe ejection. With Tinker enabled, **Advanced > IDE access
+mode** explicitly switches the attached image between read-only and
 read/write. Images must use complete 512-byte sectors. Read-only is the
 default.
 Dirty data is flushed for ATA FLUSH CACHE, image replacement, ejection, and
