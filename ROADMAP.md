@@ -29,7 +29,7 @@ the 1984 and 1985 sibling emulators.
 | Cartridges | Dual Linear, ASCII8/16, Konami, and Konami SCC devices with persistent mapper controls are implemented |
 | Cassette | CAS images and the standard BIOS cassette path are planned |
 | Disk | DSK images, WD2793 behavior, Sunrise ATA-IDE, guest writes, and multiple drives are planned |
-| Input | International keyboard and persistent Joy Port A/B device selections are implemented; joystick and mouse protocols, alternate matrices, and clipboard paste are planned |
+| Input | International keyboard, dual PSG joystick ports, SDL3 gamepad hotplug/routing, and persistent Joy Port selections are implemented; mouse protocols, alternate matrices, and clipboard paste are planned |
 | MSX2 hardware | Internal mapper, RTC, and editable firmware catalogue are implemented; persistent CMOS and more extensions are planned |
 | Tools | Screenshots and headless automation exist; snapshots, debugger, disassembler, and deterministic capture are planned |
 
@@ -46,10 +46,12 @@ the 1984 and 1985 sibling emulators.
 5. Scanline-progressive V9938 rendering and timed CPU/command VRAM access.
 6. Editable machine catalogue, General > Machine firmware workflow, and the
    Advanced machine model editor.
+7. Dual active-low MSX joystick ports with SDL3 gamepad input and live
+   Main Input routing.
 
 ## Near-term targets
 
-1. Add joystick input, cassette loading, alternate national keyboard
+1. Add cassette loading, MSX mouse input, alternate national keyboard
    layouts, and a small redistributable MSX1 compatibility corpus.
 2. Refine progressive VDP rendering from completed-scanline changes to
    within-scanline fetch timing where software depends on raster effects.

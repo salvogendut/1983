@@ -472,6 +472,49 @@ static void test_keyboard_matrix_and_ppi(void) {
         assert(msx_keyboard_read_row(&msx, row) == 0xff);
 }
 
+static void test_dual_joystick_psg_ports(void) {
+    MsxMachine msx;
+
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(msx_joystick_read_port(&msx, 0) == MSX_JOY_MASK);
+    assert(msx_joystick_read_port(&msx, 1) == MSX_JOY_MASK);
+    assert(msx_joystick_read_port(&msx, MSX_JOYSTICK_PORTS) ==
+           MSX_JOY_MASK);
+
+    msx_joystick_set_pressed(
+        &msx, 0, MSX_JOY_UP | MSX_JOY_RIGHT | MSX_JOY_TRIGGER_A);
+    msx_joystick_set_pressed(
+        &msx, 1, MSX_JOY_DOWN | MSX_JOY_LEFT | MSX_JOY_TRIGGER_B);
+    msx_joystick_set_pressed(&msx, MSX_JOYSTICK_PORTS, MSX_JOY_MASK);
+    assert(msx_joystick_read_port(&msx, 0) == 0x26);
+    assert(msx_joystick_read_port(&msx, 1) == 0x19);
+
+    /* R15 bit 6 selects port A (0) or B (1). */
+    msx_io_write(&msx, 0xa0, 14);
+    assert(msx_io_read(&msx, 0xa2) == 0xa6);
+    msx_io_write(&msx, 0xa0, 15);
+    msx_io_write(&msx, 0xa1, 0x40);
+    msx_io_write(&msx, 0xa0, 14);
+    assert(msx_io_read(&msx, 0xa2) == 0x99);
+
+    /* R15 bits 4 and 5 raise pin 8 on ports A and B respectively. */
+    msx_io_write(&msx, 0xa0, 15);
+    msx_io_write(&msx, 0xa1, 0x10);
+    msx_io_write(&msx, 0xa0, 14);
+    assert(msx_io_read(&msx, 0xa2) == 0xbf);
+    msx_io_write(&msx, 0xa0, 15);
+    msx_io_write(&msx, 0xa1, 0x60);
+    msx_io_write(&msx, 0xa0, 14);
+    assert(msx_io_read(&msx, 0xa2) == 0xbf);
+
+    msx_reset(&msx);
+    assert(msx_joystick_read_port(&msx, 0) == MSX_JOY_MASK);
+    assert(msx_joystick_read_port(&msx, 1) == MSX_JOY_MASK);
+    msx_io_write(&msx, 0xa0, 14);
+    assert(msx_io_read(&msx, 0xa2) == 0xbf);
+    msx_destroy(&msx);
+}
+
 static void test_psg_ports_and_cycle_timed_audio(void) {
     MsxMachine *msx = malloc(sizeof(*msx));
     u8 bios[MSX_BIOS_SIZE];
@@ -818,6 +861,7 @@ int main(void) {
     test_msx2_vdp_extended_ports();
     test_rtc_ports_and_reset_persistence();
     test_keyboard_matrix_and_ppi();
+    test_dual_joystick_psg_ports();
     test_psg_ports_and_cycle_timed_audio();
     test_cbios_checkpoint_if_available();
     test_msx_diag_bios_checkpoint_if_available();

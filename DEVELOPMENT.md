@@ -13,6 +13,7 @@ complete MSX hardware specification.
 | `src/audio.*` | SDL3 audio-stream lifetime and host sample submission |
 | `src/config.*` | Defaults, normalization, persistent settings, and platform-specific configuration path |
 | `src/display.*` | SDL window and renderer, fixed logical canvas, framebuffer presentation, footer, and screenshots |
+| `src/gamepad.*` | Primary SDL3 gamepad discovery, hotplug lifetime, polling, dead zone, and MSX joystick mapping |
 | `src/kbd.*` | SDL scancode translation and shared frontend/guest function-key routing |
 | `src/overlay.*` | F9 options workflow and live application of frontend and machine-profile settings |
 | `src/leds.*` | Shared bottom status strip and MSX-specific indicator definitions |
@@ -27,6 +28,7 @@ complete MSX hardware specification.
 | `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/diagnostic boot checks |
 | `tests/test_cartridge.c` | Linear, ASCII8/16, Konami, Konami SCC, detection, bank wrapping, reset, and eject checks |
 | `tests/test_config.c` | Persistent cartridge, mapper, extension, and Joy Port settings |
+| `tests/test_gamepad.c` | SDL-independent direction, trigger, dead-zone, and opposing-input mapping |
 | `tests/test_models.c` | Machine-catalogue parsing, hardware mapping, relative paths, and invalid-entry filtering |
 | `tests/test_overlay.c` | Overlay navigation, dynamic hardware rows, cartridge-slot LEDs, and model editing |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
@@ -145,8 +147,8 @@ V9938 VR/HR status follows the emulated beam and the VDP IRQ is level
 sensitive. V9938 sprite mode 2 is rendered in SCREEN 4 through SCREEN 8.
 Completed V9938 display rows are committed progressively before timed VRAM
 mutations and relevant register or palette writes. Alternate national
-keyboard matrices, joystick/mouse PSG inputs, and within-scanline pixel timing
-are not implemented.
+keyboard matrices, MSX mouse input, and within-scanline pixel timing are not
+implemented.
 
 ## Keyboard input
 
@@ -296,10 +298,18 @@ SDL3 stream. Headless and unthrottled execution still advances the PSG and is
 covered by component tests, but deliberately does not open a host audio
 device.
 
-PSG port A currently reports inactive joystick inputs, the international
-keyboard-layout signal, and an empty-cassette comparator. Port B drives the
-active-low Kana LED. Joystick, mouse, and real cassette signals remain future
-peripheral work.
+PSG register 14 reports the selected connector's six active-low joystick
+lines, the international keyboard-layout signal, and the empty-cassette
+comparator. Register 15 selects Joy Port A or B and supplies their separate
+pin-8 outputs. Port B also drives the active-low Kana LED. The core owns both
+joystick latches and clears them on reset.
+
+The SDL3 adapter opens the first available gamepad, follows add/remove
+events, and polls its D-pad, left stick, and south/east face buttons once per
+frame. The frontend clears both latches before routing that state through the
+live Main Input setting, but only when the chosen connector is configured as
+Joystick. This prevents stale input after unplugging or changing a port to
+Mouse. MSX mouse and real cassette signals remain future peripheral work.
 
 ## Verification
 

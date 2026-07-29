@@ -94,9 +94,9 @@ build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = 1983$(EXEEXT)
 check_PROGRAMS = test-cartridge$(EXEEXT) test-config$(EXEEXT) \
-	test-models$(EXEEXT) test-msx$(EXEEXT) test-kbd$(EXEEXT) \
-	test-overlay$(EXEEXT) test-vdp$(EXEEXT) test-psg$(EXEEXT) \
-	test-rtc$(EXEEXT)
+	test-models$(EXEEXT) test-msx$(EXEEXT) test-gamepad$(EXEEXT) \
+	test-kbd$(EXEEXT) test-overlay$(EXEEXT) test-vdp$(EXEEXT) \
+	test-psg$(EXEEXT) test-rtc$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -123,13 +123,13 @@ PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_1983_OBJECTS = src/1983-config.$(OBJEXT) \
 	src/1983-cartridge.$(OBJEXT) src/1983-audio.$(OBJEXT) \
-	src/1983-display.$(OBJEXT) src/1983-kbd.$(OBJEXT) \
-	src/1983-leds.$(OBJEXT) src/1983-main.$(OBJEXT) \
-	src/1983-models.$(OBJEXT) src/1983-msx.$(OBJEXT) \
-	src/1983-notify.$(OBJEXT) src/1983-overlay.$(OBJEXT) \
-	src/1983-psg.$(OBJEXT) src/1983-rtc.$(OBJEXT) \
-	src/1983-ui.$(OBJEXT) src/1983-vdp.$(OBJEXT) \
-	src/1983-z80.$(OBJEXT)
+	src/1983-display.$(OBJEXT) src/1983-gamepad.$(OBJEXT) \
+	src/1983-kbd.$(OBJEXT) src/1983-leds.$(OBJEXT) \
+	src/1983-main.$(OBJEXT) src/1983-models.$(OBJEXT) \
+	src/1983-msx.$(OBJEXT) src/1983-notify.$(OBJEXT) \
+	src/1983-overlay.$(OBJEXT) src/1983-psg.$(OBJEXT) \
+	src/1983-rtc.$(OBJEXT) src/1983-ui.$(OBJEXT) \
+	src/1983-vdp.$(OBJEXT) src/1983-z80.$(OBJEXT)
 1983_OBJECTS = $(am_1983_OBJECTS)
 am__DEPENDENCIES_1 =
 1983_LINK = $(CCLD) $(1983_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
@@ -150,6 +150,12 @@ am_test_config_OBJECTS = tests/test_config-test_config.$(OBJEXT) \
 test_config_OBJECTS = $(am_test_config_OBJECTS)
 test_config_LDADD = $(LDADD)
 test_config_LINK = $(CCLD) $(test_config_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_test_gamepad_OBJECTS = tests/test_gamepad-test_gamepad.$(OBJEXT) \
+	src/test_gamepad-gamepad.$(OBJEXT)
+test_gamepad_OBJECTS = $(am_test_gamepad_OBJECTS)
+test_gamepad_DEPENDENCIES = $(am__DEPENDENCIES_1)
+test_gamepad_LINK = $(CCLD) $(test_gamepad_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_kbd_OBJECTS = tests/test_kbd-test_kbd.$(OBJEXT) \
 	src/test_kbd-cartridge.$(OBJEXT) src/test_kbd-kbd.$(OBJEXT) \
@@ -229,13 +235,13 @@ depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = src/$(DEPDIR)/1983-audio.Po \
 	src/$(DEPDIR)/1983-cartridge.Po src/$(DEPDIR)/1983-config.Po \
-	src/$(DEPDIR)/1983-display.Po src/$(DEPDIR)/1983-kbd.Po \
-	src/$(DEPDIR)/1983-leds.Po src/$(DEPDIR)/1983-main.Po \
-	src/$(DEPDIR)/1983-models.Po src/$(DEPDIR)/1983-msx.Po \
-	src/$(DEPDIR)/1983-notify.Po src/$(DEPDIR)/1983-overlay.Po \
-	src/$(DEPDIR)/1983-psg.Po src/$(DEPDIR)/1983-rtc.Po \
-	src/$(DEPDIR)/1983-ui.Po src/$(DEPDIR)/1983-vdp.Po \
-	src/$(DEPDIR)/1983-z80.Po \
+	src/$(DEPDIR)/1983-display.Po src/$(DEPDIR)/1983-gamepad.Po \
+	src/$(DEPDIR)/1983-kbd.Po src/$(DEPDIR)/1983-leds.Po \
+	src/$(DEPDIR)/1983-main.Po src/$(DEPDIR)/1983-models.Po \
+	src/$(DEPDIR)/1983-msx.Po src/$(DEPDIR)/1983-notify.Po \
+	src/$(DEPDIR)/1983-overlay.Po src/$(DEPDIR)/1983-psg.Po \
+	src/$(DEPDIR)/1983-rtc.Po src/$(DEPDIR)/1983-ui.Po \
+	src/$(DEPDIR)/1983-vdp.Po src/$(DEPDIR)/1983-z80.Po \
 	src/$(DEPDIR)/test_cartridge-cartridge.Po \
 	src/$(DEPDIR)/test_config-cartridge.Po \
 	src/$(DEPDIR)/test_config-config.Po \
@@ -244,6 +250,7 @@ am__depfiles_remade = src/$(DEPDIR)/1983-audio.Po \
 	src/$(DEPDIR)/test_config-rtc.Po \
 	src/$(DEPDIR)/test_config-vdp.Po \
 	src/$(DEPDIR)/test_config-z80.Po \
+	src/$(DEPDIR)/test_gamepad-gamepad.Po \
 	src/$(DEPDIR)/test_kbd-cartridge.Po \
 	src/$(DEPDIR)/test_kbd-kbd.Po src/$(DEPDIR)/test_kbd-msx.Po \
 	src/$(DEPDIR)/test_kbd-psg.Po src/$(DEPDIR)/test_kbd-rtc.Po \
@@ -276,6 +283,7 @@ am__depfiles_remade = src/$(DEPDIR)/1983-audio.Po \
 	src/$(DEPDIR)/test_vdp-vdp.Po \
 	tests/$(DEPDIR)/test_cartridge-test_cartridge.Po \
 	tests/$(DEPDIR)/test_config-test_config.Po \
+	tests/$(DEPDIR)/test_gamepad-test_gamepad.Po \
 	tests/$(DEPDIR)/test_kbd-test_kbd.Po \
 	tests/$(DEPDIR)/test_models-test_models.Po \
 	tests/$(DEPDIR)/test_msx-test_msx.Po \
@@ -301,13 +309,13 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 =
 SOURCES = $(1983_SOURCES) $(test_cartridge_SOURCES) \
-	$(test_config_SOURCES) $(test_kbd_SOURCES) \
-	$(test_models_SOURCES) $(test_msx_SOURCES) \
+	$(test_config_SOURCES) $(test_gamepad_SOURCES) \
+	$(test_kbd_SOURCES) $(test_models_SOURCES) $(test_msx_SOURCES) \
 	$(test_overlay_SOURCES) $(test_psg_SOURCES) \
 	$(test_rtc_SOURCES) $(test_vdp_SOURCES)
 DIST_SOURCES = $(1983_SOURCES) $(test_cartridge_SOURCES) \
-	$(test_config_SOURCES) $(test_kbd_SOURCES) \
-	$(test_models_SOURCES) $(test_msx_SOURCES) \
+	$(test_config_SOURCES) $(test_gamepad_SOURCES) \
+	$(test_kbd_SOURCES) $(test_models_SOURCES) $(test_msx_SOURCES) \
 	$(test_overlay_SOURCES) $(test_psg_SOURCES) \
 	$(test_rtc_SOURCES) $(test_vdp_SOURCES)
 am__can_run_installinfo = \
@@ -690,6 +698,7 @@ top_srcdir = @top_srcdir@
 	src/cartridge.c \
 	src/audio.c \
 	src/display.c \
+	src/gamepad.c \
 	src/kbd.c \
 	src/leds.c \
 	src/main.c \
@@ -708,6 +717,7 @@ noinst_HEADERS = \
 	src/cartridge.h \
 	src/audio.h \
 	src/display.h \
+	src/gamepad.h \
 	src/kbd.h \
 	src/leds.h \
 	src/models.h \
@@ -741,6 +751,10 @@ test_models_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_gamepad_SOURCES = tests/test_gamepad.c src/gamepad.c
+test_gamepad_CPPFLAGS = -I$(top_srcdir)/src
+test_gamepad_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
+test_gamepad_LDADD = $(SDL3_LIBS)
 test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
@@ -780,6 +794,7 @@ dist_icon512_DATA = icons/512x512/apps/io.github.salvogendut.Emulator1983.png
 EXTRA_DIST = \
 	LICENSE \
 	README.md \
+	1983.png \
 	TECHNICAL.md \
 	DEVELOPMENT.md \
 	ROADMAP.md \
@@ -888,6 +903,8 @@ src/1983-audio.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-display.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-gamepad.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-kbd.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-leds.$(OBJEXT): src/$(am__dirstamp) \
@@ -950,6 +967,14 @@ src/test_config-z80.$(OBJEXT): src/$(am__dirstamp) \
 test-config$(EXEEXT): $(test_config_OBJECTS) $(test_config_DEPENDENCIES) $(EXTRA_test_config_DEPENDENCIES)
 	@rm -f test-config$(EXEEXT)
 	$(AM_V_CCLD)$(test_config_LINK) $(test_config_OBJECTS) $(test_config_LDADD) $(LIBS)
+tests/test_gamepad-test_gamepad.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_gamepad-gamepad.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-gamepad$(EXEEXT): $(test_gamepad_OBJECTS) $(test_gamepad_DEPENDENCIES) $(EXTRA_test_gamepad_DEPENDENCIES)
+	@rm -f test-gamepad$(EXEEXT)
+	$(AM_V_CCLD)$(test_gamepad_LINK) $(test_gamepad_OBJECTS) $(test_gamepad_LDADD) $(LIBS)
 tests/test_kbd-test_kbd.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-cartridge.$(OBJEXT): src/$(am__dirstamp) \
@@ -1077,6 +1102,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-display.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-gamepad.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-kbd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-leds.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-main.Po@am__quote@ # am--include-marker
@@ -1097,6 +1123,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-z80.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_gamepad-gamepad.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-kbd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-msx.Po@am__quote@ # am--include-marker
@@ -1135,6 +1162,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_vdp-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_cartridge-test_cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_config-test_config.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_gamepad-test_gamepad.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_kbd-test_kbd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_models-test_models.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_msx-test_msx.Po@am__quote@ # am--include-marker
@@ -1220,6 +1248,20 @@ src/1983-display.obj: src/display.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/display.c' object='src/1983-display.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-display.obj `if test -f 'src/display.c'; then $(CYGPATH_W) 'src/display.c'; else $(CYGPATH_W) '$(srcdir)/src/display.c'; fi`
+
+src/1983-gamepad.o: src/gamepad.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-gamepad.o -MD -MP -MF src/$(DEPDIR)/1983-gamepad.Tpo -c -o src/1983-gamepad.o `test -f 'src/gamepad.c' || echo '$(srcdir)/'`src/gamepad.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-gamepad.Tpo src/$(DEPDIR)/1983-gamepad.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/gamepad.c' object='src/1983-gamepad.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-gamepad.o `test -f 'src/gamepad.c' || echo '$(srcdir)/'`src/gamepad.c
+
+src/1983-gamepad.obj: src/gamepad.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-gamepad.obj -MD -MP -MF src/$(DEPDIR)/1983-gamepad.Tpo -c -o src/1983-gamepad.obj `if test -f 'src/gamepad.c'; then $(CYGPATH_W) 'src/gamepad.c'; else $(CYGPATH_W) '$(srcdir)/src/gamepad.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-gamepad.Tpo src/$(DEPDIR)/1983-gamepad.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/gamepad.c' object='src/1983-gamepad.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-gamepad.obj `if test -f 'src/gamepad.c'; then $(CYGPATH_W) 'src/gamepad.c'; else $(CYGPATH_W) '$(srcdir)/src/gamepad.c'; fi`
 
 src/1983-kbd.o: src/kbd.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-kbd.o -MD -MP -MF src/$(DEPDIR)/1983-kbd.Tpo -c -o src/1983-kbd.o `test -f 'src/kbd.c' || echo '$(srcdir)/'`src/kbd.c
@@ -1528,6 +1570,34 @@ src/test_config-z80.obj: src/z80.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/z80.c' object='src/test_config-z80.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
+
+tests/test_gamepad-test_gamepad.o: tests/test_gamepad.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -MT tests/test_gamepad-test_gamepad.o -MD -MP -MF tests/$(DEPDIR)/test_gamepad-test_gamepad.Tpo -c -o tests/test_gamepad-test_gamepad.o `test -f 'tests/test_gamepad.c' || echo '$(srcdir)/'`tests/test_gamepad.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_gamepad-test_gamepad.Tpo tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_gamepad.c' object='tests/test_gamepad-test_gamepad.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -c -o tests/test_gamepad-test_gamepad.o `test -f 'tests/test_gamepad.c' || echo '$(srcdir)/'`tests/test_gamepad.c
+
+tests/test_gamepad-test_gamepad.obj: tests/test_gamepad.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -MT tests/test_gamepad-test_gamepad.obj -MD -MP -MF tests/$(DEPDIR)/test_gamepad-test_gamepad.Tpo -c -o tests/test_gamepad-test_gamepad.obj `if test -f 'tests/test_gamepad.c'; then $(CYGPATH_W) 'tests/test_gamepad.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_gamepad.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_gamepad-test_gamepad.Tpo tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_gamepad.c' object='tests/test_gamepad-test_gamepad.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -c -o tests/test_gamepad-test_gamepad.obj `if test -f 'tests/test_gamepad.c'; then $(CYGPATH_W) 'tests/test_gamepad.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_gamepad.c'; fi`
+
+src/test_gamepad-gamepad.o: src/gamepad.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -MT src/test_gamepad-gamepad.o -MD -MP -MF src/$(DEPDIR)/test_gamepad-gamepad.Tpo -c -o src/test_gamepad-gamepad.o `test -f 'src/gamepad.c' || echo '$(srcdir)/'`src/gamepad.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_gamepad-gamepad.Tpo src/$(DEPDIR)/test_gamepad-gamepad.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/gamepad.c' object='src/test_gamepad-gamepad.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -c -o src/test_gamepad-gamepad.o `test -f 'src/gamepad.c' || echo '$(srcdir)/'`src/gamepad.c
+
+src/test_gamepad-gamepad.obj: src/gamepad.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -MT src/test_gamepad-gamepad.obj -MD -MP -MF src/$(DEPDIR)/test_gamepad-gamepad.Tpo -c -o src/test_gamepad-gamepad.obj `if test -f 'src/gamepad.c'; then $(CYGPATH_W) 'src/gamepad.c'; else $(CYGPATH_W) '$(srcdir)/src/gamepad.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_gamepad-gamepad.Tpo src/$(DEPDIR)/test_gamepad-gamepad.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/gamepad.c' object='src/test_gamepad-gamepad.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -c -o src/test_gamepad-gamepad.obj `if test -f 'src/gamepad.c'; then $(CYGPATH_W) 'src/gamepad.c'; else $(CYGPATH_W) '$(srcdir)/src/gamepad.c'; fi`
 
 tests/test_kbd-test_kbd.o: tests/test_kbd.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT tests/test_kbd-test_kbd.o -MD -MP -MF tests/$(DEPDIR)/test_kbd-test_kbd.Tpo -c -o tests/test_kbd-test_kbd.o `test -f 'tests/test_kbd.c' || echo '$(srcdir)/'`tests/test_kbd.c
@@ -2594,6 +2664,13 @@ test-msx.log: test-msx$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-gamepad.log: test-gamepad$(EXEEXT)
+	@p='test-gamepad$(EXEEXT)'; \
+	b='test-gamepad'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-kbd.log: test-kbd$(EXEEXT)
 	@p='test-kbd$(EXEEXT)'; \
 	b='test-kbd'; \
@@ -2887,6 +2964,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-cartridge.Po
 	-rm -f src/$(DEPDIR)/1983-config.Po
 	-rm -f src/$(DEPDIR)/1983-display.Po
+	-rm -f src/$(DEPDIR)/1983-gamepad.Po
 	-rm -f src/$(DEPDIR)/1983-kbd.Po
 	-rm -f src/$(DEPDIR)/1983-leds.Po
 	-rm -f src/$(DEPDIR)/1983-main.Po
@@ -2907,6 +2985,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_config-rtc.Po
 	-rm -f src/$(DEPDIR)/test_config-vdp.Po
 	-rm -f src/$(DEPDIR)/test_config-z80.Po
+	-rm -f src/$(DEPDIR)/test_gamepad-gamepad.Po
 	-rm -f src/$(DEPDIR)/test_kbd-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_kbd-kbd.Po
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
@@ -2945,6 +3024,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
 	-rm -f tests/$(DEPDIR)/test_config-test_config.Po
+	-rm -f tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
 	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po
 	-rm -f tests/$(DEPDIR)/test_models-test_models.Po
 	-rm -f tests/$(DEPDIR)/test_msx-test_msx.Po
@@ -3007,6 +3087,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-cartridge.Po
 	-rm -f src/$(DEPDIR)/1983-config.Po
 	-rm -f src/$(DEPDIR)/1983-display.Po
+	-rm -f src/$(DEPDIR)/1983-gamepad.Po
 	-rm -f src/$(DEPDIR)/1983-kbd.Po
 	-rm -f src/$(DEPDIR)/1983-leds.Po
 	-rm -f src/$(DEPDIR)/1983-main.Po
@@ -3027,6 +3108,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_config-rtc.Po
 	-rm -f src/$(DEPDIR)/test_config-vdp.Po
 	-rm -f src/$(DEPDIR)/test_config-z80.Po
+	-rm -f src/$(DEPDIR)/test_gamepad-gamepad.Po
 	-rm -f src/$(DEPDIR)/test_kbd-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_kbd-kbd.Po
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
@@ -3065,6 +3147,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
 	-rm -f tests/$(DEPDIR)/test_config-test_config.Po
+	-rm -f tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
 	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po
 	-rm -f tests/$(DEPDIR)/test_models-test_models.Po
 	-rm -f tests/$(DEPDIR)/test_msx-test_msx.Po

@@ -24,6 +24,14 @@
 #define MSX_RAM_MAX_SIZE 0x400000u
 #define MSX_KEYBOARD_ROWS 11u
 #define MSX_KEYBOARD_COLUMNS 8u
+#define MSX_JOYSTICK_PORTS 2u
+#define MSX_JOY_UP 0x01u
+#define MSX_JOY_DOWN 0x02u
+#define MSX_JOY_LEFT 0x04u
+#define MSX_JOY_RIGHT 0x08u
+#define MSX_JOY_TRIGGER_A 0x10u
+#define MSX_JOY_TRIGGER_B 0x20u
+#define MSX_JOY_MASK 0x3fu
 
 typedef enum {
     MSX_MODEL_GENERIC_MSX1 = 0,
@@ -93,6 +101,7 @@ typedef struct {
     u8 ppi_port_c;
     u8 keyboard_rows[MSX_KEYBOARD_ROWS];
     u8 keyboard_refs[MSX_KEYBOARD_ROWS][MSX_KEYBOARD_COLUMNS];
+    u8 joystick_pressed[MSX_JOYSTICK_PORTS];
 
     s16 audio_samples[MSX_AUDIO_FRAME_CAPACITY];
     size_t audio_sample_count;
@@ -134,6 +143,8 @@ void msx_keyboard_clear(MsxMachine *msx);
 void msx_keyboard_press(MsxMachine *msx, unsigned row, unsigned column);
 void msx_keyboard_release(MsxMachine *msx, unsigned row, unsigned column);
 u8   msx_keyboard_read_row(const MsxMachine *msx, unsigned row);
+void msx_joystick_set_pressed(MsxMachine *msx, unsigned port, u8 pressed);
+u8   msx_joystick_read_port(const MsxMachine *msx, unsigned port);
 
 int msx_install_bios(MsxMachine *msx, const u8 *data, size_t size);
 int msx_install_logo(MsxMachine *msx, const u8 *data, size_t size);
