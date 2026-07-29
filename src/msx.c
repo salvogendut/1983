@@ -1181,12 +1181,14 @@ int msx_load_sunrise_ide(MsxMachine *msx, unsigned slot,
     return result;
 }
 
-void msx_eject_sunrise_ide(MsxMachine *msx) {
+int msx_eject_sunrise_ide(MsxMachine *msx) {
     if (!msx)
-        return;
-    sunrise_eject_rom(&msx->sunrise);
+        return -1;
+    if (sunrise_eject_rom(&msx->sunrise) != 0)
+        return -1;
     msx->sunrise_slot = -1;
     msx_reset(msx);
+    return 0;
 }
 
 bool msx_sunrise_connected(const MsxMachine *msx) {
@@ -1200,19 +1202,46 @@ int msx_sunrise_slot(const MsxMachine *msx) {
 }
 
 int msx_mount_sunrise_disk(MsxMachine *msx, const char *path) {
-    if (!msx_sunrise_connected(msx))
-        return -1;
-    return sunrise_mount_disk(&msx->sunrise, path);
+    return msx_mount_sunrise_disk_mode(
+        msx, path, ATA_IMAGE_READ_ONLY);
 }
 
-void msx_eject_sunrise_disk(MsxMachine *msx) {
-    if (msx)
-        sunrise_eject_disk(&msx->sunrise);
+int msx_mount_sunrise_disk_mode(MsxMachine *msx, const char *path,
+                                AtaImageMode mode) {
+    if (!msx_sunrise_connected(msx))
+        return -1;
+    return sunrise_mount_disk_mode(&msx->sunrise, path, mode);
+}
+
+int msx_flush_sunrise_disk(MsxMachine *msx) {
+    return msx ? sunrise_flush_disk(&msx->sunrise) : -1;
+}
+
+int msx_eject_sunrise_disk(MsxMachine *msx) {
+    return msx ? sunrise_eject_disk(&msx->sunrise) : -1;
 }
 
 bool msx_sunrise_disk_mounted(const MsxMachine *msx) {
     return msx_sunrise_connected(msx) &&
            sunrise_disk_mounted(&msx->sunrise);
+}
+
+bool msx_sunrise_disk_writable(const MsxMachine *msx) {
+    return msx_sunrise_connected(msx) &&
+           sunrise_disk_writable(&msx->sunrise);
+}
+
+bool msx_sunrise_disk_dirty(const MsxMachine *msx) {
+    return msx_sunrise_connected(msx) &&
+           sunrise_disk_dirty(&msx->sunrise);
+}
+
+bool msx_sunrise_disk_has_error(const MsxMachine *msx) {
+    return msx && sunrise_disk_has_error(&msx->sunrise);
+}
+
+const char *msx_sunrise_disk_error(const MsxMachine *msx) {
+    return msx ? sunrise_disk_error(&msx->sunrise) : "";
 }
 
 bool msx_sunrise_take_activity(MsxMachine *msx) {

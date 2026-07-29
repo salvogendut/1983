@@ -166,11 +166,14 @@ by the Sunrise interface. The address decode follows the openMSX 21.0
 Sunrise implementation.
 
 Its host-independent ATA backend exposes an LBA-capable device with IDENTIFY,
-READ SECTORS, multiple-sector reads, diagnostic/reset commands, geometry
-setup, and the feature commands needed by the official Nextor 2.1.1 Sunrise
-kernel. Raw images must be a non-empty multiple of 512 bytes. They are opened
-read-only; guest write commands return ABRT and cannot modify the host file.
-Failed mounts preserve the previously mounted image.
+READ/WRITE SECTORS, multiple-sector transfers, FLUSH CACHE, diagnostic/reset
+commands, geometry setup, and the feature commands needed by the official
+Nextor 2.1.1 Sunrise kernel. Raw images must be a non-empty multiple of 512
+bytes. They default to read-only; read/write access must be selected
+explicitly. Incomplete writes stay in memory and reset discards them without
+touching the image. Completed sectors are flushed before replacement,
+ejection, and shutdown. A flush failure keeps the image mounted and is
+reported by the GUI. Failed mounts preserve the previously mounted image.
 
 On first activation, Extensions > Sunrise IDE opens a device-specific setup
 panel which distinguishes the required 128 KiB controller ROM from its
@@ -179,8 +182,10 @@ chosen and both selected files have been validated. The firmware path is
 then retained so later activations are simple disconnect/reconnect toggles;
 Delete on the extension forgets it and re-enables setup for replacement.
 Media > IDE hard disk owns subsequent mounting and ejection while the
-controller is connected. Both paths persist in `1983.conf`; command-line
-equivalents are `--sunrise-rom` and `--ide`. Sector reads pulse the
+controller is connected. Advanced > IDE access mode owns the explicit
+read-only/read-write switch. Both paths and the access mode persist in
+`1983.conf`; command-line equivalents are `--sunrise-rom`, `--ide`, and
+`--ide-mode`. Sector reads and writes pulse the
 dedicated Sunrise IDE indicator; the owning cartridge LED remains orange to
 show physical presence.
 

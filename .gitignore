@@ -6,6 +6,7 @@
 /test-psg
 /test-rtc
 /test-cartridge
+/test-cassette
 /test-ata
 /test-sunrise
 /test-config

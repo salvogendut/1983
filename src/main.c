@@ -37,6 +37,7 @@ typedef struct {
     bool cartridge_mapper_set[MSX_CARTRIDGE_SLOTS];
     const char *model_name;
     int region;
+    int ide_image_mode;
     int scale;
     int exit_after;
     bool headless;
@@ -55,7 +56,8 @@ static const char *usage =
     "  --subrom PATH       load a 16 KB MSX2 Sub-ROM in slot 3-0\n"
     "  --disk-rom PATH     load a 16 KB disk ROM in slot 3-3/page 1\n"
     "  --sunrise-rom PATH  load a 128 KB Sunrise IDE/Nextor kernel ROM\n"
-    "  --ide PATH          mount a raw IDE disk image read-only\n"
+    "  --ide PATH          mount a raw IDE disk image\n"
+    "  --ide-mode MODE     image access: read-only (default) or read-write\n"
     "  --cassette PATH     insert a standard MSX CAS cassette image\n"
     "  --screenshot PATH   save the final rendered frame as a PPM file\n"
     "  --cart PATH         alias for --cart1\n"
@@ -107,9 +109,22 @@ static int parse_mapper(const char *text, const char *option,
     return -1;
 }
 
+static int parse_ide_mode(const char *text) {
+    if (strcmp(text, "read-only") == 0 ||
+        strcmp(text, "ro") == 0)
+        return ATA_IMAGE_READ_ONLY;
+    if (strcmp(text, "read-write") == 0 ||
+        strcmp(text, "rw") == 0)
+        return ATA_IMAGE_READ_WRITE;
+    fprintf(stderr,
+            "--ide-mode: expected read-only or read-write\n");
+    return -1;
+}
+
 static int parse_cli(int argc, char **argv, Cli *cli) {
     memset(cli, 0, sizeof(*cli));
     cli->region = -1;
+    cli->ide_image_mode = -1;
     cli->scale = -1;
     cli->exit_after = -1;
 
@@ -146,6 +161,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--disk-rom") == 0 ||
              strcmp(argument, "--sunrise-rom") == 0 ||
              strcmp(argument, "--ide") == 0 ||
+             strcmp(argument, "--ide-mode") == 0 ||
              strcmp(argument, "--cassette") == 0 ||
              strcmp(argument, "--screenshot") == 0 ||
              strcmp(argument, "--cart") == 0 ||
@@ -176,6 +192,10 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->sunrise_rom_path = argv[++i];
         } else if (strcmp(argument, "--ide") == 0) {
             cli->ide_image_path = argv[++i];
+        } else if (strcmp(argument, "--ide-mode") == 0) {
+            cli->ide_image_mode = parse_ide_mode(argv[++i]);
+            if (cli->ide_image_mode < 0)
+                return -1;
         } else if (strcmp(argument, "--cassette") == 0) {
             cli->cassette_path = argv[++i];
         } else if (strcmp(argument, "--screenshot") == 0) {
@@ -435,6 +455,9 @@ int main(int argc, char **argv) {
         config.extra_hardware = true;
         config.sunrise_ide = true;
     }
+    if (cli.ide_image_mode >= 0)
+        config.ide_image_mode =
+            (AtaImageMode)cli.ide_image_mode;
     if (cli.cassette_path)
         snprintf(config.cassette_path,
                  sizeof(config.cassette_path),
@@ -508,11 +531,15 @@ int main(int argc, char **argv) {
             config.sunrise_ide = false;
             config_normalize(&config);
         } else if (config.ide_image_path[0] &&
-                   msx_mount_sunrise_disk(
-                       &msx, config.ide_image_path) != 0) {
+                   msx_mount_sunrise_disk_mode(
+                       &msx, config.ide_image_path,
+                       config.ide_image_mode) != 0) {
             fprintf(stderr,
-                    "cannot mount raw IDE image read-only: %s\n",
-                    config.ide_image_path);
+                    "cannot mount raw IDE image %s: %s (%s)\n",
+                    config.ide_image_mode == ATA_IMAGE_READ_WRITE
+                    ? "read/write" : "read-only",
+                    config.ide_image_path,
+                    msx_sunrise_disk_error(&msx));
             if (cli.ide_image_path) {
                 msx_destroy(&msx);
                 return 1;
@@ -602,7 +629,10 @@ int main(int argc, char **argv) {
         printf("Sunrise IDE loaded in cartridge slot %d%s\n",
                msx_sunrise_slot(&msx) + 1,
                msx_sunrise_disk_mounted(&msx)
-               ? ", raw disk mounted read-only" : ", no disk mounted");
+               ? (msx_sunrise_disk_writable(&msx)
+                  ? ", raw disk mounted read/write"
+                  : ", raw disk mounted read-only")
+               : ", no disk mounted");
     if (msx_cassette_mounted(&msx)) {
         CassetteFileType type = msx_cassette_file_type(&msx);
 
@@ -872,10 +902,17 @@ int main(int argc, char **argv) {
                (unsigned long long)msx.instructions, nonzero_vram,
                msx.vdp.registers[0], msx.vdp.registers[1]);
     }
+    int shutdown_status = 0;
+    if (msx_sunrise_disk_mounted(&msx) &&
+        msx_flush_sunrise_disk(&msx) != 0) {
+        fprintf(stderr, "cannot flush IDE image at shutdown: %s\n",
+                msx_sunrise_disk_error(&msx));
+        shutdown_status = 1;
+    }
     audio_output_quit(&audio);
     gamepad_input_destroy(&gamepad);
     set_mouse_capture(&display, &msx, false);
     display_quit(&display);
     msx_destroy(&msx);
-    return 0;
+    return shutdown_status;
 }

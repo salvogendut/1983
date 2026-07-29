@@ -28,10 +28,17 @@ void sunrise_reset(MsxSunriseIde *sunrise);
 
 int  sunrise_install_rom(MsxSunriseIde *sunrise,
                          const u8 *data, size_t size);
-void sunrise_eject_rom(MsxSunriseIde *sunrise);
+int  sunrise_eject_rom(MsxSunriseIde *sunrise);
 int  sunrise_mount_disk(MsxSunriseIde *sunrise, const char *path);
-void sunrise_eject_disk(MsxSunriseIde *sunrise);
+int  sunrise_mount_disk_mode(MsxSunriseIde *sunrise, const char *path,
+                             AtaImageMode mode);
+int  sunrise_flush_disk(MsxSunriseIde *sunrise);
+int  sunrise_eject_disk(MsxSunriseIde *sunrise);
 bool sunrise_disk_mounted(const MsxSunriseIde *sunrise);
+bool sunrise_disk_writable(const MsxSunriseIde *sunrise);
+bool sunrise_disk_dirty(const MsxSunriseIde *sunrise);
+bool sunrise_disk_has_error(const MsxSunriseIde *sunrise);
+const char *sunrise_disk_error(const MsxSunriseIde *sunrise);
 bool sunrise_take_activity(MsxSunriseIde *sunrise);
 
 u8   sunrise_read(MsxSunriseIde *sunrise, u16 address);
