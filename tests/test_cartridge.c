@@ -192,9 +192,9 @@ static void test_konami_scc_mapping(void) {
     assert(msx_cartridge_read(&cartridge, 0x9004) == 0x0f);
     assert(msx_cartridge_read(&cartridge, 0xa004) == 7);
     assert(cartridge.scc_enabled);
-    msx_cartridge_write(&cartridge, 0x98a5, 0x66);
-    assert(msx_cartridge_read(&cartridge, 0x98a5) == 0x66);
-    assert(msx_cartridge_read(&cartridge, 0x99a5) == 0x66);
+    msx_cartridge_write(&cartridge, 0x9855, 0x66);
+    assert(msx_cartridge_read(&cartridge, 0x9855) == 0x66);
+    assert(msx_cartridge_read(&cartridge, 0x9955) == 0x66);
     msx_cartridge_write(&cartridge, 0x9000, 2);
     assert(!cartridge.scc_enabled);
     assert(msx_cartridge_read(&cartridge, 0x9804) == 2);

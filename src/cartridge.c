@@ -173,6 +173,7 @@ void msx_cartridge_init(MsxCartridge *cartridge) {
     if (!cartridge)
         return;
     memset(cartridge, 0, sizeof(*cartridge));
+    scc_init(&cartridge->scc);
     cartridge->requested_mapper = MSX_CART_MAPPER_AUTO;
     cartridge->mapper = MSX_CART_MAPPER_LINEAR;
 }
@@ -187,7 +188,8 @@ void msx_cartridge_destroy(MsxCartridge *cartridge) {
 void msx_cartridge_reset(MsxCartridge *cartridge) {
     if (!cartridge)
         return;
-    memset(cartridge->scc_registers, 0, sizeof(cartridge->scc_registers));
+    scc_reset(&cartridge->scc);
+    scc_set_mode(&cartridge->scc, SCC_MODE_COMPATIBLE);
     cartridge->scc_enabled = false;
     if (cartridge->mapper == MSX_CART_MAPPER_KONAMI ||
         cartridge->mapper == MSX_CART_MAPPER_KONAMI_SCC) {
@@ -291,7 +293,7 @@ static u8 read_bank(const MsxCartridge *cartridge, u8 bank,
     return offset < cartridge->size ? cartridge->data[offset] : 0xff;
 }
 
-u8 msx_cartridge_read(const MsxCartridge *cartridge, u16 address) {
+u8 msx_cartridge_read(MsxCartridge *cartridge, u16 address) {
     unsigned window;
     size_t offset;
 
@@ -327,7 +329,7 @@ u8 msx_cartridge_read(const MsxCartridge *cartridge, u16 address) {
         case MSX_CART_MAPPER_KONAMI_SCC:
             if (cartridge->scc_enabled &&
                 address >= 0x9800 && address < 0xa000)
-                return cartridge->scc_registers[address & 0xff];
+                return scc_read(&cartridge->scc, (u8)address);
             if (address < 0x4000)
                 address += 0x8000;
             else if (address >= 0xc000)
@@ -368,7 +370,7 @@ void msx_cartridge_write(MsxCartridge *cartridge, u16 address, u8 value) {
         case MSX_CART_MAPPER_KONAMI_SCC:
             if (cartridge->scc_enabled &&
                 address >= 0x9800 && address < 0xa000) {
-                cartridge->scc_registers[address & 0xff] = value;
+                scc_write(&cartridge->scc, (u8)address, value);
             } else if (address >= 0x5000 && address < 0xc000 &&
                        (address & 0x1800) == 0x1000) {
                 window = (address - 0x4000) >> 13;
@@ -380,4 +382,23 @@ void msx_cartridge_write(MsxCartridge *cartridge, u16 address, u8 value) {
         default:
             break;
     }
+}
+
+void msx_cartridge_render_audio(MsxCartridge *cartridge,
+                                s16 *sample, unsigned clock_hz,
+                                unsigned sample_rate) {
+    s16 scc_sample = 0;
+    int mixed;
+
+    if (!cartridge || !sample || !cartridge->loaded ||
+        cartridge->mapper != MSX_CART_MAPPER_KONAMI_SCC)
+        return;
+    scc_render(&cartridge->scc, &scc_sample, 1,
+               clock_hz, sample_rate);
+    mixed = (int)*sample + scc_sample;
+    if (mixed > 32767)
+        mixed = 32767;
+    else if (mixed < -32768)
+        mixed = -32768;
+    *sample = (s16)mixed;
 }

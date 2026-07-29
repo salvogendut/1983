@@ -105,18 +105,20 @@ Both external primary slots support:
 
 Bank registers reset with the machine, banks wrap safely, and automatic
 detection uses conservative mapper-write signatures. Each slot also has a
-persistent manual override. The SCC register window is mapped, but SCC audio
-is not implemented yet.
+persistent manual override. Konami SCC cartridges use the shared five-channel
+SCC waveform core and mix their output with the machine PSG.
 
 The Media overlay can load, eject, and independently configure both
 cartridges, the cassette, the active floppy drives, and media belonging to
 connected storage extensions. The IDE hard-disk selector appears only when
-Sunrise IDE is connected; SD Card A and SD Card B appear only when SD Mapper
-V2 is connected. Nextor controller kernels are cartridge firmware and
+Sunrise IDE is connected; device-specific SD Card A and SD Card B rows appear
+only when SD Mapper V2 or MegaFlashROM SCC+ SD is connected. Nextor controller
+kernels are cartridge firmware and
 therefore have no separate Media row.
 
 General > Extra Hardware reveals the Extensions section. Sunrise IDE, SD
-Mapper V2, SCC, and MSX-MUSIC are treated as cartridge-connected devices:
+Mapper V2, MegaFlashROM SCC+ SD, SCC, and MSX-MUSIC are treated as
+cartridge-connected devices:
 the first enabled device reserves cartridge slot 2 and the second reserves
 slot 1. A third is refused. Mounting, ejecting, mapper changes, asynchronous
 picker completion, and command-line startup all honor the same reservation
@@ -124,11 +126,11 @@ state. Enabling an extension ejects and forgets media in the newly reserved
 slot.
 
 The footer always shows Cartridge I and Cartridge II indicators between
-Power and Caps Lock. An occupied ROM slot or a slot owned by Sunrise IDE or
-SD Mapper V2 is orange. IDE reads use the dedicated Sunrise IDE indicator;
-SD traffic uses independent green SD A and SD B indicators. The cartridge
-renderer also supports an orange/white network-cartridge form, whose white
-half reports network access when a network device is added.
+Power and Caps Lock. An occupied ROM slot or a slot owned by Sunrise IDE,
+SD Mapper V2, or MegaFlashROM is orange. IDE reads use the dedicated Sunrise
+IDE indicator; SD traffic uses independent green SD A and SD B indicators.
+The cartridge renderer also supports an orange/white network-cartridge form,
+whose white half reports network access when a network device is added.
 
 ## Cassette
 
@@ -265,6 +267,46 @@ The reference `SDXC110.ROM` from MSX SD Mapper V2 release 1.1.0 with Nextor
 2.1.2 boots a FAT16 card to its command prompt on the generic MSX1 profile.
 Neither the ROM nor the card image is distributed by 1983.
 
+## MegaFlashROM SCC+ SD
+
+MegaFlashROM SCC+ SD is modeled as one physical cartridge with an expanded
+primary slot. Subslot 0 mirrors the 16 KiB recovery area, subslot 1 exposes
+the 7,104 KiB MegaFlash region, subslot 2 contains the independent 512 KiB
+memory mapper, and subslot 3 exposes the 1 MiB MegaSD region and two SPI SD
+cards. Its inverted secondary-slot register is visible at `0xFFFF`.
+
+The MegaFlash subslot implements Konami SCC, Konami, linear 64 KiB, ASCII8,
+and the updated 9-bit ASCII16 mapper behavior. The offset, DSK-remap,
+mapper-lock, slot-expander, RAM-disable, PSG-mirror, recovery-protect, and
+flash-write controls overlap the flash bus as on the cartridge. Mapper ports
+`0xFC` through `0xFF` reset to `3,2,1,0` and combine with other memory mappers
+through the machine's wired-AND bus behavior.
+
+The 8 MiB M29W640GB model supplies manufacturer/device autoselect, CFI query
+data, single, double, quadruple, and 32-byte buffered programming, bottom-boot
+sector and chip erase, and recovery-block protection. Flash operations are
+functionally immediate, but preserve the real command sequences and one-way
+1-to-0 programming rule. A non-empty initial image up to 8 MiB seeds a
+private flash-state file; shorter images, including the official
+8,208,384-byte preflash, are padded with erased `0xFF` bytes. Guest changes
+are written and synchronized to a same-directory
+temporary file before atomic replacement; corruption is rejected, the source
+dump remains untouched, and a failed flush blocks disconnection.
+
+The MegaSD subslot uses an ASCII8 window into the final flash megabyte. Banks
+`0x40` through `0x7F` expose the active-low card-select transfer window and
+the two-socket selector. Each socket reuses `src/sdcard.c`, so read-only is
+the default and complete-sector writes, explicit flush, failed-flush
+retention, and safe ejection match SD Mapper V2.
+
+The cartridge also contains an SCC-I with compatible and plus register maps,
+and a YM2149-compatible PSG selected at ports `0x10`/`0x11`, optionally
+mirrored at `0xA0`/`0xA1`. Both sound sources are generated independently
+and mixed with the machine PSG. The Extensions setup selects the initial
+flash and optional cards atomically; Media owns later card changes. CLI and
+configuration use `megaflash_rom`, `megaflash_sd_a`, `megaflash_sd_b`, and
+the shared SD image policy.
+
 ## MSX1 video
 
 The TMS9918/TMS9929 path implements:
@@ -346,7 +388,11 @@ Y-low nibbles, exposes two active-low buttons, performs the alternate zero
 cycle used for trackball detection, and resynchronizes after 1.5 ms without a
 strobe. Host motion is accumulated, divided by two, direction-adjusted, and
 clamped to signed 7-bit chunks following openMSX's Philips SBC3810 behavior.
-SCC and MSX-MUSIC audio remain future work.
+The shared SCC/SCC-I core implements five programmable 32-byte waveforms,
+period, volume, enable, deformation, compatible and plus register maps, and
+cycle-derived 44.1 kHz output for Konami SCC and MegaFlashROM cartridges.
+MegaFlashROM's cartridge PSG is mixed independently. MSX-MUSIC audio remains
+future work.
 
 MSX2 layouts include RP-5C01-compatible latch/data ports at `0xB4` and
 `0xB5`, four 13-nibble register banks, hardware write masks, 12/24-hour
@@ -414,9 +460,8 @@ frontends.
 - Protected/flux floppy formats, format/write-track, and unusual geometries.
 - Cassette recording and sampled audio input.
 - CHS-only ATA edge cases and additional ATA commands.
-- Separate external memory-mapper extensions.
 - Alternate national keyboard layouts.
-- SCC and MSX-MUSIC audio.
+- MSX-MUSIC audio.
 - Snapshots, debugger/disassembler, and animated capture.
 - Within-scanline fetch timing and further compatibility refinement.
 

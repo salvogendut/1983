@@ -34,6 +34,14 @@ enum {
 };
 
 enum {
+    MEGAFLASH_SETUP_FIRMWARE = 0,
+    MEGAFLASH_SETUP_CARD_A,
+    MEGAFLASH_SETUP_CARD_B,
+    MEGAFLASH_SETUP_CONNECT,
+    MEGAFLASH_SETUP_ROWS
+};
+
+enum {
     ADVANCED_MODEL_EDITOR = 0,
     ADVANCED_RTC_PERSISTENCE,
     ADVANCED_SECOND_FLOPPY,
@@ -108,8 +116,9 @@ static int section_rows(const Overlay *overlay,
             return 6 +
                    (overlay->config->second_drive ? 1 : 0) +
                    (overlay->config->sunrise_ide ? 1 : 0) +
-                   (overlay->config->sd_mapper ? 2 : 0);
-        case OVERLAY_EXTENSIONS: return 4;
+                   (overlay->config->sd_mapper ? 2 : 0) +
+                   (overlay->config->megaflash ? 2 : 0);
+        case OVERLAY_EXTENSIONS: return 5;
         case OVERLAY_ADVANCED:   return ADVANCED_ROWS;
         case OVERLAY_SECTION_COUNT: break;
     }
@@ -162,6 +171,20 @@ static int media_sd_a_row(const Config *config) {
 
 static int media_sd_b_row(const Config *config) {
     int row = media_sd_a_row(config);
+
+    return row < 0 ? -1 : row + 1;
+}
+
+static int media_megaflash_sd_a_row(const Config *config) {
+    if (!config->megaflash)
+        return -1;
+    return 6 + (config->second_drive ? 1 : 0) +
+           (config->sunrise_ide ? 1 : 0) +
+           (config->sd_mapper ? 2 : 0);
+}
+
+static int media_megaflash_sd_b_row(const Config *config) {
+    int row = media_megaflash_sd_a_row(config);
 
     return row < 0 ? -1 : row + 1;
 }
@@ -239,6 +262,30 @@ static void sd_mapper_extension_text(const Overlay *overlay,
                  "On (Cartridge %d, %s)", slot + 1,
                  config->sd_mapper_ram
                  ? "512 KB RAM" : "storage only");
+    }
+}
+
+static bool megaflash_rom_file_is_valid(const char *path);
+
+static void megaflash_extension_text(const Overlay *overlay,
+                                     char *value, size_t value_size) {
+    const Config *config = overlay->config;
+    int slot = cartridge_extension_slot(
+        config, "MegaFlashROM SCC+ SD");
+
+    if (!config->megaflash) {
+        snprintf(value, value_size, "%s",
+                 megaflash_rom_file_is_valid(
+                     config->megaflash_rom_path)
+                 ? "Off (configured)" : "Off (setup required)");
+    } else if (slot < 0) {
+        snprintf(value, value_size, "Off (no free cartridge slot)");
+    } else if (!msx_megaflash_connected(overlay->msx)) {
+        snprintf(value, value_size,
+                 "On (Cartridge %d, flash not loaded)", slot + 1);
+    } else {
+        snprintf(value, value_size,
+                 "On (Cartridge %d, 512 KB RAM)", slot + 1);
     }
 }
 
@@ -367,6 +414,31 @@ static void sd_card_text(const Overlay *overlay, unsigned card,
         snprintf(value, value_size, "%s [%s%s]",
                  path_basename(path),
                  msx_sd_card_writable(overlay->msx, card)
+                 ? "read/write" : "read-only", state);
+    } else if (path[0]) {
+        snprintf(value, value_size, "%s [not mounted, %s]",
+                 path_basename(path),
+                 sd_mode_name(overlay->config->sd_image_mode));
+    } else {
+        snprintf(value, value_size, "[not mounted]");
+    }
+}
+
+static void megaflash_card_text(const Overlay *overlay, unsigned card,
+                                char *value, size_t value_size) {
+    const char *path =
+        overlay->config->megaflash_card_path[card];
+
+    if (msx_megaflash_card_mounted(overlay->msx, card)) {
+        const char *state =
+            msx_megaflash_card_has_error(overlay->msx, card)
+            ? ", I/O error" :
+            msx_megaflash_card_dirty(overlay->msx, card)
+            ? ", dirty" : "";
+
+        snprintf(value, value_size, "%s [%s%s]",
+                 path_basename(path),
+                 msx_megaflash_card_writable(overlay->msx, card)
                  ? "read/write" : "read-only", state);
     } else if (path[0]) {
         snprintf(value, value_size, "%s [not mounted, %s]",
@@ -557,6 +629,14 @@ static void item_text(const Overlay *overlay, int row,
             } else if (row == media_sd_b_row(config)) {
                 snprintf(label, label_size, "SD Card B");
                 sd_card_text(overlay, 1, value, value_size);
+            } else if (row == media_megaflash_sd_a_row(config)) {
+                snprintf(label, label_size, "MegaFlash SD A");
+                megaflash_card_text(
+                    overlay, 0, value, value_size);
+            } else if (row == media_megaflash_sd_b_row(config)) {
+                snprintf(label, label_size, "MegaFlash SD B");
+                megaflash_card_text(
+                    overlay, 1, value, value_size);
             }
             break;
         case OVERLAY_EXTENSIONS:
@@ -572,12 +652,18 @@ static void item_text(const Overlay *overlay, int row,
                         overlay, value, value_size);
                     break;
                 case 2:
+                    snprintf(label, label_size,
+                             "MegaFlashROM SCC+ SD");
+                    megaflash_extension_text(
+                        overlay, value, value_size);
+                    break;
+                case 3:
                     snprintf(label, label_size, "Konami SCC");
                     cartridge_extension_text(
                         config, "Konami SCC", config->scc,
                         value, value_size);
                     break;
-                case 3:
+                case 4:
                     snprintf(label, label_size, "MSX-MUSIC");
                     cartridge_extension_text(
                         config, "MSX-MUSIC", config->msx_music,
@@ -713,8 +799,10 @@ static void configure_leds(const Config *config, const MsxMachine *msx) {
     leds_set_enabled(LED_FDC_B, config->second_drive);
     leds_set_enabled(LED_TAPE, true);
     leds_set_enabled(LED_IDE, config->sunrise_ide);
-    leds_set_enabled(LED_SD_A, config->sd_mapper);
-    leds_set_enabled(LED_SD_B, config->sd_mapper);
+    leds_set_enabled(LED_SD_A,
+                     config->sd_mapper || config->megaflash);
+    leds_set_enabled(LED_SD_B,
+                     config->sd_mapper || config->megaflash);
     leds_set_state(LED_POWER, true);
     leds_set_state(LED_CAPS, msx->caps_led);
     leds_set_state(LED_KANA, msx->kana_led);
@@ -955,6 +1043,71 @@ static bool restore_sd_mapper(Overlay *overlay) {
     return true;
 }
 
+static bool restore_megaflash(Overlay *overlay) {
+    const Config *current = overlay->config;
+    const Config *saved = &overlay->saved;
+    int saved_slot =
+        cartridge_extension_slot(saved, "MegaFlashROM SCC+ SD");
+    bool changed =
+        current->megaflash != saved->megaflash ||
+        strcmp(current->megaflash_rom_path,
+               saved->megaflash_rom_path) != 0 ||
+        strcmp(current->megaflash_card_path[0],
+               saved->megaflash_card_path[0]) != 0 ||
+        strcmp(current->megaflash_card_path[1],
+               saved->megaflash_card_path[1]) != 0 ||
+        current->sd_image_mode != saved->sd_image_mode ||
+        msx_megaflash_slot(overlay->msx) !=
+            (saved->megaflash ? saved_slot : -1);
+    char state_path[PATH_MAX];
+
+    for (unsigned card = 0;
+         card < MSX_MEGAFLASH_CARDS && !changed; ++card) {
+        if (msx_megaflash_card_mounted(overlay->msx, card) &&
+            msx_megaflash_card_writable(overlay->msx, card) !=
+                (saved->sd_image_mode == SD_IMAGE_READ_WRITE))
+            changed = true;
+    }
+    if (!changed)
+        return true;
+    if (msx_eject_megaflash(overlay->msx) != 0) {
+        notify_post("Could not restore MegaFlashROM: %s",
+                    msx_megaflash_flash_error(overlay->msx));
+        return false;
+    }
+    if (!saved->megaflash || saved_slot < 0)
+        return true;
+    if (config_megaflash_state_path(
+            saved, state_path, sizeof(state_path)) != 0)
+        return false;
+    if ((state_path[0]
+         ? msx_load_megaflash_persistent(
+               overlay->msx, (unsigned)saved_slot,
+               saved->megaflash_rom_path, state_path)
+         : msx_load_megaflash(
+               overlay->msx, (unsigned)saved_slot,
+               saved->megaflash_rom_path)) != 0) {
+        notify_post("Could not restore MegaFlashROM image: %s",
+                    msx_megaflash_flash_error(overlay->msx));
+        return false;
+    }
+    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
+        if (!saved->megaflash_card_path[card][0])
+            continue;
+        if (msx_mount_megaflash_card(
+                overlay->msx, card,
+                saved->megaflash_card_path[card],
+                saved->sd_image_mode) != 0) {
+            notify_post(
+                "Could not restore MegaFlash SD %c: %s",
+                'A' + (int)card,
+                msx_megaflash_card_error(overlay->msx, card));
+            return false;
+        }
+    }
+    return true;
+}
+
 static void restore_cassette(Overlay *overlay) {
     const char *current = overlay->config->cassette_path;
     const char *saved = overlay->saved.cassette_path;
@@ -1021,6 +1174,8 @@ static void close_overlay(Overlay *overlay, bool save) {
                 notify_post("Could not save settings");
         }
     } else {
+        if (!restore_megaflash(overlay))
+            return;
         if (!restore_sd_mapper(overlay))
             return;
         if (!restore_sunrise(overlay))
@@ -1278,6 +1433,59 @@ static void open_sd_card_dialog(Overlay *overlay, unsigned card) {
                            filters, 2, location, false);
 }
 
+static void open_megaflash_rom_dialog(Overlay *overlay) {
+    static const SDL_DialogFileFilter filters[] = {
+        { "MegaFlashROM SCC+ SD flash image", "rom;ROM;flash;FLASH" },
+        { "All files", "*" },
+    };
+    const char *location =
+        overlay->config->last_media_dir[0]
+        ? overlay->config->last_media_dir : NULL;
+
+    if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
+        return;
+    overlay->dialog_target = OVERLAY_DIALOG_MEGAFLASH_ROM;
+    overlay->dialog_ready = false;
+    overlay->dialog_failed = false;
+    overlay->dialog_error[0] = '\0';
+    notify_post("Select a MegaFlashROM image up to 8 MiB");
+    SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
+                           overlay->display
+                           ? overlay->display->window : NULL,
+                           filters, 2, location, false);
+}
+
+static void open_megaflash_card_dialog(
+    Overlay *overlay, unsigned card) {
+    static const SDL_DialogFileFilter filters[] = {
+        { "Raw SD card images", "img;IMG;dsk;DSK;sd;SD" },
+        { "All files", "*" },
+    };
+    const char *location =
+        overlay->config->last_media_dir[0]
+        ? overlay->config->last_media_dir : NULL;
+
+    if (card >= MSX_MEGAFLASH_CARDS ||
+        overlay->dialog_target != OVERLAY_DIALOG_NONE)
+        return;
+    if (overlay->state != OVERLAY_STATE_MEGAFLASH_SETUP &&
+        !msx_megaflash_connected(overlay->msx)) {
+        notify_post(
+            "Connect MegaFlashROM SCC+ SD before inserting a card");
+        return;
+    }
+    overlay->dialog_target =
+        card ? OVERLAY_DIALOG_MEGAFLASH_SD_B :
+               OVERLAY_DIALOG_MEGAFLASH_SD_A;
+    overlay->dialog_ready = false;
+    overlay->dialog_failed = false;
+    overlay->dialog_error[0] = '\0';
+    SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
+                           overlay->display
+                           ? overlay->display->window : NULL,
+                           filters, 2, location, false);
+}
+
 static void open_ide_image_dialog(Overlay *overlay) {
     static const SDL_DialogFileFilter filters[] = {
         { "Raw IDE disk images", "img;IMG;dsk;DSK;hdd;HDD" },
@@ -1416,6 +1624,21 @@ static bool sd_mapper_rom_file_is_valid(const char *path) {
                path, MSX_SD_MAPPER_DRIVER_SIZE) ||
            firmware_file_has_size(
                path, MSX_SD_MAPPER_ROM_SIZE);
+}
+
+static bool megaflash_rom_file_is_valid(const char *path) {
+    FILE *file;
+    long size;
+
+    if (!path || !path[0])
+        return false;
+    file = fopen(path, "rb");
+    if (!file)
+        return false;
+    size = fseek(file, 0, SEEK_END) == 0 ? ftell(file) : -1;
+    fclose(file);
+    return size > 0 &&
+           size <= (long)MSX_MEGAFLASH_FLASH_SIZE;
 }
 
 static bool sd_image_file_is_valid(const char *path) {
@@ -2122,6 +2345,139 @@ static bool disconnect_sd_mapper(Overlay *overlay) {
     return true;
 }
 
+static void begin_megaflash_setup(Overlay *overlay) {
+    Config *config = overlay->config;
+
+    overlay->megaflash_setup_row = MEGAFLASH_SETUP_FIRMWARE;
+    snprintf(overlay->pending_megaflash_rom_path,
+             sizeof(overlay->pending_megaflash_rom_path), "%s",
+             config->megaflash_rom_path);
+    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
+        snprintf(overlay->pending_megaflash_card_path[card],
+                 sizeof(overlay->pending_megaflash_card_path[card]),
+                 "%s", config->megaflash_card_path[card]);
+    }
+    overlay->state = OVERLAY_STATE_MEGAFLASH_SETUP;
+}
+
+static bool connect_megaflash(
+    Overlay *overlay, const char *rom_path,
+    const char *card_a_path, const char *card_b_path,
+    SdImageMode image_mode) {
+    Config *config = overlay->config;
+    const char *cards[MSX_MEGAFLASH_CARDS] = {
+        card_a_path ? card_a_path : "",
+        card_b_path ? card_b_path : ""
+    };
+    char state_path[PATH_MAX];
+    int slot;
+
+    if (!megaflash_rom_file_is_valid(rom_path)) {
+        notify_post(
+            "MegaFlashROM SCC+ SD needs an image up to 8 MiB");
+        return false;
+    }
+    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
+        if (cards[card][0] &&
+            !sd_image_file_is_valid(cards[card])) {
+            notify_post(
+                "MegaFlash SD %c must use complete 512-byte sectors",
+                'A' + (int)card);
+            return false;
+        }
+    }
+    if (!toggle_cartridge_extension(
+            overlay, &config->megaflash,
+            "MegaFlashROM SCC+ SD"))
+        return false;
+    slot = cartridge_extension_slot(
+        config, "MegaFlashROM SCC+ SD");
+    if (config_megaflash_state_path(
+            config, state_path, sizeof(state_path)) != 0) {
+        config->megaflash = false;
+        notify_post("MegaFlash persistent state path is too long");
+        return false;
+    }
+    if (slot < 0 ||
+        (state_path[0]
+         ? msx_load_megaflash_persistent(
+               overlay->msx, (unsigned)slot,
+               rom_path, state_path)
+         : msx_load_megaflash(
+               overlay->msx, (unsigned)slot,
+               rom_path)) != 0) {
+        config->megaflash = false;
+        notify_post("Could not load MegaFlashROM image: %s",
+                    msx_megaflash_flash_error(overlay->msx));
+        return false;
+    }
+    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
+        if (!cards[card][0])
+            continue;
+        if (msx_mount_megaflash_card(
+                overlay->msx, card, cards[card], image_mode) == 0)
+            continue;
+        {
+            char error[SD_CARD_ERROR_MAX];
+
+            snprintf(error, sizeof(error), "%s",
+                     msx_megaflash_card_error(
+                         overlay->msx, card));
+            (void)msx_eject_megaflash(overlay->msx);
+            config->megaflash = false;
+            notify_post("Could not mount MegaFlash SD %c: %s",
+                        'A' + (int)card,
+                        error[0] ? error :
+                        path_basename(cards[card]));
+            return false;
+        }
+    }
+    snprintf(config->megaflash_rom_path,
+             sizeof(config->megaflash_rom_path), "%s", rom_path);
+    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
+        snprintf(config->megaflash_card_path[card],
+                 sizeof(config->megaflash_card_path[card]),
+                 "%s", cards[card]);
+    }
+    config->sd_image_mode = image_mode;
+    notify_post(
+        "MegaFlashROM SCC+ SD connected in cartridge slot %d",
+        slot + 1);
+    return true;
+}
+
+static void finish_megaflash_setup(Overlay *overlay) {
+    if (!connect_megaflash(
+            overlay, overlay->pending_megaflash_rom_path,
+            overlay->pending_megaflash_card_path[0],
+            overlay->pending_megaflash_card_path[1],
+            overlay->config->sd_image_mode))
+        return;
+    overlay->dirty = true;
+    overlay->state = OVERLAY_STATE_MENU;
+    apply_config(overlay);
+}
+
+static bool disconnect_megaflash(Overlay *overlay) {
+    if (msx_eject_megaflash(overlay->msx) != 0) {
+        const char *error =
+            msx_megaflash_flash_has_error(overlay->msx)
+            ? msx_megaflash_flash_error(overlay->msx) :
+            msx_megaflash_card_has_error(overlay->msx, 0)
+            ? msx_megaflash_card_error(overlay->msx, 0)
+            : msx_megaflash_card_error(overlay->msx, 1);
+
+        notify_post(
+            "Could not disconnect MegaFlashROM safely: %s",
+            error);
+        return false;
+    }
+    (void)toggle_cartridge_extension(
+        overlay, &overlay->config->megaflash,
+        "MegaFlashROM SCC+ SD");
+    return true;
+}
+
 static bool set_sd_image_mode(Overlay *overlay, SdImageMode mode) {
     Config *config = overlay->config;
 
@@ -2142,6 +2498,35 @@ static bool set_sd_image_mode(Overlay *overlay, SdImageMode mode) {
                 (void)msx_mount_sd_card(
                     overlay->msx, rollback,
                     config->sd_card_path[rollback],
+                    config->sd_image_mode);
+        }
+        return false;
+    }
+    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
+        if (!msx_megaflash_card_mounted(overlay->msx, card))
+            continue;
+        if (msx_mount_megaflash_card(
+                overlay->msx, card,
+                config->megaflash_card_path[card], mode) == 0)
+            continue;
+        notify_post(
+            "Could not switch MegaFlash SD %c access: %s",
+            'A' + (int)card,
+            msx_megaflash_card_error(overlay->msx, card));
+        for (unsigned rollback = 0;
+             rollback < MSX_SD_MAPPER_CARDS; ++rollback) {
+            if (msx_sd_card_mounted(overlay->msx, rollback))
+                (void)msx_mount_sd_card(
+                    overlay->msx, rollback,
+                    config->sd_card_path[rollback],
+                    config->sd_image_mode);
+        }
+        for (unsigned rollback = 0; rollback < card; ++rollback) {
+            if (msx_megaflash_card_mounted(
+                    overlay->msx, rollback))
+                (void)msx_mount_megaflash_card(
+                    overlay->msx, rollback,
+                    config->megaflash_card_path[rollback],
                     config->sd_image_mode);
         }
         return false;
@@ -2337,6 +2722,14 @@ static void activate_item(Overlay *overlay) {
                 open_sd_card_dialog(overlay, 1);
                 return;
             }
+            if (overlay->row == media_megaflash_sd_a_row(config)) {
+                open_megaflash_card_dialog(overlay, 0);
+                return;
+            }
+            if (overlay->row == media_megaflash_sd_b_row(config)) {
+                open_megaflash_card_dialog(overlay, 1);
+                return;
+            }
             return;
         }
         case OVERLAY_EXTENSIONS:
@@ -2389,12 +2782,38 @@ static void activate_item(Overlay *overlay) {
                     }
                     break;
                 case 2:
+                    if (config->megaflash) {
+                        if (!disconnect_megaflash(overlay))
+                            return;
+                    } else if (megaflash_rom_file_is_valid(
+                                   config->megaflash_rom_path) &&
+                               (!config->megaflash_card_path[0][0] ||
+                                sd_image_file_is_valid(
+                                    config->
+                                        megaflash_card_path[0])) &&
+                               (!config->megaflash_card_path[1][0] ||
+                                sd_image_file_is_valid(
+                                    config->
+                                        megaflash_card_path[1]))) {
+                        if (!connect_megaflash(
+                                overlay,
+                                config->megaflash_rom_path,
+                                config->megaflash_card_path[0],
+                                config->megaflash_card_path[1],
+                                config->sd_image_mode))
+                            return;
+                    } else {
+                        begin_megaflash_setup(overlay);
+                        return;
+                    }
+                    break;
+                case 3:
                     if (!toggle_cartridge_extension(
                             overlay, &config->scc,
                             "Konami SCC"))
                         return;
                     break;
-                case 3:
+                case 4:
                     if (!toggle_cartridge_extension(
                             overlay, &config->msx_music,
                             "MSX-MUSIC"))
@@ -2696,6 +3115,48 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
         }
         return true;
     }
+    if (overlay->state == OVERLAY_STATE_MEGAFLASH_SETUP) {
+        if (key == SDLK_UP) {
+            --overlay->megaflash_setup_row;
+            if (overlay->megaflash_setup_row < 0)
+                overlay->megaflash_setup_row =
+                    MEGAFLASH_SETUP_ROWS - 1;
+        } else if (key == SDLK_DOWN) {
+            ++overlay->megaflash_setup_row;
+            if (overlay->megaflash_setup_row >=
+                MEGAFLASH_SETUP_ROWS)
+                overlay->megaflash_setup_row = 0;
+        } else if (key == SDLK_RETURN ||
+                   key == SDLK_KP_ENTER) {
+            switch (overlay->megaflash_setup_row) {
+                case MEGAFLASH_SETUP_FIRMWARE:
+                    open_megaflash_rom_dialog(overlay);
+                    break;
+                case MEGAFLASH_SETUP_CARD_A:
+                    open_megaflash_card_dialog(overlay, 0);
+                    break;
+                case MEGAFLASH_SETUP_CARD_B:
+                    open_megaflash_card_dialog(overlay, 1);
+                    break;
+                case MEGAFLASH_SETUP_CONNECT:
+                    finish_megaflash_setup(overlay);
+                    break;
+            }
+        } else if (key == SDLK_DELETE) {
+            if (overlay->megaflash_setup_row ==
+                MEGAFLASH_SETUP_FIRMWARE)
+                overlay->pending_megaflash_rom_path[0] = '\0';
+            else if (overlay->megaflash_setup_row ==
+                     MEGAFLASH_SETUP_CARD_A)
+                overlay->pending_megaflash_card_path[0][0] = '\0';
+            else if (overlay->megaflash_setup_row ==
+                     MEGAFLASH_SETUP_CARD_B)
+                overlay->pending_megaflash_card_path[1][0] = '\0';
+        } else if (key == SDLK_ESCAPE) {
+            overlay->state = OVERLAY_STATE_MENU;
+        }
+        return true;
+    }
     if (overlay->state == OVERLAY_STATE_MODEL_LIST) {
         if (key == SDLK_UP || key == SDLK_LEFT) {
             --overlay->model_editor_row;
@@ -2960,6 +3421,34 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                     notify_post("SD Card %c safely ejected",
                                 'A' + (int)card);
                 }
+            } else if (overlay->section == OVERLAY_MEDIA &&
+                       (overlay->row ==
+                            media_megaflash_sd_a_row(
+                                overlay->config) ||
+                        overlay->row ==
+                            media_megaflash_sd_b_row(
+                                overlay->config)) &&
+                       overlay->config->megaflash) {
+                unsigned card =
+                    overlay->row ==
+                        media_megaflash_sd_b_row(
+                            overlay->config) ? 1u : 0u;
+
+                if (msx_eject_megaflash_card(
+                        overlay->msx, card) != 0) {
+                    notify_post(
+                        "Could not eject MegaFlash SD %c: %s",
+                        'A' + (int)card,
+                        msx_megaflash_card_error(
+                            overlay->msx, card));
+                } else {
+                    overlay->config->
+                        megaflash_card_path[card][0] = '\0';
+                    overlay->dirty = true;
+                    notify_post(
+                        "MegaFlash SD %c safely ejected",
+                        'A' + (int)card);
+                }
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
                        overlay->row == 0 &&
                        overlay->config->sunrise_rom_path[0]) {
@@ -2980,6 +3469,17 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 overlay->dirty = true;
                 apply_config(overlay);
                 notify_post("SD Mapper V2 firmware forgotten");
+            } else if (overlay->section == OVERLAY_EXTENSIONS &&
+                       overlay->row == 2 &&
+                       overlay->config->megaflash_rom_path[0]) {
+                if (overlay->config->megaflash &&
+                    !disconnect_megaflash(overlay))
+                    break;
+                overlay->config->megaflash_rom_path[0] = '\0';
+                overlay->dirty = true;
+                apply_config(overlay);
+                notify_post(
+                    "MegaFlashROM initial image forgotten");
             }
             break;
         case SDLK_ESCAPE:
@@ -3046,8 +3546,12 @@ void overlay_tick(Overlay *overlay) {
             notify_post("Sunrise IDE ROM selection cancelled");
         else if (target == OVERLAY_DIALOG_SD_MAPPER_ROM)
             notify_post("SD Mapper V2 ROM selection cancelled");
+        else if (target == OVERLAY_DIALOG_MEGAFLASH_ROM)
+            notify_post("MegaFlashROM image selection cancelled");
         else if (target == OVERLAY_DIALOG_SD_CARD_A ||
-                 target == OVERLAY_DIALOG_SD_CARD_B)
+                 target == OVERLAY_DIALOG_SD_CARD_B ||
+                 target == OVERLAY_DIALOG_MEGAFLASH_SD_A ||
+                 target == OVERLAY_DIALOG_MEGAFLASH_SD_B)
             notify_post("SD card selection cancelled");
         else if (target == OVERLAY_DIALOG_IDE_IMAGE)
             notify_post("IDE disk selection cancelled");
@@ -3168,6 +3672,27 @@ void overlay_tick(Overlay *overlay) {
                     path_basename(overlay->dialog_path));
         return;
     }
+    if (target == OVERLAY_DIALOG_MEGAFLASH_ROM) {
+        if (overlay->state != OVERLAY_STATE_MEGAFLASH_SETUP)
+            return;
+        if (!megaflash_rom_file_is_valid(
+                overlay->dialog_path)) {
+            notify_post(
+                "MegaFlashROM SCC+ SD needs an image up to 8 MiB");
+            return;
+        }
+        snprintf(overlay->pending_megaflash_rom_path,
+                 sizeof(overlay->pending_megaflash_rom_path),
+                 "%s", overlay->dialog_path);
+        copy_dirname(overlay->config->last_media_dir,
+                     sizeof(overlay->config->last_media_dir),
+                     overlay->dialog_path);
+        overlay->megaflash_setup_row =
+            MEGAFLASH_SETUP_CARD_A;
+        notify_post("MegaFlashROM image selected: %s",
+                    path_basename(overlay->dialog_path));
+        return;
+    }
     if (target == OVERLAY_DIALOG_SD_CARD_A ||
         target == OVERLAY_DIALOG_SD_CARD_B) {
         unsigned card =
@@ -3214,6 +3739,61 @@ void overlay_tick(Overlay *overlay) {
                      overlay->dialog_path);
         overlay->dirty = true;
         notify_post("SD Card %c mounted %s: %s",
+                    'A' + (int)card,
+                    sd_mode_name(
+                        overlay->config->sd_image_mode),
+                    path_basename(overlay->dialog_path));
+        return;
+    }
+    if (target == OVERLAY_DIALOG_MEGAFLASH_SD_A ||
+        target == OVERLAY_DIALOG_MEGAFLASH_SD_B) {
+        unsigned card =
+            target == OVERLAY_DIALOG_MEGAFLASH_SD_B ? 1u : 0u;
+
+        if (!sd_image_file_is_valid(overlay->dialog_path)) {
+            notify_post(
+                "MegaFlash SD %c must use complete 512-byte sectors",
+                'A' + (int)card);
+            return;
+        }
+        if (overlay->state ==
+            OVERLAY_STATE_MEGAFLASH_SETUP) {
+            snprintf(
+                overlay->pending_megaflash_card_path[card],
+                sizeof(
+                    overlay->pending_megaflash_card_path[card]),
+                "%s", overlay->dialog_path);
+            copy_dirname(overlay->config->last_media_dir,
+                         sizeof(
+                             overlay->config->last_media_dir),
+                         overlay->dialog_path);
+            overlay->megaflash_setup_row =
+                card ? MEGAFLASH_SETUP_CONNECT :
+                       MEGAFLASH_SETUP_CARD_B;
+            notify_post("MegaFlash SD %c selected: %s",
+                        'A' + (int)card,
+                        path_basename(overlay->dialog_path));
+            return;
+        }
+        if (msx_mount_megaflash_card(
+                overlay->msx, card, overlay->dialog_path,
+                overlay->config->sd_image_mode) != 0) {
+            notify_post(
+                "Could not mount MegaFlash SD %c: %s",
+                'A' + (int)card,
+                msx_megaflash_card_error(
+                    overlay->msx, card));
+            return;
+        }
+        snprintf(overlay->config->megaflash_card_path[card],
+                 sizeof(
+                     overlay->config->megaflash_card_path[card]),
+                 "%s", overlay->dialog_path);
+        copy_dirname(overlay->config->last_media_dir,
+                     sizeof(overlay->config->last_media_dir),
+                     overlay->dialog_path);
+        overlay->dirty = true;
+        notify_post("MegaFlash SD %c mounted %s: %s",
                     'A' + (int)card,
                     sd_mode_name(
                         overlay->config->sd_image_mode),
@@ -3738,6 +4318,86 @@ static void render_sd_mapper_setup(const Overlay *overlay,
                  160, 180, 210);
 }
 
+static void render_megaflash_setup(const Overlay *overlay,
+                                   SDL_Renderer *renderer) {
+    static const char *labels[MEGAFLASH_SETUP_ROWS] = {
+        "Initial flash", "SD Card A", "SD Card B", "Connect"
+    };
+    char firmware[52];
+    char card_a[52];
+    char card_b[52];
+    const char *values[MEGAFLASH_SETUP_ROWS];
+    const float box_x = 28.0f;
+    const float box_y = 92.0f;
+    const float box_w = 584.0f;
+    const float box_h = 270.0f;
+    const char *title = "MegaFlashROM SCC+ SD setup";
+
+    if (overlay->pending_megaflash_rom_path[0])
+        editor_shorten(
+            firmware, sizeof(firmware),
+            path_basename(
+                overlay->pending_megaflash_rom_path), 42);
+    else
+        snprintf(firmware, sizeof(firmware),
+                 "[required - choose flash image]");
+    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
+        char *shown = card ? card_b : card_a;
+
+        if (overlay->pending_megaflash_card_path[card][0])
+            editor_shorten(
+                shown, 52,
+                path_basename(
+                    overlay->pending_megaflash_card_path[card]), 42);
+        else
+            snprintf(shown, 52, "[optional - empty]");
+    }
+    values[MEGAFLASH_SETUP_FIRMWARE] = firmware;
+    values[MEGAFLASH_SETUP_CARD_A] = card_a;
+    values[MEGAFLASH_SETUP_CARD_B] = card_b;
+    values[MEGAFLASH_SETUP_CONNECT] =
+        "Connect MegaFlashROM";
+
+    ui_fill_rect(renderer, 0.0f, 0.0f,
+                 (float)DISPLAY_LOGICAL_W,
+                 (float)DISPLAY_LOGICAL_H,
+                 0, 0, 0, 150);
+    ui_fill_rect(renderer, box_x, box_y, box_w, box_h,
+                 20, 22, 52, 255);
+    ui_draw_rect(renderer, box_x, box_y, box_w, box_h,
+                 90, 110, 220);
+    ui_draw_text(
+        renderer,
+        box_x + (box_w - (float)strlen(title) * 8.0f) * 0.5f,
+        box_y + 12.0f, title, 255, 255, 255);
+    ui_draw_text(renderer, box_x + 22.0f, box_y + 42.0f,
+                 "8 MiB flash, SCC-I, PSG, mapper RAM, and two SD slots.",
+                 180, 210, 235);
+    ui_draw_text(renderer, box_x + 22.0f, box_y + 60.0f,
+                 "Guest flash writes use an atomic private state file.",
+                 180, 210, 235);
+
+    for (int row = 0; row < MEGAFLASH_SETUP_ROWS; ++row) {
+        bool selected = row == overlay->megaflash_setup_row;
+        Uint8 red = selected ? 255 : 210;
+        Uint8 green = selected ? 255 : 210;
+        Uint8 blue = selected ? 70 : 225;
+        float y = box_y + 94.0f + row * 29.0f;
+
+        if (selected)
+            ui_draw_text(renderer, box_x + 12.0f, y, ">",
+                         red, green, blue);
+        ui_draw_text(renderer, box_x + 28.0f, y, labels[row],
+                     red, green, blue);
+        ui_draw_text(renderer, box_x + 172.0f, y, values[row],
+                     red, green, blue);
+    }
+    ui_draw_text(renderer, box_x + 42.0f,
+                 box_y + box_h - 24.0f,
+                 "Up/Down choose  Enter select  Delete clear  Esc cancel",
+                 160, 180, 210);
+}
+
 void overlay_render_cassette_scope(const Overlay *overlay) {
     enum { SCOPE_SAMPLES = 608 };
     SDL_Renderer *renderer;
@@ -3872,6 +4532,10 @@ void overlay_render(const Overlay *overlay) {
     }
     if (overlay->state == OVERLAY_STATE_SD_MAPPER_SETUP) {
         render_sd_mapper_setup(overlay, renderer);
+        return;
+    }
+    if (overlay->state == OVERLAY_STATE_MEGAFLASH_SETUP) {
+        render_megaflash_setup(overlay, renderer);
         return;
     }
     if (overlay->state == OVERLAY_STATE_MODEL_LIST) {

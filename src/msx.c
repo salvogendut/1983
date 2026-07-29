@@ -347,6 +347,14 @@ static void advance_machine(MsxMachine *msx, int cycles) {
 
         psg_render(&msx->psg, sample, 1,
                    MSX_PSG_CLOCK_HZ, MSX_AUDIO_SAMPLE_RATE);
+        for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot)
+            msx_cartridge_render_audio(
+                &msx->cartridges[slot], sample,
+                MSX_CPU_HZ, MSX_AUDIO_SAMPLE_RATE);
+        if (msx_megaflash_connected(msx))
+            megaflash_render_audio(
+                &msx->megaflash, sample,
+                MSX_CPU_HZ, MSX_AUDIO_SAMPLE_RATE);
         if (msx->cassette_audible_monitor) {
             int mixed = (int)*sample +
                 cassette_monitor_sample(&msx->cassette, msx->cycles);
@@ -527,6 +535,7 @@ void msx_reset(MsxMachine *msx) {
     memset(msx->mapper_segment, 0, sizeof(msx->mapper_segment));
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_reset(&msx->cartridges[i]);
+    megaflash_reset(&msx->megaflash);
     sd_mapper_reset(&msx->sd_mapper);
     sunrise_reset(&msx->sunrise);
     wd2793_reset(&msx->fdc);
@@ -598,9 +607,11 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_init(&msx->cartridges[i]);
     cassette_init(&msx->cassette);
+    megaflash_init(&msx->megaflash);
     sd_mapper_init(&msx->sd_mapper);
     sunrise_init(&msx->sunrise);
     wd2793_init(&msx->fdc);
+    msx->megaflash_slot = -1;
     msx->sd_mapper_slot = -1;
     msx->sunrise_slot = -1;
     z80_init(&msx->cpu);
@@ -623,9 +634,11 @@ void msx_destroy(MsxMachine *msx) {
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_destroy(&msx->cartridges[i]);
     cassette_destroy(&msx->cassette);
+    megaflash_destroy(&msx->megaflash);
     sd_mapper_destroy(&msx->sd_mapper);
     sunrise_destroy(&msx->sunrise);
     wd2793_destroy(&msx->fdc);
+    msx->megaflash_slot = -1;
     msx->sd_mapper_slot = -1;
     msx->sunrise_slot = -1;
     if (msx->ram && msx->ram != msx->internal_ram)
@@ -681,8 +694,10 @@ static bool slot_is_expanded(const MsxMachine *msx, unsigned primary) {
     if (msx->profile->expanded_slots && primary == 3)
         return true;
     return (primary == 1 || primary == 2) &&
-           msx->sd_mapper_slot == (int)(primary - 1) &&
-           sd_mapper_slot_expanded(&msx->sd_mapper);
+           ((msx->sd_mapper_slot == (int)(primary - 1) &&
+             sd_mapper_slot_expanded(&msx->sd_mapper)) ||
+            (msx->megaflash_slot == (int)(primary - 1) &&
+             megaflash_slot_expanded(&msx->megaflash)));
 }
 
 static unsigned selected_subslot(const MsxMachine *msx, unsigned primary,
@@ -744,6 +759,9 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
         if ((primary == 1 || primary == 2) &&
             msx->sd_mapper_slot == (int)(primary - 1))
             return sd_mapper_secondary_read(&msx->sd_mapper);
+        if ((primary == 1 || primary == 2) &&
+            msx->megaflash_slot == (int)(primary - 1))
+            return megaflash_secondary_read(&msx->megaflash);
         return msx->secondary_slot[primary] ^ 0xff;
     }
 
@@ -760,6 +778,8 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
 
             if (msx->sd_mapper_slot == (int)slot)
                 return sd_mapper_read(&msx->sd_mapper, address);
+            if (msx->megaflash_slot == (int)slot)
+                return megaflash_read(&msx->megaflash, address);
             if (msx->sunrise_slot == (int)slot)
                 return sunrise_read(&msx->sunrise, address);
             return msx_cartridge_read(&msx->cartridges[slot], address);
@@ -803,6 +823,9 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
         if ((primary == 1 || primary == 2) &&
             msx->sd_mapper_slot == (int)(primary - 1))
             sd_mapper_secondary_write(&msx->sd_mapper, value);
+        else if ((primary == 1 || primary == 2) &&
+                 msx->megaflash_slot == (int)(primary - 1))
+            megaflash_secondary_write(&msx->megaflash, value);
         else
             msx->secondary_slot[primary] = value;
         return;
@@ -812,6 +835,8 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
 
         if (msx->sd_mapper_slot == (int)slot)
             sd_mapper_write(&msx->sd_mapper, address, value);
+        else if (msx->megaflash_slot == (int)slot)
+            megaflash_write(&msx->megaflash, address, value);
         else if (msx->sunrise_slot == (int)slot)
             sunrise_write(&msx->sunrise, address, value);
         else
@@ -888,6 +913,9 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
             if (msx_sd_mapper_connected(msx))
                 result &= sd_mapper_io_read(
                     &msx->sd_mapper, low & 3);
+            if (msx_megaflash_connected(msx))
+                result &= megaflash_mapper_io_read(
+                    &msx->megaflash, low & 3);
             return result;
         }
         default:
@@ -922,10 +950,16 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
                 vdp_write_control(&msx->vdp, value);
             break;
         case 0xa0:
+            if (msx_megaflash_connected(msx))
+                megaflash_psg_io_write(
+                    &msx->megaflash, low, value);
             psg_select(&msx->psg, value);
             break;
         case 0xa1: {
             unsigned reg = msx->psg.selected;
+            if (msx_megaflash_connected(msx))
+                megaflash_psg_io_write(
+                    &msx->megaflash, low, value);
             if (reg == 7)
                 value = (value & 0x3f) | 0x80;
             psg_write_data(&msx->psg, value);
@@ -985,6 +1019,15 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
             if (msx_sd_mapper_connected(msx))
                 sd_mapper_io_write(
                     &msx->sd_mapper, low & 3, value);
+            if (msx_megaflash_connected(msx))
+                megaflash_mapper_io_write(
+                    &msx->megaflash, low & 3, value);
+            break;
+        case 0x10:
+        case 0x11:
+            if (msx_megaflash_connected(msx))
+                megaflash_psg_io_write(
+                    &msx->megaflash, low, value);
             break;
         default:
             break;
@@ -1397,6 +1440,133 @@ const char *msx_sd_card_error(const MsxMachine *msx, unsigned card) {
 bool msx_sd_card_take_activity(MsxMachine *msx, unsigned card) {
     return msx_sd_mapper_connected(msx) &&
            sd_mapper_take_activity(&msx->sd_mapper, card);
+}
+
+int msx_install_megaflash(MsxMachine *msx, unsigned slot,
+                          const u8 *data, size_t size) {
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        megaflash_install(&msx->megaflash, data, size) != 0)
+        return -1;
+    msx_cartridge_eject(&msx->cartridges[slot]);
+    msx->megaflash_slot = (int)slot;
+    msx_reset(msx);
+    return 0;
+}
+
+int msx_load_megaflash(MsxMachine *msx, unsigned slot,
+                       const char *path) {
+    u8 *data;
+    size_t size;
+    int result;
+
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        read_rom_file(path, MSX_MEGAFLASH_FLASH_SIZE,
+                      &data, &size) != 0)
+        return -1;
+    result = msx_install_megaflash(msx, slot, data, size);
+    free(data);
+    return result;
+}
+
+int msx_load_megaflash_persistent(MsxMachine *msx, unsigned slot,
+                                  const char *initial_path,
+                                  const char *state_path) {
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        megaflash_load_persistent(
+            &msx->megaflash, initial_path, state_path) != 0)
+        return -1;
+    msx_cartridge_eject(&msx->cartridges[slot]);
+    msx->megaflash_slot = (int)slot;
+    msx_reset(msx);
+    return 0;
+}
+
+int msx_flush_megaflash(MsxMachine *msx) {
+    return msx ? megaflash_flush_flash(&msx->megaflash) : -1;
+}
+
+bool msx_megaflash_flash_dirty(const MsxMachine *msx) {
+    return msx &&
+           megaflash_flash_dirty(&msx->megaflash);
+}
+
+bool msx_megaflash_flash_has_error(const MsxMachine *msx) {
+    return msx &&
+           megaflash_flash_has_error(&msx->megaflash);
+}
+
+const char *msx_megaflash_flash_error(const MsxMachine *msx) {
+    return msx
+         ? megaflash_flash_error(&msx->megaflash) : "";
+}
+
+int msx_eject_megaflash(MsxMachine *msx) {
+    if (!msx || megaflash_eject(&msx->megaflash) != 0)
+        return -1;
+    msx->megaflash_slot = -1;
+    msx_reset(msx);
+    return 0;
+}
+
+bool msx_megaflash_connected(const MsxMachine *msx) {
+    return msx && msx->megaflash_slot >= 0 &&
+           msx->megaflash_slot < (int)MSX_CARTRIDGE_SLOTS &&
+           msx->megaflash.loaded;
+}
+
+int msx_megaflash_slot(const MsxMachine *msx) {
+    return msx_megaflash_connected(msx)
+         ? msx->megaflash_slot : -1;
+}
+
+int msx_mount_megaflash_card(MsxMachine *msx, unsigned card,
+                             const char *path, SdImageMode mode) {
+    return msx_megaflash_connected(msx)
+         ? megaflash_mount_card(
+               &msx->megaflash, card, path, mode) : -1;
+}
+
+int msx_flush_megaflash_card(MsxMachine *msx, unsigned card) {
+    return msx ? megaflash_flush_card(
+        &msx->megaflash, card) : -1;
+}
+
+int msx_eject_megaflash_card(MsxMachine *msx, unsigned card) {
+    return msx ? megaflash_eject_card(
+        &msx->megaflash, card) : -1;
+}
+
+bool msx_megaflash_card_mounted(const MsxMachine *msx, unsigned card) {
+    return msx_megaflash_connected(msx) &&
+           megaflash_card_mounted(&msx->megaflash, card);
+}
+
+bool msx_megaflash_card_writable(const MsxMachine *msx,
+                                 unsigned card) {
+    return msx_megaflash_connected(msx) &&
+           megaflash_card_writable(&msx->megaflash, card);
+}
+
+bool msx_megaflash_card_dirty(const MsxMachine *msx, unsigned card) {
+    return msx_megaflash_connected(msx) &&
+           megaflash_card_dirty(&msx->megaflash, card);
+}
+
+bool msx_megaflash_card_has_error(const MsxMachine *msx,
+                                  unsigned card) {
+    return msx &&
+           megaflash_card_has_error(&msx->megaflash, card);
+}
+
+const char *msx_megaflash_card_error(const MsxMachine *msx,
+                                     unsigned card) {
+    return msx
+         ? megaflash_card_error(&msx->megaflash, card) : "";
+}
+
+bool msx_megaflash_take_activity(MsxMachine *msx, unsigned card) {
+    return msx_megaflash_connected(msx) &&
+           megaflash_take_activity(&msx->megaflash, card);
 }
 
 int msx_flush_rtc_persistence(MsxMachine *msx, u64 host_seconds) {
