@@ -40,7 +40,7 @@ enum {
     RTC_RESET_ALARM = 0x01,
     RTC_RESET_FRACTION = 0x02,
     RTC_TEST_HZ = 16384,
-    RTC_PERSISTENCE_VERSION = 1,
+    RTC_PERSISTENCE_VERSION = 2,
     RTC_PERSISTENCE_PAYLOAD_OFFSET = 28,
     RTC_PERSISTENCE_CHECKSUM_OFFSET = 80,
     RTC_PERSISTENCE_FLAG_TIMER_RUNNING = 0x01,
@@ -240,6 +240,14 @@ void rtc_init_at(MsxRtc *rtc, u64 host_seconds) {
     if (!rtc)
         return;
     memset(rtc, 0, sizeof(*rtc));
+    /*
+     * The RP-5C01's battery SRAM is blank-high. In particular,
+     * block 1 register 10 therefore selects 24-hour mode before the
+     * initial host time is encoded. Starting from zero would encode an
+     * evening hour as 20..31 in 12-hour form; firmware selecting
+     * 24-hour mode would then normalize it modulo 24 to the wrong hour.
+     */
+    memcpy(rtc->registers, register_masks, sizeof(rtc->registers));
     initialize_host_time_at(rtc, host_seconds);
     rtc_reset(rtc);
     rtc->dirty = false;

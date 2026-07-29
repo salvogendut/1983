@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #define TEST_CPU_HZ 3579545u
 
@@ -75,7 +76,7 @@ static void test_control_registers_and_banked_ram(void) {
     assert(read_register(&rtc, 4) == 0x0e);
     assert(rtc_dirty(&rtc));
     select_block(&rtc, 3, false);
-    assert(read_register(&rtc, 4) == 0);
+    assert(read_register(&rtc, 4) == 0x0f);
     write_register(&rtc, 4, 7);
     select_block(&rtc, 2, false);
     assert(read_register(&rtc, 4) == 0x0e);
@@ -102,6 +103,38 @@ static void test_control_registers_and_banked_ram(void) {
     assert(read_register(&rtc, 13) == 0x08);
     select_block(&rtc, 2, false);
     assert(read_register(&rtc, 4) == 9);
+}
+
+static void test_host_seed_uses_24_hour_mode(void) {
+    const u64 host_seconds = 1785352234ULL;
+    time_t before_time = (time_t)host_seconds;
+    time_t after_time = (time_t)(host_seconds + 1);
+    const struct tm *local;
+    struct tm before;
+    struct tm after;
+    MsxRtc rtc;
+
+    local = localtime(&before_time);
+    assert(local);
+    before = *local;
+    local = localtime(&after_time);
+    assert(local);
+    after = *local;
+
+    rtc_init_at(&rtc, host_seconds);
+    select_block(&rtc, 1, false);
+    assert(read_register(&rtc, 10) == 1);
+    write_register(&rtc, 10, 1); /* BIOS explicitly selects 24-hour mode. */
+    select_block(&rtc, 0, false);
+    assert(read_pair(&rtc, 0) == (unsigned)before.tm_sec);
+    assert(read_pair(&rtc, 2) == (unsigned)before.tm_min);
+    assert(read_pair(&rtc, 4) == (unsigned)before.tm_hour);
+
+    rtc_advance_seconds(&rtc, 1);
+    select_block(&rtc, 0, false);
+    assert(read_pair(&rtc, 0) == (unsigned)after.tm_sec);
+    assert(read_pair(&rtc, 2) == (unsigned)after.tm_min);
+    assert(read_pair(&rtc, 4) == (unsigned)after.tm_hour);
 }
 
 static void set_end_of_1983(MsxRtc *rtc) {
@@ -335,6 +368,7 @@ static void test_persistent_cmos_and_offline_continuity(void) {
 
 int main(void) {
     test_control_registers_and_banked_ram();
+    test_host_seed_uses_24_hour_mode();
     test_emulated_time_and_fraction_reset();
     test_hour_modes_leap_years_and_test_register();
     test_persistent_cmos_and_offline_continuity();
