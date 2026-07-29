@@ -430,6 +430,101 @@ static void test_v9938_registers_and_status_selection(void) {
     assert(vdp_read_status(&vdp) == 0xff);
 }
 
+static void test_v9938_retrace_status(void) {
+    enum {
+        TICKS_PER_LINE = 1368,
+        PAL_LINES = 313,
+        PAL_FRAME_TICKS = TICKS_PER_LINE * PAL_LINES,
+    };
+    MsxVdp vdp;
+    u8 status;
+    unsigned display_start;
+    unsigned vr_low;
+    unsigned vr_high;
+
+    vdp_init(&vdp);
+    vdp_set_type(&vdp, MSX_VDP_V9938);
+    vdp_reset(&vdp);
+    write_control_register(&vdp, 15, 2);
+
+    /*
+     * VR is high in the borders, falls at the start of the left border
+     * preceding line zero, then rises after the visible 192 lines.
+     */
+    display_start = (16 + 36 + 10 + 7) * TICKS_PER_LINE + 202;
+    vr_low = display_start - TICKS_PER_LINE;
+    vr_high = display_start + MSX1_VIDEO_H * TICKS_PER_LINE;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    status = vdp_read_status(&vdp);
+    assert(status & 0x40);
+    vdp_advance(&vdp, vr_low - 1);
+    assert(vdp_read_status(&vdp) & 0x40);
+    vdp_advance(&vdp, 1);
+    assert(!(vdp_read_status(&vdp) & 0x40));
+    vdp_advance(&vdp, vr_high - vr_low - 1);
+    assert(!(vdp_read_status(&vdp) & 0x40));
+    vdp_advance(&vdp, 1);
+    assert(vdp_read_status(&vdp) & 0x40);
+
+    /* R9 bit 7 starts ten lines earlier and selects 212 visible lines. */
+    write_control_register(&vdp, 9, 0x80);
+    display_start = (16 + 36 + 7) * TICKS_PER_LINE + 202;
+    vr_low = display_start - TICKS_PER_LINE;
+    vr_high = display_start + MSX2_VIDEO_H * TICKS_PER_LINE;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, vr_low);
+    assert(!(vdp_read_status(&vdp) & 0x40));
+    vdp_advance(&vdp, vr_high - vr_low);
+    assert(vdp_read_status(&vdp) & 0x40);
+
+    /* R18 moves the vertical window; NTSC has the shorter top border. */
+    write_control_register(&vdp, 9, 0);
+    write_control_register(&vdp, 18, 0x70);
+    display_start = (16 + 36 + 10) * TICKS_PER_LINE + 202;
+    vr_low = display_start - TICKS_PER_LINE;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, vr_low);
+    assert(!(vdp_read_status(&vdp) & 0x40));
+
+    write_control_register(&vdp, 18, 0);
+    display_start = (16 + 9 + 10 + 7) * TICKS_PER_LINE + 202;
+    vr_low = display_start - TICKS_PER_LINE;
+    vdp_begin_frame(&vdp, TICKS_PER_LINE * 262, 262);
+    vdp_advance(&vdp, vr_low);
+    assert(!(vdp_read_status(&vdp) & 0x40));
+
+    /* In a graphics mode HR covers ticks 1282..225 of every line. */
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    assert(vdp_read_status(&vdp) & 0x20);
+    vdp_advance(&vdp, 225);
+    assert(vdp_read_status(&vdp) & 0x20);
+    vdp_advance(&vdp, 1);
+    assert(!(vdp_read_status(&vdp) & 0x20));
+    vdp_advance(&vdp, 1282 - 226);
+    assert(vdp_read_status(&vdp) & 0x20);
+
+    /* R18 horizontal adjustment zero shifts blanking 28 ticks left. */
+    write_control_register(&vdp, 18, 0x07);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, 197);
+    assert(vdp_read_status(&vdp) & 0x20);
+    vdp_advance(&vdp, 1);
+    assert(!(vdp_read_status(&vdp) & 0x20));
+    vdp_advance(&vdp, 1254 - 198);
+    assert(vdp_read_status(&vdp) & 0x20);
+
+    /* Text has a wider blanking interval, from tick 1254 through 289. */
+    write_control_register(&vdp, 18, 0);
+    write_control_register(&vdp, 1, 0x10);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, 289);
+    assert(vdp_read_status(&vdp) & 0x20);
+    vdp_advance(&vdp, 1);
+    assert(!(vdp_read_status(&vdp) & 0x20));
+    vdp_advance(&vdp, 1254 - 290);
+    assert(vdp_read_status(&vdp) & 0x20);
+}
+
 static void test_v9938_palette_and_indirect_register_port(void) {
     MsxVdp vdp;
 
@@ -720,6 +815,30 @@ static void test_v9938_command_transfers(void) {
 
     setup_v9938_bitmap(&vdp, 0x06); /* SCREEN 5 */
 
+    /*
+     * A colour written before LMMC starts is a pending CPU transfer.
+     * The MSX2 Sub-ROM relies on this ordering for single-pixel writes.
+     */
+    write_command_word(&vdp, 36, 6);
+    write_command_word(&vdp, 38, 1);
+    write_command_word(&vdp, 40, 1);
+    write_command_word(&vdp, 42, 1);
+    write_control_register(&vdp, 44, 7);
+    write_control_register(&vdp, 45, 0);
+    write_control_register(&vdp, 46, 0xb0);
+    assert(!(vdp.status2 & 0x81));
+    assert(vdp.vram[128 + 3] == 0x70);
+
+    /* The same preloaded transfer rule applies to packed-byte HMMC. */
+    write_command_word(&vdp, 36, 0);
+    write_command_word(&vdp, 38, 2);
+    write_command_word(&vdp, 40, 2);
+    write_command_word(&vdp, 42, 1);
+    write_control_register(&vdp, 44, 0xab);
+    write_control_register(&vdp, 46, 0xf0);
+    assert(!(vdp.status2 & 0x81));
+    assert(vdp.vram[2 * 128] == 0xab);
+
     /* HMMC consumes one R#44 byte for each packed destination byte. */
     write_command_word(&vdp, 36, 0);
     write_command_word(&vdp, 38, 0);
@@ -772,6 +891,7 @@ int main(void) {
     test_graphics_2_and_multicolour_mode_bits();
     test_backdrop_and_text_background_colours();
     test_v9938_registers_and_status_selection();
+    test_v9938_retrace_status();
     test_v9938_palette_and_indirect_register_port();
     test_v9938_banked_and_planar_vram();
     test_v9938_bitmap_rendering();

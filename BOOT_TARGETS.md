@@ -107,9 +107,14 @@ Development tests advance through explicit checkpoints:
 3. **Reached:** the supplied NMS 8250 BIOS, MSX2 sub-ROM, and disk ROM load
    into the expanded-slot layout, the internal mapper is accessible, and the
    RP-5C01 RTC lets firmware initialize the V9938. At 200 PAL frames the
-   fixture reaches `PC=1044`, enables a 512x192 SCREEN 6 display, initializes
-   32 KiB of VRAM, and renders the blue firmware checkpoint. SCREEN 5-8
-   bitmap layouts and all twelve V9938 commands are covered independently.
+   current fixture reaches `PC=041A`, enables a 512x192 SCREEN 6 display, and
+   has 28,346 non-zero VRAM bytes while drawing the MSX2 startup mark. The
+   firmware then leaves the Sub-ROM and launches a plain cartridge.
+   With the diagnostic ROM supplied through `MSX_DIAG_ROM`, the 1,500-frame
+   checkpoint reaches its blue menu at `PC=468C`, restores status selection
+   to S#0, and displays `MSX DIAGNOSTICS`. SCREEN 5-8 bitmap layouts, all
+   twelve V9938 commands, retrace transitions, and interrupt acknowledgement
+   are covered independently.
 4. Enumerate the external 512 KB mapper and an empty Sunrise IDE device from
    the Nextor kernel ROM.
 5. Read a partitioned raw disk and reach the BASIC fallback when the system

@@ -21,12 +21,12 @@ hardware specification.
 | `src/psg.*` | Host-independent AY-3-8910/YM2149 tone, noise, envelope, mixer, and sample generation |
 | `src/rtc.*` | Host-independent RP-5C01 register banks, CMOS, control ports, and emulated-time calendar |
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
-| `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, status, 128 KB VRAM, bitmap, and command engine |
-| `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, and optional C-BIOS/NMS 8250 boot checks |
+| `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, and command engine |
+| `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/NMS 8250/diagnostic boot checks |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
 | `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
 | `tests/test_rtc.c` | RP-5C01 banks, masks, reset behavior, calendar rollover, and clock advancement |
-| `tests/test_vdp.c` | Pattern/sprite rendering, V9938 bitmap layouts, commands, transfers, and status-latch checks |
+| `tests/test_vdp.c` | Pattern/sprite rendering, V9938 bitmap layouts, commands, preloaded transfers, and beam/status checks |
 
 Frontend modules may inspect summarized machine state for presentation, but
 guest hardware should not depend on SDL. Keeping that direction of dependency
@@ -106,8 +106,9 @@ and CPU/input implementations. The primary-slot, complete international
 keyboard matrix, PPI register, VDP-port, and PSG-register surfaces above are
 now present. The NMS 8250 secondary slots, internal mapper registers, MSX2
 RTC, V9938 bitmap modes, and synchronous command engine are also present;
-alternate national keyboard matrices, joystick/mouse PSG inputs, and accurate
-VDP timing are not.
+V9938 VR/HR status follows the emulated beam and the VDP IRQ is level
+sensitive. Alternate national keyboard matrices, joystick/mouse PSG inputs,
+and scanline-accurate rendering of mid-frame changes are not.
 
 ## Keyboard input
 
@@ -222,6 +223,15 @@ MSX_NMS8250_DIR=/path/to/nms8250-roms make check
 The C-BIOS test runs 180 NTSC frames to a stable no-cartridge state, then
 resets and verifies that C-BIOS discovers and launches a synthetic plain ROM
 cartridge. The NMS 8250 test currently verifies firmware loading, expanded
-slot discovery, and mapper setup after 200 PAL frames. Keep deterministic
-tests below SDL first; reserve rendered-frame and end-to-end tests for
-interactions that cannot be proved reliably at the component boundary.
+slot discovery, mapper setup, and SCREEN 6 startup after 200 PAL frames.
+When the MSX Diagnostics cartridge is available, its MSX2 startup and menu
+handoff can be included with:
+
+```sh
+MSX_NMS8250_DIR=/path/to/nms8250-roms \
+MSX_DIAG_ROM=/path/to/diag.rom make check
+```
+
+Keep deterministic tests below SDL first; reserve rendered-frame and
+end-to-end tests for interactions that cannot be proved reliably at the
+component boundary.

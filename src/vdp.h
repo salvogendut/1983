@@ -43,6 +43,10 @@ typedef struct {
     u8 command_code;
     u8 command_mode;
     u8 command_argument;
+    bool command_transfer_pending;
+    unsigned timing_cycle;
+    unsigned timing_frame_cycles;
+    unsigned timing_scanlines;
     unsigned render_width;
     unsigned render_height;
     u32 pixels[MSX2_VIDEO_W * MSX2_VIDEO_H];
@@ -59,5 +63,8 @@ void vdp_write_control(MsxVdp *vdp, u8 value);
 void vdp_write_palette(MsxVdp *vdp, u8 value);
 void vdp_write_indirect(MsxVdp *vdp, u8 value);
 
+void vdp_begin_frame(MsxVdp *vdp, unsigned frame_cycles,
+                     unsigned scanlines);
+void vdp_advance(MsxVdp *vdp, unsigned cycles);
 void vdp_end_frame(MsxVdp *vdp);
 void vdp_render(MsxVdp *vdp);

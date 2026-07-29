@@ -284,6 +284,10 @@ void vdp_reset(MsxVdp *vdp) {
     vdp->command_code = 0;
     vdp->command_mode = 0;
     vdp->command_argument = 0;
+    vdp->command_transfer_pending = false;
+    vdp->timing_cycle = 0;
+    vdp->timing_frame_cycles = 0;
+    vdp->timing_scanlines = 0;
     vdp->render_width = MSX1_VIDEO_W;
     vdp->render_height = MSX1_VIDEO_H;
     memset(vdp->pixels, 0, sizeof(vdp->pixels));
@@ -451,6 +455,88 @@ void vdp_write_indirect(MsxVdp *vdp, u8 value) {
     write_register(vdp, selector & 0x3f, value);
     if (!(selector & 0x80))
         vdp->registers[17] = (selector + 1) & 0x3f;
+}
+
+static void update_retrace_status(MsxVdp *vdp) {
+    enum {
+        V9938_TICKS_PER_LINE = 1368,
+        V9938_SYNC_AND_TOP_ERASE_LINES = 16,
+        V9938_PAL_TOP_BORDER_LINES = 36,
+        V9938_NTSC_TOP_BORDER_LINES = 9,
+        V9938_LEFT_BORDER_TICKS = 202,
+    };
+    u64 frame_ticks;
+    u64 beam_ticks;
+    u64 display_start;
+    u64 display_end;
+    unsigned line_zero;
+    unsigned line_phase;
+    unsigned visible_lines;
+    int horizontal_adjust;
+    int right_border;
+    unsigned blank_length;
+    bool text_mode;
+
+    if (vdp->type != MSX_VDP_V9938 ||
+        !vdp->timing_frame_cycles || !vdp->timing_scanlines)
+        return;
+    frame_ticks =
+        (u64)vdp->timing_scanlines * V9938_TICKS_PER_LINE;
+    beam_ticks =
+        (u64)vdp->timing_cycle * frame_ticks /
+        vdp->timing_frame_cycles;
+    line_phase = (unsigned)(
+        beam_ticks % V9938_TICKS_PER_LINE);
+    visible_lines = vdp->registers[9] & 0x80
+                  ? MSX2_VIDEO_H : MSX1_VIDEO_H;
+    line_zero =
+        V9938_SYNC_AND_TOP_ERASE_LINES +
+        (vdp->timing_scanlines == 313
+         ? V9938_PAL_TOP_BORDER_LINES
+         : V9938_NTSC_TOP_BORDER_LINES) +
+        (vdp->registers[9] & 0x80 ? 0 : 10) +
+        ((vdp->registers[18] >> 4) ^ 7);
+    display_start =
+        (u64)line_zero * V9938_TICKS_PER_LINE +
+        V9938_LEFT_BORDER_TICKS;
+    display_end =
+        display_start +
+        (u64)visible_lines * V9938_TICKS_PER_LINE;
+
+    vdp->status2 &= (u8)~0x60;
+    if (beam_ticks < display_start - V9938_TICKS_PER_LINE ||
+        beam_ticks >= display_end)
+        vdp->status2 |= 0x40;
+
+    text_mode = (vdp->registers[1] & 0x10) != 0;
+    horizontal_adjust = (vdp->registers[18] & 0x0f) ^ 7;
+    right_border =
+        258 + (horizontal_adjust - 7) * 4 +
+        (text_mode ? 36 : 0) +
+        (text_mode ? 960 : 1024);
+    blank_length = text_mode ? 404 : 312;
+    if ((line_phase + V9938_TICKS_PER_LINE -
+         (unsigned)right_border) %
+        V9938_TICKS_PER_LINE < blank_length)
+        vdp->status2 |= 0x20;
+}
+
+void vdp_begin_frame(MsxVdp *vdp, unsigned frame_cycles,
+                     unsigned scanlines) {
+    if (!vdp)
+        return;
+    vdp->timing_cycle = 0;
+    vdp->timing_frame_cycles = frame_cycles;
+    vdp->timing_scanlines = scanlines;
+    update_retrace_status(vdp);
+}
+
+void vdp_advance(MsxVdp *vdp, unsigned cycles) {
+    if (!vdp || !vdp->timing_frame_cycles)
+        return;
+    vdp->timing_cycle =
+        (vdp->timing_cycle + cycles) % vdp->timing_frame_cycles;
+    update_retrace_status(vdp);
 }
 
 void vdp_end_frame(MsxVdp *vdp) {
@@ -848,6 +934,7 @@ static void command_transfer_write(MsxVdp *vdp) {
     unsigned colour_mask;
     unsigned pixels_per_byte;
 
+    vdp->command_transfer_pending = true;
     if (!(vdp->status2 & V9938_STATUS2_CE) ||
         !(vdp->status2 & V9938_STATUS2_TR) ||
         (vdp->command_code != 0x0b &&
@@ -857,6 +944,7 @@ static void command_transfer_write(MsxVdp *vdp) {
         return;
     (void)width;
     (void)colour_mask;
+    vdp->command_transfer_pending = false;
     if (!(vdp->command_argument & 0x20)) {
         if (vdp->command_code == 0x0b) {
             command_write_pixel(
@@ -1065,6 +1153,8 @@ static void execute_vdp_command(MsxVdp *vdp) {
 
             command_setup_transfer(
                 vdp, code, mode, dx, dy, columns, rows);
+            if (vdp->command_transfer_pending)
+                command_transfer_write(vdp);
             break;
         }
 
@@ -1167,6 +1257,8 @@ static void execute_vdp_command(MsxVdp *vdp) {
 
             command_setup_transfer(
                 vdp, code, mode, dx, dy, columns, rows);
+            if (vdp->command_transfer_pending)
+                command_transfer_write(vdp);
             break;
         }
 

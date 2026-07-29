@@ -216,6 +216,25 @@ static void test_msx2_vdp_extended_ports(void) {
     assert(msx_io_read(&msx, 0x9a) == 0xff);
     assert(msx_io_read(&msx, 0x9b) == 0xff);
 
+    /*
+     * The VDP IRQ is a level, not a permanently latched CPU edge.
+     * Reading S#0 acknowledges it and must cancel a still-pending IRQ;
+     * reading another selected status register must leave it asserted.
+     */
+    msx.vdp.registers[1] |= 0x20;
+    vdp_end_frame(&msx.vdp);
+    msx.cpu.pending_irq = true;
+    msx_io_write(&msx, 0x99, 2);
+    msx_io_write(&msx, 0x99, 0x8f);
+    (void)msx_io_read(&msx, 0x99);
+    assert(msx.vdp.irq);
+    assert(msx.cpu.pending_irq);
+    msx_io_write(&msx, 0x99, 0);
+    msx_io_write(&msx, 0x99, 0x8f);
+    assert(msx_io_read(&msx, 0x99) & 0x80);
+    assert(!msx.vdp.irq);
+    assert(!msx.cpu.pending_irq);
+
     /* On an MSX1 VDP, 9A/9B mirror the data/control ports. */
     msx_configure(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
     assert(msx.vdp.type == MSX_VDP_TMS9918);
@@ -425,6 +444,7 @@ static void test_cbios_checkpoint_if_available(void) {
 
 static void test_nms8250_checkpoint_if_available(void) {
     const char *directory = getenv("MSX_NMS8250_DIR");
+    const char *diagnostic_path = getenv("MSX_DIAG_ROM");
     MsxMachine *msx;
     char bios_path[4096];
     char subrom_path[4096];
@@ -482,6 +502,29 @@ static void test_nms8250_checkpoint_if_available(void) {
     assert(nonzero_vram > 0);
     assert(msx->vdp.registers[0] == 0x08);
     assert(msx->vdp.registers[1] == 0x60);
+
+    if (diagnostic_path && diagnostic_path[0]) {
+        assert(msx_load_cartridge(msx, diagnostic_path) == 0);
+        for (int frame = 0; frame < 1500; ++frame)
+            msx_run_frame(msx);
+        fprintf(stderr,
+                "MSX2 diagnostic checkpoint: frame=%llu PC=%04X "
+                "R0=%02X R1=%02X R2=%02X R7=%02X R15=%02X\n",
+                (unsigned long long)msx->frame, msx->cpu.pc,
+                msx->vdp.registers[0], msx->vdp.registers[1],
+                msx->vdp.registers[2], msx->vdp.registers[7],
+                msx->vdp.registers[15]);
+        assert(msx->frame == 1500);
+        assert(msx->cpu.pc == 0x468c);
+        assert(msx->cpu.halted);
+        assert(msx->vdp.registers[0] == 0x00);
+        assert(msx->vdp.registers[1] == 0x70);
+        assert(msx->vdp.registers[2] == 0x00);
+        assert(msx->vdp.registers[7] == 0xf4);
+        assert(msx->vdp.registers[15] == 0x00);
+        assert(memcmp(&msx->vdp.vram[0x29],
+                      "MSX DIAGNOSTICS", 15) == 0);
+    }
     free(msx);
 }
 

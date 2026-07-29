@@ -94,6 +94,7 @@ static void advance_machine(MsxMachine *msx, int cycles) {
         return;
 
     msx->cycles += (unsigned)cycles;
+    vdp_advance(&msx->vdp, (unsigned)cycles);
     if (msx->profile && msx->profile->rtc)
         rtc_advance(&msx->rtc, (unsigned)cycles, MSX_CPU_HZ);
     msx->audio_sample_cycles +=
@@ -110,6 +111,15 @@ static void advance_machine(MsxMachine *msx, int cycles) {
             ++msx->audio_sample_count;
         msx->audio_sample_cycles -= MSX_CPU_HZ;
     }
+}
+
+static void update_interrupt_line(MsxMachine *msx) {
+    /*
+     * The VDP interrupt output is level-sensitive. Reading S#0 lowers
+     * the line, so an interrupt acknowledged before EI must not survive
+     * as a stale edge in the CPU.
+     */
+    msx->cpu.pending_irq = msx->vdp.irq;
 }
 
 static void bus_tick(void *context, int cycles) {
@@ -266,9 +276,14 @@ void msx_run_frame(MsxMachine *msx) {
     numerator = MSX_CPU_HZ + msx->cycle_fraction;
     frame_cycles = (int)(numerator / (unsigned)msx->frame_hz);
     msx->cycle_fraction = numerator % (unsigned)msx->frame_hz;
+    vdp_begin_frame(
+        &msx->vdp, (unsigned)frame_cycles,
+        msx->region == MSX_REGION_NTSC
+        ? MSX_NTSC_SCANLINES : MSX_PAL_SCANLINES);
     msx->cycle_balance += frame_cycles;
     while (msx->cycle_balance > 0) {
         msx->cpu.int_accepted = false;
+        update_interrupt_line(msx);
         int consumed = z80_step(&msx->cpu, &msx->bus);
         if (consumed <= 0)
             consumed = 1;
@@ -279,8 +294,7 @@ void msx_run_frame(MsxMachine *msx) {
     }
 
     vdp_end_frame(&msx->vdp);
-    if (msx->vdp.irq)
-        z80_interrupt(&msx->cpu);
+    update_interrupt_line(msx);
 }
 
 static unsigned selected_slot(const MsxMachine *msx, u16 address) {
@@ -418,8 +432,11 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
     switch (low) {
         case 0x98:
             return vdp_read_data(&msx->vdp);
-        case 0x99:
-            return vdp_read_status(&msx->vdp);
+        case 0x99: {
+            u8 status = vdp_read_status(&msx->vdp);
+            update_interrupt_line(msx);
+            return status;
+        }
         case 0x9a:
             if (msx->vdp.type == MSX_VDP_TMS9918)
                 return vdp_read_data(&msx->vdp);
