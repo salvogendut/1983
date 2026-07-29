@@ -155,11 +155,14 @@ void config_defaults(Config *config) {
     config->rtc_persistence = true;
     config->floppy_image_mode = FLOPPY_IMAGE_READ_ONLY;
     config->ide_image_mode = ATA_IMAGE_READ_ONLY;
+    config->sd_image_mode = SD_IMAGE_READ_ONLY;
+    config->sd_mapper_ram = true;
 }
 
 void config_normalize(Config *config) {
     bool *cartridge_extensions[] = {
         &config->sunrise_ide,
+        &config->sd_mapper,
         &config->scc,
         &config->msx_music,
     };
@@ -185,6 +188,8 @@ void config_normalize(Config *config) {
         config->audio_volume = 100;
     if (config->ide_image_mode != ATA_IMAGE_READ_WRITE)
         config->ide_image_mode = ATA_IMAGE_READ_ONLY;
+    if (config->sd_image_mode != SD_IMAGE_READ_WRITE)
+        config->sd_image_mode = SD_IMAGE_READ_ONLY;
     if (config->floppy_image_mode != FLOPPY_IMAGE_READ_WRITE)
         config->floppy_image_mode = FLOPPY_IMAGE_READ_ONLY;
     if (config->main_input != INPUT_PORT_B)
@@ -298,6 +303,15 @@ void config_load(Config *config, const char *path) {
             config->second_drive = parse_bool(value, config->second_drive);
         else if (strcmp(key, "sunrise_ide") == 0)
             config->sunrise_ide = parse_bool(value, config->sunrise_ide);
+        else if (strcmp(key, "sd_mapper") == 0)
+            config->sd_mapper = parse_bool(value, config->sd_mapper);
+        else if (strcmp(key, "sd_mapper_ram") == 0)
+            config->sd_mapper_ram =
+                parse_bool(value, config->sd_mapper_ram);
+        else if (strcmp(key, "sd_mapper_alternate_driver") == 0)
+            config->sd_mapper_alternate_driver =
+                parse_bool(value,
+                           config->sd_mapper_alternate_driver);
         else if (strcmp(key, "scc") == 0)
             config->scc = parse_bool(value, config->scc);
         else if (strcmp(key, "msx_music") == 0)
@@ -329,6 +343,15 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "sunrise_rom") == 0)
             snprintf(config->sunrise_rom_path,
                      sizeof(config->sunrise_rom_path), "%s", value);
+        else if (strcmp(key, "sd_mapper_rom") == 0)
+            snprintf(config->sd_mapper_rom_path,
+                     sizeof(config->sd_mapper_rom_path), "%s", value);
+        else if (strcmp(key, "sd_card_a") == 0)
+            snprintf(config->sd_card_path[0],
+                     sizeof(config->sd_card_path[0]), "%s", value);
+        else if (strcmp(key, "sd_card_b") == 0)
+            snprintf(config->sd_card_path[1],
+                     sizeof(config->sd_card_path[1]), "%s", value);
         else if (strcmp(key, "ide_image") == 0)
             snprintf(config->ide_image_path,
                      sizeof(config->ide_image_path), "%s", value);
@@ -349,6 +372,11 @@ void config_load(Config *config, const char *path) {
                 strcmp(value, "read-write") == 0 ||
                 strcmp(value, "rw") == 0
                 ? ATA_IMAGE_READ_WRITE : ATA_IMAGE_READ_ONLY;
+        else if (strcmp(key, "sd_image_mode") == 0)
+            config->sd_image_mode =
+                strcmp(value, "read-write") == 0 ||
+                strcmp(value, "rw") == 0
+                ? SD_IMAGE_READ_WRITE : SD_IMAGE_READ_ONLY;
         else if (strcmp(key, "cassette") == 0)
             snprintf(config->cassette_path,
                      sizeof(config->cassette_path), "%s", value);
@@ -435,12 +463,24 @@ int config_save(const Config *config) {
     fprintf(file, "ide_image_mode = %s\n",
             config->ide_image_mode == ATA_IMAGE_READ_WRITE
             ? "read-write" : "read-only");
+    fprintf(file, "sd_card_a = %s\n", config->sd_card_path[0]);
+    fprintf(file, "sd_card_b = %s\n", config->sd_card_path[1]);
+    fprintf(file, "sd_image_mode = %s\n",
+            config->sd_image_mode == SD_IMAGE_READ_WRITE
+            ? "read-write" : "read-only");
     fprintf(file, "last_media_dir = %s\n\n", config->last_media_dir);
     fprintf(file, "[extensions]\n");
     fprintf(file, "extra_hardware = %s\n",
             bool_name(config->extra_hardware));
     fprintf(file, "sunrise_ide = %s\n", bool_name(config->sunrise_ide));
     fprintf(file, "sunrise_rom = %s\n", config->sunrise_rom_path);
+    fprintf(file, "sd_mapper = %s\n", bool_name(config->sd_mapper));
+    fprintf(file, "sd_mapper_rom = %s\n",
+            config->sd_mapper_rom_path);
+    fprintf(file, "sd_mapper_ram = %s\n",
+            bool_name(config->sd_mapper_ram));
+    fprintf(file, "sd_mapper_alternate_driver = %s\n",
+            bool_name(config->sd_mapper_alternate_driver));
     fprintf(file, "scc = %s\n", bool_name(config->scc));
     fprintf(file, "msx_music = %s\n", bool_name(config->msx_music));
     fprintf(file, "kanji_rom = %s\n\n", bool_name(config->kanji_rom));
@@ -523,6 +563,7 @@ unsigned config_cartridge_extension_count(const Config *config) {
     if (!config)
         return 0;
     return (config->sunrise_ide ? 1u : 0u) +
+           (config->sd_mapper ? 1u : 0u) +
            (config->scc ? 1u : 0u) +
            (config->msx_music ? 1u : 0u);
 }
@@ -536,6 +577,8 @@ const char *config_cartridge_slot_owner(const Config *config,
         return NULL;
     if (config->sunrise_ide && count < MSX_CARTRIDGE_SLOTS)
         extensions[count++] = "Sunrise IDE";
+    if (config->sd_mapper && count < MSX_CARTRIDGE_SLOTS)
+        extensions[count++] = "SD Mapper V2";
     if (config->scc && count < MSX_CARTRIDGE_SLOTS)
         extensions[count++] = "Konami SCC";
     if (config->msx_music && count < MSX_CARTRIDGE_SLOTS)

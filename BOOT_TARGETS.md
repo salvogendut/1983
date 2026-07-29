@@ -12,7 +12,7 @@ The implementation supports these complementary paths:
 |------|---------|---------------------|
 | C-BIOS | Redistributable out-of-box firmware for cartridge software | Useful for early Z80, slot, VDP, input, and cartridge tests; no BASIC, cassette, or disk support |
 | User-supplied MSX BIOS/BASIC | Representative real-machine behaviour | Required for BASIC and for broad software and peripheral compatibility |
-| Nextor | Disk operating system for machines with a supported storage controller | First mass-storage boot target on the GeoBench NMS 8250 profile |
+| Nextor | Disk operating system for machines with a supported storage controller | Boots through Sunrise IDE on the GeoBench NMS 8250 target and through SD Mapper V2 on MSX1 |
 
 C-BIOS and a vendor-compatible BIOS/BASIC set are alternatives at the machine
 firmware layer. Nextor is not a replacement for that layer: it is a disk
@@ -137,6 +137,41 @@ For a headless inspection run:
   --screenshot /tmp/1983-nextor.ppm
 ```
 
+### SD Mapper V2 and Nextor
+
+The [MSX SD Mapper V2](https://github.com/fbelavenuto/msxsdmapperv2) is a
+single cartridge containing a dual-SD controller and an optional independent
+512 KiB memory mapper. Enable **General > Extra Hardware**, then choose
+**Extensions > SD Mapper V2**. Its guided setup asks separately for:
+
+1. the 128 or 256 KiB controller ROM;
+2. optional raw images for SD Card A and SD Card B;
+3. the 512 KiB mapper switch;
+4. the primary or alternate driver half of a 256 KiB ROM.
+
+Connect reserves one physical cartridge slot. Later card changes and safe
+ejection live under Media. With Tinker enabled, Advanced owns the shared SD
+read-only/read-write policy and both hardware switches. Images must be
+non-empty multiples of 512 bytes and default to read-only.
+
+Release 1.1.0 with Nextor 2.1.2 provides `SDXC110.ROM`. Its official
+firmware and guest files remain local; 1983 does not redistribute them. A
+reference MSX1 launch is:
+
+```sh
+./1983 --model msx1 \
+  --sd-mapper-rom /path/to/SDXC110.ROM \
+  --sd-a /path/to/card.img --sd-mode read-only
+```
+
+The command-line implementation also accepts `--sd-b`. The reference
+firmware has been booted in 1983 from a FAT16 card containing the official
+Nextor 2.1.2 system files and reaches a clean `A:\` prompt. The same
+controller also boots `../geobench/QA/GBMSX.IMG` on the NMS 8250 profile and
+reaches the GeoBench desktop; at the 2,501-frame inspection point it has
+performed SD reads, populated 12,293 VRAM bytes, and left the external mapper
+at `03,02,01,00`.
+
 ### Optional firmware tests
 
 ```sh
@@ -150,6 +185,10 @@ make check
 MSX_NMS8250_DIR=ROMS \
 MSX_NEXTOR_SUNRISE_ROM=/path/to/Nextor-2.1.1.SunriseIDE.ROM \
 MSX_NEXTOR_IDE_IMAGE=/path/to/GBMSX.IMG \
+make check
+MSX_SD_MAPPER_BIOS_ROM=/path/to/MSX.ROM \
+MSX_SD_MAPPER_ROM=/path/to/SDXC110.ROM \
+MSX_SD_MAPPER_IMAGE=/path/to/card.img \
 make check
 ```
 
@@ -165,18 +204,20 @@ openMSX, and physical MSX2 hardware without changing its guest disk:
 - Philips NMS 8250, PAL, with its real expanded-slot layout;
 - Z80 at 3,579,545 Hz and a V9938 with 128 KB of VRAM;
 - the machine's 128 KB internal memory mapper;
-- a separate 512 KB external memory-mapper extension by default;
+- a separate 512 KB external memory-mapper extension, now supplied by the
+  SD Mapper V2 composite cartridge;
 - an emulated Sunrise ATA-IDE cartridge with the unmodified official Nextor
   2.1.1 Sunrise IDE kernel ROM;
 - a raw IDE hard-disk image with 512-byte sectors, normally GeoBench's
   32 MiB `QA/GBMSX.IMG`;
 - a FAT16 boot volume containing `NEXTOR.SYS`, `COMMAND2.COM`, and GeoBench.
 
-The 512 KB expansion must remain a separate mapper device rather than being
-folded into a fictitious 640 KB mapper. The implemented checkpoint currently
-uses the stock 128 KB configuration and reaches the GeoBench desktop. The
-separate expansion is still required to match the launcher's normal
-configuration exactly.
+The 512 KB expansion remains a separate mapper device rather than being
+folded into a fictitious 640 KB mapper. SD Mapper V2 provides that independent
+mapper in its expanded cartridge subslot. The established Sunrise checkpoint
+still uses the stock 128 KB configuration and reaches the GeoBench desktop;
+running Sunrise and SD Mapper V2 together is the remaining exact-match
+checkpoint for the launcher's normal storage configuration.
 
 The equivalent independent-reference launch is:
 
@@ -268,9 +309,10 @@ Development tests advance through explicit checkpoints:
    720 KiB `Mahjong Kyo Special` raw DSK
    (`SHA-256 95d94e18f71b3106d8a41207e717fbf5da6380e1e58f595e76836771445b483d`)
    to its title screen; the image remains user-supplied and untracked.
-4. **Partially reached:** the official Nextor kernel ROM enumerates the
-   Sunrise cartridge and its ATA master on the stock NMS 8250 mapper. The
-   separate external 512 KiB mapper remains to be implemented.
+4. **Reached independently:** the official Nextor kernel ROM enumerates the
+   Sunrise cartridge and its ATA master on the stock NMS 8250 mapper. The SD
+   Mapper V2 also exposes its own 512 KiB mapper through expanded subslot 1
+   and combines its mapper-port response correctly with an internal mapper.
 5. **Reached for the reference image:** the ATA backend identifies the raw
    device, performs LBA and multiple-sector reads, and traverses the
    partitioned 32 MiB FAT16 image. The missing-system-file BASIC fallback
@@ -280,7 +322,14 @@ Development tests advance through explicit checkpoints:
 7. **Reached:** reset preserves mounted ATA and floppy images, completed
    read/write sectors flush safely, partial transfers do not corrupt host
    media, host I/O errors block unsafe ejection, and activity pulses the
-   appropriate IDE or floppy LED.
+   appropriate IDE, SD, or floppy LED.
+8. **Reached:** the official `SDXC110.ROM` from SD Mapper V2 release 1.1.0
+   initializes SPI storage, loads Nextor 2.1.2 from a FAT16 card image, and
+   reaches an `A:\` prompt on a PAL MSX1. On the NMS 8250 it boots the
+   GeoBench image to its graphical desktop. Component tests cover both card
+   sockets, firmware banking, mapper switches and ports, SDHC/SDSC addressing,
+   single/multiple block reads and writes, reset, flush, error, and
+   safe-ejection behavior.
 
 Each checkpoint should be scriptable in headless mode and should record the
 firmware hashes, machine profile, disk-image hash, CPU milestone, and
@@ -300,6 +349,13 @@ primary slot `FF`, secondary slot `AA`, mapper registers `03,02,01,00`,
 8,596 non-zero VRAM bytes, VDP R#0=`0A`, and R#1=`62`. Its rendered VDP
 framebuffer has 64-bit FNV-1a hash `7FD8AF872D7E64F1`.
 
+The SD Mapper V2 checkpoint accepts user-selected BIOS, controller ROM, and
+card image paths through the three `MSX_SD_MAPPER_*` variables shown above.
+It runs for 900 PAL frames and requires controller connection, card activity,
+the enabled 512 KiB mapper, sustained CPU execution, and populated video
+state. It reports the CPU and framebuffer state without pinning them because
+valid machine BIOS and card contents differ.
+
 ## Media and configuration contract
 
 The frontend provides an editable catalogue-backed machine selector and
@@ -308,6 +364,8 @@ also provides:
 
 - a guided Sunrise IDE controller setup under Extensions;
 - a raw IDE hard-disk selector under Media while Sunrise is connected;
+- a guided SD Mapper V2 setup under Extensions and SD Card A/B selectors
+  under Media while it is connected;
 - a persistent standard MSX CAS cassette selector and transport under Media;
 - a persistent Floppy A selector for the NMS 8250;
 - an Advanced second-floppy switch which conditionally adds Floppy B.
@@ -325,18 +383,24 @@ expose rewind and eject controls. Floppy mounts follow the same conservative
 replacement and safe-ejection policy; paths, the shared access mode, and
 second-drive state persist independently.
 
+SD Mapper setup applies the same atomic workflow to its controller ROM and
+both removable card images. Firmware, card paths, mapper and driver switches,
+and access mode persist independently. Failed card replacement preserves the
+previous mount, and an I/O error blocks unsafe ejection.
+
 Selecting the Sunrise extension must not silently replace a cartridge or
 firmware image. It reserves a physical cartridge slot through the same
-ownership policy as every cartridge-connected extension. The NMS 8250
+ownership policy as every cartridge-connected extension. SD Mapper V2 does
+the same while expanding only its own assigned primary slot. The NMS 8250
 profile reproduces slot 0 BIOS/BASIC and expanded primary slot 3 with the
 MSX2 Sub-ROM, internal mapper, and disk ROM; Sunrise remains an independent
-external cartridge. The separate external mapper is future work.
+external cartridge. SD Mapper RAM remains an independent external mapper.
 
-Hard-disk and floppy images default to read-only and require an explicit
+Hard-disk, SD-card, and floppy images default to read-only and require an explicit
 Advanced-menu choice for read/write access. Completed writes are flushed on
 guest flush commands where applicable, replacement, ejection, and shutdown.
-Read/write activity drives the dedicated IDE or floppy status LED while the
-Sunrise owning cartridge LED remains monochrome orange.
+Read/write activity drives the dedicated IDE, SD, or floppy status LED while
+the owning cartridge LED remains monochrome orange.
 
 ## Distribution and licensing
 

@@ -26,6 +26,8 @@ complete MSX hardware specification.
 | `src/msx.*` | Machine profiles, slot-aware memory and I/O bus, keyboard/joystick/mouse protocols, ROM loading, and frame scheduler |
 | `src/psg.*` | Host-independent AY-3-8910/YM2149 tone, noise, envelope, mixer, and sample generation |
 | `src/rtc.*` | Host-independent RP-5C01 registers, test modes, calendar, validated CMOS serialization, and atomic host persistence |
+| `src/sdcard.*` | Host-independent SPI SD command state, raw-card image lifetime, complete-sector writes, flush, errors, and activity |
+| `src/sd_mapper.*` | SD Mapper V2 expanded-slot, firmware banking, dual-card registers, timer, and independent 512 KiB mapper |
 | `src/sunrise.*` | Sunrise IDE cartridge ROM banking, address decode, 16-bit data latch, and ATA bridge |
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
 | `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, sprite-mode-2, and command engine |
@@ -44,6 +46,8 @@ complete MSX hardware specification.
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
 | `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
 | `tests/test_rtc.c` | RP-5C01 banks, masks, 12/24-hour and test modes, calendar boundaries, offline continuity, corruption rejection, and safe persistence |
+| `tests/test_sdcard.c` | SPI initialization, identification, capacity, read/write, multiple transfers, addressing, image safety, and error handling |
+| `tests/test_sd_mapper.c` | Firmware banking, expanded subslots, card selection/status, timer, mapper ports, reset, and image lifetime |
 | `tests/test_vdp.c` | Pattern/sprite-mode-1/2 rendering, V9938 bitmap layouts, commands, preloaded transfers, and beam/status checks |
 
 Frontend modules may inspect summarized machine state for presentation, but
@@ -114,10 +118,10 @@ ports, V9938 CPU interface, bitmap renderer, command engine, and RTC are
 implemented. The disk subslot also exposes the Philips memory-mapped WD2793
 and one or two raw-image-backed floppy drives. The external Sunrise
 IDE/Nextor cartridge is implemented independently, and the current GeoBench
-checkpoint boots on the internal 128 KiB mapper. A separate 512 KiB
-memory-mapper extension still
-has to be added; it must remain a second device rather than being folded into
-a fictitious 640 KiB allocation. Firmware discovery builds on the explicit
+checkpoint boots on the internal 128 KiB mapper. The SD Mapper V2 cartridge
+adds a separate 512 KiB mapper as one half of its real composite hardware,
+rather than folding it into a fictitious 640 KiB internal allocation.
+Firmware discovery builds on the explicit
 `1983-models.conf` paths and the pinned hashes documented in
 `BOOT_TARGETS.md`. Only the redistributable C-BIOS MSX1 main and logo ROMs
 belong in the repository; all proprietary machine firmware remains local.
@@ -125,16 +129,19 @@ belong in the repository; all proprietary machine firmware remains local.
 The frontend RAM control currently scales the active system mapper from its
 profile default through 4 MiB; allocations above 128 KiB live on the heap.
 The generic MSX1 layout exposes mapper ports when more than 64 KiB is
-selected. This compatibility setting does not remove the future requirement
-to model GeoBench's internal and external mappers as distinct devices.
+selected. The SD Mapper V2 RAM remains a distinct device and combines its
+mapper-port output with the internal mapper using the bus's wired-AND
+semantics.
 
 `config_cartridge_slot_owner()` is the shared authority for physical
-cartridge-port reservations. Sunrise IDE, SCC, and MSX-MUSIC reserve slot 2
-then slot 1 in deterministic order. Startup and overlay media operations
-must consult that function rather than duplicating extension policy.
+cartridge-port reservations. Sunrise IDE, SD Mapper V2, SCC, and MSX-MUSIC
+reserve slot 2 then slot 1 in deterministic order. Startup and overlay media
+operations must consult that function rather than duplicating extension
+policy.
 `configure_leds()` maps the resolved owner and cartridge presence onto the
 two physical slot indicators. Sunrise storage activity uses the dedicated
-IDE LED. Future network backends should report access through
+IDE LED, and SD Mapper V2 uses the dedicated SD A/B LEDs. Future network
+backends should report access through
 `leds_ping_cartridge_activity()` for their owning slot.
 
 ## Sunrise and ATA boundaries
@@ -164,6 +171,43 @@ make check
 It omits the NMS disk ROM, pins the test RTC to 1983-01-01, boots for 2,001
 PAL frames, and verifies the CPU, slot registers, mapper registers, VDP state,
 VRAM population, and deterministic GeoBench-desktop framebuffer hash.
+
+## SD Mapper V2 boundaries
+
+`src/sd_mapper.c` owns the composite cartridge contract: expanded-slot
+selection, primary and alternate driver ROM halves, firmware banking,
+SPI/status/timer registers, dual card-select lines, and the cartridge's
+independent mapper ports. `src/sdcard.c` knows nothing about MSX slots and
+owns one SPI protocol endpoint and host card image. The two `SdCard`
+instances therefore remain separate even when firmware selects both.
+
+The external mapper must not be merged into the machine's internal RAM
+allocation. If both devices answer ports `0xFC` through `0xFF`, `src/msx.c`
+combines their read values with bitwise AND, matching the open-collector MSX
+bus convention. The cartridge reset value is `3,2,1,0`; configuration
+switches persist independently from guest-controlled segment registers.
+
+Card writes are committed only after a full 512-byte data block and its two
+CRC bytes have arrived. Reset drops an incomplete protocol transfer but keeps
+mounted media and completed dirty sectors. Replacement and ejection flush and
+synchronize dirty data; a host failure keeps the card mounted and surfaces
+the error. Both sockets share an explicit read-only/read-write policy and
+default to read-only.
+
+The optional full-system checkpoint is enabled with:
+
+```sh
+MSX_SD_MAPPER_BIOS_ROM=/path/to/MSX.ROM \
+MSX_SD_MAPPER_ROM=/path/to/SDXC110.ROM \
+MSX_SD_MAPPER_IMAGE=/path/to/card.img \
+make check
+```
+
+It boots the generic PAL MSX1 for 900 frames, requires real card activity,
+and verifies that firmware, the expanded cartridge, its 512 KiB mapper, and
+Nextor-loaded video state all remain live. Exact CPU and framebuffer values
+are reported but intentionally not pinned because users may supply different
+valid BIOS and card contents.
 
 ## WD2793 and floppy boundaries
 

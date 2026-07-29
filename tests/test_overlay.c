@@ -191,6 +191,8 @@ int main(void) {
     const char *sunrise_rom_path = "tests/test-sunrise-rom.tmp";
     const char *sunrise_rom_path_2 = "tests/test-sunrise-rom-2.tmp";
     const char *ide_image_path = "tests/test-sunrise-disk.tmp";
+    const char *sd_mapper_rom_path = "tests/test-sd-mapper-rom.tmp";
+    const char *sd_image_path = "tests/test-sd-card.tmp";
     const char *cassette_path = "tests/test-cassette.tmp";
     Config config;
     ModelCatalog models;
@@ -242,6 +244,17 @@ int main(void) {
     memset(sunrise_rom, 0x83, ATA_SECTOR_SIZE);
     assert(fwrite(sunrise_rom, 1, ATA_SECTOR_SIZE, fixture) ==
            ATA_SECTOR_SIZE);
+    assert(fclose(fixture) == 0);
+    fixture = fopen(sd_mapper_rom_path, "wb");
+    assert(fixture);
+    assert(fwrite(sunrise_rom, 1, sizeof(sunrise_rom), fixture) ==
+           sizeof(sunrise_rom));
+    assert(fclose(fixture) == 0);
+    fixture = fopen(sd_image_path, "wb");
+    assert(fixture);
+    memset(sunrise_rom, 0x5a, SD_CARD_SECTOR_SIZE);
+    assert(fwrite(sunrise_rom, 1, SD_CARD_SECTOR_SIZE, fixture) ==
+           SD_CARD_SECTOR_SIZE);
     assert(fclose(fixture) == 0);
     fixture = fopen(cassette_path, "wb");
     assert(fixture);
@@ -438,6 +451,7 @@ int main(void) {
     assert(config.ide_image_mode == ATA_IMAGE_READ_ONLY);
 
     send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.scc);
     assert(strcmp(config_cartridge_slot_owner(&config, 0),
@@ -541,7 +555,7 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
     assert(overlay.row == 0);
-    for (int row = 0; row < 8; ++row)
+    for (int row = 0; row < 11; ++row)
         send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.cassette_audible_monitor);
@@ -549,7 +563,7 @@ int main(void) {
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.cassette_visual_monitor);
-    for (int row = 0; row < 9; ++row)
+    for (int row = 0; row < 12; ++row)
         send_key(&overlay, SDLK_UP);
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_RETURN);
@@ -651,10 +665,97 @@ int main(void) {
     send_key(&overlay, SDLK_UP);
     assert(overlay.row == 5);
 
+    /* SD Mapper setup keeps controller firmware separate from card media. */
+    config_defaults(&config);
+    config.extra_hardware = true;
+    config.tinker = true;
+    msx_configure(&msx, config.model, config.region,
+                  config.memory_kb);
+    overlay_init(&overlay, &config, &models, &display, &msx);
+    send_key(&overlay, SDLK_F9);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_EXTENSIONS);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 1);
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_SD_MAPPER_SETUP);
+    overlay.dialog_target = OVERLAY_DIALOG_SD_MAPPER_ROM;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", sd_mapper_rom_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(overlay.sd_mapper_setup_row == 1);
+    overlay.dialog_target = OVERLAY_DIALOG_SD_CARD_A;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", sd_image_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(overlay.sd_mapper_setup_row == 2);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!overlay.pending_sd_mapper_ram);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.pending_sd_mapper_alternate_driver);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_MENU);
+    assert(config.sd_mapper);
+    assert(!config.sd_mapper_ram);
+    assert(config.sd_mapper_alternate_driver);
+    assert(msx_sd_mapper_connected(&msx));
+    assert(msx_sd_mapper_slot(&msx) == 1);
+    assert(msx_sd_card_mounted(&msx, 0));
+    assert(!msx_sd_card_writable(&msx, 0));
+    assert(strcmp(config.sd_mapper_rom_path,
+                  sd_mapper_rom_path) == 0);
+    assert(strcmp(config.sd_card_path[0],
+                  sd_image_path) == 0);
+    assert(leds_get_cartridge_state(1).present);
+
+    send_key(&overlay, SDLK_LEFT);
+    assert(overlay.section == OVERLAY_MEDIA);
+    send_key(&overlay, SDLK_UP);
+    send_key(&overlay, SDLK_UP);
+    assert(overlay.row == 6);
+    send_key(&overlay, SDLK_DELETE);
+    assert(!msx_sd_card_mounted(&msx, 0));
+    assert(!config.sd_card_path[0][0]);
+    overlay.dialog_target = OVERLAY_DIALOG_SD_CARD_A;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", sd_image_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(msx_sd_card_mounted(&msx, 0));
+
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_ADVANCED);
+    for (int row = 0; row < 5; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 5);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.sd_image_mode == SD_IMAGE_READ_WRITE);
+    assert(msx_sd_card_writable(&msx, 0));
+    send_key(&overlay, SDLK_LEFT);
+    assert(overlay.section == OVERLAY_EXTENSIONS);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.sd_mapper);
+    assert(!msx_sd_mapper_connected(&msx));
+    assert(config.sd_mapper_rom_path[0]);
+    send_key(&overlay, SDLK_DELETE);
+    assert(!config.sd_mapper_rom_path[0]);
+    send_key(&overlay, SDLK_F9);
+    assert(!overlay.visible);
+
     assert(remove(editor_path) == 0);
     assert(remove(sunrise_rom_path) == 0);
     assert(remove(sunrise_rom_path_2) == 0);
     assert(remove(ide_image_path) == 0);
+    assert(remove(sd_mapper_rom_path) == 0);
+    assert(remove(sd_image_path) == 0);
     assert(remove(cassette_path) == 0);
 
     display_quit(&display);

@@ -95,7 +95,8 @@ host_triplet = @host@
 bin_PROGRAMS = 1983$(EXEEXT)
 check_PROGRAMS = test-cartridge$(EXEEXT) test-cassette$(EXEEXT) \
 	test-ata$(EXEEXT) test-floppy$(EXEEXT) test-wd2793$(EXEEXT) \
-	test-sunrise$(EXEEXT) test-config$(EXEEXT) \
+	test-sunrise$(EXEEXT) test-sdcard$(EXEEXT) \
+	test-sd-mapper$(EXEEXT) test-config$(EXEEXT) \
 	test-models$(EXEEXT) test-msx$(EXEEXT) test-gamepad$(EXEEXT) \
 	test-kbd$(EXEEXT) test-overlay$(EXEEXT) test-vdp$(EXEEXT) \
 	test-psg$(EXEEXT) test-rtc$(EXEEXT)
@@ -132,6 +133,7 @@ am_1983_OBJECTS = src/1983-config.$(OBJEXT) \
 	src/1983-models.$(OBJEXT) src/1983-msx.$(OBJEXT) \
 	src/1983-notify.$(OBJEXT) src/1983-overlay.$(OBJEXT) \
 	src/1983-psg.$(OBJEXT) src/1983-rtc.$(OBJEXT) \
+	src/1983-sdcard.$(OBJEXT) src/1983-sd_mapper.$(OBJEXT) \
 	src/1983-sunrise.$(OBJEXT) src/1983-ui.$(OBJEXT) \
 	src/1983-vdp.$(OBJEXT) src/1983-wd2793.$(OBJEXT) \
 	src/1983-z80.$(OBJEXT)
@@ -165,7 +167,8 @@ am_test_config_OBJECTS = tests/test_config-test_config.$(OBJEXT) \
 	src/test_config-cassette.$(OBJEXT) \
 	src/test_config-ata.$(OBJEXT) src/test_config-floppy.$(OBJEXT) \
 	src/test_config-msx.$(OBJEXT) src/test_config-psg.$(OBJEXT) \
-	src/test_config-rtc.$(OBJEXT) \
+	src/test_config-rtc.$(OBJEXT) src/test_config-sdcard.$(OBJEXT) \
+	src/test_config-sd_mapper.$(OBJEXT) \
 	src/test_config-sunrise.$(OBJEXT) \
 	src/test_config-vdp.$(OBJEXT) src/test_config-wd2793.$(OBJEXT) \
 	src/test_config-z80.$(OBJEXT)
@@ -190,9 +193,10 @@ am_test_kbd_OBJECTS = tests/test_kbd-test_kbd.$(OBJEXT) \
 	src/test_kbd-cassette.$(OBJEXT) src/test_kbd-ata.$(OBJEXT) \
 	src/test_kbd-floppy.$(OBJEXT) src/test_kbd-kbd.$(OBJEXT) \
 	src/test_kbd-msx.$(OBJEXT) src/test_kbd-psg.$(OBJEXT) \
-	src/test_kbd-rtc.$(OBJEXT) src/test_kbd-sunrise.$(OBJEXT) \
-	src/test_kbd-vdp.$(OBJEXT) src/test_kbd-wd2793.$(OBJEXT) \
-	src/test_kbd-z80.$(OBJEXT)
+	src/test_kbd-rtc.$(OBJEXT) src/test_kbd-sdcard.$(OBJEXT) \
+	src/test_kbd-sd_mapper.$(OBJEXT) \
+	src/test_kbd-sunrise.$(OBJEXT) src/test_kbd-vdp.$(OBJEXT) \
+	src/test_kbd-wd2793.$(OBJEXT) src/test_kbd-z80.$(OBJEXT)
 test_kbd_OBJECTS = $(am_test_kbd_OBJECTS)
 test_kbd_DEPENDENCIES = $(am__DEPENDENCIES_1)
 test_kbd_LINK = $(CCLD) $(test_kbd_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -203,7 +207,8 @@ am_test_models_OBJECTS = tests/test_models-test_models.$(OBJEXT) \
 	src/test_models-cassette.$(OBJEXT) \
 	src/test_models-ata.$(OBJEXT) src/test_models-floppy.$(OBJEXT) \
 	src/test_models-msx.$(OBJEXT) src/test_models-psg.$(OBJEXT) \
-	src/test_models-rtc.$(OBJEXT) \
+	src/test_models-rtc.$(OBJEXT) src/test_models-sdcard.$(OBJEXT) \
+	src/test_models-sd_mapper.$(OBJEXT) \
 	src/test_models-sunrise.$(OBJEXT) \
 	src/test_models-vdp.$(OBJEXT) src/test_models-wd2793.$(OBJEXT) \
 	src/test_models-z80.$(OBJEXT)
@@ -216,6 +221,7 @@ am_test_msx_OBJECTS = tests/test_msx-test_msx.$(OBJEXT) \
 	src/test_msx-cassette.$(OBJEXT) src/test_msx-ata.$(OBJEXT) \
 	src/test_msx-floppy.$(OBJEXT) src/test_msx-msx.$(OBJEXT) \
 	src/test_msx-psg.$(OBJEXT) src/test_msx-rtc.$(OBJEXT) \
+	src/test_msx-sdcard.$(OBJEXT) src/test_msx-sd_mapper.$(OBJEXT) \
 	src/test_msx-sunrise.$(OBJEXT) src/test_msx-vdp.$(OBJEXT) \
 	src/test_msx-wd2793.$(OBJEXT) src/test_msx-z80.$(OBJEXT)
 test_msx_OBJECTS = $(am_test_msx_OBJECTS)
@@ -235,6 +241,8 @@ am_test_overlay_OBJECTS = tests/test_overlay-test_overlay.$(OBJEXT) \
 	src/test_overlay-notify.$(OBJEXT) \
 	src/test_overlay-overlay.$(OBJEXT) \
 	src/test_overlay-psg.$(OBJEXT) src/test_overlay-rtc.$(OBJEXT) \
+	src/test_overlay-sdcard.$(OBJEXT) \
+	src/test_overlay-sd_mapper.$(OBJEXT) \
 	src/test_overlay-sunrise.$(OBJEXT) \
 	src/test_overlay-ui.$(OBJEXT) src/test_overlay-vdp.$(OBJEXT) \
 	src/test_overlay-wd2793.$(OBJEXT) \
@@ -255,6 +263,20 @@ test_rtc_OBJECTS = $(am_test_rtc_OBJECTS)
 test_rtc_LDADD = $(LDADD)
 test_rtc_LINK = $(CCLD) $(test_rtc_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_test_sd_mapper_OBJECTS =  \
+	tests/test_sd_mapper-test_sd_mapper.$(OBJEXT) \
+	src/test_sd_mapper-sdcard.$(OBJEXT) \
+	src/test_sd_mapper-sd_mapper.$(OBJEXT)
+test_sd_mapper_OBJECTS = $(am_test_sd_mapper_OBJECTS)
+test_sd_mapper_LDADD = $(LDADD)
+test_sd_mapper_LINK = $(CCLD) $(test_sd_mapper_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_test_sdcard_OBJECTS = tests/test_sdcard-test_sdcard.$(OBJEXT) \
+	src/test_sdcard-sdcard.$(OBJEXT)
+test_sdcard_OBJECTS = $(am_test_sdcard_OBJECTS)
+test_sdcard_LDADD = $(LDADD)
+test_sdcard_LINK = $(CCLD) $(test_sdcard_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_sunrise_OBJECTS = tests/test_sunrise-test_sunrise.$(OBJEXT) \
 	src/test_sunrise-ata.$(OBJEXT) \
 	src/test_sunrise-sunrise.$(OBJEXT)
@@ -299,6 +321,7 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/1983-models.Po src/$(DEPDIR)/1983-msx.Po \
 	src/$(DEPDIR)/1983-notify.Po src/$(DEPDIR)/1983-overlay.Po \
 	src/$(DEPDIR)/1983-psg.Po src/$(DEPDIR)/1983-rtc.Po \
+	src/$(DEPDIR)/1983-sd_mapper.Po src/$(DEPDIR)/1983-sdcard.Po \
 	src/$(DEPDIR)/1983-sunrise.Po src/$(DEPDIR)/1983-ui.Po \
 	src/$(DEPDIR)/1983-vdp.Po src/$(DEPDIR)/1983-wd2793.Po \
 	src/$(DEPDIR)/1983-z80.Po src/$(DEPDIR)/test_ata-ata.Po \
@@ -312,6 +335,8 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_config-msx.Po \
 	src/$(DEPDIR)/test_config-psg.Po \
 	src/$(DEPDIR)/test_config-rtc.Po \
+	src/$(DEPDIR)/test_config-sd_mapper.Po \
+	src/$(DEPDIR)/test_config-sdcard.Po \
 	src/$(DEPDIR)/test_config-sunrise.Po \
 	src/$(DEPDIR)/test_config-vdp.Po \
 	src/$(DEPDIR)/test_config-wd2793.Po \
@@ -324,6 +349,8 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_kbd-floppy.Po src/$(DEPDIR)/test_kbd-kbd.Po \
 	src/$(DEPDIR)/test_kbd-msx.Po src/$(DEPDIR)/test_kbd-psg.Po \
 	src/$(DEPDIR)/test_kbd-rtc.Po \
+	src/$(DEPDIR)/test_kbd-sd_mapper.Po \
+	src/$(DEPDIR)/test_kbd-sdcard.Po \
 	src/$(DEPDIR)/test_kbd-sunrise.Po \
 	src/$(DEPDIR)/test_kbd-vdp.Po src/$(DEPDIR)/test_kbd-wd2793.Po \
 	src/$(DEPDIR)/test_kbd-z80.Po src/$(DEPDIR)/test_models-ata.Po \
@@ -334,6 +361,8 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_models-msx.Po \
 	src/$(DEPDIR)/test_models-psg.Po \
 	src/$(DEPDIR)/test_models-rtc.Po \
+	src/$(DEPDIR)/test_models-sd_mapper.Po \
+	src/$(DEPDIR)/test_models-sdcard.Po \
 	src/$(DEPDIR)/test_models-sunrise.Po \
 	src/$(DEPDIR)/test_models-vdp.Po \
 	src/$(DEPDIR)/test_models-wd2793.Po \
@@ -342,6 +371,8 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_msx-cassette.Po \
 	src/$(DEPDIR)/test_msx-floppy.Po src/$(DEPDIR)/test_msx-msx.Po \
 	src/$(DEPDIR)/test_msx-psg.Po src/$(DEPDIR)/test_msx-rtc.Po \
+	src/$(DEPDIR)/test_msx-sd_mapper.Po \
+	src/$(DEPDIR)/test_msx-sdcard.Po \
 	src/$(DEPDIR)/test_msx-sunrise.Po \
 	src/$(DEPDIR)/test_msx-vdp.Po src/$(DEPDIR)/test_msx-wd2793.Po \
 	src/$(DEPDIR)/test_msx-z80.Po \
@@ -358,12 +389,17 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_overlay-overlay.Po \
 	src/$(DEPDIR)/test_overlay-psg.Po \
 	src/$(DEPDIR)/test_overlay-rtc.Po \
+	src/$(DEPDIR)/test_overlay-sd_mapper.Po \
+	src/$(DEPDIR)/test_overlay-sdcard.Po \
 	src/$(DEPDIR)/test_overlay-sunrise.Po \
 	src/$(DEPDIR)/test_overlay-ui.Po \
 	src/$(DEPDIR)/test_overlay-vdp.Po \
 	src/$(DEPDIR)/test_overlay-wd2793.Po \
 	src/$(DEPDIR)/test_overlay-z80.Po \
 	src/$(DEPDIR)/test_psg-psg.Po src/$(DEPDIR)/test_rtc-rtc.Po \
+	src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po \
+	src/$(DEPDIR)/test_sd_mapper-sdcard.Po \
+	src/$(DEPDIR)/test_sdcard-sdcard.Po \
 	src/$(DEPDIR)/test_sunrise-ata.Po \
 	src/$(DEPDIR)/test_sunrise-sunrise.Po \
 	src/$(DEPDIR)/test_vdp-vdp.Po \
@@ -381,6 +417,8 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	tests/$(DEPDIR)/test_overlay-test_overlay.Po \
 	tests/$(DEPDIR)/test_psg-test_psg.Po \
 	tests/$(DEPDIR)/test_rtc-test_rtc.Po \
+	tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po \
+	tests/$(DEPDIR)/test_sdcard-test_sdcard.Po \
 	tests/$(DEPDIR)/test_sunrise-test_sunrise.Po \
 	tests/$(DEPDIR)/test_vdp-test_vdp.Po \
 	tests/$(DEPDIR)/test_wd2793-test_wd2793.Po
@@ -407,7 +445,8 @@ SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_gamepad_SOURCES) $(test_kbd_SOURCES) \
 	$(test_models_SOURCES) $(test_msx_SOURCES) \
 	$(test_overlay_SOURCES) $(test_psg_SOURCES) \
-	$(test_rtc_SOURCES) $(test_sunrise_SOURCES) \
+	$(test_rtc_SOURCES) $(test_sd_mapper_SOURCES) \
+	$(test_sdcard_SOURCES) $(test_sunrise_SOURCES) \
 	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
 DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_cartridge_SOURCES) $(test_cassette_SOURCES) \
@@ -415,7 +454,8 @@ DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_gamepad_SOURCES) $(test_kbd_SOURCES) \
 	$(test_models_SOURCES) $(test_msx_SOURCES) \
 	$(test_overlay_SOURCES) $(test_psg_SOURCES) \
-	$(test_rtc_SOURCES) $(test_sunrise_SOURCES) \
+	$(test_rtc_SOURCES) $(test_sd_mapper_SOURCES) \
+	$(test_sdcard_SOURCES) $(test_sunrise_SOURCES) \
 	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -810,6 +850,8 @@ top_srcdir = @top_srcdir@
 	src/overlay.c \
 	src/psg.c \
 	src/rtc.c \
+	src/sdcard.c \
+	src/sd_mapper.c \
 	src/sunrise.c \
 	src/ui.c \
 	src/vdp.c \
@@ -833,6 +875,8 @@ noinst_HEADERS = \
 	src/overlay.h \
 	src/psg.h \
 	src/rtc.h \
+	src/sdcard.h \
+	src/sd_mapper.h \
 	src/sunrise.h \
 	src/types.h \
 	src/ui.h \
@@ -866,24 +910,30 @@ test_wd2793_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_sunrise_SOURCES = tests/test_sunrise.c src/ata.c src/sunrise.c
 test_sunrise_CPPFLAGS = -I$(top_srcdir)/src
 test_sunrise_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_sdcard_SOURCES = tests/test_sdcard.c src/sdcard.c
+test_sdcard_CPPFLAGS = -I$(top_srcdir)/src
+test_sdcard_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_sd_mapper_SOURCES = tests/test_sd_mapper.c src/sdcard.c src/sd_mapper.c
+test_sd_mapper_CPPFLAGS = -I$(top_srcdir)/src
+test_sd_mapper_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/msx.c src/psg.c src/rtc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_config_CPPFLAGS = -I$(top_srcdir)/src
 test_config_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/msx.c src/psg.c src/rtc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_models_CPPFLAGS = -I$(top_srcdir)/src
 test_models_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/msx.c src/psg.c src/rtc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_SOURCES = tests/test_gamepad.c src/gamepad.c
 test_gamepad_CPPFLAGS = -I$(top_srcdir)/src
 test_gamepad_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_LDADD = $(SDL3_LIBS)
-test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
-test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/sunrise.c src/ui.c src/vdp.c src/wd2793.c src/z80.c
+test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/ui.c src/vdp.c src/wd2793.c src/z80.c
 test_overlay_CPPFLAGS = -I$(top_srcdir)/src
 test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_overlay_LDADD = $(SDL3_LIBS) -lm
@@ -1058,6 +1108,10 @@ src/1983-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-sdcard.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-sd_mapper.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-ui.$(OBJEXT): src/$(am__dirstamp) \
@@ -1120,6 +1174,10 @@ src/test_config-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-sdcard.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-sd_mapper.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-vdp.$(OBJEXT): src/$(am__dirstamp) \
@@ -1166,6 +1224,10 @@ src/test_kbd-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_kbd-sdcard.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_kbd-sd_mapper.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-vdp.$(OBJEXT): src/$(am__dirstamp) \
@@ -1196,6 +1258,10 @@ src/test_models-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_models-sdcard.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_models-sd_mapper.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-vdp.$(OBJEXT): src/$(am__dirstamp) \
@@ -1223,6 +1289,10 @@ src/test_msx-msx.$(OBJEXT): src/$(am__dirstamp) \
 src/test_msx-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-rtc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_msx-sdcard.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_msx-sd_mapper.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1264,6 +1334,10 @@ src/test_overlay-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-sdcard.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-sd_mapper.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-ui.$(OBJEXT): src/$(am__dirstamp) \
@@ -1294,6 +1368,24 @@ src/test_rtc-rtc.$(OBJEXT): src/$(am__dirstamp) \
 test-rtc$(EXEEXT): $(test_rtc_OBJECTS) $(test_rtc_DEPENDENCIES) $(EXTRA_test_rtc_DEPENDENCIES)
 	@rm -f test-rtc$(EXEEXT)
 	$(AM_V_CCLD)$(test_rtc_LINK) $(test_rtc_OBJECTS) $(test_rtc_LDADD) $(LIBS)
+tests/test_sd_mapper-test_sd_mapper.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_sd_mapper-sdcard.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_sd_mapper-sd_mapper.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-sd-mapper$(EXEEXT): $(test_sd_mapper_OBJECTS) $(test_sd_mapper_DEPENDENCIES) $(EXTRA_test_sd_mapper_DEPENDENCIES)
+	@rm -f test-sd-mapper$(EXEEXT)
+	$(AM_V_CCLD)$(test_sd_mapper_LINK) $(test_sd_mapper_OBJECTS) $(test_sd_mapper_LDADD) $(LIBS)
+tests/test_sdcard-test_sdcard.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_sdcard-sdcard.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-sdcard$(EXEEXT): $(test_sdcard_OBJECTS) $(test_sdcard_DEPENDENCIES) $(EXTRA_test_sdcard_DEPENDENCIES)
+	@rm -f test-sdcard$(EXEEXT)
+	$(AM_V_CCLD)$(test_sdcard_LINK) $(test_sdcard_OBJECTS) $(test_sdcard_LDADD) $(LIBS)
 tests/test_sunrise-test_sunrise.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_sunrise-ata.$(OBJEXT): src/$(am__dirstamp) \
@@ -1348,6 +1440,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-overlay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sd_mapper.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-ui.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-vdp.Po@am__quote@ # am--include-marker
@@ -1364,6 +1458,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-sd_mapper.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-wd2793.Po@am__quote@ # am--include-marker
@@ -1378,6 +1474,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-sd_mapper.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-wd2793.Po@am__quote@ # am--include-marker
@@ -1390,6 +1488,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-sd_mapper.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-wd2793.Po@am__quote@ # am--include-marker
@@ -1401,6 +1501,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-msx.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-sd_mapper.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-wd2793.Po@am__quote@ # am--include-marker
@@ -1418,6 +1520,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-overlay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sd_mapper.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-ui.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-vdp.Po@am__quote@ # am--include-marker
@@ -1425,6 +1529,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-z80.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_psg-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_rtc-rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sd_mapper-sdcard.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sdcard-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sunrise-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sunrise-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_vdp-vdp.Po@am__quote@ # am--include-marker
@@ -1442,6 +1549,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_overlay-test_overlay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_psg-test_psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_rtc-test_rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_sdcard-test_sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_sunrise-test_sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_vdp-test_vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_wd2793-test_wd2793.Po@am__quote@ # am--include-marker
@@ -1705,6 +1814,34 @@ src/1983-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/1983-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+src/1983-sdcard.o: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-sdcard.o -MD -MP -MF src/$(DEPDIR)/1983-sdcard.Tpo -c -o src/1983-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-sdcard.Tpo src/$(DEPDIR)/1983-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/1983-sdcard.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+
+src/1983-sdcard.obj: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-sdcard.obj -MD -MP -MF src/$(DEPDIR)/1983-sdcard.Tpo -c -o src/1983-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-sdcard.Tpo src/$(DEPDIR)/1983-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/1983-sdcard.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+
+src/1983-sd_mapper.o: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-sd_mapper.o -MD -MP -MF src/$(DEPDIR)/1983-sd_mapper.Tpo -c -o src/1983-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-sd_mapper.Tpo src/$(DEPDIR)/1983-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/1983-sd_mapper.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+
+src/1983-sd_mapper.obj: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-sd_mapper.obj -MD -MP -MF src/$(DEPDIR)/1983-sd_mapper.Tpo -c -o src/1983-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-sd_mapper.Tpo src/$(DEPDIR)/1983-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/1983-sd_mapper.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
 
 src/1983-sunrise.o: src/sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-sunrise.o -MD -MP -MF src/$(DEPDIR)/1983-sunrise.Tpo -c -o src/1983-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
@@ -1986,6 +2123,34 @@ src/test_config-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
 
+src/test_config-sdcard.o: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_config-sdcard.Tpo -c -o src/test_config-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-sdcard.Tpo src/$(DEPDIR)/test_config-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_config-sdcard.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+
+src/test_config-sdcard.obj: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-sdcard.obj -MD -MP -MF src/$(DEPDIR)/test_config-sdcard.Tpo -c -o src/test_config-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-sdcard.Tpo src/$(DEPDIR)/test_config-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_config-sdcard.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+
+src/test_config-sd_mapper.o: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-sd_mapper.o -MD -MP -MF src/$(DEPDIR)/test_config-sd_mapper.Tpo -c -o src/test_config-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-sd_mapper.Tpo src/$(DEPDIR)/test_config-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/test_config-sd_mapper.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+
+src/test_config-sd_mapper.obj: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-sd_mapper.obj -MD -MP -MF src/$(DEPDIR)/test_config-sd_mapper.Tpo -c -o src/test_config-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-sd_mapper.Tpo src/$(DEPDIR)/test_config-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/test_config-sd_mapper.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+
 src/test_config-sunrise.o: src/sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-sunrise.o -MD -MP -MF src/$(DEPDIR)/test_config-sunrise.Tpo -c -o src/test_config-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-sunrise.Tpo src/$(DEPDIR)/test_config-sunrise.Po
@@ -2224,6 +2389,34 @@ src/test_kbd-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
 
+src/test_kbd-sdcard.o: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_kbd-sdcard.Tpo -c -o src/test_kbd-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-sdcard.Tpo src/$(DEPDIR)/test_kbd-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_kbd-sdcard.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+
+src/test_kbd-sdcard.obj: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-sdcard.obj -MD -MP -MF src/$(DEPDIR)/test_kbd-sdcard.Tpo -c -o src/test_kbd-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-sdcard.Tpo src/$(DEPDIR)/test_kbd-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_kbd-sdcard.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+
+src/test_kbd-sd_mapper.o: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-sd_mapper.o -MD -MP -MF src/$(DEPDIR)/test_kbd-sd_mapper.Tpo -c -o src/test_kbd-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-sd_mapper.Tpo src/$(DEPDIR)/test_kbd-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/test_kbd-sd_mapper.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+
+src/test_kbd-sd_mapper.obj: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-sd_mapper.obj -MD -MP -MF src/$(DEPDIR)/test_kbd-sd_mapper.Tpo -c -o src/test_kbd-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-sd_mapper.Tpo src/$(DEPDIR)/test_kbd-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/test_kbd-sd_mapper.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+
 src/test_kbd-sunrise.o: src/sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-sunrise.o -MD -MP -MF src/$(DEPDIR)/test_kbd-sunrise.Tpo -c -o src/test_kbd-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-sunrise.Tpo src/$(DEPDIR)/test_kbd-sunrise.Po
@@ -2406,6 +2599,34 @@ src/test_models-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
 
+src/test_models-sdcard.o: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_models-sdcard.Tpo -c -o src/test_models-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-sdcard.Tpo src/$(DEPDIR)/test_models-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_models-sdcard.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+
+src/test_models-sdcard.obj: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-sdcard.obj -MD -MP -MF src/$(DEPDIR)/test_models-sdcard.Tpo -c -o src/test_models-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-sdcard.Tpo src/$(DEPDIR)/test_models-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_models-sdcard.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+
+src/test_models-sd_mapper.o: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-sd_mapper.o -MD -MP -MF src/$(DEPDIR)/test_models-sd_mapper.Tpo -c -o src/test_models-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-sd_mapper.Tpo src/$(DEPDIR)/test_models-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/test_models-sd_mapper.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+
+src/test_models-sd_mapper.obj: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-sd_mapper.obj -MD -MP -MF src/$(DEPDIR)/test_models-sd_mapper.Tpo -c -o src/test_models-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-sd_mapper.Tpo src/$(DEPDIR)/test_models-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/test_models-sd_mapper.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+
 src/test_models-sunrise.o: src/sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-sunrise.o -MD -MP -MF src/$(DEPDIR)/test_models-sunrise.Tpo -c -o src/test_models-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-sunrise.Tpo src/$(DEPDIR)/test_models-sunrise.Po
@@ -2573,6 +2794,34 @@ src/test_msx-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_msx-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+src/test_msx-sdcard.o: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_msx-sdcard.Tpo -c -o src/test_msx-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-sdcard.Tpo src/$(DEPDIR)/test_msx-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_msx-sdcard.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+
+src/test_msx-sdcard.obj: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-sdcard.obj -MD -MP -MF src/$(DEPDIR)/test_msx-sdcard.Tpo -c -o src/test_msx-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-sdcard.Tpo src/$(DEPDIR)/test_msx-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_msx-sdcard.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+
+src/test_msx-sd_mapper.o: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-sd_mapper.o -MD -MP -MF src/$(DEPDIR)/test_msx-sd_mapper.Tpo -c -o src/test_msx-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-sd_mapper.Tpo src/$(DEPDIR)/test_msx-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/test_msx-sd_mapper.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+
+src/test_msx-sd_mapper.obj: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-sd_mapper.obj -MD -MP -MF src/$(DEPDIR)/test_msx-sd_mapper.Tpo -c -o src/test_msx-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-sd_mapper.Tpo src/$(DEPDIR)/test_msx-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/test_msx-sd_mapper.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
 
 src/test_msx-sunrise.o: src/sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-sunrise.o -MD -MP -MF src/$(DEPDIR)/test_msx-sunrise.Tpo -c -o src/test_msx-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
@@ -2826,6 +3075,34 @@ src/test_overlay-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
 
+src/test_overlay-sdcard.o: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_overlay-sdcard.Tpo -c -o src/test_overlay-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-sdcard.Tpo src/$(DEPDIR)/test_overlay-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_overlay-sdcard.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+
+src/test_overlay-sdcard.obj: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-sdcard.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-sdcard.Tpo -c -o src/test_overlay-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-sdcard.Tpo src/$(DEPDIR)/test_overlay-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_overlay-sdcard.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+
+src/test_overlay-sd_mapper.o: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-sd_mapper.o -MD -MP -MF src/$(DEPDIR)/test_overlay-sd_mapper.Tpo -c -o src/test_overlay-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-sd_mapper.Tpo src/$(DEPDIR)/test_overlay-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/test_overlay-sd_mapper.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+
+src/test_overlay-sd_mapper.obj: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-sd_mapper.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-sd_mapper.Tpo -c -o src/test_overlay-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-sd_mapper.Tpo src/$(DEPDIR)/test_overlay-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/test_overlay-sd_mapper.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+
 src/test_overlay-sunrise.o: src/sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-sunrise.o -MD -MP -MF src/$(DEPDIR)/test_overlay-sunrise.Tpo -c -o src/test_overlay-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-sunrise.Tpo src/$(DEPDIR)/test_overlay-sunrise.Po
@@ -2951,6 +3228,76 @@ src/test_rtc-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rtc.c' object='src/test_rtc-rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -c -o src/test_rtc-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
+
+tests/test_sd_mapper-test_sd_mapper.o: tests/test_sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -MT tests/test_sd_mapper-test_sd_mapper.o -MD -MP -MF tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo -c -o tests/test_sd_mapper-test_sd_mapper.o `test -f 'tests/test_sd_mapper.c' || echo '$(srcdir)/'`tests/test_sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_sd_mapper.c' object='tests/test_sd_mapper-test_sd_mapper.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -c -o tests/test_sd_mapper-test_sd_mapper.o `test -f 'tests/test_sd_mapper.c' || echo '$(srcdir)/'`tests/test_sd_mapper.c
+
+tests/test_sd_mapper-test_sd_mapper.obj: tests/test_sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -MT tests/test_sd_mapper-test_sd_mapper.obj -MD -MP -MF tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo -c -o tests/test_sd_mapper-test_sd_mapper.obj `if test -f 'tests/test_sd_mapper.c'; then $(CYGPATH_W) 'tests/test_sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_sd_mapper.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_sd_mapper.c' object='tests/test_sd_mapper-test_sd_mapper.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -c -o tests/test_sd_mapper-test_sd_mapper.obj `if test -f 'tests/test_sd_mapper.c'; then $(CYGPATH_W) 'tests/test_sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_sd_mapper.c'; fi`
+
+src/test_sd_mapper-sdcard.o: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -MT src/test_sd_mapper-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_sd_mapper-sdcard.Tpo -c -o src/test_sd_mapper-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_sd_mapper-sdcard.Tpo src/$(DEPDIR)/test_sd_mapper-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_sd_mapper-sdcard.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -c -o src/test_sd_mapper-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+
+src/test_sd_mapper-sdcard.obj: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -MT src/test_sd_mapper-sdcard.obj -MD -MP -MF src/$(DEPDIR)/test_sd_mapper-sdcard.Tpo -c -o src/test_sd_mapper-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_sd_mapper-sdcard.Tpo src/$(DEPDIR)/test_sd_mapper-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_sd_mapper-sdcard.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -c -o src/test_sd_mapper-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+
+src/test_sd_mapper-sd_mapper.o: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -MT src/test_sd_mapper-sd_mapper.o -MD -MP -MF src/$(DEPDIR)/test_sd_mapper-sd_mapper.Tpo -c -o src/test_sd_mapper-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_sd_mapper-sd_mapper.Tpo src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/test_sd_mapper-sd_mapper.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -c -o src/test_sd_mapper-sd_mapper.o `test -f 'src/sd_mapper.c' || echo '$(srcdir)/'`src/sd_mapper.c
+
+src/test_sd_mapper-sd_mapper.obj: src/sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -MT src/test_sd_mapper-sd_mapper.obj -MD -MP -MF src/$(DEPDIR)/test_sd_mapper-sd_mapper.Tpo -c -o src/test_sd_mapper-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_sd_mapper-sd_mapper.Tpo src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/test_sd_mapper-sd_mapper.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -c -o src/test_sd_mapper-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+
+tests/test_sdcard-test_sdcard.o: tests/test_sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -MT tests/test_sdcard-test_sdcard.o -MD -MP -MF tests/$(DEPDIR)/test_sdcard-test_sdcard.Tpo -c -o tests/test_sdcard-test_sdcard.o `test -f 'tests/test_sdcard.c' || echo '$(srcdir)/'`tests/test_sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_sdcard-test_sdcard.Tpo tests/$(DEPDIR)/test_sdcard-test_sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_sdcard.c' object='tests/test_sdcard-test_sdcard.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -c -o tests/test_sdcard-test_sdcard.o `test -f 'tests/test_sdcard.c' || echo '$(srcdir)/'`tests/test_sdcard.c
+
+tests/test_sdcard-test_sdcard.obj: tests/test_sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -MT tests/test_sdcard-test_sdcard.obj -MD -MP -MF tests/$(DEPDIR)/test_sdcard-test_sdcard.Tpo -c -o tests/test_sdcard-test_sdcard.obj `if test -f 'tests/test_sdcard.c'; then $(CYGPATH_W) 'tests/test_sdcard.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_sdcard.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_sdcard-test_sdcard.Tpo tests/$(DEPDIR)/test_sdcard-test_sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_sdcard.c' object='tests/test_sdcard-test_sdcard.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -c -o tests/test_sdcard-test_sdcard.obj `if test -f 'tests/test_sdcard.c'; then $(CYGPATH_W) 'tests/test_sdcard.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_sdcard.c'; fi`
+
+src/test_sdcard-sdcard.o: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -MT src/test_sdcard-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_sdcard-sdcard.Tpo -c -o src/test_sdcard-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_sdcard-sdcard.Tpo src/$(DEPDIR)/test_sdcard-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_sdcard-sdcard.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -c -o src/test_sdcard-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
+
+src/test_sdcard-sdcard.obj: src/sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -MT src/test_sdcard-sdcard.obj -MD -MP -MF src/$(DEPDIR)/test_sdcard-sdcard.Tpo -c -o src/test_sdcard-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_sdcard-sdcard.Tpo src/$(DEPDIR)/test_sdcard-sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sdcard.c' object='src/test_sdcard-sdcard.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -c -o src/test_sdcard-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
 
 tests/test_sunrise-test_sunrise.o: tests/test_sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -MT tests/test_sunrise-test_sunrise.o -MD -MP -MF tests/$(DEPDIR)/test_sunrise-test_sunrise.Tpo -c -o tests/test_sunrise-test_sunrise.o `test -f 'tests/test_sunrise.c' || echo '$(srcdir)/'`tests/test_sunrise.c
@@ -3562,6 +3909,20 @@ test-sunrise.log: test-sunrise$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-sdcard.log: test-sdcard$(EXEEXT)
+	@p='test-sdcard$(EXEEXT)'; \
+	b='test-sdcard'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-sd-mapper.log: test-sd-mapper$(EXEEXT)
+	@p='test-sd-mapper$(EXEEXT)'; \
+	b='test-sd-mapper'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-config.log: test-config$(EXEEXT)
 	@p='test-config$(EXEEXT)'; \
 	b='test-config'; \
@@ -3896,6 +4257,8 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-overlay.Po
 	-rm -f src/$(DEPDIR)/1983-psg.Po
 	-rm -f src/$(DEPDIR)/1983-rtc.Po
+	-rm -f src/$(DEPDIR)/1983-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/1983-sdcard.Po
 	-rm -f src/$(DEPDIR)/1983-sunrise.Po
 	-rm -f src/$(DEPDIR)/1983-ui.Po
 	-rm -f src/$(DEPDIR)/1983-vdp.Po
@@ -3912,6 +4275,8 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_config-msx.Po
 	-rm -f src/$(DEPDIR)/test_config-psg.Po
 	-rm -f src/$(DEPDIR)/test_config-rtc.Po
+	-rm -f src/$(DEPDIR)/test_config-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/test_config-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_config-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_config-vdp.Po
 	-rm -f src/$(DEPDIR)/test_config-wd2793.Po
@@ -3926,6 +4291,8 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
 	-rm -f src/$(DEPDIR)/test_kbd-psg.Po
 	-rm -f src/$(DEPDIR)/test_kbd-rtc.Po
+	-rm -f src/$(DEPDIR)/test_kbd-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/test_kbd-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_kbd-vdp.Po
 	-rm -f src/$(DEPDIR)/test_kbd-wd2793.Po
@@ -3938,6 +4305,8 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_models-msx.Po
 	-rm -f src/$(DEPDIR)/test_models-psg.Po
 	-rm -f src/$(DEPDIR)/test_models-rtc.Po
+	-rm -f src/$(DEPDIR)/test_models-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/test_models-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_models-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_models-vdp.Po
 	-rm -f src/$(DEPDIR)/test_models-wd2793.Po
@@ -3949,6 +4318,8 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
 	-rm -f src/$(DEPDIR)/test_msx-psg.Po
 	-rm -f src/$(DEPDIR)/test_msx-rtc.Po
+	-rm -f src/$(DEPDIR)/test_msx-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/test_msx-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_msx-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_msx-vdp.Po
 	-rm -f src/$(DEPDIR)/test_msx-wd2793.Po
@@ -3966,6 +4337,8 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_overlay-overlay.Po
 	-rm -f src/$(DEPDIR)/test_overlay-psg.Po
 	-rm -f src/$(DEPDIR)/test_overlay-rtc.Po
+	-rm -f src/$(DEPDIR)/test_overlay-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/test_overlay-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_overlay-ui.Po
 	-rm -f src/$(DEPDIR)/test_overlay-vdp.Po
@@ -3973,6 +4346,9 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_overlay-z80.Po
 	-rm -f src/$(DEPDIR)/test_psg-psg.Po
 	-rm -f src/$(DEPDIR)/test_rtc-rtc.Po
+	-rm -f src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/test_sd_mapper-sdcard.Po
+	-rm -f src/$(DEPDIR)/test_sdcard-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_sunrise-ata.Po
 	-rm -f src/$(DEPDIR)/test_sunrise-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
@@ -3990,6 +4366,8 @@ distclean: distclean-am
 	-rm -f tests/$(DEPDIR)/test_overlay-test_overlay.Po
 	-rm -f tests/$(DEPDIR)/test_psg-test_psg.Po
 	-rm -f tests/$(DEPDIR)/test_rtc-test_rtc.Po
+	-rm -f tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
+	-rm -f tests/$(DEPDIR)/test_sdcard-test_sdcard.Po
 	-rm -f tests/$(DEPDIR)/test_sunrise-test_sunrise.Po
 	-rm -f tests/$(DEPDIR)/test_vdp-test_vdp.Po
 	-rm -f tests/$(DEPDIR)/test_wd2793-test_wd2793.Po
@@ -4062,6 +4440,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-overlay.Po
 	-rm -f src/$(DEPDIR)/1983-psg.Po
 	-rm -f src/$(DEPDIR)/1983-rtc.Po
+	-rm -f src/$(DEPDIR)/1983-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/1983-sdcard.Po
 	-rm -f src/$(DEPDIR)/1983-sunrise.Po
 	-rm -f src/$(DEPDIR)/1983-ui.Po
 	-rm -f src/$(DEPDIR)/1983-vdp.Po
@@ -4078,6 +4458,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_config-msx.Po
 	-rm -f src/$(DEPDIR)/test_config-psg.Po
 	-rm -f src/$(DEPDIR)/test_config-rtc.Po
+	-rm -f src/$(DEPDIR)/test_config-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/test_config-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_config-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_config-vdp.Po
 	-rm -f src/$(DEPDIR)/test_config-wd2793.Po
@@ -4092,6 +4474,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
 	-rm -f src/$(DEPDIR)/test_kbd-psg.Po
 	-rm -f src/$(DEPDIR)/test_kbd-rtc.Po
+	-rm -f src/$(DEPDIR)/test_kbd-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/test_kbd-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_kbd-vdp.Po
 	-rm -f src/$(DEPDIR)/test_kbd-wd2793.Po
@@ -4104,6 +4488,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_models-msx.Po
 	-rm -f src/$(DEPDIR)/test_models-psg.Po
 	-rm -f src/$(DEPDIR)/test_models-rtc.Po
+	-rm -f src/$(DEPDIR)/test_models-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/test_models-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_models-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_models-vdp.Po
 	-rm -f src/$(DEPDIR)/test_models-wd2793.Po
@@ -4115,6 +4501,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
 	-rm -f src/$(DEPDIR)/test_msx-psg.Po
 	-rm -f src/$(DEPDIR)/test_msx-rtc.Po
+	-rm -f src/$(DEPDIR)/test_msx-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/test_msx-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_msx-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_msx-vdp.Po
 	-rm -f src/$(DEPDIR)/test_msx-wd2793.Po
@@ -4132,6 +4520,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_overlay-overlay.Po
 	-rm -f src/$(DEPDIR)/test_overlay-psg.Po
 	-rm -f src/$(DEPDIR)/test_overlay-rtc.Po
+	-rm -f src/$(DEPDIR)/test_overlay-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/test_overlay-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_overlay-ui.Po
 	-rm -f src/$(DEPDIR)/test_overlay-vdp.Po
@@ -4139,6 +4529,9 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_overlay-z80.Po
 	-rm -f src/$(DEPDIR)/test_psg-psg.Po
 	-rm -f src/$(DEPDIR)/test_rtc-rtc.Po
+	-rm -f src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po
+	-rm -f src/$(DEPDIR)/test_sd_mapper-sdcard.Po
+	-rm -f src/$(DEPDIR)/test_sdcard-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_sunrise-ata.Po
 	-rm -f src/$(DEPDIR)/test_sunrise-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
@@ -4156,6 +4549,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f tests/$(DEPDIR)/test_overlay-test_overlay.Po
 	-rm -f tests/$(DEPDIR)/test_psg-test_psg.Po
 	-rm -f tests/$(DEPDIR)/test_rtc-test_rtc.Po
+	-rm -f tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
+	-rm -f tests/$(DEPDIR)/test_sdcard-test_sdcard.Po
 	-rm -f tests/$(DEPDIR)/test_sunrise-test_sunrise.Po
 	-rm -f tests/$(DEPDIR)/test_vdp-test_vdp.Po
 	-rm -f tests/$(DEPDIR)/test_wd2793-test_wd2793.Po

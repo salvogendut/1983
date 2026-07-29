@@ -179,6 +179,54 @@ static void test_sunrise_cartridge_slot_bus(void) {
     msx_destroy(&msx);
 }
 
+static void test_sd_mapper_expanded_cartridge_bus(void) {
+    MsxMachine msx;
+    u8 *rom = malloc(MSX_SD_MAPPER_ROM_SIZE);
+
+    assert(rom);
+    for (unsigned bank = 0;
+         bank < MSX_SD_MAPPER_ROM_SIZE /
+                    MSX_SD_MAPPER_ROM_BANK_SIZE;
+         ++bank) {
+        memset(rom + bank * MSX_SD_MAPPER_ROM_BANK_SIZE,
+               0x40 + bank, MSX_SD_MAPPER_ROM_BANK_SIZE);
+    }
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(msx_install_sd_mapper(
+               &msx, 0, rom, MSX_SD_MAPPER_ROM_SIZE) == 0);
+    assert(msx_sd_mapper_connected(&msx));
+    assert(msx_sd_mapper_slot(&msx) == 0);
+
+    /* The cartridge expands primary slot 1; subslot 0 is its driver. */
+    msx_io_write(&msx, 0xa8, 0x55);
+    assert(msx_memory_read(&msx, 0xffff) == 0xff);
+    assert(msx_memory_read(&msx, 0x4000) == 0x40);
+    msx_memory_write(&msx, 0x6000, 6);
+    assert(msx_memory_read(&msx, 0x4000) == 0x46);
+
+    /* Subslot 1 is the cartridge's independent 512 KiB mapper. */
+    msx_memory_write(&msx, 0xffff, 0x55);
+    assert(msx_memory_read(&msx, 0xffff) == 0xaa);
+    assert(msx_io_read(&msx, 0xfc) == 0xe3);
+    msx_io_write(&msx, 0xfc, 31);
+    msx_memory_write(&msx, 0x0000, 0xa5);
+    assert(msx_memory_read(&msx, 0x0000) == 0xa5);
+    msx_io_write(&msx, 0xfc, 30);
+    assert(msx_memory_read(&msx, 0x0000) == 0);
+    msx_io_write(&msx, 0xfc, 31);
+    assert(msx_memory_read(&msx, 0x0000) == 0xa5);
+
+    msx_reset(&msx);
+    assert(msx_sd_mapper_connected(&msx));
+    msx_io_write(&msx, 0xa8, 0x55);
+    assert(msx_memory_read(&msx, 0xffff) == 0xff);
+    assert(msx_io_read(&msx, 0xfc) == 0xe3);
+    assert(msx_eject_sd_mapper(&msx) == 0);
+    assert(!msx_sd_mapper_connected(&msx));
+    msx_destroy(&msx);
+    free(rom);
+}
+
 static void test_ascii8_cpu_boot_checkpoint(void) {
     MsxMachine msx;
     u8 bios[MSX_BIOS_SIZE];
@@ -1203,6 +1251,58 @@ static void test_nextor_sunrise_checkpoint_if_available(void) {
     free(msx);
 }
 
+static void test_nextor_sd_mapper_checkpoint_if_available(void) {
+    const char *bios_path = getenv("MSX_SD_MAPPER_BIOS_ROM");
+    const char *mapper_path = getenv("MSX_SD_MAPPER_ROM");
+    const char *image_path = getenv("MSX_SD_MAPPER_IMAGE");
+    MsxMachine *msx;
+    size_t nonzero_vram = 0;
+    u64 framebuffer_hash;
+
+    if (!bios_path || !bios_path[0] ||
+        !mapper_path || !mapper_path[0] ||
+        !image_path || !image_path[0])
+        return;
+
+    msx = malloc(sizeof(*msx));
+    assert(msx);
+    msx_init(msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(msx_load_bios(msx, bios_path) == 0);
+    assert(msx_load_sd_mapper(msx, 1, mapper_path) == 0);
+    assert(msx_mount_sd_card(
+               msx, 0, image_path, SD_IMAGE_READ_ONLY) == 0);
+    for (int frame = 0; frame < 900; ++frame)
+        msx_run_frame(msx);
+    for (size_t i = 0; i < sizeof(msx->vdp.vram); ++i)
+        if (msx->vdp.vram[i])
+            ++nonzero_vram;
+    framebuffer_hash = vdp_frame_hash(&msx->vdp);
+
+    fprintf(stderr,
+            "Nextor/SD Mapper V2 checkpoint: frame=%llu PC=%04X "
+            "slot=%02X cart-subslot=%02X mapper=%02X,%02X,%02X,%02X "
+            "instructions=%llu VRAM=%zu framebuffer=%016llX\n",
+            (unsigned long long)msx->frame, msx->cpu.pc,
+            msx->primary_slot, msx->sd_mapper.secondary_slot,
+            msx->sd_mapper.mapper_segment[0],
+            msx->sd_mapper.mapper_segment[1],
+            msx->sd_mapper.mapper_segment[2],
+            msx->sd_mapper.mapper_segment[3],
+            (unsigned long long)msx->instructions, nonzero_vram,
+            (unsigned long long)framebuffer_hash);
+    assert(msx->frame == 900);
+    assert(msx_sd_mapper_connected(msx));
+    assert(msx_sd_mapper_slot(msx) == 1);
+    assert(msx_sd_card_mounted(msx, 0));
+    assert(msx_sd_card_take_activity(msx, 0));
+    assert(msx->sd_mapper.mapper_enabled);
+    assert(msx->instructions > 1000000);
+    assert(nonzero_vram > 100);
+    assert(framebuffer_hash != 0);
+    msx_destroy(msx);
+    free(msx);
+}
+
 int main(void) {
     MsxMachine msx;
 
@@ -1273,6 +1373,7 @@ int main(void) {
     test_slot_bus_and_cpu();
     test_dual_cartridge_slots_and_mapper_reset();
     test_sunrise_cartridge_slot_bus();
+    test_sd_mapper_expanded_cartridge_bus();
     test_ascii8_cpu_boot_checkpoint();
     test_atomic_firmware_set_and_eject();
     test_msx2_expanded_slots_and_firmware();
@@ -1291,6 +1392,7 @@ int main(void) {
     test_nms8250_checkpoint_if_available();
     test_nms8250_floppy_checkpoint_if_available();
     test_nextor_sunrise_checkpoint_if_available();
+    test_nextor_sd_mapper_checkpoint_if_available();
     msx_destroy(&msx);
     return 0;
 }

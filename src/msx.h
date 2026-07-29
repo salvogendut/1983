@@ -7,6 +7,7 @@
 #include "cartridge.h"
 #include "psg.h"
 #include "rtc.h"
+#include "sd_mapper.h"
 #include "sunrise.h"
 #include "types.h"
 #include "vdp.h"
@@ -114,8 +115,10 @@ typedef struct {
     u8 internal_ram[MSX_RAM_INTERNAL_SIZE];
     MsxCartridge cartridges[MSX_CARTRIDGE_SLOTS];
     Cassette cassette;
+    MsxSdMapper sd_mapper;
     MsxSunriseIde sunrise;
     Wd2793 fdc;
+    int sd_mapper_slot;
     int sunrise_slot;
     bool bios_loaded;
     bool logo_loaded;
@@ -229,6 +232,25 @@ bool msx_sunrise_disk_dirty(const MsxMachine *msx);
 bool msx_sunrise_disk_has_error(const MsxMachine *msx);
 const char *msx_sunrise_disk_error(const MsxMachine *msx);
 bool msx_sunrise_take_activity(MsxMachine *msx);
+int msx_install_sd_mapper(MsxMachine *msx, unsigned slot,
+                          const u8 *data, size_t size);
+int msx_load_sd_mapper(MsxMachine *msx, unsigned slot,
+                       const char *path);
+int msx_eject_sd_mapper(MsxMachine *msx);
+bool msx_sd_mapper_connected(const MsxMachine *msx);
+int msx_sd_mapper_slot(const MsxMachine *msx);
+void msx_sd_mapper_set_ram_enabled(MsxMachine *msx, bool enabled);
+void msx_sd_mapper_set_alternate_driver(MsxMachine *msx, bool alternate);
+int msx_mount_sd_card(MsxMachine *msx, unsigned card,
+                      const char *path, SdImageMode mode);
+int msx_flush_sd_card(MsxMachine *msx, unsigned card);
+int msx_eject_sd_card(MsxMachine *msx, unsigned card);
+bool msx_sd_card_mounted(const MsxMachine *msx, unsigned card);
+bool msx_sd_card_writable(const MsxMachine *msx, unsigned card);
+bool msx_sd_card_dirty(const MsxMachine *msx, unsigned card);
+bool msx_sd_card_has_error(const MsxMachine *msx, unsigned card);
+const char *msx_sd_card_error(const MsxMachine *msx, unsigned card);
+bool msx_sd_card_take_activity(MsxMachine *msx, unsigned card);
 int msx_set_rtc_persistence(MsxMachine *msx, const char *path,
                             u64 host_seconds);
 int msx_flush_rtc_persistence(MsxMachine *msx, u64 host_seconds);

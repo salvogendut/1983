@@ -19,8 +19,11 @@ SDL3 allows.
 > slots with common mappers, MSX2 expanded slots, memory mapper, RTC, and
 > battery-backed per-machine CMOS, plus native Philips WD2793 floppy
 > support with safe read-only/read-write raw
-> DSK images, plus safe read-only/read-write Sunrise IDE disks. The official
-> Sunrise Nextor kernel can boot the GeoBench raw image to its desktop.
+> DSK images, safe read-only/read-write Sunrise IDE disks, and the composite
+> MSX SD Mapper V2 with two SD cards and an independent 512 KiB mapper. The
+> official Sunrise Nextor kernel can boot the GeoBench raw image to its
+> desktop, while the official SD Mapper V2 ROM boots both Nextor system
+> media and the GeoBench image from SD.
 > Standard MSX CAS cassette playback
 > is integrated with the BIOS motor and input path. Protected floppy
 > formats, cassette recording, SCC audio, and other extensions remain in
@@ -42,6 +45,8 @@ SDL3 allows.
 - Cartridge I/II presence LEDs, with a split network-access form.
 - Sunrise IDE cartridge emulation, explicit read-only/read-write raw ATA
   images, safe flush/ejection, IDE activity, and Nextor boot.
+- MSX SD Mapper V2 emulation with its expanded cartridge slot, two SPI SD
+  cards, switchable 512 KiB mapper, safe writable images, and Nextor boot.
 - Philips NMS 8250 WD2793 emulation, conventional raw DSK images, safe
   sector writes, optional second floppy, and independent activity LEDs.
 - Standard MSX CAS playback with emulated motor control, transport status,
@@ -81,6 +86,8 @@ Useful options:
   --floppy-mode read-only
 ./1983 --sunrise-rom /path/to/Nextor.SunriseIDE.ROM \
   --ide /path/to/disk.img --ide-mode read-only
+./1983 --model msx1 --sd-mapper-rom /path/to/SDXC110.ROM \
+  --sd-a /path/to/card.img --sd-mode read-only
 ./1983 --config ./test.conf
 ./1983 --headless --unthrottled --exit-after 10
 ./1983 --help
@@ -204,7 +211,8 @@ output. The translucent visual scope appears while the tape motor is running
 and shows the waveform, detected type, required command, and elapsed/total
 time. Recording and sampled audio formats are not implemented yet.
 
-Sunrise IDE, SCC, and MSX-MUSIC are cartridge-connected extensions. The
+Sunrise IDE, SD Mapper V2, SCC, and MSX-MUSIC are cartridge-connected
+extensions. The
 first configured device reserves cartridge slot 2 and the second reserves
 slot 1. Reserved cartridge and mapper controls remain visible but cannot be
 used. The first activation of **Extensions > Sunrise IDE** opens a small
@@ -222,6 +230,18 @@ Dirty data is flushed for ATA FLUSH CACHE, image replacement, ejection, and
 shutdown. A host I/O failure is reported and blocks ejection/replacement so
 it cannot silently discard buffered data. Keep backups of writable images:
 host filesystems cannot guarantee sector-level atomicity after power loss.
+
+The first activation of **Extensions > SD Mapper V2** opens its own setup
+panel. Select the required 128 or 256 KiB controller ROM, optionally attach
+SD Card A and SD Card B images, choose whether the cartridge's 512 KiB mapper
+is enabled, and Connect. One physical cartridge slot is reserved even though
+the device exposes an expanded slot internally: controller ROM and SD
+registers occupy subslot 0, while mapper RAM occupies subslot 1. Media owns
+later card insertion and safe ejection. With Tinker enabled, Advanced
+provides **SD access mode**, **SD Mapper 512K RAM**, and the primary/alternate
+driver switch. Two green SD A/B LEDs report card traffic. Command-line
+equivalents are `--sd-mapper-rom`, `--sd-a`, `--sd-b`, and `--sd-mode`.
+Controller ROMs and card contents are user-supplied and are never bundled.
 
 SDL scancodes map positionally to the international MSX keyboard. Left Ctrl
 is CTRL, left Alt is GRAPH, right Alt is CODE, and right Ctrl is the ACC/dead

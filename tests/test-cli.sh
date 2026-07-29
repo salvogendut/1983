@@ -4,8 +4,10 @@ set -eu
 log=tests/test-cli-output.tmp
 config=tests/test-cli-config.tmp
 sunrise=tests/test-cli-sunrise.tmp
+sdrom=tests/test-cli-sdmapper.tmp
+sdimage=tests/test-cli-sdcard.tmp
 cassette=tests/test-cli-cassette.tmp
-trap 'rm -f "$log" "$config" "$sunrise" "$cassette"' EXIT HUP INT TERM
+trap 'rm -f "$log" "$config" "$sunrise" "$sdrom" "$sdimage" "$cassette"' EXIT HUP INT TERM
 
 if ./1983 --mapper definitely-not-a-mapper >"$log" 2>&1; then
     echo "invalid mapper was accepted" >&2
@@ -52,6 +54,34 @@ if ./1983 --ide-mode unsafe >"$log" 2>&1; then
 fi
 grep -q "expected read-only or read-write" "$log"
 
+if ./1983 --config /dev/null --sd-mapper-rom missing-sdmapper.rom \
+        >"$log" 2>&1; then
+    echo "missing SD Mapper ROM was accepted" >&2
+    exit 1
+fi
+grep -q "cannot load 128/256 KB SD Mapper V2 ROM" "$log"
+
+dd if=/dev/zero of="$sdrom" bs=131072 count=1 2>/dev/null
+dd if=/dev/zero of="$sdimage" bs=512 count=2 2>/dev/null
+if ./1983 --config /dev/null --sd-mapper-rom "$sdrom" \
+        --sd-a missing-sdcard.img >"$log" 2>&1; then
+    echo "missing SD card image was accepted" >&2
+    exit 1
+fi
+grep -q "cannot mount SD Mapper card A image" "$log"
+
+./1983 --config /dev/null --sd-mapper-rom "$sdrom" \
+    --sd-a "$sdimage" --headless --unthrottled --exit-after 0 \
+    >"$log" 2>&1
+grep -q "SD Mapper V2 loaded in cartridge slot 2" "$log"
+grep -q "SD A: $sdimage (read-only)" "$log"
+
+if ./1983 --sd-mode unsafe >"$log" 2>&1; then
+    echo "invalid SD image mode was accepted" >&2
+    exit 1
+fi
+grep -q "expected read-only or read-write" "$log"
+
 if ./1983 --floppy-mode unsafe >"$log" 2>&1; then
     echo "invalid floppy image mode was accepted" >&2
     exit 1
@@ -78,6 +108,10 @@ grep -q -- "--cart2 PATH" "$log"
 grep -q -- "--mapper1 NAME" "$log"
 grep -q -- "--mapper2 NAME" "$log"
 grep -q -- "--sunrise-rom PATH" "$log"
+grep -q -- "--sd-mapper-rom PATH" "$log"
+grep -q -- "--sd-a PATH" "$log"
+grep -q -- "--sd-b PATH" "$log"
+grep -q -- "--sd-mode MODE" "$log"
 grep -q -- "--disk-a PATH" "$log"
 grep -q -- "--disk-b PATH" "$log"
 grep -q -- "--floppy-mode MODE" "$log"
