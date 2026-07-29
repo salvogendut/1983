@@ -9,6 +9,7 @@ complete MSX hardware specification.
 | Files | Responsibility |
 |-------|----------------|
 | `src/main.c` | Process lifetime, command line, SDL event loop, and shared function-key bindings |
+| `src/ata.*` | Host-independent ATA task file, IDENTIFY/read commands, and read-only raw-image lifetime |
 | `src/cartridge.*` | Host-independent cartridge image ownership, mapper detection, bank registers, and SCC register window |
 | `src/audio.*` | SDL3 audio-stream lifetime and host sample submission |
 | `src/config.*` | Defaults, normalization, persistent settings, and platform-specific configuration path |
@@ -23,9 +24,12 @@ complete MSX hardware specification.
 | `src/msx.*` | Machine profiles, slot-aware memory and I/O bus, active-low keyboard matrix, ROM loading, and frame scheduler |
 | `src/psg.*` | Host-independent AY-3-8910/YM2149 tone, noise, envelope, mixer, and sample generation |
 | `src/rtc.*` | Host-independent RP-5C01 register banks, CMOS, control ports, and emulated-time calendar |
+| `src/sunrise.*` | Sunrise IDE cartridge ROM banking, address decode, 16-bit data latch, and ATA bridge |
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
 | `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, sprite-mode-2, and command engine |
-| `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/diagnostic boot checks |
+| `tests/test_ata.c` | ATA identify, sector reads, errors, reset, activity, and conservative mount checks |
+| `tests/test_sunrise.c` | Sunrise banking, overlay decode, data latch, master/slave, soft reset, and disk lifetime |
+| `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/Nextor boot checks |
 | `tests/test_cartridge.c` | Linear, ASCII8/16, Konami, Konami SCC, detection, bank wrapping, reset, and eject checks |
 | `tests/test_config.c` | Persistent cartridge, mapper, extension, and Joy Port settings |
 | `tests/test_gamepad.c` | SDL-independent direction, trigger, dead-zone, and opposing-input mapping |
@@ -97,13 +101,13 @@ primary slots 1 and 2, and expanded primary slot 3 containing the MSX2
 sub-ROM in secondary slot 0, the 128 KB internal mapper in slot 2, and the
 built-in disk ROM in slot 3/page 1. The expanded-slot register and mapper
 ports, V9938 CPU interface, bitmap renderer, command engine, and RTC are
-implemented; the WD2793 controller is not. The GeoBench
-configuration will then add
-independent SunriseIDE/Nextor and 512 KB memory-mapper extensions. These are
-two mapper devices, not one combined RAM allocation. Firmware discovery will
-build on the explicit `1983-models.conf` paths and eventually match the
-pinned hashes documented in `BOOT_TARGETS.md`; no machine ROM belongs in the
-repository.
+implemented; the WD2793 controller is not. The external Sunrise IDE/Nextor
+cartridge is also implemented, and the current GeoBench checkpoint boots on
+the internal 128 KiB mapper. A separate 512 KiB memory-mapper extension still
+has to be added; it must remain a second device rather than being folded into
+a fictitious 640 KiB allocation. Firmware discovery builds on the explicit
+`1983-models.conf` paths and the pinned hashes documented in
+`BOOT_TARGETS.md`; no machine ROM belongs in the repository.
 
 The frontend RAM control currently scales the active system mapper from its
 profile default through 4 MiB; allocations above 128 KiB live on the heap.
@@ -118,6 +122,33 @@ must consult that function rather than duplicating extension policy.
 `configure_leds()` maps the resolved owner and mounted-media state onto the
 two physical slot indicators. Storage and network backends should report
 access through `leds_ping_cartridge_activity()` for their owning slot.
+
+## Sunrise and ATA boundaries
+
+`src/sunrise.c` owns the cartridge-specific bus contract. It decodes the
+bank/control writes and the memory-mapped IDE windows, then converts the
+Sunrise low/high-byte latch into 16-bit ATA data transfers. `src/ata.c` knows
+nothing about MSX slots or SDL and owns the task-file state and host image.
+This split makes the ATA backend reusable by future controllers.
+
+Raw images are opened with `rb`. The first checkpoint intentionally aborts
+ATA write commands, so a failed emulator or guest cannot alter an external
+fixture. Adding writable images requires an explicit frontend choice,
+write-protection state, write tests, flush/error handling, and reset
+persistence.
+
+The optional full-system checkpoint is enabled with:
+
+```sh
+MSX_NMS8250_DIR=ROMS \
+MSX_NEXTOR_SUNRISE_ROM=/path/to/Nextor-2.1.1.SunriseIDE.ROM \
+MSX_NEXTOR_IDE_IMAGE=/path/to/GBMSX.IMG \
+make check
+```
+
+It omits the NMS disk ROM, pins the test RTC to 1983-01-01, boots for 2,001
+PAL frames, and verifies the CPU, slot registers, mapper registers, VDP state,
+VRAM population, and deterministic GeoBench-desktop framebuffer hash.
 
 ## Bus and port assumptions
 

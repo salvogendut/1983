@@ -110,6 +110,8 @@ static void test_cartridge_led_rendering(SDL_Renderer *renderer) {
 
 int main(void) {
     const char *editor_path = "tests/test-model-editor.tmp";
+    const char *sunrise_rom_path = "tests/test-sunrise-rom.tmp";
+    const char *ide_image_path = "tests/test-sunrise-disk.tmp";
     Config config;
     ModelCatalog models;
     MsxMachine msx;
@@ -117,6 +119,8 @@ int main(void) {
     Overlay overlay;
     DisplayLayout layout;
     u8 cartridge[0x4000];
+    u8 sunrise_rom[MSX_SUNRISE_ROM_SIZE];
+    FILE *fixture;
 
     display_calculate_layout(640, 520, &layout);
     assert(layout.screen_x == 0);
@@ -141,6 +145,21 @@ int main(void) {
 
     config_defaults(&config);
     config.tinker = true;
+    memset(sunrise_rom, 0xff, sizeof(sunrise_rom));
+    fixture = fopen(sunrise_rom_path, "wb");
+    assert(fixture);
+    assert(fwrite(sunrise_rom, 1, sizeof(sunrise_rom), fixture) ==
+           sizeof(sunrise_rom));
+    assert(fclose(fixture) == 0);
+    fixture = fopen(ide_image_path, "wb");
+    assert(fixture);
+    memset(sunrise_rom, 0x83, ATA_SECTOR_SIZE);
+    assert(fwrite(sunrise_rom, 1, ATA_SECTOR_SIZE, fixture) ==
+           ATA_SECTOR_SIZE);
+    assert(fclose(fixture) == 0);
+    snprintf(config.sunrise_rom_path,
+             sizeof(config.sunrise_rom_path), "%s",
+             sunrise_rom_path);
     model_catalog_defaults(&models);
     snprintf(models.entries[models.count].id,
              sizeof(models.entries[models.count].id), "custom-msx2");
@@ -244,6 +263,8 @@ int main(void) {
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.sunrise_ide);
+    assert(msx_sunrise_connected(&msx));
+    assert(msx_sunrise_slot(&msx) == 1);
     assert(strcmp(config_cartridge_slot_owner(&config, 1),
                   "Sunrise IDE") == 0);
     assert(!msx_get_cartridge(&msx, 1)->loaded);
@@ -275,6 +296,16 @@ int main(void) {
     for (int row = 0; row < 7; ++row)
         send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 7);
+    overlay.dialog_target = OVERLAY_DIALOG_IDE_IMAGE;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", ide_image_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(msx_sunrise_disk_mounted(&msx));
+    assert(strcmp(config.ide_image_path, ide_image_path) == 0);
+    send_key(&overlay, SDLK_DELETE);
+    assert(!msx_sunrise_disk_mounted(&msx));
+    assert(!config.ide_image_path[0]);
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 0);
 
@@ -368,6 +399,8 @@ int main(void) {
     send_key(&overlay, SDLK_ESCAPE);
     assert(overlay.state == OVERLAY_STATE_MENU);
     assert(remove(editor_path) == 0);
+    assert(remove(sunrise_rom_path) == 0);
+    assert(remove(ide_image_path) == 0);
 
     display_quit(&display);
     msx_destroy(&msx);

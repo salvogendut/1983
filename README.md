@@ -16,9 +16,10 @@ SDL3 allows.
 > **Status:** MSX1 and MSX2 firmware and cartridge software are running.
 > The emulator includes TMS9918-family and V9938 video, AY/YM PSG audio,
 > the international keyboard matrix, SDL3 joystick input, dual cartridge
-> slots with common mappers, MSX2 expanded slots, memory mapper, and RTC.
-> Cassette, floppy, Sunrise IDE, Nextor boot storage, SCC audio, and other
-> extensions remain in development.
+> slots with common mappers, MSX2 expanded slots, memory mapper, RTC, and
+> read-only Sunrise IDE disks. The official Sunrise Nextor kernel can boot
+> the GeoBench raw image to its desktop. Cassette, floppy, writable disks,
+> SCC audio, and other extensions remain in development.
 
 ## Highlights
 
@@ -32,6 +33,8 @@ SDL3 allows.
 - Familiar F9 overlay, function-key controls, status LEDs, notifications,
   screenshots, fullscreen, and integer scaling.
 - Cartridge I/II presence LEDs, with split IDE and network activity forms.
+- Sunrise IDE cartridge emulation, read-only raw ATA images, IDE activity,
+  and Nextor boot.
 - Headless execution and deterministic component and firmware tests.
 
 The detailed implementation and remaining limitations are recorded in
@@ -62,6 +65,8 @@ Useful options:
 ./1983 --model msx2 --region pal
 ./1983 --cart ROMS/game.rom
 ./1983 --models ./my-models.conf --model my-msx
+./1983 --sunrise-rom /path/to/Nextor.SunriseIDE.ROM \
+  --ide /path/to/disk.img
 ./1983 --config ./test.conf
 ./1983 --headless --unthrottled --exit-after 10
 ./1983 --help
@@ -145,7 +150,9 @@ Sunrise IDE, SCC, and MSX-MUSIC are cartridge-connected extensions. The
 first configured device reserves cartridge slot 2 and the second reserves
 slot 1. Reserved cartridge and mapper controls remain visible but cannot be
 used. The IDE hard-disk row appears in Media only while Sunrise IDE is
-connected.
+connected. Select the 128 KiB Sunrise/Nextor ROM under Extensions and a raw,
+512-byte-sector IDE image under Media. Images are opened read-only in the
+current implementation.
 
 SDL scancodes map positionally to the international MSX keyboard. Left Ctrl
 is CTRL, left Alt is GRAPH, right Alt is CODE, and right Ctrl is the ACC/dead

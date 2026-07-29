@@ -145,6 +145,40 @@ static void test_dual_cartridge_slots_and_mapper_reset(void) {
     msx_destroy(&msx);
 }
 
+static void test_sunrise_cartridge_slot_bus(void) {
+    MsxMachine msx;
+    u8 rom[MSX_SUNRISE_ROM_SIZE];
+
+    for (unsigned bank = 0; bank < 8; ++bank)
+        memset(&rom[bank * MSX_SUNRISE_BANK_SIZE],
+               (int)(0x80 + bank), MSX_SUNRISE_BANK_SIZE);
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(!msx_sunrise_connected(&msx));
+    assert(msx_install_sunrise_ide(
+               &msx, 1, rom, sizeof(rom)) == 0);
+    assert(msx_sunrise_connected(&msx));
+    assert(msx_sunrise_slot(&msx) == 1);
+
+    /* Select primary slot 2 for page 1, where the Sunrise ROM lives. */
+    msx_io_write(&msx, 0xa8, 0x08);
+    assert(msx_memory_read(&msx, 0x4000) == 0x87);
+    msx_memory_write(&msx, 0x4104, 0x81);
+    assert(msx_memory_read(&msx, 0x4000) == 0x81);
+    assert(msx_memory_read(&msx, 0x7e07) == 0x7f);
+
+    msx_reset(&msx);
+    assert(msx_sunrise_connected(&msx));
+    assert(msx_sunrise_slot(&msx) == 1);
+    msx_io_write(&msx, 0xa8, 0x08);
+    assert(msx_memory_read(&msx, 0x4000) == 0x81);
+
+    msx_eject_sunrise_ide(&msx);
+    assert(!msx_sunrise_connected(&msx));
+    assert(msx_sunrise_slot(&msx) == -1);
+    assert(msx_memory_read(&msx, 0x4000) == 0xff);
+    msx_destroy(&msx);
+}
+
 static void test_ascii8_cpu_boot_checkpoint(void) {
     MsxMachine msx;
     u8 bios[MSX_BIOS_SIZE];
@@ -785,6 +819,103 @@ static void test_nms8250_checkpoint_if_available(void) {
     free(msx);
 }
 
+static u64 vdp_frame_hash(const MsxVdp *vdp) {
+    const u8 *bytes = (const u8 *)vdp->pixels;
+    size_t size =
+        (size_t)vdp->render_width * vdp->render_height *
+        sizeof(vdp->pixels[0]);
+    u64 hash = 1469598103934665603ULL;
+
+    for (size_t i = 0; i < size; ++i) {
+        hash ^= bytes[i];
+        hash *= 1099511628211ULL;
+    }
+    return hash;
+}
+
+static void set_nextor_fixture_rtc(MsxRtc *rtc) {
+    memset(rtc, 0, sizeof(*rtc));
+    rtc->registers[0][6] = 6;  /* Saturday */
+    rtc->registers[0][7] = 1;  /* 1983-01-01 00:00:00 */
+    rtc->registers[0][9] = 1;
+    rtc->registers[0][11] = 3;
+    rtc->registers[0][12] = 8;
+    rtc->registers[1][10] = 1; /* 24-hour mode */
+    rtc->registers[1][11] = 3;
+    rtc_reset(rtc);
+}
+
+static void test_nextor_sunrise_checkpoint_if_available(void) {
+    const char *directory = getenv("MSX_NMS8250_DIR");
+    const char *sunrise_path = getenv("MSX_NEXTOR_SUNRISE_ROM");
+    const char *image_path = getenv("MSX_NEXTOR_IDE_IMAGE");
+    MsxMachine *msx;
+    char bios_path[4096];
+    char subrom_path[4096];
+    size_t nonzero_vram = 0;
+    u64 framebuffer_hash;
+
+    if (!directory || !directory[0] ||
+        !sunrise_path || !sunrise_path[0] ||
+        !image_path || !image_path[0])
+        return;
+    snprintf(bios_path, sizeof(bios_path),
+             "%s/nms8250_basic-bios2.rom", directory);
+    snprintf(subrom_path, sizeof(subrom_path),
+             "%s/nms8250_msx2sub.rom", directory);
+
+    msx = malloc(sizeof(*msx));
+    assert(msx);
+    msx_init(msx, MSX_MODEL_PHILIPS_NMS8250, MSX_REGION_PAL, 128);
+    assert(msx_load_bios(msx, bios_path) == 0);
+    assert(msx_load_subrom(msx, subrom_path) == 0);
+    /*
+     * The NMS 8250 disk ROM expects a WD2793, which is a separate future
+     * device. Keep it absent so the external Sunrise kernel owns boot.
+     */
+    assert(!msx->disk_rom_loaded);
+    assert(msx_load_sunrise_ide(msx, 1, sunrise_path) == 0);
+    assert(msx_mount_sunrise_disk(msx, image_path) == 0);
+    set_nextor_fixture_rtc(&msx->rtc);
+    for (int frame = 0; frame < 2001; ++frame)
+        msx_run_frame(msx);
+    for (size_t i = 0; i < sizeof(msx->vdp.vram); ++i)
+        if (msx->vdp.vram[i])
+            ++nonzero_vram;
+    framebuffer_hash = vdp_frame_hash(&msx->vdp);
+
+    fprintf(stderr,
+            "Nextor/Sunrise checkpoint: frame=%llu PC=%04X SP=%04X "
+            "slot=%02X subslot=%02X mapper=%02X,%02X,%02X,%02X "
+            "cycles=%llu instructions=%llu VRAM=%zu R0=%02X R1=%02X "
+            "framebuffer=%016llX\n",
+            (unsigned long long)msx->frame, msx->cpu.pc, msx->cpu.sp,
+            msx->primary_slot, msx->secondary_slot[3],
+            msx->mapper_segment[0], msx->mapper_segment[1],
+            msx->mapper_segment[2], msx->mapper_segment[3],
+            (unsigned long long)msx->cycles,
+            (unsigned long long)msx->instructions, nonzero_vram,
+            msx->vdp.registers[0], msx->vdp.registers[1],
+            (unsigned long long)framebuffer_hash);
+    assert(msx->frame == 2001);
+    assert(msx_sunrise_connected(msx));
+    assert(msx_sunrise_disk_mounted(msx));
+    assert(msx->primary_slot == 0xff);
+    assert(msx->secondary_slot[3] == 0xaa);
+    assert(msx->mapper_segment[0] == 3);
+    assert(msx->mapper_segment[1] == 2);
+    assert(msx->mapper_segment[2] == 1);
+    assert(msx->mapper_segment[3] == 0);
+    assert(msx->cpu.pc >= 0x82a0 && msx->cpu.pc <= 0x82af);
+    assert(msx->instructions > 15000000);
+    assert(msx->vdp.registers[0] == 0x0a);
+    assert(msx->vdp.registers[1] == 0x62);
+    assert(nonzero_vram == 8596);
+    assert(framebuffer_hash == 0x7fd8af872d7e64f1ULL);
+    msx_destroy(msx);
+    free(msx);
+}
+
 int main(void) {
     MsxMachine msx;
 
@@ -854,6 +985,7 @@ int main(void) {
 
     test_slot_bus_and_cpu();
     test_dual_cartridge_slots_and_mapper_reset();
+    test_sunrise_cartridge_slot_bus();
     test_ascii8_cpu_boot_checkpoint();
     test_atomic_firmware_set_and_eject();
     test_msx2_expanded_slots_and_firmware();
@@ -866,6 +998,7 @@ int main(void) {
     test_cbios_checkpoint_if_available();
     test_msx_diag_bios_checkpoint_if_available();
     test_nms8250_checkpoint_if_available();
+    test_nextor_sunrise_checkpoint_if_available();
     msx_destroy(&msx);
     return 0;
 }

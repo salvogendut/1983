@@ -6,7 +6,7 @@ machine accuracy and for licensing.
 
 ## Supported boot lanes
 
-The implementation will support these complementary paths:
+The implementation supports these complementary paths:
 
 | Path | Purpose | Initial expectation |
 |------|---------|---------------------|
@@ -76,6 +76,33 @@ make -C ../msx-diag
 ./1983 --model msx1 --region pal --bios ../msx-diag/msxdiag.rom
 ```
 
+### Sunrise IDE and Nextor
+
+Enable **General > Extra Hardware**, choose **Extensions > Sunrise IDE**, and
+select the 128 KiB official Sunrise Nextor ROM. **Media > IDE hard disk** then
+accepts a non-empty raw image whose size is a multiple of 512 bytes. The image
+is mounted read-only.
+
+The current NMS 8250 reference command deliberately suppresses the internal
+disk ROM: that firmware expects a WD2793, while the boot device here is the
+external Sunrise cartridge.
+
+```sh
+./1983 --model nms8250 --disk-rom "" \
+  --sunrise-rom /path/to/Nextor-2.1.1.SunriseIDE.ROM \
+  --ide /path/to/GBMSX.IMG
+```
+
+For a headless inspection run:
+
+```sh
+./1983 --model nms8250 --disk-rom "" \
+  --sunrise-rom /path/to/Nextor-2.1.1.SunriseIDE.ROM \
+  --ide /path/to/GBMSX.IMG \
+  --headless --unthrottled --exit-after 2000 --dump-state \
+  --screenshot /tmp/1983-nextor.ppm
+```
+
 ### Optional firmware tests
 
 ```sh
@@ -83,6 +110,10 @@ MSX_CBIOS_DIR=/path/to/cbios make check
 MSX_DIAG_BIOS_ROM=../msx-diag/msxdiag.rom make check
 MSX_NMS8250_DIR=ROMS make check
 MSX_NMS8250_DIR=ROMS MSX_DIAG_ROM=ROMS/diag.rom make check
+MSX_NMS8250_DIR=ROMS \
+MSX_NEXTOR_SUNRISE_ROM=/path/to/Nextor-2.1.1.SunriseIDE.ROM \
+MSX_NEXTOR_IDE_IMAGE=/path/to/GBMSX.IMG \
+make check
 ```
 
 The corresponding CPU, VRAM, and diagnostic-menu milestones are documented
@@ -105,9 +136,10 @@ openMSX, and physical MSX2 hardware without changing its guest disk:
 - a FAT16 boot volume containing `NEXTOR.SYS`, `COMMAND2.COM`, and GeoBench.
 
 The 512 KB expansion must remain a separate mapper device rather than being
-folded into a fictitious 640 KB mapper. The stock 128 KB configuration will
-also be testable: it is useful for exposing memory-pressure failures, while
-the expansion is the normal GeoBench configuration.
+folded into a fictitious 640 KB mapper. The implemented checkpoint currently
+uses the stock 128 KB configuration and reaches the GeoBench desktop. The
+separate expansion is still required to match the launcher's normal
+configuration exactly.
 
 The equivalent independent-reference launch is:
 
@@ -126,23 +158,24 @@ Nextor can run on MSX1 and can fall back to MSX-DOS 1 mode, but its normal
 MSX-DOS 2-compatible mode requires at least 128 KB in the largest memory
 mapper. A 64 KB machine can reach an MSX-DOS 1 command prompt when the
 corresponding MSX-DOS 1 system files are available. These paths will come
-after the NMS 8250 checkpoint.
+after the stock NMS 8250 checkpoint.
 
 The Sunrise cartridge is the first controller because it is already used by
 GeoBench, official Nextor releases provide a matching kernel ROM, openMSX
 provides a useful independent hardware reference, and the 1984 sibling
-already contains a small ATA/LBA backend that can be adapted behind an
-MSX-specific Sunrise register wrapper.
+provided useful ATA/LBA design precedent. The implemented code keeps the
+host-independent ATA task file behind an MSX-specific Sunrise register
+wrapper.
 
 ### Local system ROM contract
 
 1983 reuses user-supplied ROMs without copying them into the source tree.
 `1983-models.conf` currently maps each selectable model to explicit BIOS,
 logo, Sub-ROM, and disk-ROM paths; those paths can point into an existing
-openMSX ROM pool or the ignored local `ROMS/` directory. A later catalogue
-editor and discovery pass can search roots such as
-`~/.openMSX/share/systemroms` recursively and select known contents by
-checksum rather than filename.
+openMSX ROM pool or the ignored local `ROMS/` directory. The graphical model
+editor can maintain those explicit paths. A later discovery pass can search
+roots such as `~/.openMSX/share/systemroms` recursively and select known
+contents by checksum rather than filename.
 
 The pinned reference set is:
 
@@ -195,14 +228,18 @@ Development tests advance through explicit checkpoints:
    to S#0, and displays `MSX DIAGNOSTICS`. SCREEN 5-8 bitmap layouts, all
    twelve V9938 commands, retrace transitions, and interrupt acknowledgement
    are covered independently.
-4. Enumerate the external 512 KB mapper and an empty Sunrise IDE device from
-   the Nextor kernel ROM.
-5. Read a partitioned raw disk and reach the BASIC fallback when the system
-   files are absent.
-6. Load `NEXTOR.SYS` and `COMMAND2.COM` and reach a deterministic command
-   prompt.
-7. Verify guest writes, reset persistence, FAT12/FAT16 access, and IDE LED
-   activity.
+4. **Partially reached:** the official Nextor kernel ROM enumerates the
+   Sunrise cartridge and its ATA master on the stock NMS 8250 mapper. The
+   separate external 512 KiB mapper remains to be implemented.
+5. **Reached for the reference image:** the ATA backend identifies the raw
+   device, performs LBA and multiple-sector reads, and traverses the
+   partitioned 32 MiB FAT16 image. The missing-system-file BASIC fallback
+   still needs its own fixture.
+6. **Reached beyond the prompt:** Nextor loads the system files from the
+   GeoBench image and executes its startup, reaching the GeoBench desktop.
+7. **Partially reached:** reset preserves the mounted read-only device and
+   disk reads pulse the IDE and split cartridge LEDs. Guest writes
+   deliberately return ATA ABRT; writable media and FAT12 coverage remain.
 
 Each checkpoint should be scriptable in headless mode and should record the
 firmware hashes, machine profile, disk-image hash, CPU milestone, and
@@ -213,30 +250,45 @@ The reached C-BIOS fixture uses `cbios_main_msx1.rom` with SHA-256
 and `cbios_logo_msx1.rom` with SHA-256
 `8ad88a4653e26bdbd4c38329fe0a115846e9aa0866b0ac1fe1dd2c260c9932b3`.
 
+The reached Nextor fixture uses the pinned ROMs above and
+`../geobench/QA/GBMSX.IMG` with SHA-256
+`f7580fafdf031a429795b2e2fb3c540efb025b233064827246103e39768302b4`.
+The test pins the RTC to 1983-01-01 00:00:00 for repeatability. At 2,001 PAL
+frames it reaches `PC=82A6`, `SP=D8F8`,
+primary slot `FF`, secondary slot `AA`, mapper registers `03,02,01,00`,
+8,596 non-zero VRAM bytes, VDP R#0=`0A`, and R#1=`62`. Its rendered VDP
+framebuffer has 64-bit FNV-1a hash `7FD8AF872D7E64F1`.
+
 ## Media and configuration contract
 
 The frontend provides an editable catalogue-backed machine selector and
 independent, persistent selectors for both external cartridge slots. It
-reserves selectors for:
+also provides:
 
-- recursive system-ROM search roots;
-- floppy and cassette media;
-- the Nextor kernel ROM;
-- the Sunrise IDE raw hard-disk image.
+- a Sunrise IDE ROM selector under Extensions;
+- a raw IDE hard-disk selector under Media while Sunrise is connected;
+- explicit floppy and cassette placeholders for their future devices.
 
 Each cartridge selector opens the shared SDL3 file-dialog workflow and has an
 adjacent `auto`/manual mapper selector. Delete ejects the selected cartridge.
 General > Machine enumerates `1983-models.conf`, loads complete mappings
 directly, and opens sequential file dialogs for missing required components.
-The firmware set is applied atomically. The remaining media selectors stay as
-explicit stubs until their devices are implemented.
+The firmware set is applied atomically. Sunrise ROM and disk paths persist in
+`1983.conf`; mounting is conservative and a failed replacement leaves the
+previous image active. Floppy and cassette selectors stay as explicit stubs
+until their devices are implemented.
 
 Selecting the Sunrise extension must not silently replace a cartridge or
-firmware image. The NMS 8250 profile will explicitly reproduce slot 0
-BIOS/BASIC, expanded primary slot 3 with the MSX2 sub-ROM, internal mapper,
-and disk controller, plus separately allocated external mapper and Sunrise
-devices. Writable hard-disk images must be opened conservatively and write
-activity must drive the IDE status LED.
+firmware image. It reserves a physical cartridge slot through the same
+ownership policy as every cartridge-connected extension. The NMS 8250
+profile reproduces slot 0 BIOS/BASIC and expanded primary slot 3 with the
+MSX2 Sub-ROM, internal mapper, and disk ROM; Sunrise remains an independent
+external cartridge. The separate external mapper is future work.
+
+Hard-disk images are currently opened read-only and guest write commands
+abort. Read activity drives both the global IDE status and the green half of
+the owning cartridge LED. Writable mode will require an explicit user choice
+and stronger persistence/error tests before it is enabled.
 
 ## Distribution and licensing
 

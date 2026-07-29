@@ -15,6 +15,8 @@ int main(void) {
     assert(!config.logo_path[0]);
     assert(!config.subrom_path[0]);
     assert(!config.disk_rom_path[0]);
+    assert(!config.sunrise_rom_path[0]);
+    assert(!config.ide_image_path[0]);
     assert(!config.cartridge_path[0][0]);
     assert(!config.cartridge_path[1][0]);
     assert(config.cartridge_mapper[0] == MSX_CART_MAPPER_AUTO);
@@ -52,6 +54,12 @@ int main(void) {
     config.joy_port_device[0] = JOY_PORT_MOUSE;
     config.extra_hardware = true;
     config.sunrise_ide = true;
+    snprintf(config.sunrise_rom_path,
+             sizeof(config.sunrise_rom_path),
+             "/roms/Nextor-2.1.1.SunriseIDE.ROM");
+    snprintf(config.ide_image_path,
+             sizeof(config.ide_image_path),
+             "/disks/GBMSX.IMG");
     config.scc = true;
     assert(config_cartridge_extension_count(&config) == 2);
     assert(strcmp(config_cartridge_slot_owner(&config, 0),
@@ -70,6 +78,10 @@ int main(void) {
     assert(loaded.memory_kb == 4096);
     assert(loaded.extra_hardware);
     assert(loaded.sunrise_ide);
+    assert(strcmp(loaded.sunrise_rom_path,
+                  "/roms/Nextor-2.1.1.SunriseIDE.ROM") == 0);
+    assert(strcmp(loaded.ide_image_path,
+                  "/disks/GBMSX.IMG") == 0);
     assert(loaded.scc);
     assert(strcmp(loaded.bios_path,
                   "/roms/nms8250_basic-bios2.rom") == 0);
