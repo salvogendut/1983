@@ -165,12 +165,11 @@ ASCII tape, `BLOAD"CAS:",R` for a binary tape, or `CLOAD` followed by plain
 after an unsuccessful load, because the first attempt may have consumed
 part of the stream.
 
-With Tinker enabled, Advanced provides independent Cassette audible monitor
-and Cassette visual monitor toggles. The audible monitor mixes the data tone
-with PSG output. The translucent visual scope appears while the tape motor
-is running and shows the waveform, detected type, required command, and
-elapsed/total time. Recording and sampled audio formats are not implemented
-yet.
+With Tinker enabled, Advanced provides independent Tape Audio Monitor and
+Tape Visual Monitor toggles. The audio monitor mixes the data tone with PSG
+output. The translucent visual scope appears while the tape motor is running
+and shows the waveform, detected type, required command, and elapsed/total
+time. Recording and sampled audio formats are not implemented yet.
 
 Sunrise IDE, SCC, and MSX-MUSIC are cartridge-connected extensions. The
 first configured device reserves cartridge slot 2 and the second reserves

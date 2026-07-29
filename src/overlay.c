@@ -447,14 +447,14 @@ static void item_text(const Overlay *overlay, int row,
                     break;
                 case ADVANCED_CASSETTE_AUDIBLE:
                     snprintf(label, label_size,
-                             "Cassette audible monitor");
+                             "Tape Audio Monitor");
                     snprintf(value, value_size, "%s",
                              toggle_name(
                                  config->cassette_audible_monitor));
                     break;
                 case ADVANCED_CASSETTE_VISUAL:
                     snprintf(label, label_size,
-                             "Cassette visual monitor");
+                             "Tape Visual Monitor");
                     snprintf(value, value_size, "%s",
                              toggle_name(
                                  config->cassette_visual_monitor));
