@@ -55,9 +55,13 @@ The window has a 640x520 logical size:
 
 Without firmware, the framebuffer remains a diagnostic scaffold. Once an
 MSX1 BIOS is loaded, the TMS9918/TMS9929 core supplies a 256x192 framebuffer
-which the SDL layer scales into the 640x480 guest canvas. V9938 bitmap modes
-supply either 256- or 512-dot output and 192 or 212 lines through the same
-dynamic framebuffer boundary.
+and V9938 modes supply either 256- or 512-dot output with 192 or 212 lines.
+The SDL layer preserves that active-image boundary, composes it into a
+border-inclusive 640x480 raster representing 280x240 visible VDP dots, and
+then presents the finished canvas. This matches openMSX's default horizontal
+aperture: a 512-dot active image occupies 586 central canvas pixels rather
+than being stretched edge to edge. The active image is vertically centred,
+and V9938 R#18 moves it within the raster.
 
 ## Hardware profiles and machine catalogue
 

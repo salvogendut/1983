@@ -8,6 +8,12 @@
 #include "leds.h"
 #include "ui.h"
 
+#define VDP_PRESENTATION_LINES 240
+#define VDP_DEFAULT_CROP_X 40
+#define VDP_DEFAULT_CROP_W 560
+#define VDP_ACTIVE_HIGH_RES_W 512
+#define VDP_ACTIVE_LEFT 64
+
 static int clamp_int(int value, int minimum, int maximum) {
     if (value < minimum)
         return minimum;
@@ -235,23 +241,96 @@ static void draw_footer(Display *display, const MsxMachine *msx,
                 output_w, DISPLAY_LED_H);
 }
 
+static int presentation_raw_x(int destination_x) {
+    /*
+     * openMSX's default horizontal_stretch=280 presents the middle 280
+     * low-resolution dots (560 high-resolution dots) of its 320/640-dot
+     * raw line. Sampling at destination-pixel centres keeps both borders
+     * symmetrical.
+     */
+    return VDP_DEFAULT_CROP_X +
+        (VDP_DEFAULT_CROP_W * (destination_x * 2 + 1)) /
+        (DISPLAY_FB_W * 2);
+}
+
+static int vdp_active_left(const MsxVdp *vdp) {
+    int left = VDP_ACTIVE_LEFT;
+
+    if (vdp->type == MSX_VDP_V9938) {
+        int horizontal_adjust =
+            (vdp->registers[18] & 0x0f) ^ 7;
+        left += (horizontal_adjust - 7) * 2;
+    }
+    if (vdp->registers[1] & 0x10) {
+        int text_adjust =
+            vdp->type == MSX_VDP_V9938 ? 9 : 6;
+        left += (text_adjust - 8) * 2;
+    }
+    return left;
+}
+
+static int vdp_active_top(const MsxVdp *vdp) {
+    int top =
+        (VDP_PRESENTATION_LINES - (int)vdp->render_height) / 2;
+
+    if (vdp->type == MSX_VDP_V9938) {
+        int vertical_adjust =
+            (vdp->registers[18] >> 4) ^ 7;
+        top += vertical_adjust - 7;
+    }
+    return top;
+}
+
+void display_compose_vdp(u32 *destination, const MsxVdp *vdp) {
+    int source_x[DISPLAY_FB_W];
+    unsigned border_phase[DISPLAY_FB_W];
+    u32 border[2];
+    int active_left;
+    int active_top;
+
+    if (!destination || !vdp)
+        return;
+    active_left = vdp_active_left(vdp);
+    active_top = vdp_active_top(vdp);
+    border[0] = vdp_border_colour(vdp, 0);
+    border[1] = vdp_border_colour(vdp, 1);
+    for (int x = 0; x < DISPLAY_FB_W; ++x) {
+        int raw_x = presentation_raw_x(x);
+        int active_x = raw_x - active_left;
+
+        border_phase[x] = (unsigned)raw_x & 1;
+        source_x[x] =
+            (unsigned)active_x < VDP_ACTIVE_HIGH_RES_W &&
+            (vdp->render_width == MSX1_VIDEO_W ||
+             vdp->render_width == MSX2_VIDEO_W)
+            ? active_x * (int)vdp->render_width /
+              VDP_ACTIVE_HIGH_RES_W
+            : -1;
+    }
+    for (int y = 0; y < DISPLAY_FB_H; ++y) {
+        int raw_y = y * VDP_PRESENTATION_LINES / DISPLAY_FB_H;
+        int source_y = raw_y - active_top;
+        bool active_line =
+            (unsigned)source_y < vdp->render_height;
+
+        for (int x = 0; x < DISPLAY_FB_W; ++x) {
+            destination[y * DISPLAY_FB_W + x] =
+                active_line && source_x[x] >= 0
+                ? vdp->pixels[
+                    (unsigned)source_y * vdp->render_width +
+                    (unsigned)source_x[x]]
+                : border[border_phase[x]];
+        }
+    }
+}
+
 void display_draw(Display *display, const MsxMachine *msx) {
     SDL_FRect destination = {
         0.0f, 0.0f, (float)DISPLAY_FB_W, (float)DISPLAY_FB_H
     };
 
     if (msx_can_boot(msx)) {
-        for (int y = 0; y < DISPLAY_FB_H; ++y) {
-            int source_y =
-                y * (int)msx->vdp.render_height / DISPLAY_FB_H;
-            for (int x = 0; x < DISPLAY_FB_W; ++x) {
-                int source_x =
-                    x * (int)msx->vdp.render_width / DISPLAY_FB_W;
-                display->pixels[y * DISPLAY_FB_W + x] =
-                    msx->vdp.pixels[
-                        source_y * msx->vdp.render_width + source_x];
-            }
-        }
+        display_compose_vdp(display->pixels, &msx->vdp);
     }
 
     SDL_UpdateTexture(display->texture, NULL, display->pixels,

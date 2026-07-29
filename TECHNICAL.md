@@ -182,7 +182,9 @@ The V9938 implementation includes:
 - sprite mode 2 in SCREEN 4 through SCREEN 8;
 - vertical and R19 horizontal interrupts;
 - beam-positioned S#2 VR/HR status;
-- progressive scanline rendering.
+- progressive scanline rendering;
+- border-inclusive 280×240 presentation with R#18 horizontal and vertical
+  adjustment.
 
 Sprite mode 2 supports per-line color attributes, EC/CC/IC behavior,
 lower-index priority, eight sprites per line, ninth-sprite status,
@@ -252,6 +254,7 @@ independent of SDL and are covered by deterministic tests.
 The SDL3 frontend follows the shared 1984/1985 interface:
 
 - resizable 640×480 guest output;
+- a centred 192/212-line VDP image with authentic side and vertical borders;
 - shortcut footer and MSX LED strip;
 - F9 settings overlay;
 - fullscreen and integer window scaling;
