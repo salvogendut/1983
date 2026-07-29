@@ -34,6 +34,8 @@ cartridge1 =
 cartridge1_mapper = auto
 cartridge2 =
 cartridge2_mapper = auto
+# Standard MSX CAS image; playback is read-only.
+cassette =
 # Raw, 512-byte-sector image; currently mounted read-only.
 ide_image =
 last_media_dir =

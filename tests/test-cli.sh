@@ -4,7 +4,8 @@ set -eu
 log=tests/test-cli-output.tmp
 config=tests/test-cli-config.tmp
 sunrise=tests/test-cli-sunrise.tmp
-trap 'rm -f "$log" "$config" "$sunrise"' EXIT HUP INT TERM
+cassette=tests/test-cli-cassette.tmp
+trap 'rm -f "$log" "$config" "$sunrise" "$cassette"' EXIT HUP INT TERM
 
 if ./1983 --mapper definitely-not-a-mapper >"$log" 2>&1; then
     echo "invalid mapper was accepted" >&2
@@ -45,6 +46,17 @@ if ./1983 --config /dev/null --sunrise-rom "$sunrise" \
 fi
 grep -q "cannot mount raw IDE image read-only" "$log"
 
+if ./1983 --config /dev/null --cassette missing.cas >"$log" 2>&1; then
+    echo "missing cassette was accepted" >&2
+    exit 1
+fi
+grep -q "cannot load MSX CAS cassette image" "$log"
+
+printf '\037\246\336\272\314\023\175\164\001' >"$cassette"
+./1983 --config /dev/null --cassette "$cassette" --headless \
+    --unthrottled --exit-after 0 >"$log" 2>&1
+grep -q "Cassette inserted:" "$log"
+
 ./1983 --help >"$log"
 grep -q -- "--model NAME" "$log"
 grep -q -- "--models PATH" "$log"
@@ -54,6 +66,7 @@ grep -q -- "--mapper1 NAME" "$log"
 grep -q -- "--mapper2 NAME" "$log"
 grep -q -- "--sunrise-rom PATH" "$log"
 grep -q -- "--ide PATH" "$log"
+grep -q -- "--cassette PATH" "$log"
 grep -q -- "--screenshot PATH" "$log"
 
-echo "command-line mapper tests passed"
+echo "command-line media and mapper tests passed"

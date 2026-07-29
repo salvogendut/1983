@@ -271,7 +271,8 @@ also provides:
 
 - a guided Sunrise IDE controller setup under Extensions;
 - a raw IDE hard-disk selector under Media while Sunrise is connected;
-- explicit floppy and cassette placeholders for their future devices.
+- a persistent standard MSX CAS cassette selector and transport under Media;
+- explicit floppy placeholders for their future devices.
 
 Each cartridge selector opens the shared SDL3 file-dialog workflow and has an
 adjacent `auto`/manual mapper selector. Delete ejects the selected cartridge.
@@ -281,8 +282,9 @@ The firmware set is applied atomically. Sunrise setup validates its controller
 ROM and optional disk before reserving a cartridge slot; canceling it leaves
 the live machine unchanged. Sunrise ROM and disk paths persist in `1983.conf`;
 mounting is conservative and a failed replacement leaves the previous image
-active. Floppy and cassette selectors stay as explicit stubs until their
-devices are implemented.
+active. Cassette mounts are also conservative, persist in `1983.conf`, and
+expose rewind and eject controls. Floppy selectors remain explicit stubs
+until their devices are implemented.
 
 Selecting the Sunrise extension must not silently replace a cartridge or
 firmware image. It reserves a physical cartridge slot through the same

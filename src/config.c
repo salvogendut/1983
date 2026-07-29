@@ -315,6 +315,9 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "ide_image") == 0)
             snprintf(config->ide_image_path,
                      sizeof(config->ide_image_path), "%s", value);
+        else if (strcmp(key, "cassette") == 0)
+            snprintf(config->cassette_path,
+                     sizeof(config->cassette_path), "%s", value);
         else if (strcmp(key, "cartridge1") == 0)
             snprintf(config->cartridge_path[0],
                      sizeof(config->cartridge_path[0]), "%s", value);
@@ -388,6 +391,7 @@ int config_save(const Config *config) {
     fprintf(file, "cartridge2 = %s\n", config->cartridge_path[1]);
     fprintf(file, "cartridge2_mapper = %s\n",
             msx_cartridge_mapper_name(config->cartridge_mapper[1]));
+    fprintf(file, "cassette = %s\n", config->cassette_path);
     fprintf(file, "ide_image = %s\n", config->ide_image_path);
     fprintf(file, "last_media_dir = %s\n\n", config->last_media_dir);
     fprintf(file, "[extensions]\n");

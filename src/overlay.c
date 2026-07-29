@@ -166,6 +166,32 @@ static void ide_image_text(const Overlay *overlay,
         snprintf(value, value_size, "[not mounted]");
 }
 
+static void cassette_text(const Overlay *overlay,
+                          char *value, size_t value_size) {
+    const char *path = overlay->config->cassette_path;
+
+    if (msx_cassette_mounted(overlay->msx)) {
+        u64 position = msx_cassette_position_ms(overlay->msx) / 1000u;
+        u64 duration = msx_cassette_duration_ms(overlay->msx) / 1000u;
+        const char *state =
+            msx_cassette_rolling(overlay->msx) ? "playing" :
+            msx_cassette_at_end(overlay->msx) ? "end" : "stopped";
+
+        snprintf(value, value_size,
+                 "%s [%s %llu:%02llu/%llu:%02llu]",
+                 path_basename(path), state,
+                 (unsigned long long)(position / 60u),
+                 (unsigned long long)(position % 60u),
+                 (unsigned long long)(duration / 60u),
+                 (unsigned long long)(duration % 60u));
+    } else if (path[0]) {
+        snprintf(value, value_size, "%s [not mounted]",
+                 path_basename(path));
+    } else {
+        snprintf(value, value_size, "[not mounted]");
+    }
+}
+
 static const char *notification_name(NotifyMode mode) {
     switch (mode) {
         case NOTIFY_MODE_OFF:     return "Off";
@@ -335,8 +361,7 @@ static void item_text(const Overlay *overlay, int row,
                     break;
                 case 4:
                     snprintf(label, label_size, "Cassette");
-                    snprintf(value, value_size,
-                             "[not mounted - loader planned]");
+                    cassette_text(overlay, value, value_size);
                     break;
                 case 5:
                     snprintf(label, label_size, "Drive A");
@@ -567,6 +592,25 @@ static void restore_sunrise(Overlay *overlay) {
         notify_post("Could not restore Sunrise IDE disk");
 }
 
+static void restore_cassette(Overlay *overlay) {
+    const char *current = overlay->config->cassette_path;
+    const char *saved = overlay->saved.cassette_path;
+    bool should_be_mounted = saved[0] != '\0';
+    bool changed =
+        strcmp(current, saved) != 0 ||
+        msx_cassette_mounted(overlay->msx) != should_be_mounted;
+
+    if (!changed)
+        return;
+    if (!should_be_mounted) {
+        msx_eject_cassette(overlay->msx);
+    } else if (msx_load_cassette(overlay->msx, saved) != 0) {
+        msx_eject_cassette(overlay->msx);
+        notify_post("Could not restore cassette: %s",
+                    path_basename(saved));
+    }
+}
+
 static void close_overlay(Overlay *overlay, bool save) {
     if (overlay->state == OVERLAY_STATE_MODEL_TEXT &&
         overlay->display && overlay->display->window)
@@ -582,6 +626,7 @@ static void close_overlay(Overlay *overlay, bool save) {
     } else {
         restore_cartridges(overlay);
         restore_sunrise(overlay);
+        restore_cassette(overlay);
         restore_firmware(overlay);
         *overlay->config = overlay->saved;
         apply_config(overlay);
@@ -674,6 +719,27 @@ static void open_cartridge_dialog(Overlay *overlay, unsigned slot) {
     overlay->dialog_target =
         slot == 0 ? OVERLAY_DIALOG_CARTRIDGE_1
                   : OVERLAY_DIALOG_CARTRIDGE_2;
+    overlay->dialog_ready = false;
+    overlay->dialog_failed = false;
+    overlay->dialog_error[0] = '\0';
+    SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
+                           overlay->display
+                           ? overlay->display->window : NULL,
+                           filters, 2, location, false);
+}
+
+static void open_cassette_dialog(Overlay *overlay) {
+    static const SDL_DialogFileFilter filters[] = {
+        { "MSX cassette images", "cas;CAS" },
+        { "All files", "*" },
+    };
+    const char *location =
+        overlay->config->last_media_dir[0]
+        ? overlay->config->last_media_dir : NULL;
+
+    if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
+        return;
+    overlay->dialog_target = OVERLAY_DIALOG_CASSETTE;
     overlay->dialog_ready = false;
     overlay->dialog_failed = false;
     overlay->dialog_error[0] = '\0';
@@ -1465,6 +1531,10 @@ static void activate_item(Overlay *overlay) {
                 change_cartridge_mapper(overlay, 1);
                 return;
             }
+            if (overlay->row == 4) {
+                open_cassette_dialog(overlay);
+                return;
+            }
             if (overlay->row == 7) {
                 open_ide_image_dialog(overlay);
                 return;
@@ -1828,6 +1898,14 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
         case SDLK_KP_ENTER:
             activate_item(overlay);
             break;
+        case SDLK_R:
+            if (overlay->section == OVERLAY_MEDIA &&
+                overlay->row == 4 &&
+                msx_cassette_mounted(overlay->msx)) {
+                msx_rewind_cassette(overlay->msx);
+                notify_post("Cassette rewound");
+            }
+            break;
         case SDLK_DELETE:
             if (overlay->section == OVERLAY_GENERAL &&
                 overlay->row == GENERAL_MACHINE) {
@@ -1856,6 +1934,13 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                     overlay->dirty = true;
                     notify_post("Cartridge %u ejected", slot + 1);
                 }
+            } else if (overlay->section == OVERLAY_MEDIA &&
+                       overlay->row == 4) {
+                msx_eject_cassette(overlay->msx);
+                overlay->config->cassette_path[0] = '\0';
+                overlay->dirty = true;
+                leds_set_state(LED_TAPE, false);
+                notify_post("Cassette ejected");
             } else if (overlay->section == OVERLAY_MEDIA &&
                        overlay->row == 7 &&
                        overlay->config->sunrise_ide) {
@@ -1891,7 +1976,7 @@ static const char *section_hint(OverlaySection section) {
         case OVERLAY_GENERAL:
             return "Machine, memory, audio, input, and optional controls.";
         case OVERLAY_MEDIA:
-            return "Enter loads/selects; Delete ejects mounted media.";
+            return "Enter loads; R rewinds cassette; Delete ejects.";
         case OVERLAY_EXTENSIONS:
             return "Enter toggles; Delete forgets Sunrise firmware.";
         case OVERLAY_ADVANCED:
@@ -1938,6 +2023,27 @@ void overlay_tick(Overlay *overlay) {
             notify_post("Sunrise IDE ROM selection cancelled");
         else if (target == OVERLAY_DIALOG_IDE_IMAGE)
             notify_post("IDE disk selection cancelled");
+        else if (target == OVERLAY_DIALOG_CASSETTE)
+            notify_post("Cassette selection cancelled");
+        return;
+    }
+
+    if (target == OVERLAY_DIALOG_CASSETTE) {
+        if (msx_load_cassette(
+                overlay->msx, overlay->dialog_path) != 0) {
+            notify_post("Could not load MSX CAS image: %s",
+                        path_basename(overlay->dialog_path));
+            return;
+        }
+        snprintf(overlay->config->cassette_path,
+                 sizeof(overlay->config->cassette_path), "%s",
+                 overlay->dialog_path);
+        copy_dirname(overlay->config->last_media_dir,
+                     sizeof(overlay->config->last_media_dir),
+                     overlay->dialog_path);
+        overlay->dirty = true;
+        notify_post("Cassette inserted and rewound: %s",
+                    path_basename(overlay->dialog_path));
         return;
     }
 

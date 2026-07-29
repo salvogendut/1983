@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "cassette.h"
 #include "cartridge.h"
 #include "psg.h"
 #include "rtc.h"
@@ -107,6 +108,7 @@ typedef struct {
     size_t ram_capacity;
     u8 internal_ram[MSX_RAM_INTERNAL_SIZE];
     MsxCartridge cartridges[MSX_CARTRIDGE_SLOTS];
+    Cassette cassette;
     MsxSunriseIde sunrise;
     int sunrise_slot;
     bool bios_loaded;
@@ -169,6 +171,15 @@ void msx_mouse_add_host_motion(MsxMachine *msx, unsigned port,
 void msx_mouse_set_button(MsxMachine *msx, unsigned port,
                           unsigned button, bool pressed);
 void msx_mouse_clear_input(MsxMachine *msx, unsigned port);
+
+int  msx_load_cassette(MsxMachine *msx, const char *path);
+void msx_eject_cassette(MsxMachine *msx);
+void msx_rewind_cassette(MsxMachine *msx);
+bool msx_cassette_mounted(const MsxMachine *msx);
+bool msx_cassette_rolling(MsxMachine *msx);
+bool msx_cassette_at_end(MsxMachine *msx);
+u64  msx_cassette_position_ms(MsxMachine *msx);
+u64  msx_cassette_duration_ms(const MsxMachine *msx);
 
 int msx_install_bios(MsxMachine *msx, const u8 *data, size_t size);
 int msx_install_logo(MsxMachine *msx, const u8 *data, size_t size);

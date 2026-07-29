@@ -27,9 +27,9 @@ the 1984 and 1985 sibling emulators.
 | MSX2 video | V9938 registers, palette, bitmap modes, sprite mode 2, commands, interrupts, contended VRAM, and scanline-progressive output are implemented |
 | Audio | AY/YM PSG and SDL3 output are implemented; SCC and MSX-MUSIC are planned |
 | Cartridges | Dual Linear, ASCII8/16, Konami, and Konami SCC devices with persistent mapper controls are implemented |
-| Cassette | CAS images and the standard BIOS cassette path are planned |
+| Cassette | Standard CAS playback, BIOS motor/comparator wiring, overlay/CLI loading, transport display, and Tape LED are implemented; recording and sampled audio are planned |
 | Disk | Sunrise ATA-IDE, read-only raw images, Nextor boot, and activity LEDs are implemented; DSK images, WD2793, guest writes, and multiple drives are planned |
-| Input | International keyboard, dual PSG joystick ports, SDL3 gamepad hotplug/routing, and persistent Joy Port selections are implemented; mouse protocols, alternate matrices, and clipboard paste are planned |
+| Input | International keyboard, dual PSG joystick ports, SDL3 gamepad hotplug/routing, MSX mouse capture/protocols, and persistent Joy Port selections are implemented; alternate matrices and clipboard paste are planned |
 | MSX2 hardware | Internal mapper, RTC, and editable firmware catalogue are implemented; persistent CMOS and more extensions are planned |
 | Tools | Screenshots and headless automation exist; snapshots, debugger, disassembler, and deterministic capture are planned |
 
@@ -50,11 +50,14 @@ the 1984 and 1985 sibling emulators.
    Main Input routing.
 8. Sunrise IDE cartridge and read-only ATA backend, including an official
    Nextor/GeoBench boot checkpoint and GUI media workflow.
+9. Standard MSX CAS playback with cycle-timed transport, firmware-visible
+   motor/comparator signals, persistent GUI/CLI media workflow, and Tape LED.
 
 ## Near-term targets
 
-1. Add cassette loading, MSX mouse input, alternate national keyboard
-   layouts, and a small redistributable MSX1 compatibility corpus.
+1. Add alternate national keyboard layouts and a small redistributable MSX1
+   compatibility corpus; expand cassette support with recording or sampled
+   audio after playback compatibility is established.
 2. Refine progressive VDP rendering from completed-scanline changes to
    within-scanline fetch timing where software depends on raster effects.
 3. Add deterministic snapshots and audio/video capture for compatibility

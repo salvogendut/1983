@@ -57,6 +57,7 @@ typedef struct {
     char disk_rom_path[PATH_MAX];
     char sunrise_rom_path[PATH_MAX];
     char ide_image_path[PATH_MAX];
+    char cassette_path[PATH_MAX];
     char cartridge_path[MSX_CARTRIDGE_SLOTS][PATH_MAX];
     MsxCartridgeMapper cartridge_mapper[MSX_CARTRIDGE_SLOTS];
     char last_media_dir[PATH_MAX];
