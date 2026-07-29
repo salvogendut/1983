@@ -4,6 +4,9 @@
 
 #define SPRITE_ATTRIBUTE_BASE 0x1b00u
 #define SPRITE_PATTERN_BASE   0x3000u
+#define SPRITE2_COLOUR_BASE   0x17800u
+#define SPRITE2_ATTRIBUTE_BASE 0x17a00u
+#define SPRITE2_PATTERN_BASE  0x0e000u
 
 #define COLOUR_BACKDROP 0x000000u
 #define COLOUR_GREEN    0x3eb849u
@@ -13,6 +16,10 @@
 #define COLOUR_DK_RED   0xb95e51u
 #define COLOUR_LT_RED   0xff897du
 #define COLOUR_WHITE    0xffffffu
+#define V9938_GREEN     0x24db24u
+#define V9938_LT_GREEN  0x6dff6du
+#define V9938_DK_RED    0xb62424u
+#define SCREEN8_RED     0x6d0000u
 
 static u32 pixel(const MsxVdp *vdp, int x, int y) {
     return vdp->pixels[y * vdp->render_width + x];
@@ -61,6 +68,69 @@ static void set_pattern(MsxVdp *vdp, unsigned pattern, unsigned row,
     assert(pattern < 256);
     assert(row < 8);
     vdp->vram[SPRITE_PATTERN_BASE + pattern * 8 + row] = bits;
+}
+
+static unsigned planar_address(unsigned address) {
+    return ((address & 1) << 16) |
+           ((address & 0x1fffe) >> 1);
+}
+
+static bool sprite2_planar(u8 mode) {
+    return mode == 0x14 || mode == 0x1c;
+}
+
+static unsigned sprite2_address(u8 mode, unsigned address) {
+    return sprite2_planar(mode) ? planar_address(address) : address;
+}
+
+static void setup_v9938_sprite2(MsxVdp *vdp, u8 mode) {
+    assert(mode == 0x08 || mode == 0x0c || mode == 0x10 ||
+           mode == 0x14 || mode == 0x1c);
+    vdp_init(vdp);
+    vdp_set_type(vdp, MSX_VDP_V9938);
+    vdp_reset(vdp);
+    vdp->registers[0] = mode >> 1;
+    vdp->registers[1] = 0x40;
+    vdp->registers[5] = 0xf7;
+    vdp->registers[6] = SPRITE2_PATTERN_BASE >> 11;
+    vdp->registers[7] = 0x01;
+    vdp->registers[11] = 0x02;
+    vdp->vram[sprite2_address(mode, SPRITE2_ATTRIBUTE_BASE)] = 0xd8;
+}
+
+static void set_sprite2(MsxVdp *vdp, u8 mode, unsigned index,
+                        u8 y, u8 x, u8 pattern) {
+    unsigned offset = SPRITE2_ATTRIBUTE_BASE + index * 4;
+
+    assert(index < 32);
+    vdp->vram[sprite2_address(mode, offset + 0)] = y;
+    vdp->vram[sprite2_address(mode, offset + 1)] = x;
+    vdp->vram[sprite2_address(mode, offset + 2)] = pattern;
+}
+
+static void set_sprite2_colour(MsxVdp *vdp, u8 mode, unsigned index,
+                               unsigned line, u8 attribute) {
+    unsigned offset = SPRITE2_COLOUR_BASE + index * 16 + line;
+
+    assert(index < 32);
+    assert(line < 16);
+    vdp->vram[sprite2_address(mode, offset)] = attribute;
+}
+
+static void terminate_sprites2(MsxVdp *vdp, u8 mode, unsigned index) {
+    unsigned offset = SPRITE2_ATTRIBUTE_BASE + index * 4;
+
+    assert(index < 32);
+    vdp->vram[sprite2_address(mode, offset)] = 0xd8;
+}
+
+static void set_pattern2(MsxVdp *vdp, u8 mode, unsigned pattern,
+                         unsigned row, u8 bits) {
+    unsigned offset = SPRITE2_PATTERN_BASE + pattern * 8 + row;
+
+    assert(pattern < 256);
+    assert(row < 8);
+    vdp->vram[sprite2_address(mode, offset)] = bits;
 }
 
 static void test_basic_position_wrap_and_terminator(void) {
@@ -322,6 +392,211 @@ static void test_sprite_modes_and_display_gating(void) {
     vdp_render(&vdp);
     assert(pixel(&vdp, 20, 10) == COLOUR_BACKDROP);
     assert(!(vdp.status & 0x60));
+}
+
+static void test_v9938_sprite_mode2_attributes_and_limits(void) {
+    const u8 mode = 0x0c; /* SCREEN 5 */
+    MsxVdp vdp;
+
+    setup_v9938_sprite2(&vdp, mode);
+    set_pattern2(&vdp, mode, 0, 0, 0x81);
+    set_pattern2(&vdp, mode, 0, 1, 0x80);
+    set_sprite2(&vdp, mode, 0, 9, 20, 0);
+    set_sprite2_colour(&vdp, mode, 0, 0, 2);
+    set_sprite2_colour(&vdp, mode, 0, 1, 3);
+    terminate_sprites2(&vdp, mode, 1);
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 20, 10) == V9938_GREEN);
+    assert(pixel(&vdp, 27, 10) == V9938_GREEN);
+    assert(pixel(&vdp, 20, 11) == V9938_LT_GREEN);
+
+    /* R#23 scrolls sprite coordinates along with the display. */
+    vdp.registers[23] = 1;
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 20, 9) == V9938_GREEN);
+    assert(pixel(&vdp, 20, 10) == V9938_LT_GREEN);
+
+    /* EC is a per-line attribute in mode 2. */
+    setup_v9938_sprite2(&vdp, mode);
+    set_pattern2(&vdp, mode, 0, 0, 0xff);
+    set_sprite2(&vdp, mode, 0, 9, 28, 0);
+    set_sprite2_colour(&vdp, mode, 0, 0, 0x82);
+    terminate_sprites2(&vdp, mode, 1);
+    vdp_render(&vdp);
+    for (int x = 0; x < 4; ++x)
+        assert(pixel(&vdp, x, 10) == V9938_GREEN);
+    assert(pixel(&vdp, 4, 10) == COLOUR_BACKDROP);
+
+    /* Y=0xd8 ends a mode-2 list. */
+    setup_v9938_sprite2(&vdp, mode);
+    set_pattern2(&vdp, mode, 0, 0, 0x80);
+    set_sprite2(&vdp, mode, 0, 0xd8, 0, 0);
+    set_sprite2(&vdp, mode, 1, 9, 30, 0);
+    set_sprite2_colour(&vdp, mode, 1, 0, 2);
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 30, 10) == COLOUR_BACKDROP);
+
+    /* The first eight sprites draw; S#0 identifies the ninth. */
+    setup_v9938_sprite2(&vdp, mode);
+    set_pattern2(&vdp, mode, 0, 0, 0x80);
+    for (unsigned i = 0; i < 9; ++i) {
+        set_sprite2(&vdp, mode, i, 9, (u8)(i * 16), 0);
+        set_sprite2_colour(&vdp, mode, i, 0, 2);
+    }
+    terminate_sprites2(&vdp, mode, 9);
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 112, 10) == V9938_GREEN);
+    assert(pixel(&vdp, 128, 10) == COLOUR_BACKDROP);
+    assert((vdp.status & 0x5f) == 0x48);
+
+    /* SPD disables both drawing and sprite evaluation. */
+    setup_v9938_sprite2(&vdp, mode);
+    set_pattern2(&vdp, mode, 0, 0, 0x80);
+    set_sprite2(&vdp, mode, 0, 9, 20, 0);
+    set_sprite2_colour(&vdp, mode, 0, 0, 2);
+    terminate_sprites2(&vdp, mode, 1);
+    vdp.registers[8] = 0x02;
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 20, 10) == COLOUR_BACKDROP);
+    assert(!(vdp.status & 0x60));
+
+    /* 16x16 magnification uses all 16 per-line color entries. */
+    setup_v9938_sprite2(&vdp, mode);
+    vdp.registers[1] = 0x43;
+    set_pattern2(&vdp, mode, 2, 0, 0x01);
+    set_pattern2(&vdp, mode, 1, 0, 0x80);
+    set_sprite2(&vdp, mode, 0, 19, 60, 3);
+    set_sprite2_colour(&vdp, mode, 0, 0, 2);
+    set_sprite2_colour(&vdp, mode, 0, 8, 3);
+    terminate_sprites2(&vdp, mode, 1);
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 90, 20) == V9938_GREEN);
+    assert(pixel(&vdp, 91, 21) == V9938_GREEN);
+    assert(pixel(&vdp, 60, 36) == V9938_LT_GREEN);
+    assert(pixel(&vdp, 61, 37) == V9938_LT_GREEN);
+}
+
+static void test_v9938_sprite_mode2_combining_and_collision(void) {
+    const u8 mode = 0x0c; /* SCREEN 5 */
+    MsxVdp vdp;
+
+    setup_v9938_sprite2(&vdp, mode);
+    set_pattern2(&vdp, mode, 0, 0, 0x80);
+    set_sprite2(&vdp, mode, 0, 9, 40, 0);
+    set_sprite2(&vdp, mode, 1, 9, 40, 0);
+    set_sprite2(&vdp, mode, 2, 9, 40, 0);
+    set_sprite2_colour(&vdp, mode, 0, 0, 2);
+    set_sprite2_colour(&vdp, mode, 1, 0, 0x44);
+    set_sprite2_colour(&vdp, mode, 2, 0, 3);
+    terminate_sprites2(&vdp, mode, 3);
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 40, 10) == V9938_DK_RED);
+    assert(vdp.status & 0x20);
+
+    /* The first collision is reported with the hardware X/Y offsets. */
+    write_control_register(&vdp, 15, 3);
+    assert(vdp_read_status(&vdp) == 52);
+    write_control_register(&vdp, 15, 4);
+    assert(vdp_read_status(&vdp) == 0xfe);
+    write_control_register(&vdp, 15, 6);
+    assert(vdp_read_status(&vdp) == 0xfc);
+    write_control_register(&vdp, 15, 5);
+    assert(vdp_read_status(&vdp) == 18);
+    assert(vdp.status & 0x20);
+    write_control_register(&vdp, 15, 3);
+    assert(vdp_read_status(&vdp) == 0);
+
+    /* IC prevents collision without affecting display priority. */
+    setup_v9938_sprite2(&vdp, mode);
+    set_pattern2(&vdp, mode, 0, 0, 0x80);
+    set_sprite2(&vdp, mode, 0, 9, 40, 0);
+    set_sprite2(&vdp, mode, 1, 9, 40, 0);
+    set_sprite2_colour(&vdp, mode, 0, 0, 0x22);
+    set_sprite2_colour(&vdp, mode, 1, 0, 3);
+    terminate_sprites2(&vdp, mode, 2);
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 40, 10) == V9938_GREEN);
+    assert(!(vdp.status & 0x20));
+
+    /* A leading CC sprite has no base sprite into which it can combine. */
+    setup_v9938_sprite2(&vdp, mode);
+    set_pattern2(&vdp, mode, 0, 0, 0x80);
+    set_sprite2(&vdp, mode, 0, 9, 50, 0);
+    set_sprite2(&vdp, mode, 1, 9, 50, 0);
+    set_sprite2_colour(&vdp, mode, 0, 0, 0x44);
+    set_sprite2_colour(&vdp, mode, 1, 0, 2);
+    terminate_sprites2(&vdp, mode, 2);
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 50, 10) == V9938_GREEN);
+    assert(!(vdp.status & 0x20));
+
+    /* Transparent color zero neither draws nor collides. */
+    setup_v9938_sprite2(&vdp, mode);
+    set_pattern2(&vdp, mode, 0, 0, 0x80);
+    set_sprite2(&vdp, mode, 0, 9, 60, 0);
+    set_sprite2(&vdp, mode, 1, 9, 60, 0);
+    set_sprite2_colour(&vdp, mode, 0, 0, 0);
+    set_sprite2_colour(&vdp, mode, 1, 0, 3);
+    terminate_sprites2(&vdp, mode, 2);
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 60, 10) == V9938_LT_GREEN);
+    assert(!(vdp.status & 0x20));
+
+    /* TP makes color zero opaque and collision-active. */
+    vdp.registers[8] = 0x20;
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 60, 10) == COLOUR_BACKDROP);
+    assert(vdp.status & 0x20);
+}
+
+static void test_v9938_sprite_mode2_display_formats(void) {
+    MsxVdp vdp;
+
+    /* SCREEN 4 is the character mode that selects sprite mode 2. */
+    setup_v9938_sprite2(&vdp, 0x08);
+    set_pattern2(&vdp, 0x08, 0, 0, 0x80);
+    set_sprite2(&vdp, 0x08, 0, 9, 10, 0);
+    set_sprite2_colour(&vdp, 0x08, 0, 0, 2);
+    terminate_sprites2(&vdp, 0x08, 1);
+    vdp_render(&vdp);
+    assert(vdp.render_width == 256);
+    assert(pixel(&vdp, 10, 10) == V9938_GREEN);
+
+    /*
+     * SCREEN 6 uses the high and low color pairs for the two physical
+     * pixels represented by one sprite dot.
+     */
+    setup_v9938_sprite2(&vdp, 0x10);
+    set_pattern2(&vdp, 0x10, 0, 0, 0x80);
+    set_sprite2(&vdp, 0x10, 0, 9, 10, 0);
+    set_sprite2_colour(&vdp, 0x10, 0, 0, 0x0e);
+    terminate_sprites2(&vdp, 0x10, 1);
+    vdp_render(&vdp);
+    assert(vdp.render_width == 512);
+    assert(pixel(&vdp, 20, 10) == V9938_LT_GREEN);
+    assert(pixel(&vdp, 21, 10) == V9938_GREEN);
+
+    /* SCREEN 7 fetches sprite data through planar VRAM addressing. */
+    setup_v9938_sprite2(&vdp, 0x14);
+    set_pattern2(&vdp, 0x14, 0, 0, 0x80);
+    set_sprite2(&vdp, 0x14, 0, 9, 10, 0);
+    set_sprite2_colour(&vdp, 0x14, 0, 0, 2);
+    terminate_sprites2(&vdp, 0x14, 1);
+    vdp_render(&vdp);
+    assert(vdp.render_width == 512);
+    assert(pixel(&vdp, 20, 10) == V9938_GREEN);
+    assert(pixel(&vdp, 21, 10) == V9938_GREEN);
+
+    /* SCREEN 8 has a fixed sprite palette independent of P#0-P#15. */
+    setup_v9938_sprite2(&vdp, 0x1c);
+    vdp.palette_grb[2] = 0x777;
+    set_pattern2(&vdp, 0x1c, 0, 0, 0x80);
+    set_sprite2(&vdp, 0x1c, 0, 9, 10, 0);
+    set_sprite2_colour(&vdp, 0x1c, 0, 0, 2);
+    terminate_sprites2(&vdp, 0x1c, 1);
+    vdp_render(&vdp);
+    assert(vdp.render_width == 256);
+    assert(pixel(&vdp, 10, 10) == SCREEN8_RED);
 }
 
 static void test_graphics_2_and_multicolour_mode_bits(void) {
@@ -888,6 +1163,9 @@ int main(void) {
     test_first_overflow_is_scanline_ordered();
     test_status_latching_and_vblank();
     test_sprite_modes_and_display_gating();
+    test_v9938_sprite_mode2_attributes_and_limits();
+    test_v9938_sprite_mode2_combining_and_collision();
+    test_v9938_sprite_mode2_display_formats();
     test_graphics_2_and_multicolour_mode_bits();
     test_backdrop_and_text_background_colours();
     test_v9938_registers_and_status_selection();

@@ -40,6 +40,8 @@ typedef struct {
     u16 command_remaining_x;
     u16 command_remaining_y;
     u16 command_border_x;
+    u16 sprite_collision_x;
+    u16 sprite_collision_y;
     u8 command_code;
     u8 command_mode;
     u8 command_argument;

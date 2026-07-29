@@ -21,12 +21,12 @@ hardware specification.
 | `src/psg.*` | Host-independent AY-3-8910/YM2149 tone, noise, envelope, mixer, and sample generation |
 | `src/rtc.*` | Host-independent RP-5C01 register banks, CMOS, control ports, and emulated-time calendar |
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
-| `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, and command engine |
+| `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, sprite-mode-2, and command engine |
 | `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/NMS 8250/diagnostic boot checks |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
 | `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
 | `tests/test_rtc.c` | RP-5C01 banks, masks, reset behavior, calendar rollover, and clock advancement |
-| `tests/test_vdp.c` | Pattern/sprite rendering, V9938 bitmap layouts, commands, preloaded transfers, and beam/status checks |
+| `tests/test_vdp.c` | Pattern/sprite-mode-1/2 rendering, V9938 bitmap layouts, commands, preloaded transfers, and beam/status checks |
 
 Frontend modules may inspect summarized machine state for presentation, but
 guest hardware should not depend on SDL. Keeping that direction of dependency
@@ -74,7 +74,7 @@ primary slots 1 and 2, and expanded primary slot 3 containing the MSX2
 sub-ROM in secondary slot 0, the 128 KB internal mapper in slot 2, and the
 built-in disk ROM in slot 3/page 1. The expanded-slot register and mapper
 ports, V9938 CPU interface, bitmap renderer, command engine, and RTC are
-implemented; sprite mode 2 and the WD2793 controller are not. The GeoBench
+implemented; the WD2793 controller is not. The GeoBench
 configuration will then add
 independent SunriseIDE/Nextor and 512 KB memory-mapper extensions. These are
 two mapper devices, not one combined RAM allocation. Firmware discovery will
@@ -107,8 +107,9 @@ keyboard matrix, PPI register, VDP-port, and PSG-register surfaces above are
 now present. The NMS 8250 secondary slots, internal mapper registers, MSX2
 RTC, V9938 bitmap modes, and synchronous command engine are also present;
 V9938 VR/HR status follows the emulated beam and the VDP IRQ is level
-sensitive. Alternate national keyboard matrices, joystick/mouse PSG inputs,
-and scanline-accurate rendering of mid-frame changes are not.
+sensitive. V9938 sprite mode 2 is rendered in SCREEN 4 through SCREEN 8.
+Alternate national keyboard matrices, joystick/mouse PSG inputs, and
+scanline-accurate rendering of mid-frame changes are not.
 
 ## Keyboard input
 
@@ -138,6 +139,37 @@ collision-active on the MSX1 VDP even though they do not draw.
 This is scanline-aware evaluation of the VRAM state at the frame boundary.
 Cycle-level changes to sprite attributes, patterns, display enable, or VDP
 registers during an active scanline are not timed yet.
+
+## V9938 sprite mode 2
+
+SCREEN 4 through SCREEN 8 use the V9938's 32-entry mode-2 sprite engine. The
+renderer evaluates up to eight sprites per visible scanline, reports the ninth
+sprite through S#0, and reads each sprite's color and EC/CC/IC attributes from
+its 16-byte per-line color table. CC entries combine color codes with the
+nearest higher-priority base sprite, while CC and IC entries remain excluded
+from collision detection.
+
+The 1 KiB attribute window follows the R#5/R#11 address masks: its first 512
+bytes are the color table and its second half contains the Y/X/pattern records.
+SCREEN 7 and SCREEN 8 rotate those logical addresses through the two 64 KiB
+VRAM planes. SCREEN 6 expands one logical sprite dot to two independently
+colored pixels; SCREEN 7 duplicates it; SCREEN 8 uses the V9938's fixed sprite
+colors.
+
+Transparent color zero, R#8 TP/SPD, 8x8/16x16 size, magnification, early clock,
+vertical scrolling, the `0xD8` terminator, and 192/212-line display heights are
+implemented. Collision coordinates latch in S#3-S#6 with their hardware
+offsets and reset when S#5 is read. Sprite VRAM reads are still evaluated from
+the frame-boundary state rather than at their measured per-scanline access
+slots.
+
+The functional model is cross-checked against the
+[Yamaha V9938 Technical Data Book](https://map.grauw.nl/resources/video/yamaha_v9938.pdf)
+and the
+[V9938 Programmer's Guide](https://ia800409.us.archive.org/25/items/tms9918_guide/V9938-programmers-guide%20insecure.pdf).
+The later timing pass should follow openMSX's measured
+[V9938 VRAM timings](https://openmsx.org/vdp-vram-timing/vdp-timing.html)
+and [part II](https://openmsx.org/vdp-vram-timing/vdp-timing-2.html).
 
 ## PSG audio
 

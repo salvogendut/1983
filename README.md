@@ -29,8 +29,9 @@ available on as many SDL3-supported systems as practical.
 > SCREEN 8 bitmap rendering, V9938 drawing commands, beam-positioned retrace
 > status, and level-sensitive VDP interrupts. A real MSX2 BIOS and Sub-ROM now
 > complete their SCREEN 6 startup and launch the diagnostic cartridge. The
-> MSX2 RP-5C01 RTC ports and banked CMOS are also connected. Sprite mode 2,
-> cartridge mappers, and storage devices are still to come.
+> MSX2 RP-5C01 RTC ports and banked CMOS are also connected. V9938 sprite
+> mode 2 is implemented across SCREEN 4 through SCREEN 8. Cartridge mappers
+> and storage devices are still to come.
 
 ## Current implementation
 
@@ -77,6 +78,11 @@ available on as many SDL3-supported systems as practical.
 - TMS9918/TMS9929 sprite-mode-1 rendering with 8x8 and 16x16 patterns,
   magnification, early clock, priority, transparency, Y wrapping, the
   four-sprites-per-line limit, fifth-sprite index, and collision status.
+- V9938 sprite-mode-2 rendering in SCREEN 4 through SCREEN 8, with
+  per-scanline color attributes, EC/CC/IC behavior, lower-index priority,
+  eight-sprites-per-line limiting, ninth-sprite status, 192/212-line output,
+  vertical scrolling, planar SCREEN 7/8 table access, SCREEN 6 two-pixel
+  colors, SCREEN 8 fixed sprite colors, and S#3-S#6 collision coordinates.
 - Complete 11-row international MSX keyboard matrix through PPI ports
   `0xA9`/`0xAA`, including modifiers, function and editing keys, the numeric
   keypad, simultaneous-key rollover, host-key aliases, and focus-loss cleanup.
@@ -304,7 +310,7 @@ currently supported settings.
 | CPU | Z80 instruction set, interrupts, and cycle-aware execution (initial core integrated) |
 | Machine architecture | Primary slots and linear ROM/RAM devices implemented; NMS 8250 secondary slots and internal 128 KB mapper implemented |
 | MSX video | TMS9918-family pattern modes, sprite mode 1, status flags, limits, collisions, and interrupts implemented; cycle-level timing refinement planned |
-| MSX2 video | V9938 registers, beam-timed VR/HR status, palette, 128 KB VRAM, SCREEN 5-8 bitmap rendering, and drawing commands implemented; sprite mode 2, advanced scrolling, command timing, and scanline interrupts planned |
+| MSX2 video | V9938 registers, beam-timed VR/HR status, palette, 128 KB VRAM, SCREEN 5-8 bitmap rendering, sprite mode 2, and drawing commands implemented; advanced scrolling, command timing, and scanline interrupts planned |
 | Audio | AY-3-8910/YM2149 PSG tone, noise, envelopes, DAC output, and SDL3 playback implemented; SCC and MSX-MUSIC planned as compatibility extensions |
 | Cartridges | Plain ROMs and common ASCII, Konami, and Konami SCC mapper families, with mapper override controls |
 | Cassette | CAS images and the standard BIOS cassette path |
@@ -346,9 +352,9 @@ does not silently break another.
    BIOS/BASIC checkpoint, and an MSX1 compatibility suite.
 4. Complete the V9938 display engine, multiple memory mappers, and the Philips
    NMS 8250 reference profile. The V9938 CPU interface, SCREEN 5-8 renderer,
-   synchronous command engine, MSX2 secondary slots, internal mapper, and RTC
-   are in place, and vendor firmware launches a plain cartridge; sprite mode 2
-   and detailed mid-frame rendering remain. Then boot its
+   sprite-mode-2 engine, synchronous command engine, MSX2 secondary slots,
+   internal mapper, and RTC are in place, and vendor firmware launches a plain
+   cartridge; detailed mid-frame rendering remains. Then boot its
    user-supplied Nextor 2.1.1 Sunrise IDE ROM and the same raw hard-disk image
    used by `../geobench/tools/run_msx.sh`.
 5. Add commonly required sound and cartridge extensions, improve timing
