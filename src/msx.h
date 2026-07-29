@@ -17,6 +17,8 @@
 #define MSX_PSG_CLOCK_HZ 1789773u
 #define MSX_AUDIO_SAMPLE_RATE 44100u
 #define MSX_AUDIO_FRAME_CAPACITY 1024u
+#define MSX_RTC_PATH_MAX 4096
+#define MSX_RTC_ERROR_MAX 192
 #define MSX_NTSC_SCANLINES 262u
 #define MSX_PAL_SCANLINES 313u
 #define MSX_BIOS_SIZE 0x8000u
@@ -100,6 +102,8 @@ typedef struct {
     MsxVdp vdp;
     Psg    psg;
     MsxRtc rtc;
+    char rtc_persistence_path[MSX_RTC_PATH_MAX];
+    char rtc_persistence_error[MSX_RTC_ERROR_MAX];
 
     u8 bios[MSX_BIOS_SIZE];
     u8 logo[MSX_LOGO_SIZE];
@@ -225,6 +229,14 @@ bool msx_sunrise_disk_dirty(const MsxMachine *msx);
 bool msx_sunrise_disk_has_error(const MsxMachine *msx);
 const char *msx_sunrise_disk_error(const MsxMachine *msx);
 bool msx_sunrise_take_activity(MsxMachine *msx);
+int msx_set_rtc_persistence(MsxMachine *msx, const char *path,
+                            u64 host_seconds);
+int msx_flush_rtc_persistence(MsxMachine *msx, u64 host_seconds);
+bool msx_rtc_persistence_active(const MsxMachine *msx);
+bool msx_rtc_persistence_dirty(const MsxMachine *msx);
+bool msx_rtc_persistence_has_error(const MsxMachine *msx);
+const char *msx_rtc_persistence_error(const MsxMachine *msx);
+const char *msx_rtc_persistence_path(const MsxMachine *msx);
 bool msx_floppy_supported(const MsxMachine *msx);
 int msx_mount_drive_a(MsxMachine *msx, const char *path,
                       FloppyImageMode mode);

@@ -17,7 +17,8 @@ SDL3 allows.
 > The emulator includes TMS9918-family and V9938 video, AY/YM PSG audio,
 > the international keyboard matrix, SDL3 joystick input, dual cartridge
 > slots with common mappers, MSX2 expanded slots, memory mapper, RTC, and
-> native Philips WD2793 floppy support with safe read-only/read-write raw
+> battery-backed per-machine CMOS, plus native Philips WD2793 floppy
+> support with safe read-only/read-write raw
 > DSK images, plus safe read-only/read-write Sunrise IDE disks. The official
 > Sunrise Nextor kernel can boot the GeoBench raw image to its desktop.
 > Standard MSX CAS cassette playback
@@ -34,6 +35,8 @@ SDL3 allows.
   sprite mode 2, drawing commands, interrupts, and timed VRAM access.
 - Cycle-timed AY-3-8910/YM2149 audio through SDL3.
 - Complete international MSX keyboard matrix.
+- RP-5C01-compatible MSX2 clock with per-machine persistent CMOS and
+  offline clock continuity.
 - Familiar F9 overlay, function-key controls, status LEDs, notifications,
   screenshots, fullscreen, and integer scaling.
 - Cartridge I/II presence LEDs, with a split network-access form.
@@ -162,6 +165,13 @@ Ctrl+Enter, F9, reset, or losing window focus releases capture.
 **General > Extra Hardware** reveals Extensions; **General > Tinker**
 reveals Advanced.
 
+MSX2 machines keep their battery-backed clock and CMOS settings in a
+per-machine file under the configuration directory's `rtc/` folder. With
+Tinker enabled, **Advanced > RTC persistence** can disable this behavior.
+It is enabled by default. Reset preserves CMOS, a guest-stopped clock does
+not gain time while 1983 is closed, and invalid files are ignored with a
+visible warning before a later atomic save repairs them.
+
 On a Philips NMS 8250, **Media > Floppy A** inserts a conventional raw
 `.dsk` image. Delete safely ejects it. With Tinker enabled,
 **Advanced > Floppy access mode** explicitly selects read-only or read/write;
@@ -220,7 +230,10 @@ supported.
 User settings are stored in `~/.config/1983/1983.conf` on Unix-like systems
 and in the application-data directory on Windows. Use `--config PATH` for an
 isolated configuration; [`1983.conf.example`](1983.conf.example) documents
-the available settings.
+the available settings. RTC files follow the selected configuration file,
+so isolated configurations also get isolated clocks. On Unix,
+`--config /dev/null` deliberately disables RTC persistence for disposable,
+deterministic runs.
 
 1983 searches for `1983-models.conf` in the user configuration directory,
 the current directory, and the installed application-data directory.

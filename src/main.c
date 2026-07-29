@@ -388,6 +388,7 @@ int main(int argc, char **argv) {
     AudioOutput audio;
     GamepadInput gamepad;
     Overlay overlay;
+    char rtc_path[PATH_MAX];
     SDL_WindowID window_id;
     bool running = true;
     int host_frame = 0;
@@ -523,6 +524,14 @@ int main(int argc, char **argv) {
     }
 
     msx_init(&msx, config.model, config.region, config.memory_kb);
+    if (config_rtc_path(&config, rtc_path, sizeof(rtc_path)) != 0) {
+        fprintf(stderr, "warning: RTC persistence path is too long\n");
+    } else if (rtc_path[0] &&
+               msx_set_rtc_persistence(
+                   &msx, rtc_path, rtc_host_seconds()) != 0) {
+        fprintf(stderr, "warning: cannot load RTC CMOS: %s\n",
+                msx_rtc_persistence_error(&msx));
+    }
     sync_mouse_ports(&msx, &config);
     kbd_init(&keyboard);
     if (config.bios_path[0] &&
@@ -732,6 +741,11 @@ int main(int argc, char **argv) {
                msx.fdc.drive_b.tracks,
                msx.fdc.drive_b.sides,
                msx.fdc.drive_b.sectors_per_track);
+    if (msx_rtc_persistence_active(&msx))
+        printf("RTC CMOS: %s%s\n",
+               msx_rtc_persistence_path(&msx),
+               msx_rtc_persistence_has_error(&msx)
+               ? " (load warning; will recover atomically)" : "");
     if (msx_cassette_mounted(&msx)) {
         CassetteFileType type = msx_cassette_file_type(&msx);
 
@@ -1006,6 +1020,12 @@ int main(int argc, char **argv) {
                msx.vdp.registers[0], msx.vdp.registers[1]);
     }
     int shutdown_status = 0;
+    if (msx_flush_rtc_persistence(
+            &msx, rtc_host_seconds()) != 0) {
+        fprintf(stderr, "cannot flush RTC CMOS at shutdown: %s\n",
+                msx_rtc_persistence_error(&msx));
+        shutdown_status = 1;
+    }
     if (msx_sunrise_disk_mounted(&msx) &&
         msx_flush_sunrise_disk(&msx) != 0) {
         fprintf(stderr, "cannot flush IDE image at shutdown: %s\n",

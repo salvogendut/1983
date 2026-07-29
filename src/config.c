@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -151,6 +152,7 @@ void config_defaults(Config *config) {
     config->joy_port_device[0] = JOY_PORT_JOYSTICK;
     config->joy_port_device[1] = JOY_PORT_JOYSTICK;
     config->notifications = NOTIFY_MODE_SCREEN;
+    config->rtc_persistence = true;
     config->floppy_image_mode = FLOPPY_IMAGE_READ_ONLY;
     config->ide_image_mode = ATA_IMAGE_READ_ONLY;
 }
@@ -304,6 +306,9 @@ void config_load(Config *config, const char *path) {
             config->kanji_rom = parse_bool(value, config->kanji_rom);
         else if (strcmp(key, "tinker") == 0)
             config->tinker = parse_bool(value, config->tinker);
+        else if (strcmp(key, "rtc_persistence") == 0)
+            config->rtc_persistence =
+                parse_bool(value, config->rtc_persistence);
         else if (strcmp(key, "debug") == 0)
             config->debug = parse_bool(value, config->debug);
         else if (strcmp(key, "notifications") == 0)
@@ -443,6 +448,8 @@ int config_save(const Config *config) {
     fprintf(file, "second_drive = %s\n",
             bool_name(config->second_drive));
     fprintf(file, "tinker = %s\n", bool_name(config->tinker));
+    fprintf(file, "rtc_persistence = %s\n",
+            bool_name(config->rtc_persistence));
     fprintf(file, "cassette_audible_monitor = %s\n",
             bool_name(config->cassette_audible_monitor));
     fprintf(file, "cassette_visual_monitor = %s\n",
@@ -453,6 +460,63 @@ int config_save(const Config *config) {
             config->notifications == NOTIFY_MODE_CONSOLE ? "console" : "off");
 
     return fclose(file) == 0 ? 0 : -1;
+}
+
+int config_rtc_path(const Config *config, char *path, size_t path_size) {
+    char directory[PATH_MAX];
+    char machine[MODEL_ID_MAX];
+    char *separator;
+    size_t length;
+
+    if (!config || !path || !path_size)
+        return -1;
+    path[0] = '\0';
+    if (!config->rtc_persistence || !config->path[0] ||
+        !msx_model_is_msx2(config->model))
+        return 0;
+#ifndef _WIN32
+    if (strcmp(config->path, "/dev/null") == 0)
+        return 0;
+#else
+    if (strcasecmp(config->path, "NUL") == 0)
+        return 0;
+#endif
+    snprintf(directory, sizeof(directory), "%s", config->path);
+    separator = strrchr(directory, '/');
+#ifdef _WIN32
+    {
+        char *backslash = strrchr(directory, '\\');
+        if (!separator || (backslash && backslash > separator))
+            separator = backslash;
+    }
+#endif
+    if (separator == directory) {
+        separator[1] = '\0';
+    } else if (separator) {
+        *separator = '\0';
+    } else {
+        snprintf(directory, sizeof(directory), ".");
+    }
+    snprintf(machine, sizeof(machine), "%s",
+             config->machine_id[0]
+             ? config->machine_id
+             : msx_model_config_name(config->model));
+    for (size_t i = 0; machine[i]; ++i) {
+        unsigned char character = (unsigned char)machine[i];
+
+        if (!isalnum(character) && character != '-' && character != '_')
+            machine[i] = '_';
+    }
+    length = strlen(directory);
+    if (snprintf(path, path_size, "%s%srtc/%s.cmos",
+                 directory,
+                 length && directory[length - 1] != '/' &&
+                 directory[length - 1] != '\\' ? "/" : "",
+                 machine) >= (int)path_size) {
+        path[0] = '\0';
+        return -1;
+    }
+    return 0;
 }
 
 unsigned config_cartridge_extension_count(const Config *config) {

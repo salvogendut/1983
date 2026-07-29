@@ -504,9 +504,9 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
     assert(overlay.row == 0);
-    for (int row = 0; row < 3; ++row)
+    for (int row = 0; row < 4; ++row)
         send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 3);
+    assert(overlay.row == 4);
     send_key(&overlay, SDLK_RETURN);
     assert(config.ide_image_mode == ATA_IMAGE_READ_WRITE);
     assert(msx_sunrise_disk_writable(&msx));
@@ -541,7 +541,7 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
     assert(overlay.row == 0);
-    for (int row = 0; row < 7; ++row)
+    for (int row = 0; row < 8; ++row)
         send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.cassette_audible_monitor);
@@ -549,7 +549,7 @@ int main(void) {
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.cassette_visual_monitor);
-    for (int row = 0; row < 8; ++row)
+    for (int row = 0; row < 9; ++row)
         send_key(&overlay, SDLK_UP);
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_RETURN);
@@ -630,6 +630,11 @@ int main(void) {
     assert(overlay.section == OVERLAY_ADVANCED);
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 1);
+    assert(config.rtc_persistence);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.rtc_persistence);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 2);
     send_key(&overlay, SDLK_RETURN);
     assert(config.second_drive);
     send_key(&overlay, SDLK_LEFT);
@@ -638,6 +643,7 @@ int main(void) {
     assert(overlay.row == 6);
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
+    send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(!config.second_drive);

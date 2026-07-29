@@ -25,7 +25,7 @@ complete MSX hardware specification.
 | `src/ui.*` | Small renderer primitives used by the frontend |
 | `src/msx.*` | Machine profiles, slot-aware memory and I/O bus, keyboard/joystick/mouse protocols, ROM loading, and frame scheduler |
 | `src/psg.*` | Host-independent AY-3-8910/YM2149 tone, noise, envelope, mixer, and sample generation |
-| `src/rtc.*` | Host-independent RP-5C01 register banks, CMOS, control ports, and emulated-time calendar |
+| `src/rtc.*` | Host-independent RP-5C01 registers, test modes, calendar, validated CMOS serialization, and atomic host persistence |
 | `src/sunrise.*` | Sunrise IDE cartridge ROM banking, address decode, 16-bit data latch, and ATA bridge |
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
 | `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, sprite-mode-2, and command engine |
@@ -43,7 +43,7 @@ complete MSX hardware specification.
 | `tests/test_overlay.c` | Overlay navigation, cassette transport, guided Sunrise setup, dynamic hardware rows, cartridge-slot LEDs, and model editing |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
 | `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
-| `tests/test_rtc.c` | RP-5C01 banks, masks, reset behavior, calendar rollover, and clock advancement |
+| `tests/test_rtc.c` | RP-5C01 banks, masks, 12/24-hour and test modes, calendar boundaries, offline continuity, corruption rejection, and safe persistence |
 | `tests/test_vdp.c` | Pattern/sprite-mode-1/2 rendering, V9938 bitmap layouts, commands, preloaded transfers, and beam/status checks |
 
 Frontend modules may inspect summarized machine state for presentation, but
@@ -180,6 +180,32 @@ an incomplete controller transfer without changing the host file. Image
 replacement and ejection flush and synchronize dirty data. Failure preserves
 the attached image and error state. Advanced owns the second-drive and access
 controls; Media owns insertion and safe ejection.
+
+## RTC and CMOS boundaries
+
+`src/rtc.c` owns the RP-5C01 register model and the portable CMOS byte
+format. It has no SDL dependency and accepts explicit host timestamps at
+initialization, load, and save boundaries. The machine scheduler supplies
+emulated Z80 cycles; it never polls wall time while guest code is running.
+This keeps accelerated and headless runs reproducible while still allowing
+the battery clock to catch up between processes.
+
+`src/msx.c` owns the active persistence path and dirty/error status.
+`src/config.c` derives a separate sanitized filename from the selected
+machine ID beneath the active configuration directory. `src/main.c` attaches
+that file at startup and flushes it at shutdown. The overlay detaches and
+flushes before replacing a machine, then attaches the new model's clock.
+Load failure is non-destructive: a host-seeded clock remains live and the
+same requested path stays attached so a future atomic save can repair it.
+A save failure keeps the old attachment and blocks the transition that
+would otherwise discard dirty CMOS.
+
+The on-disk header and checksum are deliberately independent of the in-memory
+structure layout. Do not serialize `MsxRtc` directly: padding, control state,
+and cycle accumulators are not battery-backed data. Add format migrations by
+version rather than weakening exact-size, checksum, BCD, flag, or calendar
+validation. Tests use `rtc_init_at()` and explicit load/save timestamps;
+frontend smoke tests may use `--config /dev/null` to disable persistence.
 
 ## Bus and port assumptions
 

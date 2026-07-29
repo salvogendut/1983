@@ -471,6 +471,52 @@ static void test_rtc_ports_and_reset_persistence(void) {
     assert(msx_io_read(&msx, 0xb5) == 0xfe);
 }
 
+static void test_rtc_restart_persistence(void) {
+    const char *path = "test-msx-rtc.tmp";
+    MsxMachine msx;
+
+    (void)remove(path);
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
+    assert(msx_set_rtc_persistence(&msx, path, 1000) == 0);
+    assert(msx_rtc_persistence_active(&msx));
+    assert(msx_rtc_persistence_dirty(&msx));
+    assert(strcmp(msx_rtc_persistence_path(&msx), path) == 0);
+
+    msx_io_write(&msx, 0xb4, 13);
+    msx_io_write(&msx, 0xb5, 2);
+    msx_io_write(&msx, 0xb4, 4);
+    msx_io_write(&msx, 0xb5, 0x0b);
+    assert(msx_flush_rtc_persistence(&msx, 1000) == 0);
+    assert(!msx_rtc_persistence_dirty(&msx));
+    assert(!msx_rtc_persistence_has_error(&msx));
+    msx_destroy(&msx);
+
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
+    assert(msx_set_rtc_persistence(&msx, path, 2000) == 0);
+    msx_io_write(&msx, 0xb4, 13);
+    msx_io_write(&msx, 0xb5, 2);
+    msx_io_write(&msx, 0xb4, 4);
+    assert(msx_io_read(&msx, 0xb5) == 0xfb);
+    msx_reset(&msx);
+    msx_io_write(&msx, 0xb4, 13);
+    msx_io_write(&msx, 0xb5, 2);
+    msx_io_write(&msx, 0xb4, 4);
+    assert(msx_io_read(&msx, 0xb5) == 0xfb);
+
+    msx_io_write(&msx, 0xb4, 5);
+    msx_io_write(&msx, 0xb5, 0x0c);
+    assert(msx_set_rtc_persistence(&msx, "", 3000) == 0);
+    assert(!msx_rtc_persistence_active(&msx));
+    assert(msx_set_rtc_persistence(&msx, path, 3000) == 0);
+    msx_io_write(&msx, 0xb4, 13);
+    msx_io_write(&msx, 0xb5, 2);
+    msx_io_write(&msx, 0xb4, 5);
+    assert(msx_io_read(&msx, 0xb5) == 0xfc);
+    assert(msx_set_rtc_persistence(&msx, "", 3000) == 0);
+    msx_destroy(&msx);
+    assert(remove(path) == 0);
+}
+
 static void test_keyboard_matrix_and_ppi(void) {
     MsxMachine msx;
 
@@ -1233,6 +1279,7 @@ int main(void) {
     test_vdp_ports_and_renderer();
     test_msx2_vdp_extended_ports();
     test_rtc_ports_and_reset_persistence();
+    test_rtc_restart_persistence();
     test_keyboard_matrix_and_ppi();
     test_dual_joystick_psg_ports();
     test_cassette_ppi_and_psg_path();

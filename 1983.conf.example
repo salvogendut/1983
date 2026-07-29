@@ -60,6 +60,8 @@ kanji_rom = false
 # Adds Floppy B to Media on Philips NMS 8250 machines.
 second_drive = false
 tinker = false
+# Battery-backed per-machine MSX2 RTC state.
+rtc_persistence = true
 # These monitors are active only while Tinker is enabled.
 cassette_audible_monitor = false
 cassette_visual_monitor = false

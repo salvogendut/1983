@@ -35,6 +35,7 @@ enum {
 
 enum {
     ADVANCED_MODEL_EDITOR = 0,
+    ADVANCED_RTC_PERSISTENCE,
     ADVANCED_SECOND_FLOPPY,
     ADVANCED_FLOPPY_IMAGE_ACCESS,
     ADVANCED_IDE_IMAGE_ACCESS,
@@ -500,6 +501,20 @@ static void item_text(const Overlay *overlay, int row,
                     snprintf(value, value_size, "%zu models",
                              overlay->models->count);
                     break;
+                case ADVANCED_RTC_PERSISTENCE:
+                    snprintf(label, label_size,
+                             "RTC persistence");
+                    if (!overlay->msx->profile->rtc) {
+                        snprintf(value, value_size, "Unavailable");
+                    } else if (msx_rtc_persistence_has_error(
+                                   overlay->msx)) {
+                        snprintf(value, value_size, "%s (I/O warning)",
+                                 toggle_name(config->rtc_persistence));
+                    } else {
+                        snprintf(value, value_size, "%s",
+                                 toggle_name(config->rtc_persistence));
+                    }
+                    break;
                 case ADVANCED_SECOND_FLOPPY:
                     snprintf(label, label_size,
                              "Second floppy");
@@ -601,6 +616,31 @@ static const char *selected_model_name(const Overlay *overlay) {
            msx_model_name(overlay->config->model);
 }
 
+static bool sync_rtc_persistence(Overlay *overlay) {
+    char path[PATH_MAX];
+
+    if (config_rtc_path(
+            overlay->config, path, sizeof(path)) != 0) {
+        notify_post("RTC persistence path is too long");
+        return false;
+    }
+    if (msx_set_rtc_persistence(
+            overlay->msx, path, rtc_host_seconds()) != 0) {
+        notify_post("RTC persistence warning: %s",
+                    msx_rtc_persistence_error(overlay->msx));
+        /*
+         * A corrupt file is ignored in favour of a live host-seeded
+         * clock, but the requested path remains attached so the next
+         * safe flush can replace it. A flush/path failure leaves the
+         * old attachment in place and must block the configuration
+         * transition.
+         */
+        return strcmp(msx_rtc_persistence_path(overlay->msx),
+                      path) == 0;
+    }
+    return true;
+}
+
 static void apply_config(Overlay *overlay) {
     Config *config = overlay->config;
     MsxMachine *msx = overlay->msx;
@@ -611,6 +651,12 @@ static void apply_config(Overlay *overlay) {
 
     config_normalize(config);
     if (machine_changed) {
+        if (msx_set_rtc_persistence(
+                msx, "", rtc_host_seconds()) != 0) {
+            notify_post("Could not save RTC CMOS: %s",
+                        msx_rtc_persistence_error(msx));
+            return;
+        }
         msx_configure(msx, config->model, config->region,
                       config->memory_kb);
         config->memory_kb = msx->ram_kb;
@@ -618,6 +664,7 @@ static void apply_config(Overlay *overlay) {
         display_set_title(overlay->display, msx,
                           selected_model_name(overlay));
     }
+    (void)sync_rtc_persistence(overlay);
     display_set_smoothing(overlay->display, config->smoothing);
     display_set_crt(overlay->display, config->real_crt,
                     config->crt_scanlines);
@@ -1917,6 +1964,24 @@ static void activate_item(Overlay *overlay) {
                 case ADVANCED_MODEL_EDITOR:
                     begin_model_editor(overlay);
                     return;
+                case ADVANCED_RTC_PERSISTENCE: {
+                    bool previous = config->rtc_persistence;
+
+                    if (!overlay->msx->profile->rtc) {
+                        notify_post(
+                            "The selected machine has no RTC");
+                        return;
+                    }
+                    config->rtc_persistence = !previous;
+                    if (!sync_rtc_persistence(overlay)) {
+                        config->rtc_persistence = previous;
+                        return;
+                    }
+                    notify_post("RTC persistence %s",
+                                config->rtc_persistence
+                                ? "enabled" : "disabled");
+                    break;
+                }
                 case ADVANCED_SECOND_FLOPPY:
                     if (!toggle_second_floppy(overlay))
                         return;
@@ -2379,7 +2444,7 @@ static const char *section_hint(OverlaySection section) {
         case OVERLAY_EXTENSIONS:
             return "Enter toggles; Delete forgets Sunrise firmware.";
         case OVERLAY_ADVANCED:
-            return "Machine models, disk safety, and diagnostic controls.";
+            return "Machine models, RTC/media safety, and diagnostics.";
         case OVERLAY_SECTION_COUNT:
             break;
     }
