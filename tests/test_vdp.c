@@ -1332,24 +1332,81 @@ static void test_v9938_command_timing(void) {
     setup_v9938_bitmap(&vdp, 0x06); /* SCREEN 5 */
     vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
 
-    /*
-     * PSET's functional result is available immediately, but CE remains
-     * active for its beam-scheduled read/modify/write interval.
-     */
+    /* PSET changes VRAM only when its scheduled access completes. */
     write_command_word(&vdp, 36, 1);
     write_command_word(&vdp, 38, 0);
     write_control_register(&vdp, 44, 6);
     write_control_register(&vdp, 46, 0x50);
-    assert(vdp.vram[0] == 0x06);
+    assert(vdp.vram[0] == 0);
     assert(vdp.status2 & 0x01);
     assert(vdp.registers[46] == 0x50);
     vdp_advance(&vdp, 47);
     assert(vdp.status2 & 0x01);
+    assert(vdp.vram[0] == 0);
     vdp_advance(&vdp, 1);
     assert(!(vdp.status2 & 0x01));
+    assert(vdp.vram[0] == 0x06);
     assert(vdp.registers[46] == 0);
 
+    /*
+     * During active display, command accesses use the measured bitmap-mode
+     * schedules for sprite evaluation enabled and disabled.
+     */
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp.status2 &= (u8)~0x40;
+    write_command_word(&vdp, 36, 0);
+    write_command_word(&vdp, 38, 0);
+    write_control_register(&vdp, 44, 4);
+    write_control_register(&vdp, 46, 0x50);
+    assert(vdp.command_ticks_remaining == 92);
+    vdp_advance(&vdp, 91);
+    assert(vdp.vram[0] == 0);
+    vdp_advance(&vdp, 1);
+    assert(vdp.vram[0] == 0x40);
+
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp.status2 &= (u8)~0x40;
+    vdp.registers[8] |= 0x02;
+    write_command_word(&vdp, 36, 0);
+    write_command_word(&vdp, 38, 0);
+    write_control_register(&vdp, 44, 5);
+    write_control_register(&vdp, 46, 0x50);
+    assert(vdp.command_ticks_remaining == 54);
+    vdp_advance(&vdp, 53);
+    assert(vdp.vram[0] == 0);
+    vdp_advance(&vdp, 1);
+    assert(vdp.vram[0] == 0x50);
+
+    /* Multi-pixel commands expose each completed access progressively. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    write_command_word(&vdp, 36, 0);
+    write_command_word(&vdp, 38, 0);
+    write_command_word(&vdp, 40, 4);
+    write_command_word(&vdp, 42, 1);
+    write_control_register(&vdp, 44, 3);
+    write_control_register(&vdp, 46, 0x80);
+    assert(vdp.command_ticks_remaining == 96);
+    vdp_advance(&vdp, 96);
+    assert(vdp.vram[0] == 0x30);
+    assert(vdp.vram[1] == 0);
+    assert(vdp.status2 & 0x01);
+    assert(vdp.command_ticks_remaining == 100);
+    vdp_advance(&vdp, 100);
+    assert(vdp.vram[0] == 0x33);
+    assert(vdp.vram[1] == 0);
+    vdp_advance(&vdp, 96);
+    assert(vdp.vram[1] == 0x30);
+    assert(vdp.status2 & 0x01);
+    vdp_advance(&vdp, 96);
+    assert(vdp.vram[1] == 0x33);
+    assert(!(vdp.status2 & 0x01));
+
     /* A new R#46 command aborts the old command's completion event. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
     write_control_register(&vdp, 46, 0x50);
     assert(vdp.command_ticks_remaining == 48);
     write_command_word(&vdp, 32, 1);
@@ -1392,6 +1449,8 @@ static void test_v9938_command_timing(void) {
     assert(!(vdp.status2 & 0x81));
 
     /* LMCM likewise paces successive S#7 reads with its VRAM-read delay. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
     vdp.vram[2] = 0x56;
     write_command_word(&vdp, 32, 4);
     write_command_word(&vdp, 34, 0);
@@ -1409,7 +1468,14 @@ static void test_v9938_command_timing(void) {
     assert((vdp.status2 & 0x81) == 0x81);
     assert(vdp_read_status(&vdp) == 6);
     assert((vdp.status2 & 0x81) == 0x01);
-    vdp_advance(&vdp, 64);
+    {
+        unsigned final_delay =
+            (unsigned)vdp.command_ticks_remaining;
+
+        vdp_advance(&vdp, final_delay - 1);
+        assert(vdp.status2 & 0x01);
+        vdp_advance(&vdp, 1);
+    }
     assert(!(vdp.status2 & 0x81));
 
     /* The command clock also scales to the machine's CPU-frame budget. */
@@ -1434,10 +1500,8 @@ static void test_v9938_command_timing(void) {
         assert(!(vdp.status2 & 0x01));
     }
 
-    /* Long commands retain CE and their remaining time across frames. */
+    /* Long commands make partial progress and retain CE across frames. */
     {
-        const u64 duration = (u64)256 * 20 * 96 + 19 * 64;
-
         setup_v9938_bitmap(&vdp, 0x06);
         vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
         write_command_word(&vdp, 36, 0);
@@ -1446,17 +1510,16 @@ static void test_v9938_command_timing(void) {
         write_command_word(&vdp, 42, 20);
         write_control_register(&vdp, 44, 3);
         write_control_register(&vdp, 46, 0x80);
-        assert(vdp.command_ticks_remaining == duration);
+        assert(vdp.vram[0] == 0);
+        assert(vdp.command_ticks_remaining == 96);
         vdp_advance(&vdp, PAL_FRAME_TICKS);
         assert(vdp.status2 & 0x01);
-        assert(vdp.command_ticks_remaining ==
-               duration - PAL_FRAME_TICKS);
+        assert(vdp.vram[0] == 0x33);
+        assert(vdp.vram[19 * 128 + 127] == 0);
         vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
-        vdp_advance(
-            &vdp, (unsigned)vdp.command_ticks_remaining - 1);
-        assert(vdp.status2 & 0x01);
-        vdp_advance(&vdp, 1);
+        vdp_advance(&vdp, PAL_FRAME_TICKS);
         assert(!(vdp.status2 & 0x01));
+        assert(vdp.vram[19 * 128 + 127] == 0x33);
     }
 }
 

@@ -193,12 +193,18 @@ slot contention and mid-scanline renderer changes remain later timing work.
 
 ## V9938 command timing
 
-The complete V9938 bitmap-command set retains its functional renderer and now
-runs an independent command clock from the emulated beam. Autonomous
-operations leave S#2 CE asserted for an operation-dependent interval derived
-from the measured V9938 command spacings: POINT/PSET and SRCH/LINE use their
-read/write costs, logical moves account for pixel read-modify-write work, and
-high-speed moves account for packed-byte transfers and row overhead.
+The complete V9938 bitmap-command set now runs progressively from an
+independent command clock tied to the emulated beam. Autonomous operations
+leave S#2 CE asserted while individual pixels or packed bytes are processed.
+Their operation-dependent spacings account for POINT/PSET reads and writes,
+SRCH/LINE steps, logical pixel read-modify-write work, high-speed byte
+transfers, and row overhead.
+
+Each autonomous step is aligned to a measured free bitmap-mode VRAM access
+position within the V9938's 1368-tick scanline. Separate schedules cover
+screen-off, sprites-disabled, and sprites-enabled operation. VRAM and command
+result registers therefore change as their accesses complete instead of being
+calculated in one batch when R#46 is written.
 
 LMMC and HMMC clear TR after accepting R#44, then raise it again when the
 next transfer interval expires. A write made while TR is low remains pending
@@ -210,10 +216,10 @@ completion.
 
 Command time is stored in V9938 ticks and advanced with fixed-point conversion
 from the current PAL/NTSC CPU-frame budget, including commands which span a
-frame boundary. For this first timing pass, the command's VRAM result is still
-calculated at issue time; progressive per-access mutation and contention with
-display, sprite, and CPU VRAM slots remain future work. The operation spacings
-and that later contention pass follow openMSX's measured
+frame boundary. Logical read-modify-write operations currently remain one
+atomic command step. CPU data-port contention and exposing mid-scanline VRAM
+changes through the renderer remain later timing work. The access schedules
+and operation spacings follow openMSX's measured
 [V9938 VRAM timings](https://openmsx.org/vdp-vram-timing/vdp-timing.html)
 and [part II](https://openmsx.org/vdp-vram-timing/vdp-timing-2.html).
 

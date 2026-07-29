@@ -74,9 +74,9 @@ available on as many SDL3-supported systems as practical.
 - V9938 POINT, PSET, SRCH, LINE, LMMV, LMMM, LMCM, LMMC, HMMV, HMMM, YMMM,
   and HMMC commands, including logical operations and beam-driven S#2 CE/TR,
   S#7, and R#44 CPU-transfer handshakes. Preloaded LMMC/HMMC colours and
-  writes queued while TR is low are supported. Individual VRAM mutations are
-  still applied functionally at command issue rather than at measured access
-  slots.
+  writes queued while TR is low are supported. Autonomous commands update
+  VRAM progressively at measured bitmap-mode access slots, with separate
+  schedules for screen-off, sprites-disabled, and sprites-enabled operation.
 - TMS9918/TMS9929 sprite-mode-1 rendering with 8x8 and 16x16 patterns,
   magnification, early clock, priority, transparency, Y wrapping, the
   four-sprites-per-line limit, fifth-sprite index, and collision status.
@@ -312,7 +312,7 @@ currently supported settings.
 | CPU | Z80 instruction set, interrupts, and cycle-aware execution (initial core integrated) |
 | Machine architecture | Primary slots and linear ROM/RAM devices implemented; NMS 8250 secondary slots and internal 128 KB mapper implemented |
 | MSX video | TMS9918-family pattern modes, sprite mode 1, status flags, limits, collisions, and interrupts implemented; cycle-level timing refinement planned |
-| MSX2 video | V9938 registers, beam-timed VR/HR status, R#19/S#1 scanline interrupts and command CE/TR handshakes, palette, 128 KB VRAM, SCREEN 5-8 bitmap rendering, sprite mode 2, and drawing commands implemented; advanced scrolling and per-access VRAM contention planned |
+| MSX2 video | V9938 registers, beam-timed VR/HR status, R#19/S#1 scanline interrupts, progressively timed drawing commands, palette, 128 KB VRAM, SCREEN 5-8 bitmap rendering, and sprite mode 2 implemented; advanced scrolling, CPU VRAM-port contention, and mid-scanline rendering planned |
 | Audio | AY-3-8910/YM2149 PSG tone, noise, envelopes, DAC output, and SDL3 playback implemented; SCC and MSX-MUSIC planned as compatibility extensions |
 | Cartridges | Plain ROMs and common ASCII, Konami, and Konami SCC mapper families, with mapper override controls |
 | Cassette | CAS images and the standard BIOS cassette path |
