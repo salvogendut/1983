@@ -43,6 +43,7 @@ typedef struct {
     bool extra_hardware;
     bool second_drive;
     bool sunrise_ide;
+    AtaImageMode ide_image_mode;
     bool scc;
     bool msx_music;
     bool kanji_rom;

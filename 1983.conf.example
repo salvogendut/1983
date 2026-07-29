@@ -36,8 +36,10 @@ cartridge2 =
 cartridge2_mapper = auto
 # Standard MSX CAS image; playback is read-only.
 cassette =
-# Raw, 512-byte-sector image; currently mounted read-only.
+# Raw, 512-byte-sector image.
 ide_image =
+# read-only (safe default) or read-write.
+ide_image_mode = read-only
 last_media_dir =
 
 [extensions]

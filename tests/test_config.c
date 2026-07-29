@@ -17,6 +17,7 @@ int main(void) {
     assert(!config.disk_rom_path[0]);
     assert(!config.sunrise_rom_path[0]);
     assert(!config.ide_image_path[0]);
+    assert(config.ide_image_mode == ATA_IMAGE_READ_ONLY);
     assert(!config.cassette_path[0]);
     assert(!config.cartridge_path[0][0]);
     assert(!config.cartridge_path[1][0]);
@@ -63,6 +64,7 @@ int main(void) {
     snprintf(config.ide_image_path,
              sizeof(config.ide_image_path),
              "/disks/GBMSX.IMG");
+    config.ide_image_mode = ATA_IMAGE_READ_WRITE;
     snprintf(config.cassette_path,
              sizeof(config.cassette_path),
              "/tapes/software.cas");
@@ -91,6 +93,7 @@ int main(void) {
                   "/roms/Nextor-2.1.1.SunriseIDE.ROM") == 0);
     assert(strcmp(loaded.ide_image_path,
                   "/disks/GBMSX.IMG") == 0);
+    assert(loaded.ide_image_mode == ATA_IMAGE_READ_WRITE);
     assert(strcmp(loaded.cassette_path,
                   "/tapes/software.cas") == 0);
     assert(loaded.scc);

@@ -75,6 +75,7 @@ typedef struct {
     int sunrise_setup_row;
     char pending_sunrise_rom_path[PATH_MAX];
     char pending_ide_image_path[PATH_MAX];
+    AtaImageMode pending_ide_image_mode;
 
     int model_editor_row;
     int model_edit_index;

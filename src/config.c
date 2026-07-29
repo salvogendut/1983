@@ -151,6 +151,7 @@ void config_defaults(Config *config) {
     config->joy_port_device[0] = JOY_PORT_JOYSTICK;
     config->joy_port_device[1] = JOY_PORT_JOYSTICK;
     config->notifications = NOTIFY_MODE_SCREEN;
+    config->ide_image_mode = ATA_IMAGE_READ_ONLY;
 }
 
 void config_normalize(Config *config) {
@@ -179,6 +180,8 @@ void config_normalize(Config *config) {
         config->audio_volume = 0;
     if (config->audio_volume > 100)
         config->audio_volume = 100;
+    if (config->ide_image_mode != ATA_IMAGE_READ_WRITE)
+        config->ide_image_mode = ATA_IMAGE_READ_ONLY;
     if (config->main_input != INPUT_PORT_B)
         config->main_input = INPUT_PORT_A;
     for (unsigned port = 0; port < 2; ++port) {
@@ -321,6 +324,11 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "ide_image") == 0)
             snprintf(config->ide_image_path,
                      sizeof(config->ide_image_path), "%s", value);
+        else if (strcmp(key, "ide_image_mode") == 0)
+            config->ide_image_mode =
+                strcmp(value, "read-write") == 0 ||
+                strcmp(value, "rw") == 0
+                ? ATA_IMAGE_READ_WRITE : ATA_IMAGE_READ_ONLY;
         else if (strcmp(key, "cassette") == 0)
             snprintf(config->cassette_path,
                      sizeof(config->cassette_path), "%s", value);
@@ -399,6 +407,9 @@ int config_save(const Config *config) {
             msx_cartridge_mapper_name(config->cartridge_mapper[1]));
     fprintf(file, "cassette = %s\n", config->cassette_path);
     fprintf(file, "ide_image = %s\n", config->ide_image_path);
+    fprintf(file, "ide_image_mode = %s\n",
+            config->ide_image_mode == ATA_IMAGE_READ_WRITE
+            ? "read-write" : "read-only");
     fprintf(file, "last_media_dir = %s\n\n", config->last_media_dir);
     fprintf(file, "[extensions]\n");
     fprintf(file, "extra_hardware = %s\n",

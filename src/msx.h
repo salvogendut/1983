@@ -209,12 +209,19 @@ int msx_install_sunrise_ide(MsxMachine *msx, unsigned slot,
                             const u8 *data, size_t size);
 int msx_load_sunrise_ide(MsxMachine *msx, unsigned slot,
                          const char *path);
-void msx_eject_sunrise_ide(MsxMachine *msx);
+int msx_eject_sunrise_ide(MsxMachine *msx);
 bool msx_sunrise_connected(const MsxMachine *msx);
 int msx_sunrise_slot(const MsxMachine *msx);
 int msx_mount_sunrise_disk(MsxMachine *msx, const char *path);
-void msx_eject_sunrise_disk(MsxMachine *msx);
+int msx_mount_sunrise_disk_mode(MsxMachine *msx, const char *path,
+                                AtaImageMode mode);
+int msx_flush_sunrise_disk(MsxMachine *msx);
+int msx_eject_sunrise_disk(MsxMachine *msx);
 bool msx_sunrise_disk_mounted(const MsxMachine *msx);
+bool msx_sunrise_disk_writable(const MsxMachine *msx);
+bool msx_sunrise_disk_dirty(const MsxMachine *msx);
+bool msx_sunrise_disk_has_error(const MsxMachine *msx);
+const char *msx_sunrise_disk_error(const MsxMachine *msx);
 bool msx_sunrise_take_activity(MsxMachine *msx);
 int msx_load_firmware_set(MsxMachine *msx, const char *bios_path,
                           const char *logo_path,

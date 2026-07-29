@@ -94,7 +94,7 @@ external Sunrise cartridge.
 ```sh
 ./1983 --model nms8250 --disk-rom "" \
   --sunrise-rom /path/to/Nextor-2.1.1.SunriseIDE.ROM \
-  --ide /path/to/GBMSX.IMG
+  --ide /path/to/GBMSX.IMG --ide-mode read-only
 ```
 
 For a headless inspection run:
@@ -102,7 +102,7 @@ For a headless inspection run:
 ```sh
 ./1983 --model nms8250 --disk-rom "" \
   --sunrise-rom /path/to/Nextor-2.1.1.SunriseIDE.ROM \
-  --ide /path/to/GBMSX.IMG \
+  --ide /path/to/GBMSX.IMG --ide-mode read-only \
   --headless --unthrottled --exit-after 2000 --dump-state \
   --screenshot /tmp/1983-nextor.ppm
 ```

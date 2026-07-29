@@ -15,6 +15,15 @@ static void create_fixture(void) {
     assert(fclose(file) == 0);
 }
 
+static void assert_written_fixture(void) {
+    FILE *file = fopen(fixture_path, "rb");
+
+    assert(file);
+    for (unsigned i = 0; i < ATA_SECTOR_SIZE; ++i)
+        assert(fgetc(file) == (int)(u8)(0x5au ^ i));
+    assert(fclose(file) == 0);
+}
+
 int main(void) {
     MsxSunriseIde sunrise;
     u8 rom[MSX_SUNRISE_ROM_SIZE];
@@ -88,7 +97,36 @@ int main(void) {
     assert(sunrise.registers_enabled);
     assert(sunrise_disk_mounted(&sunrise));
 
-    sunrise_eject_rom(&sunrise);
+    assert(sunrise_mount_disk_mode(
+               &sunrise, fixture_path,
+               ATA_IMAGE_READ_WRITE) == 0);
+    assert(sunrise_disk_writable(&sunrise));
+    sunrise_write(&sunrise, 0x7e02, 1);
+    sunrise_write(&sunrise, 0x7e03, 0);
+    sunrise_write(&sunrise, 0x7e04, 0);
+    sunrise_write(&sunrise, 0x7e05, 0);
+    sunrise_write(&sunrise, 0x7e06, 0xe0);
+    sunrise_write(&sunrise, 0x7e07, 0x30);
+    for (unsigned i = 0; i < ATA_SECTOR_SIZE; i += 2) {
+        sunrise_write(&sunrise, 0x7c00, (u8)(0x5au ^ i));
+        sunrise_write(&sunrise, 0x7c01,
+                      (u8)(0x5au ^ (i + 1)));
+    }
+    assert(sunrise_disk_dirty(&sunrise));
+    assert(sunrise_flush_disk(&sunrise) == 0);
+    assert(!sunrise_disk_dirty(&sunrise));
+    assert_written_fixture();
+
+    /* Resetting during a new, incomplete sector leaves the host intact. */
+    sunrise_write(&sunrise, 0x7e07, 0x30);
+    sunrise_write(&sunrise, 0x7c00, 0x11);
+    sunrise_write(&sunrise, 0x7c01, 0x22);
+    sunrise_reset(&sunrise);
+    assert(!sunrise_disk_dirty(&sunrise));
+    assert(sunrise_eject_disk(&sunrise) == 0);
+    assert_written_fixture();
+
+    assert(sunrise_eject_rom(&sunrise) == 0);
     assert(!sunrise.rom_loaded);
     assert(!sunrise_disk_mounted(&sunrise));
     sunrise_destroy(&sunrise);

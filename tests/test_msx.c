@@ -1071,13 +1071,19 @@ static void test_nextor_sunrise_checkpoint_if_available(void) {
     assert(msx->frame == 2001);
     assert(msx_sunrise_connected(msx));
     assert(msx_sunrise_disk_mounted(msx));
-    assert(msx->primary_slot == 0xff);
+    /*
+     * Advertising ATA FLUSH CACHE changes the deterministic instruction
+     * phase at this frame boundary: Nextor is inside the BIOS interrupt
+     * path, with page 0 temporarily mapped to slot 0. The exact desktop
+     * framebuffer below remains the primary boot checkpoint.
+     */
+    assert(msx->primary_slot == 0xfc);
     assert(msx->secondary_slot[3] == 0xaa);
     assert(msx->mapper_segment[0] == 3);
     assert(msx->mapper_segment[1] == 2);
     assert(msx->mapper_segment[2] == 1);
     assert(msx->mapper_segment[3] == 0);
-    assert(msx->cpu.pc >= 0x82a0 && msx->cpu.pc <= 0x82af);
+    assert(msx->cpu.pc >= 0x0360 && msx->cpu.pc <= 0x0370);
     assert(msx->instructions > 15000000);
     assert(msx->vdp.registers[0] == 0x0a);
     assert(msx->vdp.registers[1] == 0x62);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 
 #include "types.h"
@@ -16,6 +17,11 @@
 #define ATA_ERROR_UNC  0x40u
 #define ATA_ERROR_IDNF 0x10u
 #define ATA_ERROR_ABRT 0x04u
+
+typedef enum {
+    ATA_IMAGE_READ_ONLY = 0,
+    ATA_IMAGE_READ_WRITE
+} AtaImageMode;
 
 typedef struct {
     u8 error;
@@ -33,10 +39,15 @@ typedef struct {
     u32 transfer_lba;
     unsigned sectors_left;
     bool transfer_read;
+    bool transfer_write;
     bool activity;
 
     FILE *image;
     u64 sector_count_total;
+    AtaImageMode image_mode;
+    bool dirty;
+    bool io_error;
+    char host_error[192];
 } AtaDevice;
 
 void ata_init(AtaDevice *ata);
@@ -44,8 +55,15 @@ void ata_destroy(AtaDevice *ata);
 void ata_reset(AtaDevice *ata);
 
 int  ata_mount(AtaDevice *ata, const char *path);
-void ata_unmount(AtaDevice *ata);
+int  ata_mount_mode(AtaDevice *ata, const char *path,
+                    AtaImageMode mode);
+int  ata_flush(AtaDevice *ata);
+int  ata_unmount(AtaDevice *ata);
 bool ata_is_mounted(const AtaDevice *ata);
+bool ata_is_writable(const AtaDevice *ata);
+bool ata_is_dirty(const AtaDevice *ata);
+bool ata_has_io_error(const AtaDevice *ata);
+const char *ata_last_error(const AtaDevice *ata);
 u64  ata_total_sectors(const AtaDevice *ata);
 bool ata_take_activity(AtaDevice *ata);
 

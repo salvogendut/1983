@@ -98,29 +98,56 @@ int sunrise_install_rom(MsxSunriseIde *sunrise,
     return 0;
 }
 
-void sunrise_eject_rom(MsxSunriseIde *sunrise) {
+int sunrise_eject_rom(MsxSunriseIde *sunrise) {
     if (!sunrise)
-        return;
-    sunrise_eject_disk(sunrise);
+        return -1;
+    if (sunrise_eject_disk(sunrise) != 0)
+        return -1;
     memset(sunrise->rom, 0xff, sizeof(sunrise->rom));
     sunrise->rom_loaded = false;
     sunrise_write_control(sunrise, 0xff);
     sunrise_reset(sunrise);
+    return 0;
 }
 
 int sunrise_mount_disk(MsxSunriseIde *sunrise, const char *path) {
-    if (!sunrise || !sunrise->rom_loaded)
-        return -1;
-    return ata_mount(&sunrise->master, path);
+    return sunrise_mount_disk_mode(
+        sunrise, path, ATA_IMAGE_READ_ONLY);
 }
 
-void sunrise_eject_disk(MsxSunriseIde *sunrise) {
-    if (sunrise)
-        ata_unmount(&sunrise->master);
+int sunrise_mount_disk_mode(MsxSunriseIde *sunrise, const char *path,
+                            AtaImageMode mode) {
+    if (!sunrise || !sunrise->rom_loaded)
+        return -1;
+    return ata_mount_mode(&sunrise->master, path, mode);
+}
+
+int sunrise_flush_disk(MsxSunriseIde *sunrise) {
+    return sunrise ? ata_flush(&sunrise->master) : -1;
+}
+
+int sunrise_eject_disk(MsxSunriseIde *sunrise) {
+    return sunrise ? ata_unmount(&sunrise->master) : -1;
 }
 
 bool sunrise_disk_mounted(const MsxSunriseIde *sunrise) {
     return sunrise && ata_is_mounted(&sunrise->master);
+}
+
+bool sunrise_disk_writable(const MsxSunriseIde *sunrise) {
+    return sunrise && ata_is_writable(&sunrise->master);
+}
+
+bool sunrise_disk_dirty(const MsxSunriseIde *sunrise) {
+    return sunrise && ata_is_dirty(&sunrise->master);
+}
+
+bool sunrise_disk_has_error(const MsxSunriseIde *sunrise) {
+    return sunrise && ata_has_io_error(&sunrise->master);
+}
+
+const char *sunrise_disk_error(const MsxSunriseIde *sunrise) {
+    return sunrise ? ata_last_error(&sunrise->master) : "";
 }
 
 bool sunrise_take_activity(MsxSunriseIde *sunrise) {

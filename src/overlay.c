@@ -59,6 +59,7 @@ enum {
 enum {
     SUNRISE_SETUP_FIRMWARE = 0,
     SUNRISE_SETUP_DISK,
+    SUNRISE_SETUP_ACCESS,
     SUNRISE_SETUP_CONNECT,
     SUNRISE_SETUP_ROWS
 };
@@ -88,7 +89,7 @@ static int section_rows(const Overlay *overlay,
     switch (section) {
         case OVERLAY_GENERAL:    return GENERAL_ROWS;
         case OVERLAY_MEDIA:
-            return overlay->config->sunrise_ide ? 8 : 7;
+            return overlay->config->sunrise_ide ? 9 : 7;
         case OVERLAY_EXTENSIONS: return 4;
         case OVERLAY_ADVANCED:   return ADVANCED_ROWS;
         case OVERLAY_SECTION_COUNT: break;
@@ -110,6 +111,10 @@ static const char *input_port_name(InputPort port) {
 
 static const char *joy_port_device_name(JoyPortDevice device) {
     return device == JOY_PORT_MOUSE ? "Mouse" : "Joystick";
+}
+
+static const char *ide_mode_name(AtaImageMode mode) {
+    return mode == ATA_IMAGE_READ_WRITE ? "Read/write" : "Read-only";
 }
 
 static const char *path_basename(const char *path);
@@ -169,12 +174,24 @@ static void ide_image_text(const Overlay *overlay,
                            char *value, size_t value_size) {
     const char *path = overlay->config->ide_image_path;
 
-    if (msx_sunrise_disk_mounted(overlay->msx))
-        snprintf(value, value_size, "%s [read-only]",
-                 path_basename(path));
+    if (msx_sunrise_disk_mounted(overlay->msx)) {
+        const char *state =
+            msx_sunrise_disk_has_error(overlay->msx)
+            ? ", I/O error" :
+            msx_sunrise_disk_dirty(overlay->msx)
+            ? ", dirty" : "";
+
+        snprintf(value, value_size, "%s [%s%s]",
+                 path_basename(path),
+                 msx_sunrise_disk_writable(overlay->msx)
+                 ? "read/write" : "read-only", state);
+    }
     else if (path[0])
-        snprintf(value, value_size, "%s [not mounted]",
-                 path_basename(path));
+        snprintf(value, value_size, "%s [not mounted, %s]",
+                 path_basename(path),
+                 overlay->config->ide_image_mode ==
+                     ATA_IMAGE_READ_WRITE
+                 ? "read/write" : "read-only");
     else
         snprintf(value, value_size, "[not mounted]");
 }
@@ -393,6 +410,11 @@ static void item_text(const Overlay *overlay, int row,
                     snprintf(label, label_size, "IDE hard disk");
                     ide_image_text(overlay, value, value_size);
                     break;
+                case 8:
+                    snprintf(label, label_size, "IDE image access");
+                    snprintf(value, value_size, "%s",
+                             ide_mode_name(config->ide_image_mode));
+                    break;
             }
             break;
         case OVERLAY_EXTENSIONS:
@@ -594,7 +616,7 @@ static void restore_firmware(Overlay *overlay) {
     }
 }
 
-static void restore_sunrise(Overlay *overlay) {
+static bool restore_sunrise(Overlay *overlay) {
     const Config *current = overlay->config;
     const Config *saved = &overlay->saved;
     int saved_slot =
@@ -605,24 +627,37 @@ static void restore_sunrise(Overlay *overlay) {
                saved->sunrise_rom_path) != 0 ||
         strcmp(current->ide_image_path,
                saved->ide_image_path) != 0 ||
+        current->ide_image_mode != saved->ide_image_mode ||
         msx_sunrise_slot(overlay->msx) !=
-            (saved->sunrise_ide ? saved_slot : -1);
+            (saved->sunrise_ide ? saved_slot : -1) ||
+        (msx_sunrise_disk_mounted(overlay->msx) &&
+         msx_sunrise_disk_writable(overlay->msx) !=
+             (saved->ide_image_mode == ATA_IMAGE_READ_WRITE));
 
     if (!changed)
-        return;
-    msx_eject_sunrise_ide(overlay->msx);
+        return true;
+    if (msx_eject_sunrise_ide(overlay->msx) != 0) {
+        notify_post("Could not restore Sunrise IDE: %s",
+                    msx_sunrise_disk_error(overlay->msx));
+        return false;
+    }
     if (!saved->sunrise_ide || saved_slot < 0)
-        return;
+        return true;
     if (msx_load_sunrise_ide(
             overlay->msx, (unsigned)saved_slot,
             saved->sunrise_rom_path) != 0) {
         notify_post("Could not restore Sunrise IDE ROM");
-        return;
+        return false;
     }
     if (saved->ide_image_path[0] &&
-        msx_mount_sunrise_disk(
-            overlay->msx, saved->ide_image_path) != 0)
-        notify_post("Could not restore Sunrise IDE disk");
+        msx_mount_sunrise_disk_mode(
+            overlay->msx, saved->ide_image_path,
+            saved->ide_image_mode) != 0) {
+        notify_post("Could not restore Sunrise IDE disk: %s",
+                    msx_sunrise_disk_error(overlay->msx));
+        return false;
+    }
+    return true;
 }
 
 static void restore_cassette(Overlay *overlay) {
@@ -657,8 +692,9 @@ static void close_overlay(Overlay *overlay, bool save) {
                 notify_post("Could not save settings");
         }
     } else {
+        if (!restore_sunrise(overlay))
+            return;
         restore_cartridges(overlay);
-        restore_sunrise(overlay);
         restore_cassette(overlay);
         restore_firmware(overlay);
         *overlay->config = overlay->saved;
@@ -1416,11 +1452,14 @@ static void begin_sunrise_setup(Overlay *overlay) {
     snprintf(overlay->pending_ide_image_path,
              sizeof(overlay->pending_ide_image_path), "%s",
              overlay->config->ide_image_path);
+    overlay->pending_ide_image_mode =
+        overlay->config->ide_image_mode;
     overlay->state = OVERLAY_STATE_SUNRISE_SETUP;
 }
 
 static bool connect_sunrise(Overlay *overlay, const char *rom_path,
-                            const char *image_path) {
+                            const char *image_path,
+                            AtaImageMode image_mode) {
     Config *config = overlay->config;
     char selected_rom[PATH_MAX];
     char selected_image[PATH_MAX];
@@ -1452,11 +1491,16 @@ static bool connect_sunrise(Overlay *overlay, const char *rom_path,
         return false;
     }
     if (selected_image[0] &&
-        msx_mount_sunrise_disk(
-            overlay->msx, selected_image) != 0) {
-        msx_eject_sunrise_ide(overlay->msx);
+        msx_mount_sunrise_disk_mode(
+            overlay->msx, selected_image, image_mode) != 0) {
+        char mount_error[192];
+
+        snprintf(mount_error, sizeof(mount_error), "%s",
+                 msx_sunrise_disk_error(overlay->msx));
+        (void)msx_eject_sunrise_ide(overlay->msx);
         config->sunrise_ide = false;
         notify_post("Could not mount IDE image: %s",
+                    mount_error[0] ? mount_error :
                     path_basename(selected_image));
         return false;
     }
@@ -1464,8 +1508,11 @@ static bool connect_sunrise(Overlay *overlay, const char *rom_path,
              sizeof(config->sunrise_rom_path), "%s", selected_rom);
     snprintf(config->ide_image_path,
              sizeof(config->ide_image_path), "%s", selected_image);
+    config->ide_image_mode = image_mode;
     if (selected_image[0])
-        notify_post("Sunrise IDE connected with disk: %s",
+        notify_post("Sunrise IDE connected with %s disk: %s",
+                    image_mode == ATA_IMAGE_READ_WRITE
+                    ? "read/write" : "read-only",
                     path_basename(selected_image));
     else
         notify_post("Sunrise IDE connected without a disk");
@@ -1475,17 +1522,43 @@ static bool connect_sunrise(Overlay *overlay, const char *rom_path,
 static void finish_sunrise_setup(Overlay *overlay) {
     if (!connect_sunrise(
             overlay, overlay->pending_sunrise_rom_path,
-            overlay->pending_ide_image_path))
+            overlay->pending_ide_image_path,
+            overlay->pending_ide_image_mode))
         return;
     overlay->dirty = true;
     overlay->state = OVERLAY_STATE_MENU;
     apply_config(overlay);
 }
 
-static void disconnect_sunrise(Overlay *overlay) {
-    msx_eject_sunrise_ide(overlay->msx);
+static bool disconnect_sunrise(Overlay *overlay) {
+    if (msx_eject_sunrise_ide(overlay->msx) != 0) {
+        notify_post("Could not disconnect Sunrise IDE: %s",
+                    msx_sunrise_disk_error(overlay->msx));
+        return false;
+    }
     (void)toggle_cartridge_extension(
         overlay, &overlay->config->sunrise_ide, "Sunrise IDE");
+    return true;
+}
+
+static bool set_ide_image_mode(Overlay *overlay,
+                               AtaImageMode mode) {
+    Config *config = overlay->config;
+
+    if (config->ide_image_mode == mode)
+        return true;
+    if (msx_sunrise_disk_mounted(overlay->msx) &&
+        msx_mount_sunrise_disk_mode(
+            overlay->msx, config->ide_image_path, mode) != 0) {
+        notify_post("Could not switch IDE image access: %s",
+                    msx_sunrise_disk_error(overlay->msx));
+        return false;
+    }
+    config->ide_image_mode = mode;
+    overlay->dirty = true;
+    notify_post("IDE image access set to %s",
+                ide_mode_name(mode));
+    return true;
 }
 
 static void activate_item(Overlay *overlay) {
@@ -1546,7 +1619,7 @@ static void activate_item(Overlay *overlay) {
         case OVERLAY_MEDIA: {
             static const char *media[] = {
                 "", "", "", "", "Cassette", "Drive A", "Drive B",
-                "IDE hard disk"
+                "IDE hard disk", "IDE image access"
             };
             if (overlay->row == 0) {
                 open_cartridge_dialog(overlay, 0);
@@ -1572,6 +1645,13 @@ static void activate_item(Overlay *overlay) {
                 open_ide_image_dialog(overlay);
                 return;
             }
+            if (overlay->row == 8) {
+                (void)set_ide_image_mode(
+                    overlay,
+                    config->ide_image_mode == ATA_IMAGE_READ_ONLY
+                    ? ATA_IMAGE_READ_WRITE : ATA_IMAGE_READ_ONLY);
+                return;
+            }
             notify_post("%s loading is not implemented yet",
                         media[overlay->row]);
             return;
@@ -1581,7 +1661,8 @@ static void activate_item(Overlay *overlay) {
                 case 0: config->second_drive = !config->second_drive; break;
                 case 1:
                     if (config->sunrise_ide) {
-                        disconnect_sunrise(overlay);
+                        if (!disconnect_sunrise(overlay))
+                            return;
                     } else if (firmware_file_has_size(
                                    config->sunrise_rom_path,
                                    MSX_SUNRISE_ROM_SIZE) &&
@@ -1591,7 +1672,8 @@ static void activate_item(Overlay *overlay) {
                         if (!connect_sunrise(
                                 overlay,
                                 config->sunrise_rom_path,
-                                config->ide_image_path))
+                                config->ide_image_path,
+                                config->ide_image_mode))
                             return;
                     } else {
                         begin_sunrise_setup(overlay);
@@ -1766,6 +1848,13 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                     break;
                 case SUNRISE_SETUP_DISK:
                     open_ide_image_dialog(overlay);
+                    break;
+                case SUNRISE_SETUP_ACCESS:
+                    overlay->pending_ide_image_mode =
+                        overlay->pending_ide_image_mode ==
+                            ATA_IMAGE_READ_ONLY
+                        ? ATA_IMAGE_READ_WRITE :
+                          ATA_IMAGE_READ_ONLY;
                     break;
                 case SUNRISE_SETUP_CONNECT:
                     finish_sunrise_setup(overlay);
@@ -1994,15 +2083,20 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
             } else if (overlay->section == OVERLAY_MEDIA &&
                        overlay->row == 7 &&
                        overlay->config->sunrise_ide) {
-                msx_eject_sunrise_disk(overlay->msx);
-                overlay->config->ide_image_path[0] = '\0';
-                overlay->dirty = true;
-                notify_post("IDE disk ejected");
+                if (msx_eject_sunrise_disk(overlay->msx) != 0) {
+                    notify_post("Could not eject IDE disk: %s",
+                                msx_sunrise_disk_error(overlay->msx));
+                } else {
+                    overlay->config->ide_image_path[0] = '\0';
+                    overlay->dirty = true;
+                    notify_post("IDE disk safely ejected");
+                }
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
                        overlay->row == 1 &&
                        overlay->config->sunrise_rom_path[0]) {
-                if (overlay->config->sunrise_ide)
-                    disconnect_sunrise(overlay);
+                if (overlay->config->sunrise_ide &&
+                    !disconnect_sunrise(overlay))
+                    break;
                 overlay->config->sunrise_rom_path[0] = '\0';
                 overlay->dirty = true;
                 apply_config(overlay);
@@ -2133,15 +2227,16 @@ void overlay_tick(Overlay *overlay) {
                          sizeof(overlay->config->last_media_dir),
                          overlay->dialog_path);
             overlay->sunrise_setup_row =
-                SUNRISE_SETUP_CONNECT;
+                SUNRISE_SETUP_ACCESS;
             notify_post("IDE disk selected: %s",
                         path_basename(overlay->dialog_path));
             return;
         }
-        if (msx_mount_sunrise_disk(
-                overlay->msx, overlay->dialog_path) != 0) {
+        if (msx_mount_sunrise_disk_mode(
+                overlay->msx, overlay->dialog_path,
+                overlay->config->ide_image_mode) != 0) {
             notify_post("Could not mount IDE image: %s",
-                        path_basename(overlay->dialog_path));
+                        msx_sunrise_disk_error(overlay->msx));
             return;
         }
         snprintf(overlay->config->ide_image_path,
@@ -2151,7 +2246,10 @@ void overlay_tick(Overlay *overlay) {
                      sizeof(overlay->config->last_media_dir),
                      overlay->dialog_path);
         overlay->dirty = true;
-        notify_post("IDE disk mounted read-only: %s",
+        notify_post("IDE disk mounted %s: %s",
+                    overlay->config->ide_image_mode ==
+                        ATA_IMAGE_READ_WRITE
+                    ? "read/write" : "read-only",
                     path_basename(overlay->dialog_path));
         return;
     }
@@ -2483,7 +2581,7 @@ static void render_model_delete(const Overlay *overlay,
 static void render_sunrise_setup(const Overlay *overlay,
                                  SDL_Renderer *renderer) {
     static const char *labels[SUNRISE_SETUP_ROWS] = {
-        "Firmware ROM", "IDE hard disk", "Connect"
+        "Firmware ROM", "IDE hard disk", "Disk access", "Connect"
     };
     char firmware[52];
     char disk[52];
@@ -2509,6 +2607,8 @@ static void render_sunrise_setup(const Overlay *overlay,
         snprintf(disk, sizeof(disk), "[optional - no disk]");
     values[SUNRISE_SETUP_FIRMWARE] = firmware;
     values[SUNRISE_SETUP_DISK] = disk;
+    values[SUNRISE_SETUP_ACCESS] =
+        ide_mode_name(overlay->pending_ide_image_mode);
     values[SUNRISE_SETUP_CONNECT] = "Connect Sunrise IDE";
 
     ui_fill_rect(renderer, 0.0f, 0.0f,

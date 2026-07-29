@@ -9,7 +9,7 @@ complete MSX hardware specification.
 | Files | Responsibility |
 |-------|----------------|
 | `src/main.c` | Process lifetime, command line, SDL event loop, and shared function-key bindings |
-| `src/ata.*` | Host-independent ATA task file, IDENTIFY/read commands, and read-only raw-image lifetime |
+| `src/ata.*` | Host-independent ATA task file, IDENTIFY/read/write/flush commands, and safe raw-image lifetime |
 | `src/cartridge.*` | Host-independent cartridge image ownership, mapper detection, bank registers, and SCC register window |
 | `src/cassette.*` | Host-independent MSX CAS parser, type detection, waveform synthesis, motor-controlled transport, comparator, and monitor signal |
 | `src/audio.*` | SDL3 audio-stream lifetime and host sample submission |
@@ -138,11 +138,12 @@ Sunrise low/high-byte latch into 16-bit ATA data transfers. `src/ata.c` knows
 nothing about MSX slots or SDL and owns the task-file state and host image.
 This split makes the ATA backend reusable by future controllers.
 
-Raw images are opened with `rb`. The first checkpoint intentionally aborts
-ATA write commands, so a failed emulator or guest cannot alter an external
-fixture. Adding writable images requires an explicit frontend choice,
-write-protection state, write tests, flush/error handling, and reset
-persistence.
+Raw images default to `rb`. Explicit read/write mode uses `r+b`, buffers a
+guest sector until all 512 bytes arrive, and tracks completed dirty sectors
+until ATA FLUSH CACHE, replacement, ejection, or shutdown. Incomplete
+transfers are discarded safely by reset. Flush failures keep the image
+mounted and visible to the frontend instead of silently losing buffered
+data.
 
 The optional full-system checkpoint is enabled with:
 

@@ -17,10 +17,11 @@ SDL3 allows.
 > The emulator includes TMS9918-family and V9938 video, AY/YM PSG audio,
 > the international keyboard matrix, SDL3 joystick input, dual cartridge
 > slots with common mappers, MSX2 expanded slots, memory mapper, RTC, and
-> read-only Sunrise IDE disks. The official Sunrise Nextor kernel can boot
+> safe read-only/read-write Sunrise IDE disks. The official Sunrise Nextor
+> kernel can boot
 > the GeoBench raw image to its desktop. Standard MSX CAS cassette playback
-> is integrated with the BIOS motor and input path. Floppy, writable disks,
-> cassette recording, SCC audio, and other extensions remain in development.
+> is integrated with the BIOS motor and input path. Floppy, cassette
+> recording, SCC audio, and other extensions remain in development.
 
 ## Highlights
 
@@ -34,8 +35,8 @@ SDL3 allows.
 - Familiar F9 overlay, function-key controls, status LEDs, notifications,
   screenshots, fullscreen, and integer scaling.
 - Cartridge I/II presence LEDs, with a split network-access form.
-- Sunrise IDE cartridge emulation, read-only raw ATA images, IDE activity,
-  and Nextor boot.
+- Sunrise IDE cartridge emulation, explicit read-only/read-write raw ATA
+  images, safe flush/ejection, IDE activity, and Nextor boot.
 - Standard MSX CAS playback with emulated motor control, transport status,
   rewind/eject controls, and the Tape LED.
 - Headless execution and deterministic component and firmware tests.
@@ -70,7 +71,7 @@ Useful options:
 ./1983 --models ./my-models.conf --model my-msx
 ./1983 --model msx1 --cassette /path/to/program.cas
 ./1983 --sunrise-rom /path/to/Nextor.SunriseIDE.ROM \
-  --ide /path/to/disk.img
+  --ide /path/to/disk.img --ide-mode read-only
 ./1983 --config ./test.conf
 ./1983 --headless --unthrottled --exit-after 10
 ./1983 --help
@@ -176,12 +177,17 @@ first configured device reserves cartridge slot 2 and the second reserves
 slot 1. Reserved cartridge and mapper controls remain visible but cannot be
 used. The first activation of **Extensions > Sunrise IDE** opens a small
 setup panel: select the required 128 KiB Sunrise/Nextor controller ROM,
-optionally select a raw IDE image, then choose Connect. Later activations
+optionally select a raw IDE image, choose its access mode, then Connect.
+Later activations
 simply disconnect or reconnect the configured controller; Delete forgets its
 stored firmware when a replacement is needed. The IDE hard-disk row appears
 in Media only while Sunrise IDE is connected and owns subsequent image
-changes and ejection. Images must use complete 512-byte sectors and are
-opened read-only in the current implementation.
+changes, access mode, and safe ejection. Images must use complete 512-byte
+sectors. Read-only is the default; read/write must be selected explicitly.
+Dirty data is flushed for ATA FLUSH CACHE, image replacement, ejection, and
+shutdown. A host I/O failure is reported and blocks ejection/replacement so
+it cannot silently discard buffered data. Keep backups of writable images:
+host filesystems cannot guarantee sector-level atomicity after power loss.
 
 SDL scancodes map positionally to the international MSX keyboard. Left Ctrl
 is CTRL, left Alt is GRAPH, right Alt is CODE, and right Ctrl is the ACC/dead
