@@ -51,6 +51,7 @@ int main(void) {
     Display display;
     Overlay overlay;
     DisplayLayout layout;
+    u8 cartridge[0x4000];
 
     display_calculate_layout(640, 520, &layout);
     assert(layout.screen_x == 0);
@@ -85,6 +86,15 @@ int main(void) {
     snprintf(models.edit_path, sizeof(models.edit_path),
              "%s", editor_path);
     msx_init(&msx, config.model, config.region, config.memory_kb);
+    memset(cartridge, 0xff, sizeof(cartridge));
+    cartridge[0] = 'A';
+    cartridge[1] = 'B';
+    assert(msx_install_cartridge_slot(
+               &msx, 1, cartridge, sizeof(cartridge),
+               MSX_CART_MAPPER_LINEAR) == 0);
+    snprintf(config.cartridge_path[1],
+             sizeof(config.cartridge_path[1]),
+             "test-cartridge-2.rom");
     SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen",
                             SDL_HINT_OVERRIDE);
     assert(display_init(&display, &config, &msx, "Test MSX") == 0);
@@ -112,7 +122,90 @@ int main(void) {
     assert(config.model == MSX_MODEL_GENERIC_MSX1);
     assert(!overlay.dirty);
 
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 2);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.memory_kb == 128);
+    assert(msx.ram_kb == 128);
+    for (int step = 0; step < 5; ++step)
+        send_key(&overlay, SDLK_RETURN);
+    assert(config.memory_kb == 4096);
+    assert(msx.ram_kb == 4096);
+    assert(msx.ram_capacity == MSX_RAM_MAX_SIZE);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 4);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.audio_volume == 90);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 5);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.extra_hardware);
+
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_MEDIA);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_EXTENSIONS);
+    assert(overlay.row == 0);
+    render_overlay(&display, &msx, &overlay);
+
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.sunrise_ide);
+    assert(strcmp(config_cartridge_slot_owner(&config, 1),
+                  "Sunrise IDE") == 0);
+    assert(!msx_get_cartridge(&msx, 1)->loaded);
+    assert(!config.cartridge_path[1][0]);
+
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.scc);
+    assert(strcmp(config_cartridge_slot_owner(&config, 0),
+                  "Konami SCC") == 0);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.msx_music);
+    assert(config_cartridge_extension_count(&config) == 2);
+
     send_key(&overlay, SDLK_LEFT);
+    assert(overlay.section == OVERLAY_MEDIA);
+    assert(overlay.row == 0);
+    render_overlay(&display, &msx, &overlay);
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.dialog_target == OVERLAY_DIALOG_NONE);
+    for (int row = 0; row < 7; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 7);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 0);
+
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_EXTENSIONS);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.sunrise_ide);
+    assert(config_cartridge_slot_available(&config, 0));
+    assert(strcmp(config_cartridge_slot_owner(&config, 1),
+                  "Konami SCC") == 0);
+
+    send_key(&overlay, SDLK_LEFT);
+    assert(overlay.section == OVERLAY_MEDIA);
+    for (int row = 0; row < 6; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 6);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 0);
+    send_key(&overlay, SDLK_LEFT);
+    assert(overlay.section == OVERLAY_GENERAL);
+    for (int row = 0; row < 5; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 5);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.extra_hardware);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_MEDIA);
+    send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_RETURN);

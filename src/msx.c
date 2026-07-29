@@ -47,12 +47,12 @@ static const MsxProfile profiles[MSX_MODEL_COUNT] = {
     },
 };
 
-static const int msx1_ram_sizes[] = { 16, 32, 64 };
-/*
- * The first concrete MSX2 profile is the NMS 8250 and therefore exposes its
- * 128 KB internal mapper. Larger external mappers will be separate devices.
- */
-static const int msx2_ram_sizes[] = { 64, 128 };
+static const int msx1_ram_sizes[] = {
+    16, 32, 64, 128, 256, 512, 1024, 2048, 4096
+};
+static const int msx2_ram_sizes[] = {
+    64, 128, 256, 512, 1024, 2048, 4096
+};
 
 void msx_keyboard_clear(MsxMachine *msx) {
     if (!msx)
@@ -254,6 +254,39 @@ int msx_next_ram_kb(MsxModel model, int ram_kb, int direction) {
     return sizes[index];
 }
 
+static int configure_ram_storage(MsxMachine *msx, int ram_kb) {
+    size_t required = (size_t)ram_kb * 1024;
+
+    if (required <= sizeof(msx->internal_ram)) {
+        if (msx->ram && msx->ram != msx->internal_ram)
+            free(msx->ram);
+        msx->ram = msx->internal_ram;
+        msx->ram_capacity = sizeof(msx->internal_ram);
+        return 0;
+    }
+    if (required > MSX_RAM_MAX_SIZE)
+        return -1;
+    if (msx->ram != msx->internal_ram &&
+        msx->ram_capacity == required)
+        return 0;
+    {
+        u8 *expanded = malloc(required);
+
+        if (!expanded)
+            return -1;
+        if (msx->ram && msx->ram != msx->internal_ram)
+            free(msx->ram);
+        msx->ram = expanded;
+        msx->ram_capacity = required;
+    }
+    return 0;
+}
+
+bool msx_has_memory_mapper(const MsxMachine *msx) {
+    return msx && msx->profile &&
+           (msx->profile->memory_mapper || msx->ram_kb > 64);
+}
+
 void msx_reset(MsxMachine *msx) {
     if (!msx)
         return;
@@ -275,7 +308,8 @@ void msx_reset(MsxMachine *msx) {
      * even on engines which ignore software attempts to reverse them.
      */
     psg_write_register(&msx->psg, 7, 0x80);
-    memset(msx->ram, 0, sizeof(msx->ram));
+    if (msx->ram)
+        memset(msx->ram, 0, msx->ram_capacity);
     msx->audio_sample_count = 0;
     msx->audio_sample_cycles = 0;
     msx->bus_ticked_in_step = 0;
@@ -290,13 +324,25 @@ void msx_reset(MsxMachine *msx) {
 
 void msx_configure(MsxMachine *msx, MsxModel model, MsxRegion region,
                    int ram_kb) {
+    int normalized_ram;
+
     if (!msx)
         return;
     msx->profile = msx_profile(model);
     psg_set_variant(&msx->psg, msx->profile->psg_variant);
     msx->region = region == MSX_REGION_NTSC
                 ? MSX_REGION_NTSC : MSX_REGION_PAL;
-    msx->ram_kb = msx_normalize_ram_kb(msx->profile->model, ram_kb);
+    normalized_ram =
+        msx_normalize_ram_kb(msx->profile->model, ram_kb);
+    if (configure_ram_storage(msx, normalized_ram) != 0) {
+        normalized_ram = msx_default_ram_kb(msx->profile->model);
+        (void)configure_ram_storage(msx, normalized_ram);
+        fprintf(stderr,
+                "MSX: could not allocate requested mapper RAM; "
+                "using %d KB\n",
+                normalized_ram);
+    }
+    msx->ram_kb = normalized_ram;
     msx->frame_hz = msx->region == MSX_REGION_NTSC ? 60 : 50;
     vdp_set_type(&msx->vdp,
                  msx_model_is_msx2(msx->profile->model)
@@ -308,6 +354,8 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     if (!msx)
         return;
     memset(msx, 0, sizeof(*msx));
+    msx->ram = msx->internal_ram;
+    msx->ram_capacity = sizeof(msx->internal_ram);
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_init(&msx->cartridges[i]);
     z80_init(&msx->cpu);
@@ -329,6 +377,10 @@ void msx_destroy(MsxMachine *msx) {
         return;
     for (unsigned i = 0; i < MSX_CARTRIDGE_SLOTS; ++i)
         msx_cartridge_destroy(&msx->cartridges[i]);
+    if (msx->ram && msx->ram != msx->internal_ram)
+        free(msx->ram);
+    msx->ram = NULL;
+    msx->ram_capacity = 0;
 }
 
 void msx_run_frame(MsxMachine *msx) {
@@ -387,8 +439,8 @@ static unsigned selected_subslot(const MsxMachine *msx, unsigned primary,
 static size_t mapper_ram_size(const MsxMachine *msx) {
     size_t size = (size_t)msx->ram_kb * 1024;
 
-    if (size > MSX_RAM_MAX_SIZE)
-        size = MSX_RAM_MAX_SIZE;
+    if (size > msx->ram_capacity)
+        size = msx->ram_capacity;
     return size;
 }
 
@@ -450,12 +502,15 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
         case 3: {
             unsigned secondary;
 
-            if (!slot_is_expanded(msx, primary))
+            if (!slot_is_expanded(msx, primary)) {
+                if (msx_has_memory_mapper(msx))
+                    return msx->ram[mapper_address(msx, address)];
                 return read_plain_ram(msx, address);
+            }
             secondary = selected_subslot(msx, primary, address);
             if (secondary == 0 && msx->subrom_loaded)
                 return msx->subrom[address & 0x3fff];
-            if (secondary == 2 && msx->profile->memory_mapper)
+            if (secondary == 2 && msx_has_memory_mapper(msx))
                 return msx->ram[mapper_address(msx, address)];
             if (secondary == 3 && msx->disk_rom_loaded &&
                 address >= 0x4000 && address < 0x8000)
@@ -487,11 +542,14 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
     if (primary != 3)
         return;
     if (!slot_is_expanded(msx, primary)) {
-        write_plain_ram(msx, address, value);
+        if (msx_has_memory_mapper(msx))
+            msx->ram[mapper_address(msx, address)] = value;
+        else
+            write_plain_ram(msx, address, value);
         return;
     }
     secondary = selected_subslot(msx, primary, address);
-    if (secondary == 2 && msx->profile->memory_mapper)
+    if (secondary == 2 && msx_has_memory_mapper(msx))
         msx->ram[mapper_address(msx, address)] = value;
 }
 
@@ -542,7 +600,7 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
         case 0xfd:
         case 0xfe:
         case 0xff:
-            if (msx->profile->memory_mapper)
+            if (msx_has_memory_mapper(msx))
                 return msx->mapper_segment[low & 3] |
                        (u8)~mapper_segment_mask(msx);
             break;
@@ -618,7 +676,7 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
         case 0xfd:
         case 0xfe:
         case 0xff:
-            if (msx->profile->memory_mapper)
+            if (msx_has_memory_mapper(msx))
                 msx->mapper_segment[low & 3] =
                     value & mapper_segment_mask(msx);
             break;

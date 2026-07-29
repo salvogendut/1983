@@ -33,7 +33,6 @@ static const char *section_name(OverlaySection section) {
     switch (section) {
         case OVERLAY_GENERAL:    return "General";
         case OVERLAY_MEDIA:      return "Media";
-        case OVERLAY_AUDIO:      return "Audio";
         case OVERLAY_EXTENSIONS: return "Extensions";
         case OVERLAY_ADVANCED:   return "Advanced";
         case OVERLAY_SECTION_COUNT: break;
@@ -43,15 +42,20 @@ static const char *section_name(OverlaySection section) {
 
 static bool section_available(const Overlay *overlay,
                               OverlaySection section) {
-    return section != OVERLAY_ADVANCED || overlay->config->tinker;
+    if (section == OVERLAY_EXTENSIONS)
+        return overlay->config->extra_hardware;
+    if (section == OVERLAY_ADVANCED)
+        return overlay->config->tinker;
+    return true;
 }
 
-static int section_rows(OverlaySection section) {
+static int section_rows(const Overlay *overlay,
+                        OverlaySection section) {
     switch (section) {
-        case OVERLAY_GENERAL:    return 5;
-        case OVERLAY_MEDIA:      return 9;
-        case OVERLAY_AUDIO:      return 1;
-        case OVERLAY_EXTENSIONS: return 5;
+        case OVERLAY_GENERAL:    return 7;
+        case OVERLAY_MEDIA:
+            return overlay->config->sunrise_ide ? 8 : 7;
+        case OVERLAY_EXTENSIONS: return 4;
         case OVERLAY_ADVANCED:   return 7;
         case OVERLAY_SECTION_COUNT: break;
     }
@@ -64,6 +68,26 @@ static const char *toggle_name(bool enabled) {
 
 static const char *stub_toggle_name(bool enabled) {
     return enabled ? "On (device stub)" : "Off";
+}
+
+static void cartridge_extension_text(const Config *config,
+                                     const char *name, bool enabled,
+                                     char *value, size_t value_size) {
+    if (!enabled) {
+        snprintf(value, value_size, "Off");
+        return;
+    }
+    for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+        const char *owner =
+            config_cartridge_slot_owner(config, slot);
+
+        if (owner && strcmp(owner, name) == 0) {
+            snprintf(value, value_size,
+                     "On (Cartridge %u, device stub)", slot + 1);
+            return;
+        }
+    }
+    snprintf(value, value_size, "Off (no free cartridge slot)");
 }
 
 static const char *notification_name(NotifyMode mode) {
@@ -90,11 +114,15 @@ static const char *path_basename(const char *path) {
 
 static void cartridge_text(const Overlay *overlay, unsigned slot,
                            char *value, size_t value_size) {
+    const char *owner =
+        config_cartridge_slot_owner(overlay->config, slot);
     const char *path = overlay->config->cartridge_path[slot];
     const MsxCartridge *cartridge =
         msx_get_cartridge(overlay->msx, slot);
 
-    if (cartridge && cartridge->loaded)
+    if (owner)
+        snprintf(value, value_size, "[reserved by %s]", owner);
+    else if (cartridge && cartridge->loaded)
         snprintf(value, value_size, "%s", path_basename(path));
     else if (path[0])
         snprintf(value, value_size, "%s [not loaded]",
@@ -105,12 +133,16 @@ static void cartridge_text(const Overlay *overlay, unsigned slot,
 
 static void mapper_text(const Overlay *overlay, unsigned slot,
                         char *value, size_t value_size) {
+    const char *owner =
+        config_cartridge_slot_owner(overlay->config, slot);
     MsxCartridgeMapper requested =
         overlay->config->cartridge_mapper[slot];
     const MsxCartridge *cartridge =
         msx_get_cartridge(overlay->msx, slot);
 
-    if (requested == MSX_CART_MAPPER_AUTO &&
+    if (owner)
+        snprintf(value, value_size, "[unavailable: %s]", owner);
+    else if (requested == MSX_CART_MAPPER_AUTO &&
         cartridge && cartridge->loaded)
         snprintf(value, value_size, "Auto (%s)",
                  msx_cartridge_mapper_display_name(cartridge->mapper));
@@ -172,6 +204,16 @@ static void item_text(const Overlay *overlay, int row,
                              msx->profile->vram_kb, msx_vdp_name(msx));
                     break;
                 case 4:
+                    snprintf(label, label_size, "PSG volume");
+                    snprintf(value, value_size, "%d%%",
+                             config->audio_volume);
+                    break;
+                case 5:
+                    snprintf(label, label_size, "Extra Hardware");
+                    snprintf(value, value_size, "%s",
+                             toggle_name(config->extra_hardware));
+                    break;
+                case 6:
                     snprintf(label, label_size, "Tinker");
                     snprintf(value, value_size, "%s",
                              toggle_name(config->tinker));
@@ -212,20 +254,11 @@ static void item_text(const Overlay *overlay, int row,
                              "[not mounted - loader planned]");
                     break;
                 case 7:
-                    snprintf(label, label_size, "Nextor kernel");
-                    snprintf(value, value_size,
-                             "[not mounted - loader planned]");
-                    break;
-                case 8:
                     snprintf(label, label_size, "IDE hard disk");
                     snprintf(value, value_size,
                              "[not mounted - loader planned]");
                     break;
             }
-            break;
-        case OVERLAY_AUDIO:
-            snprintf(label, label_size, "PSG volume");
-            snprintf(value, value_size, "%d%%", config->audio_volume);
             break;
         case OVERLAY_EXTENSIONS:
             switch (row) {
@@ -236,23 +269,21 @@ static void item_text(const Overlay *overlay, int row,
                     break;
                 case 1:
                     snprintf(label, label_size, "Sunrise IDE");
-                    snprintf(value, value_size, "%s",
-                             stub_toggle_name(config->sunrise_ide));
+                    cartridge_extension_text(
+                        config, "Sunrise IDE", config->sunrise_ide,
+                        value, value_size);
                     break;
                 case 2:
                     snprintf(label, label_size, "Konami SCC");
-                    snprintf(value, value_size, "%s",
-                             stub_toggle_name(config->scc));
+                    cartridge_extension_text(
+                        config, "Konami SCC", config->scc,
+                        value, value_size);
                     break;
                 case 3:
                     snprintf(label, label_size, "MSX-MUSIC");
-                    snprintf(value, value_size, "%s",
-                             stub_toggle_name(config->msx_music));
-                    break;
-                case 4:
-                    snprintf(label, label_size, "Kanji ROM");
-                    snprintf(value, value_size, "%s",
-                             stub_toggle_name(config->kanji_rom));
+                    cartridge_extension_text(
+                        config, "MSX-MUSIC", config->msx_music,
+                        value, value_size);
                     break;
             }
             break;
@@ -353,14 +384,21 @@ static void restore_cartridges(Overlay *overlay) {
     for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
         const char *current = overlay->config->cartridge_path[slot];
         const char *saved = overlay->saved.cartridge_path[slot];
+        const char *current_owner =
+            config_cartridge_slot_owner(overlay->config, slot);
+        const char *saved_owner =
+            config_cartridge_slot_owner(&overlay->saved, slot);
         bool changed =
             strcmp(current, saved) != 0 ||
             overlay->config->cartridge_mapper[slot] !=
-                overlay->saved.cartridge_mapper[slot];
+                overlay->saved.cartridge_mapper[slot] ||
+            (current_owner != NULL) != (saved_owner != NULL) ||
+            (current_owner && saved_owner &&
+             strcmp(current_owner, saved_owner) != 0);
 
         if (!changed)
             continue;
-        if (!saved[0]) {
+        if (saved_owner || !saved[0]) {
             msx_eject_cartridge(overlay->msx, slot);
         } else if (msx_load_cartridge_slot(
                        overlay->msx, slot, saved,
@@ -490,7 +528,14 @@ static void open_cartridge_dialog(Overlay *overlay, unsigned slot) {
     const char *location =
         overlay->config->last_media_dir[0]
         ? overlay->config->last_media_dir : NULL;
+    const char *owner =
+        config_cartridge_slot_owner(overlay->config, slot);
 
+    if (owner) {
+        notify_post("Cartridge slot %u is reserved by %s",
+                    slot + 1, owner);
+        return;
+    }
     if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
         return;
     overlay->dialog_target =
@@ -722,7 +767,14 @@ static void change_cartridge_mapper(Overlay *overlay, unsigned slot) {
     MsxCartridgeMapper next =
         (MsxCartridgeMapper)(previous + 1);
     const MsxCartridge *cartridge;
+    const char *owner =
+        config_cartridge_slot_owner(overlay->config, slot);
 
+    if (owner) {
+        notify_post("Cartridge slot %u is reserved by %s",
+                    slot + 1, owner);
+        return;
+    }
     if (next >= MSX_CART_MAPPER_COUNT)
         next = MSX_CART_MAPPER_AUTO;
     cartridge = msx_get_cartridge(overlay->msx, slot);
@@ -1026,6 +1078,46 @@ static void delete_model_edit(Overlay *overlay) {
     free(updated);
 }
 
+static bool toggle_cartridge_extension(Overlay *overlay,
+                                       bool *enabled,
+                                       const char *name) {
+    Config before = *overlay->config;
+
+    if (*enabled) {
+        *enabled = false;
+        notify_post("%s disconnected", name);
+        return true;
+    }
+    if (config_cartridge_extension_count(overlay->config) >=
+        MSX_CARTRIDGE_SLOTS) {
+        notify_post("Cannot connect %s: both cartridge slots are in use",
+                    name);
+        return false;
+    }
+    *enabled = true;
+    for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+        const char *old_owner =
+            config_cartridge_slot_owner(&before, slot);
+        const char *new_owner =
+            config_cartridge_slot_owner(overlay->config, slot);
+
+        if (old_owner || !new_owner)
+            continue;
+        if (overlay->config->cartridge_path[slot][0] ||
+            msx_get_cartridge(overlay->msx, slot)->loaded) {
+            msx_eject_cartridge(overlay->msx, slot);
+            overlay->config->cartridge_path[slot][0] = '\0';
+            notify_post("%s connected in cartridge slot %u; "
+                        "mounted cartridge ejected",
+                        new_owner, slot + 1);
+        } else {
+            notify_post("%s connected in cartridge slot %u",
+                        new_owner, slot + 1);
+        }
+    }
+    return true;
+}
+
 static void activate_item(Overlay *overlay) {
     Config *config = overlay->config;
 
@@ -1051,6 +1143,15 @@ static void activate_item(Overlay *overlay) {
                     notify_post("VRAM follows the selected MSX generation");
                     return;
                 case 4:
+                    config->audio_volume += 10;
+                    if (config->audio_volume > 100)
+                        config->audio_volume = 0;
+                    break;
+                case 5:
+                    config->extra_hardware =
+                        !config->extra_hardware;
+                    break;
+                case 6:
                     config->tinker = !config->tinker;
                     break;
             }
@@ -1058,7 +1159,7 @@ static void activate_item(Overlay *overlay) {
         case OVERLAY_MEDIA: {
             static const char *media[] = {
                 "", "", "", "", "Cassette", "Drive A", "Drive B",
-                "Nextor kernel", "IDE hard disk"
+                "IDE hard disk"
             };
             if (overlay->row == 0) {
                 open_cartridge_dialog(overlay, 0);
@@ -1080,18 +1181,27 @@ static void activate_item(Overlay *overlay) {
                         media[overlay->row]);
             return;
         }
-        case OVERLAY_AUDIO:
-            config->audio_volume += 10;
-            if (config->audio_volume > 100)
-                config->audio_volume = 0;
-            break;
         case OVERLAY_EXTENSIONS:
             switch (overlay->row) {
                 case 0: config->second_drive = !config->second_drive; break;
-                case 1: config->sunrise_ide = !config->sunrise_ide; break;
-                case 2: config->scc = !config->scc; break;
-                case 3: config->msx_music = !config->msx_music; break;
-                case 4: config->kanji_rom = !config->kanji_rom; break;
+                case 1:
+                    if (!toggle_cartridge_extension(
+                            overlay, &config->sunrise_ide,
+                            "Sunrise IDE"))
+                        return;
+                    break;
+                case 2:
+                    if (!toggle_cartridge_extension(
+                            overlay, &config->scc,
+                            "Konami SCC"))
+                        return;
+                    break;
+                case 3:
+                    if (!toggle_cartridge_extension(
+                            overlay, &config->msx_music,
+                            "MSX-MUSIC"))
+                        return;
+                    break;
             }
             break;
         case OVERLAY_ADVANCED:
@@ -1364,11 +1474,13 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
         case SDLK_UP:
             --overlay->row;
             if (overlay->row < 0)
-                overlay->row = section_rows(overlay->section) - 1;
+                overlay->row =
+                    section_rows(overlay, overlay->section) - 1;
             break;
         case SDLK_DOWN:
             ++overlay->row;
-            if (overlay->row >= section_rows(overlay->section))
+            if (overlay->row >=
+                section_rows(overlay, overlay->section))
                 overlay->row = 0;
             break;
         case SDLK_RETURN:
@@ -1389,10 +1501,19 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
             } else if (overlay->section == OVERLAY_MEDIA &&
                        (overlay->row == 0 || overlay->row == 2)) {
                 unsigned slot = overlay->row == 0 ? 0 : 1;
-                msx_eject_cartridge(overlay->msx, slot);
-                overlay->config->cartridge_path[slot][0] = '\0';
-                overlay->dirty = true;
-                notify_post("Cartridge %u ejected", slot + 1);
+                const char *owner =
+                    config_cartridge_slot_owner(
+                        overlay->config, slot);
+
+                if (owner) {
+                    notify_post("Cartridge slot %u is reserved by %s",
+                                slot + 1, owner);
+                } else {
+                    msx_eject_cartridge(overlay->msx, slot);
+                    overlay->config->cartridge_path[slot][0] = '\0';
+                    overlay->dirty = true;
+                    notify_post("Cartridge %u ejected", slot + 1);
+                }
             }
             break;
         case SDLK_ESCAPE:
@@ -1410,13 +1531,11 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
 static const char *section_hint(OverlaySection section) {
     switch (section) {
         case OVERLAY_GENERAL:
-            return "Enter Machine to choose a profile and its firmware.";
+            return "Machine, memory, audio, and optional menu controls.";
         case OVERLAY_MEDIA:
             return "Enter loads/selects; Delete ejects a cartridge.";
-        case OVERLAY_AUDIO:
-            return "Volume zero mutes the built-in PSG.";
         case OVERLAY_EXTENSIONS:
-            return "Extension switches are UI/config stubs, not emulated devices.";
+            return "Cartridge devices reserve slot 2, then slot 1.";
         case OVERLAY_ADVANCED:
             return "Machine models are saved to the per-user catalogue.";
         case OVERLAY_SECTION_COUNT:
@@ -1503,6 +1622,17 @@ void overlay_tick(Overlay *overlay) {
            target == OVERLAY_DIALOG_CARTRIDGE_2 ? 1 : -1;
     if (slot < 0)
         return;
+    {
+        const char *owner =
+            config_cartridge_slot_owner(overlay->config,
+                                        (unsigned)slot);
+
+        if (owner) {
+            notify_post("Cartridge slot %d is now reserved by %s",
+                        slot + 1, owner);
+            return;
+        }
+    }
     if (msx_load_cartridge_slot(
             overlay->msx, (unsigned)slot, overlay->dialog_path,
             overlay->config->cartridge_mapper[slot]) != 0) {
@@ -1781,7 +1911,7 @@ void overlay_render(const Overlay *overlay) {
     if (!overlay->visible)
         return;
     renderer = overlay->display->renderer;
-    rows = section_rows(overlay->section);
+    rows = section_rows(overlay, overlay->section);
     panel_h = OVERLAY_FIRST_Y + rows * OVERLAY_LINE_H + 54;
 
     ui_fill_rect(renderer, 0.0f, 0.0f,

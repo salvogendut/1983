@@ -22,7 +22,7 @@ the 1984 and 1985 sibling emulators.
 | Area | Current position and intended support |
 |------|---------------------------------------|
 | CPU | Z80 instruction set, interrupts, and cycle-aware execution are integrated |
-| Machine architecture | Primary slots, NMS 8250 expanded slots, and its internal 128 KiB mapper are implemented |
+| Machine architecture | Primary slots, NMS 8250 expanded slots, its internal mapper, and configurable mapper capacity through 4 MiB are implemented |
 | MSX video | Pattern modes, sprite mode 1, status, collisions, and interrupts are implemented; timing refinement remains |
 | MSX2 video | V9938 registers, palette, bitmap modes, sprite mode 2, commands, interrupts, contended VRAM, and scanline-progressive output are implemented |
 | Audio | AY/YM PSG and SDL3 output are implemented; SCC and MSX-MUSIC are planned |

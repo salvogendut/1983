@@ -66,7 +66,7 @@ hardware layouts are:
 | VRAM | 16 KB | 128 KB | 128 KB |
 | VDP | TMS9918A (NTSC) or TMS9929A (PAL) | V9938 | V9938 |
 | Expanded slots | No | Yes | Yes |
-| RAM mapper | No | Yes | Yes |
+| RAM mapper | With RAM above 64 KB | Yes | Yes |
 | RTC | No | Yes | Yes |
 | Required firmware | BIOS | BIOS + Sub-ROM | BIOS + Sub-ROM + disk ROM |
 
@@ -102,6 +102,17 @@ two mapper devices, not one combined RAM allocation. Firmware discovery will
 build on the explicit `1983-models.conf` paths and eventually match the
 pinned hashes documented in `BOOT_TARGETS.md`; no machine ROM belongs in the
 repository.
+
+The frontend RAM control currently scales the active system mapper from its
+profile default through 4 MiB; allocations above 128 KiB live on the heap.
+The generic MSX1 layout exposes mapper ports when more than 64 KiB is
+selected. This compatibility setting does not remove the future requirement
+to model GeoBench's internal and external mappers as distinct devices.
+
+`config_cartridge_slot_owner()` is the shared authority for physical
+cartridge-port reservations. Sunrise IDE, SCC, and MSX-MUSIC reserve slot 2
+then slot 1 in deterministic order. Startup and overlay media operations
+must consult that function rather than duplicating extension policy.
 
 ## Bus and port assumptions
 

@@ -127,6 +127,13 @@ void config_defaults(Config *config) {
 }
 
 void config_normalize(Config *config) {
+    bool *cartridge_extensions[] = {
+        &config->sunrise_ide,
+        &config->scc,
+        &config->msx_music,
+    };
+    unsigned connected = 0;
+
     if ((unsigned)config->model >= MSX_MODEL_COUNT)
         config->model = MSX_MODEL_GENERIC_MSX1;
     if (config->region != MSX_REGION_NTSC)
@@ -151,6 +158,17 @@ void config_normalize(Config *config) {
         if ((unsigned)config->cartridge_mapper[slot] >=
             MSX_CART_MAPPER_COUNT)
             config->cartridge_mapper[slot] = MSX_CART_MAPPER_AUTO;
+    }
+    for (size_t i = 0;
+         i < sizeof(cartridge_extensions) /
+             sizeof(cartridge_extensions[0]);
+         ++i) {
+        if (!*cartridge_extensions[i])
+            continue;
+        if (connected >= MSX_CARTRIDGE_SLOTS)
+            *cartridge_extensions[i] = false;
+        else
+            ++connected;
     }
 }
 
@@ -215,6 +233,9 @@ void config_load(Config *config, const char *path) {
             config->crt_scanlines = atoi(value);
         else if (strcmp(key, "audio_volume") == 0)
             config->audio_volume = atoi(value);
+        else if (strcmp(key, "extra_hardware") == 0)
+            config->extra_hardware =
+                parse_bool(value, config->extra_hardware);
         else if (strcmp(key, "second_drive") == 0)
             config->second_drive = parse_bool(value, config->second_drive);
         else if (strcmp(key, "sunrise_ide") == 0)
@@ -309,6 +330,8 @@ int config_save(const Config *config) {
             msx_cartridge_mapper_name(config->cartridge_mapper[1]));
     fprintf(file, "last_media_dir = %s\n\n", config->last_media_dir);
     fprintf(file, "[extensions]\n");
+    fprintf(file, "extra_hardware = %s\n",
+            bool_name(config->extra_hardware));
     fprintf(file, "second_drive = %s\n", bool_name(config->second_drive));
     fprintf(file, "sunrise_ide = %s\n", bool_name(config->sunrise_ide));
     fprintf(file, "scc = %s\n", bool_name(config->scc));
@@ -322,4 +345,44 @@ int config_save(const Config *config) {
             config->notifications == NOTIFY_MODE_CONSOLE ? "console" : "off");
 
     return fclose(file) == 0 ? 0 : -1;
+}
+
+unsigned config_cartridge_extension_count(const Config *config) {
+    if (!config)
+        return 0;
+    return (config->sunrise_ide ? 1u : 0u) +
+           (config->scc ? 1u : 0u) +
+           (config->msx_music ? 1u : 0u);
+}
+
+const char *config_cartridge_slot_owner(const Config *config,
+                                        unsigned slot) {
+    const char *extensions[MSX_CARTRIDGE_SLOTS];
+    unsigned count = 0;
+
+    if (!config || slot >= MSX_CARTRIDGE_SLOTS)
+        return NULL;
+    if (config->sunrise_ide && count < MSX_CARTRIDGE_SLOTS)
+        extensions[count++] = "Sunrise IDE";
+    if (config->scc && count < MSX_CARTRIDGE_SLOTS)
+        extensions[count++] = "Konami SCC";
+    if (config->msx_music && count < MSX_CARTRIDGE_SLOTS)
+        extensions[count++] = "MSX-MUSIC";
+
+    /*
+     * Keep cartridge 1 available for ordinary software until a second
+     * extension is connected. This also gives every valid configuration a
+     * deterministic physical-port assignment.
+     */
+    if (slot == 1 && count >= 1)
+        return extensions[0];
+    if (slot == 0 && count >= 2)
+        return extensions[1];
+    return NULL;
+}
+
+bool config_cartridge_slot_available(const Config *config,
+                                     unsigned slot) {
+    return slot < MSX_CARTRIDGE_SLOTS &&
+           config_cartridge_slot_owner(config, slot) == NULL;
 }

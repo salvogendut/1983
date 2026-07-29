@@ -27,6 +27,7 @@ typedef struct {
 
     int audio_volume;
 
+    bool extra_hardware;
     bool second_drive;
     bool sunrise_ide;
     bool scc;
@@ -51,3 +52,8 @@ void config_defaults(Config *config);
 void config_normalize(Config *config);
 void config_load(Config *config, const char *path);
 int  config_save(const Config *config);
+unsigned config_cartridge_extension_count(const Config *config);
+const char *config_cartridge_slot_owner(const Config *config,
+                                        unsigned slot);
+bool config_cartridge_slot_available(const Config *config,
+                                     unsigned slot);

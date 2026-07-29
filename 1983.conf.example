@@ -5,6 +5,7 @@
 model = msx1
 hardware = msx1
 region = pal
+# Supported selections extend through 4096 KiB.
 memory_kb = 64
 
 [firmware]
@@ -31,6 +32,7 @@ cartridge2_mapper = auto
 last_media_dir =
 
 [extensions]
+extra_hardware = false
 second_drive = false
 sunrise_ide = false
 scc = false

@@ -19,6 +19,12 @@ secondary-slot register at `0xFFFF`, the MSX2 Sub-ROM, 128 KiB internal
 mapper RAM, and the disk ROM. Memory-mapper segment registers are exposed at
 ports `0xFC` through `0xFF`.
 
+The General RAM control offers power-of-two mapper capacities through
+4096 KiB (plus the smaller 16/32 KiB MSX1 layouts). Capacity above 128 KiB is
+allocated on demand instead of enlarging the machine structure and host
+stack. On MSX1, selecting more than 64 KiB enables the mapper port and
+segment behavior needed to make the extra RAM addressable.
+
 The current hardware layouts are:
 
 | Setting | MSX | MSX2 | Philips NMS 8250 |
@@ -28,7 +34,7 @@ The current hardware layouts are:
 | VRAM | 16 KiB | 128 KiB | 128 KiB |
 | VDP | TMS9918A/TMS9929A | V9938 | V9938 |
 | Expanded slots | No | Yes | Yes |
-| Memory mapper | No | Yes | Yes |
+| Memory mapper | With RAM above 64 KiB | Yes | Yes |
 | RTC | No | Yes | Yes |
 | Firmware | BIOS | BIOS + Sub-ROM | BIOS + Sub-ROM + disk ROM |
 
@@ -91,8 +97,16 @@ persistent manual override. The SCC register window is mapped, but SCC audio
 is not implemented yet.
 
 The Media overlay can load, eject, and independently configure both
-cartridges. Cassette, floppy, Nextor-kernel, and IDE rows remain explicit
-stubs.
+cartridges. Cassette and floppy rows remain explicit stubs. The IDE
+hard-disk stub appears only when Sunrise IDE is connected; the Nextor kernel
+is cartridge firmware and therefore has no separate Media row.
+
+General > Extra Hardware reveals the Extensions section. Sunrise IDE, SCC,
+and MSX-MUSIC are treated as cartridge-connected devices: the first enabled
+device reserves cartridge slot 2 and the second reserves slot 1. A third is
+refused. Mounting, ejecting, mapper changes, asynchronous picker completion,
+and command-line startup all honor the same reservation state. Enabling an
+extension ejects and forgets media in the newly reserved slot.
 
 ## MSX1 video
 

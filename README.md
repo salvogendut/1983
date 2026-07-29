@@ -127,7 +127,15 @@ checkpoints, the GeoBench/Nextor target, and licensing boundaries.
 
 Inside the overlay, Left and Right change section, Up and Down select a row,
 Enter activates it, F9 saves, and Escape closes or offers to discard changes.
-The Advanced section appears after enabling **General > Tinker**.
+PSG volume now lives in General, whose RAM control cycles through supported
+sizes up to 4096 KiB. **General > Extra Hardware** reveals Extensions;
+**General > Tinker** reveals Advanced.
+
+Sunrise IDE, SCC, and MSX-MUSIC are cartridge-connected extensions. The
+first configured device reserves cartridge slot 2 and the second reserves
+slot 1. Reserved cartridge and mapper controls remain visible but cannot be
+used. The IDE hard-disk row appears in Media only while Sunrise IDE is
+connected.
 
 SDL scancodes map positionally to the international MSX keyboard. Left Ctrl
 is CTRL, left Alt is GRAPH, right Alt is CODE, and right Ctrl is the ACC/dead

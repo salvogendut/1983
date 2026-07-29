@@ -20,7 +20,8 @@
 #define MSX_LOGO_SIZE 0x4000u
 #define MSX_SUBROM_SIZE 0x4000u
 #define MSX_DISK_ROM_SIZE 0x4000u
-#define MSX_RAM_MAX_SIZE 0x20000u
+#define MSX_RAM_INTERNAL_SIZE 0x20000u
+#define MSX_RAM_MAX_SIZE 0x400000u
 #define MSX_KEYBOARD_ROWS 11u
 #define MSX_KEYBOARD_COLUMNS 8u
 
@@ -80,7 +81,9 @@ typedef struct {
     u8 logo[MSX_LOGO_SIZE];
     u8 subrom[MSX_SUBROM_SIZE];
     u8 disk_rom[MSX_DISK_ROM_SIZE];
-    u8 ram[MSX_RAM_MAX_SIZE];
+    u8 *ram;
+    size_t ram_capacity;
+    u8 internal_ram[MSX_RAM_INTERNAL_SIZE];
     MsxCartridge cartridges[MSX_CARTRIDGE_SLOTS];
     bool bios_loaded;
     bool logo_loaded;
@@ -107,6 +110,7 @@ const char *msx_model_name(MsxModel model);
 const char *msx_model_config_name(MsxModel model);
 bool msx_model_from_name(const char *name, MsxModel *model);
 bool msx_model_is_msx2(MsxModel model);
+bool msx_has_memory_mapper(const MsxMachine *msx);
 const char *msx_region_name(MsxRegion region);
 const char *msx_vdp_name(const MsxMachine *msx);
 
