@@ -43,6 +43,13 @@ enum {
     MODEL_FIELD_DISK_ROM
 };
 
+enum {
+    SUNRISE_SETUP_FIRMWARE = 0,
+    SUNRISE_SETUP_DISK,
+    SUNRISE_SETUP_CONNECT,
+    SUNRISE_SETUP_ROWS
+};
+
 static const char *section_name(OverlaySection section) {
     switch (section) {
         case OVERLAY_GENERAL:    return "General";
@@ -132,16 +139,16 @@ static void sunrise_extension_text(const Overlay *overlay,
     int slot = cartridge_extension_slot(config, "Sunrise IDE");
 
     if (!config->sunrise_ide) {
-        snprintf(value, value_size, "Off");
+        snprintf(value, value_size, "%s",
+                 config->sunrise_rom_path[0]
+                 ? "Off (configured)" : "Off (setup required)");
     } else if (slot < 0) {
         snprintf(value, value_size, "Off (no free cartridge slot)");
     } else if (!msx_sunrise_connected(overlay->msx)) {
         snprintf(value, value_size,
                  "On (Cartridge %d, ROM not loaded)", slot + 1);
     } else {
-        snprintf(value, value_size, "On (Cartridge %d) - %s",
-                 slot + 1,
-                 path_basename(config->sunrise_rom_path));
+        snprintf(value, value_size, "On (Cartridge %d)", slot + 1);
     }
 }
 
@@ -707,7 +714,8 @@ static void open_ide_image_dialog(Overlay *overlay) {
         overlay->config->last_media_dir[0]
         ? overlay->config->last_media_dir : NULL;
 
-    if (!msx_sunrise_connected(overlay->msx)) {
+    if (overlay->state != OVERLAY_STATE_SUNRISE_SETUP &&
+        !msx_sunrise_connected(overlay->msx)) {
         notify_post("Connect Sunrise IDE before mounting a disk");
         return;
     }
@@ -828,6 +836,16 @@ static bool firmware_file_has_size(const char *path, long expected_size) {
     size = ftell(file);
     fclose(file);
     return size == expected_size;
+}
+
+static bool ide_image_file_is_valid(const char *path) {
+    AtaDevice ata;
+    bool valid;
+
+    ata_init(&ata);
+    valid = ata_mount(&ata, path) == 0;
+    ata_destroy(&ata);
+    return valid;
 }
 
 static void continue_firmware_selection(Overlay *overlay);
@@ -1291,13 +1309,36 @@ static bool toggle_cartridge_extension(Overlay *overlay,
     return true;
 }
 
-static bool connect_sunrise(Overlay *overlay, const char *rom_path) {
+static void begin_sunrise_setup(Overlay *overlay) {
+    overlay->sunrise_setup_row = SUNRISE_SETUP_FIRMWARE;
+    snprintf(overlay->pending_sunrise_rom_path,
+             sizeof(overlay->pending_sunrise_rom_path), "%s",
+             overlay->config->sunrise_rom_path);
+    snprintf(overlay->pending_ide_image_path,
+             sizeof(overlay->pending_ide_image_path), "%s",
+             overlay->config->ide_image_path);
+    overlay->state = OVERLAY_STATE_SUNRISE_SETUP;
+}
+
+static bool connect_sunrise(Overlay *overlay, const char *rom_path,
+                            const char *image_path) {
     Config *config = overlay->config;
+    char selected_rom[PATH_MAX];
+    char selected_image[PATH_MAX];
     int slot;
 
+    snprintf(selected_rom, sizeof(selected_rom), "%s",
+             rom_path ? rom_path : "");
+    snprintf(selected_image, sizeof(selected_image), "%s",
+             image_path ? image_path : "");
     if (!firmware_file_has_size(
-            rom_path, MSX_SUNRISE_ROM_SIZE)) {
+            selected_rom, MSX_SUNRISE_ROM_SIZE)) {
         notify_post("Sunrise IDE needs an exact 128 KB ROM");
+        return false;
+    }
+    if (selected_image[0] &&
+        !ide_image_file_is_valid(selected_image)) {
+        notify_post("Sunrise IDE needs a raw 512-byte-sector disk image");
         return false;
     }
     if (!toggle_cartridge_extension(
@@ -1305,23 +1346,41 @@ static bool connect_sunrise(Overlay *overlay, const char *rom_path) {
         return false;
     slot = cartridge_extension_slot(config, "Sunrise IDE");
     if (slot < 0 || msx_load_sunrise_ide(
-            overlay->msx, (unsigned)slot, rom_path) != 0) {
+            overlay->msx, (unsigned)slot, selected_rom) != 0) {
         config->sunrise_ide = false;
         notify_post("Could not load Sunrise IDE ROM: %s",
-                    path_basename(rom_path));
+                    path_basename(selected_rom));
+        return false;
+    }
+    if (selected_image[0] &&
+        msx_mount_sunrise_disk(
+            overlay->msx, selected_image) != 0) {
+        msx_eject_sunrise_ide(overlay->msx);
+        config->sunrise_ide = false;
+        notify_post("Could not mount IDE image: %s",
+                    path_basename(selected_image));
         return false;
     }
     snprintf(config->sunrise_rom_path,
-             sizeof(config->sunrise_rom_path), "%s", rom_path);
-    if (config->ide_image_path[0] &&
-        msx_mount_sunrise_disk(
-            overlay->msx, config->ide_image_path) != 0)
-        notify_post("Sunrise connected; could not mount IDE image: %s",
-                    path_basename(config->ide_image_path));
+             sizeof(config->sunrise_rom_path), "%s", selected_rom);
+    snprintf(config->ide_image_path,
+             sizeof(config->ide_image_path), "%s", selected_image);
+    if (selected_image[0])
+        notify_post("Sunrise IDE connected with disk: %s",
+                    path_basename(selected_image));
     else
-        notify_post("Sunrise ROM loaded: %s",
-                    path_basename(rom_path));
+        notify_post("Sunrise IDE connected without a disk");
     return true;
+}
+
+static void finish_sunrise_setup(Overlay *overlay) {
+    if (!connect_sunrise(
+            overlay, overlay->pending_sunrise_rom_path,
+            overlay->pending_ide_image_path))
+        return;
+    overlay->dirty = true;
+    overlay->state = OVERLAY_STATE_MENU;
+    apply_config(overlay);
 }
 
 static void disconnect_sunrise(Overlay *overlay) {
@@ -1422,13 +1481,17 @@ static void activate_item(Overlay *overlay) {
                         disconnect_sunrise(overlay);
                     } else if (firmware_file_has_size(
                                    config->sunrise_rom_path,
-                                   MSX_SUNRISE_ROM_SIZE)) {
+                                   MSX_SUNRISE_ROM_SIZE) &&
+                               (!config->ide_image_path[0] ||
+                                ide_image_file_is_valid(
+                                    config->ide_image_path))) {
                         if (!connect_sunrise(
                                 overlay,
-                                config->sunrise_rom_path))
+                                config->sunrise_rom_path,
+                                config->ide_image_path))
                             return;
                     } else {
-                        open_sunrise_rom_dialog(overlay);
+                        begin_sunrise_setup(overlay);
                         return;
                     }
                     break;
@@ -1559,6 +1622,42 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 overlay->machine_row = 0;
         } else if (key == SDLK_RETURN || key == SDLK_KP_ENTER) {
             begin_firmware_selection(overlay);
+        } else if (key == SDLK_ESCAPE) {
+            overlay->state = OVERLAY_STATE_MENU;
+        }
+        return true;
+    }
+    if (overlay->state == OVERLAY_STATE_SUNRISE_SETUP) {
+        if (key == SDLK_UP) {
+            --overlay->sunrise_setup_row;
+            if (overlay->sunrise_setup_row < 0)
+                overlay->sunrise_setup_row =
+                    SUNRISE_SETUP_ROWS - 1;
+        } else if (key == SDLK_DOWN) {
+            ++overlay->sunrise_setup_row;
+            if (overlay->sunrise_setup_row >=
+                SUNRISE_SETUP_ROWS)
+                overlay->sunrise_setup_row = 0;
+        } else if (key == SDLK_RETURN ||
+                   key == SDLK_KP_ENTER) {
+            switch (overlay->sunrise_setup_row) {
+                case SUNRISE_SETUP_FIRMWARE:
+                    open_sunrise_rom_dialog(overlay);
+                    break;
+                case SUNRISE_SETUP_DISK:
+                    open_ide_image_dialog(overlay);
+                    break;
+                case SUNRISE_SETUP_CONNECT:
+                    finish_sunrise_setup(overlay);
+                    break;
+            }
+        } else if (key == SDLK_DELETE) {
+            if (overlay->sunrise_setup_row ==
+                SUNRISE_SETUP_FIRMWARE)
+                overlay->pending_sunrise_rom_path[0] = '\0';
+            else if (overlay->sunrise_setup_row ==
+                     SUNRISE_SETUP_DISK)
+                overlay->pending_ide_image_path[0] = '\0';
         } else if (key == SDLK_ESCAPE) {
             overlay->state = OVERLAY_STATE_MENU;
         }
@@ -1766,12 +1865,13 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 notify_post("IDE disk ejected");
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
                        overlay->row == 1 &&
-                       overlay->config->sunrise_ide) {
-                disconnect_sunrise(overlay);
+                       overlay->config->sunrise_rom_path[0]) {
+                if (overlay->config->sunrise_ide)
+                    disconnect_sunrise(overlay);
                 overlay->config->sunrise_rom_path[0] = '\0';
                 overlay->dirty = true;
                 apply_config(overlay);
-                notify_post("Sunrise IDE ROM unloaded");
+                notify_post("Sunrise IDE firmware forgotten");
             }
             break;
         case SDLK_ESCAPE:
@@ -1793,7 +1893,7 @@ static const char *section_hint(OverlaySection section) {
         case OVERLAY_MEDIA:
             return "Enter loads/selects; Delete ejects mounted media.";
         case OVERLAY_EXTENSIONS:
-            return "Cartridge devices reserve slot 2, then slot 1.";
+            return "Enter toggles; Delete forgets Sunrise firmware.";
         case OVERLAY_ADVANCED:
             return "Machine models are saved to the per-user catalogue.";
         case OVERLAY_SECTION_COUNT:
@@ -1842,16 +1942,43 @@ void overlay_tick(Overlay *overlay) {
     }
 
     if (target == OVERLAY_DIALOG_SUNRISE_ROM) {
-        if (!connect_sunrise(overlay, overlay->dialog_path))
+        if (overlay->state != OVERLAY_STATE_SUNRISE_SETUP)
             return;
+        if (!firmware_file_has_size(
+                overlay->dialog_path, MSX_SUNRISE_ROM_SIZE)) {
+            notify_post("Sunrise IDE needs an exact 128 KB ROM");
+            return;
+        }
+        snprintf(overlay->pending_sunrise_rom_path,
+                 sizeof(overlay->pending_sunrise_rom_path), "%s",
+                 overlay->dialog_path);
         copy_dirname(overlay->config->last_media_dir,
                      sizeof(overlay->config->last_media_dir),
                      overlay->dialog_path);
-        overlay->dirty = true;
-        apply_config(overlay);
+        overlay->sunrise_setup_row = SUNRISE_SETUP_DISK;
+        notify_post("Sunrise IDE firmware selected: %s",
+                    path_basename(overlay->dialog_path));
         return;
     }
     if (target == OVERLAY_DIALOG_IDE_IMAGE) {
+        if (overlay->state == OVERLAY_STATE_SUNRISE_SETUP) {
+            if (!ide_image_file_is_valid(overlay->dialog_path)) {
+                notify_post(
+                    "IDE image must use complete 512-byte sectors");
+                return;
+            }
+            snprintf(overlay->pending_ide_image_path,
+                     sizeof(overlay->pending_ide_image_path), "%s",
+                     overlay->dialog_path);
+            copy_dirname(overlay->config->last_media_dir,
+                         sizeof(overlay->config->last_media_dir),
+                         overlay->dialog_path);
+            overlay->sunrise_setup_row =
+                SUNRISE_SETUP_CONNECT;
+            notify_post("IDE disk selected: %s",
+                        path_basename(overlay->dialog_path));
+            return;
+        }
         if (msx_mount_sunrise_disk(
                 overlay->msx, overlay->dialog_path) != 0) {
             notify_post("Could not mount IDE image: %s",
@@ -2194,6 +2321,74 @@ static void render_model_delete(const Overlay *overlay,
                  230, 210, 120);
 }
 
+static void render_sunrise_setup(const Overlay *overlay,
+                                 SDL_Renderer *renderer) {
+    static const char *labels[SUNRISE_SETUP_ROWS] = {
+        "Firmware ROM", "IDE hard disk", "Connect"
+    };
+    char firmware[52];
+    char disk[52];
+    const char *values[SUNRISE_SETUP_ROWS];
+    const float box_x = 28.0f;
+    const float box_y = 132.0f;
+    const float box_w = 584.0f;
+    const float box_h = 220.0f;
+    const char *title = "Sunrise IDE setup";
+
+    if (overlay->pending_sunrise_rom_path[0])
+        editor_shorten(
+            firmware, sizeof(firmware),
+            path_basename(overlay->pending_sunrise_rom_path), 45);
+    else
+        snprintf(firmware, sizeof(firmware),
+                 "[required - choose 128 KiB ROM]");
+    if (overlay->pending_ide_image_path[0])
+        editor_shorten(
+            disk, sizeof(disk),
+            path_basename(overlay->pending_ide_image_path), 45);
+    else
+        snprintf(disk, sizeof(disk), "[optional - no disk]");
+    values[SUNRISE_SETUP_FIRMWARE] = firmware;
+    values[SUNRISE_SETUP_DISK] = disk;
+    values[SUNRISE_SETUP_CONNECT] = "Connect Sunrise IDE";
+
+    ui_fill_rect(renderer, 0.0f, 0.0f,
+                 (float)DISPLAY_LOGICAL_W, (float)DISPLAY_LOGICAL_H,
+                 0, 0, 0, 150);
+    ui_fill_rect(renderer, box_x, box_y, box_w, box_h,
+                 20, 22, 52, 255);
+    ui_draw_rect(renderer, box_x, box_y, box_w, box_h,
+                 90, 110, 220);
+    ui_draw_text(renderer,
+                 box_x + (box_w - (float)strlen(title) * 8.0f) * 0.5f,
+                 box_y + 12.0f, title, 255, 255, 255);
+    ui_draw_text(renderer, box_x + 22.0f, box_y + 42.0f,
+                 "The firmware ROM is the controller cartridge.",
+                 180, 210, 235);
+    ui_draw_text(renderer, box_x + 22.0f, box_y + 60.0f,
+                 "The optional disk image is its attached drive.",
+                 180, 210, 235);
+
+    for (int row = 0; row < SUNRISE_SETUP_ROWS; ++row) {
+        bool selected = row == overlay->sunrise_setup_row;
+        Uint8 red = selected ? 255 : 210;
+        Uint8 green = selected ? 255 : 210;
+        Uint8 blue = selected ? 70 : 225;
+        float y = box_y + 94.0f + row * 24.0f;
+
+        if (selected)
+            ui_draw_text(renderer, box_x + 12.0f, y, ">",
+                         red, green, blue);
+        ui_draw_text(renderer, box_x + 28.0f, y, labels[row],
+                     red, green, blue);
+        ui_draw_text(renderer, box_x + 172.0f, y, values[row],
+                     red, green, blue);
+    }
+    ui_draw_text(renderer, box_x + 54.0f, box_y + box_h - 24.0f,
+                 "Up/Down choose  Enter select  Delete clear  Esc cancel",
+                 160, 180, 210);
+}
+
 void overlay_render(const Overlay *overlay) {
     SDL_Renderer *renderer;
     int rows;
@@ -2254,6 +2449,10 @@ void overlay_render(const Overlay *overlay) {
                  (float)(OVERLAY_FIRST_Y + rows * OVERLAY_LINE_H + 25),
                  section_hint(overlay->section), 120, 180, 150);
 
+    if (overlay->state == OVERLAY_STATE_SUNRISE_SETUP) {
+        render_sunrise_setup(overlay, renderer);
+        return;
+    }
     if (overlay->state == OVERLAY_STATE_MODEL_LIST) {
         render_model_list(overlay, renderer);
         return;

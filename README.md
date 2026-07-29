@@ -154,10 +154,14 @@ reveals Advanced.
 Sunrise IDE, SCC, and MSX-MUSIC are cartridge-connected extensions. The
 first configured device reserves cartridge slot 2 and the second reserves
 slot 1. Reserved cartridge and mapper controls remain visible but cannot be
-used. The IDE hard-disk row appears in Media only while Sunrise IDE is
-connected. Select the 128 KiB Sunrise/Nextor ROM under Extensions and a raw,
-512-byte-sector IDE image under Media. Images are opened read-only in the
-current implementation.
+used. The first activation of **Extensions > Sunrise IDE** opens a small
+setup panel: select the required 128 KiB Sunrise/Nextor controller ROM,
+optionally select a raw IDE image, then choose Connect. Later activations
+simply disconnect or reconnect the configured controller; Delete forgets its
+stored firmware when a replacement is needed. The IDE hard-disk row appears
+in Media only while Sunrise IDE is connected and owns subsequent image
+changes and ejection. Images must use complete 512-byte sectors and are
+opened read-only in the current implementation.
 
 SDL scancodes map positionally to the international MSX keyboard. Left Ctrl
 is CTRL, left Alt is GRAPH, right Alt is CODE, and right Ctrl is the ACC/dead

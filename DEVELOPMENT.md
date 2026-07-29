@@ -34,7 +34,7 @@ complete MSX hardware specification.
 | `tests/test_config.c` | Persistent cartridge, mapper, extension, and Joy Port settings |
 | `tests/test_gamepad.c` | SDL-independent direction, trigger, dead-zone, and opposing-input mapping |
 | `tests/test_models.c` | Machine-catalogue parsing, hardware mapping, relative paths, and invalid-entry filtering |
-| `tests/test_overlay.c` | Overlay navigation, dynamic hardware rows, cartridge-slot LEDs, and model editing |
+| `tests/test_overlay.c` | Overlay navigation, guided Sunrise setup, dynamic hardware rows, cartridge-slot LEDs, and model editing |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
 | `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
 | `tests/test_rtc.c` | RP-5C01 banks, masks, reset behavior, calendar rollover, and clock advancement |
