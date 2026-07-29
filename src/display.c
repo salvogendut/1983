@@ -1,5 +1,6 @@
 #include "display.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,37 @@ static int clamp_int(int value, int minimum, int maximum) {
     if (value > maximum)
         return maximum;
     return value;
+}
+
+void display_calculate_layout(int output_w, int output_h,
+                              DisplayLayout *layout) {
+    int content_h;
+
+    if (!layout)
+        return;
+    if (output_w < 1)
+        output_w = 1;
+    if (output_h < DISPLAY_FOOTER_H + 1)
+        output_h = DISPLAY_FOOTER_H + 1;
+
+    layout->footer_y = output_h - DISPLAY_FOOTER_H;
+    content_h = layout->footer_y;
+    layout->screen_w = output_w;
+    layout->screen_h = content_h;
+    if ((int64_t)layout->screen_w * DISPLAY_LOGICAL_H >
+        (int64_t)layout->screen_h * DISPLAY_LOGICAL_W) {
+        layout->screen_w =
+            layout->screen_h * DISPLAY_LOGICAL_W / DISPLAY_LOGICAL_H;
+    } else {
+        layout->screen_h =
+            layout->screen_w * DISPLAY_LOGICAL_H / DISPLAY_LOGICAL_W;
+    }
+    if (layout->screen_w < 1)
+        layout->screen_w = 1;
+    if (layout->screen_h < 1)
+        layout->screen_h = 1;
+    layout->screen_x = (output_w - layout->screen_w) / 2;
+    layout->screen_y = (content_h - layout->screen_h) / 2;
 }
 
 void display_set_title(Display *display, const MsxMachine *msx,
@@ -52,22 +84,21 @@ int display_init(Display *display, const Config *config,
     display->window = SDL_CreateWindow(
         "1983 - MSX / MSX2 emulator",
         DISPLAY_LOGICAL_W * display->scale,
-        DISPLAY_LOGICAL_H * display->scale,
+        DISPLAY_LOGICAL_H * display->scale + DISPLAY_FOOTER_H,
         flags);
     if (!display->window) {
         fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
         return -1;
     }
+    SDL_SetWindowMinimumSize(display->window,
+                             DISPLAY_LOGICAL_W / 2,
+                             DISPLAY_LOGICAL_H / 2 + DISPLAY_FOOTER_H);
     display->renderer = SDL_CreateRenderer(display->window, NULL);
     if (!display->renderer) {
         fprintf(stderr, "SDL_CreateRenderer: %s\n", SDL_GetError());
         return -1;
     }
     SDL_SetRenderVSync(display->renderer, 0);
-    SDL_SetRenderLogicalPresentation(display->renderer,
-                                     DISPLAY_LOGICAL_W,
-                                     DISPLAY_LOGICAL_H,
-                                     SDL_LOGICAL_PRESENTATION_LETTERBOX);
     display->texture = SDL_CreateTexture(display->renderer,
                                          SDL_PIXELFORMAT_XRGB8888,
                                          SDL_TEXTUREACCESS_STREAMING,
@@ -77,6 +108,15 @@ int display_init(Display *display, const Config *config,
         fprintf(stderr, "SDL_CreateTexture: %s\n", SDL_GetError());
         return -1;
     }
+    display->canvas = SDL_CreateTexture(display->renderer,
+                                        SDL_PIXELFORMAT_XRGB8888,
+                                        SDL_TEXTUREACCESS_TARGET,
+                                        DISPLAY_LOGICAL_W,
+                                        DISPLAY_LOGICAL_H);
+    if (!display->canvas) {
+        fprintf(stderr, "SDL_CreateTexture canvas: %s\n", SDL_GetError());
+        return -1;
+    }
     display_set_smoothing(display, display->smoothing);
     display_set_title(display, msx, model_name);
     display_prepare_scaffold(display, msx);
@@ -84,6 +124,10 @@ int display_init(Display *display, const Config *config,
 }
 
 void display_quit(Display *display) {
+    if (display->renderer)
+        SDL_SetRenderTarget(display->renderer, NULL);
+    if (display->canvas)
+        SDL_DestroyTexture(display->canvas);
     if (display->texture)
         SDL_DestroyTexture(display->texture);
     if (display->renderer)
@@ -154,26 +198,41 @@ static void draw_scaffold_text(Display *display, const MsxMachine *msx) {
                  160, 225, 190);
 }
 
-static void draw_footer(Display *display, const MsxMachine *msx) {
-    const char *keys =
-        " F4 shot F5 reset F6 rec F8 mon F9 options F11 full F12 quit";
-    float total_w =
-        (float)(strlen(msx->profile->name) + strlen(keys)) * 8.0f;
-    float model_x = ((float)DISPLAY_LOGICAL_W - total_w) * 0.5f;
+static void draw_footer(Display *display, const MsxMachine *msx,
+                        int output_w, int output_h) {
+    const char *full_keys =
+        "  F4=screenshot  F5=reset  F6=capture  F8=monitor  "
+        "F9=options  F11=fullscreen  F12=quit";
+    const char *compact_keys =
+        "  F4=shot F5=reset F6=rec F8=mon F9=options F11=full F12=quit";
+    const char *model = msx->profile->name;
+    const char *keys = full_keys;
+    float total_w = (float)(strlen(model) + strlen(keys)) * 8.0f;
+    float strip_y = (float)(output_h - DISPLAY_FOOTER_H);
+    float model_x;
     float keys_x;
 
-    if (model_x < 2.0f)
-        model_x = 2.0f;
-    keys_x = model_x + (float)strlen(msx->profile->name) * 8.0f;
-    ui_fill_rect(display->renderer, 0.0f, (float)DISPLAY_SCREEN_H,
-                 (float)DISPLAY_LOGICAL_W, (float)DISPLAY_STRIP_H,
+    if (total_w > (float)output_w) {
+        keys = compact_keys;
+        total_w = (float)(strlen(model) + strlen(keys)) * 8.0f;
+    }
+    model_x = ((float)output_w - total_w) * 0.5f;
+    if (model_x < 0.0f)
+        model_x = 0.0f;
+    keys_x = model_x + (float)strlen(model) * 8.0f;
+    ui_fill_rect(display->renderer, 0.0f, strip_y,
+                 (float)output_w, (float)DISPLAY_STRIP_H,
                  16, 16, 20, 255);
-    ui_draw_text(display->renderer, model_x,
-                 (float)DISPLAY_SCREEN_H + 5.0f,
-                 msx->profile->name, 255, 64, 64);
+    ui_draw_text(display->renderer, model_x, strip_y + 4.0f,
+                 model, 255, 64, 64);
+    ui_draw_text(display->renderer, model_x + 1.0f, strip_y + 4.0f,
+                 model, 255, 64, 64);
     ui_draw_text(display->renderer, keys_x,
-                 (float)DISPLAY_SCREEN_H + 5.0f,
+                 strip_y + 4.0f,
                  keys, 224, 224, 224);
+    leds_render(display->renderer, 0,
+                output_h - DISPLAY_LED_H,
+                output_w, DISPLAY_LED_H);
 }
 
 void display_draw(Display *display, const MsxMachine *msx) {
@@ -197,6 +256,9 @@ void display_draw(Display *display, const MsxMachine *msx) {
 
     SDL_UpdateTexture(display->texture, NULL, display->pixels,
                       DISPLAY_FB_W * (int)sizeof(*display->pixels));
+    SDL_SetRenderTarget(display->renderer, display->canvas);
+    SDL_SetRenderViewport(display->renderer, NULL);
+    SDL_SetRenderScale(display->renderer, 1.0f, 1.0f);
     SDL_SetRenderDrawColor(display->renderer, 0, 0, 0, 255);
     SDL_RenderClear(display->renderer);
     SDL_RenderTexture(display->renderer, display->texture, NULL, &destination);
@@ -215,13 +277,33 @@ void display_draw(Display *display, const MsxMachine *msx) {
     }
     if (!msx_can_boot(msx))
         draw_scaffold_text(display, msx);
-    draw_footer(display, msx);
-    leds_render(display->renderer, 0,
-                DISPLAY_SCREEN_H + DISPLAY_STRIP_H,
-                DISPLAY_LOGICAL_W, DISPLAY_LED_H);
 }
 
-void display_present(Display *display) {
+void display_present(Display *display, const MsxMachine *msx) {
+    DisplayLayout layout;
+    SDL_FRect destination;
+    int output_w;
+    int output_h;
+
+    SDL_SetRenderTarget(display->renderer, NULL);
+    SDL_SetRenderViewport(display->renderer, NULL);
+    SDL_SetRenderScale(display->renderer, 1.0f, 1.0f);
+    if (!SDL_GetRenderOutputSize(display->renderer, &output_w, &output_h)) {
+        SDL_GetWindowSize(display->window, &output_w, &output_h);
+    }
+    display_calculate_layout(output_w, output_h, &layout);
+    destination = (SDL_FRect) {
+        (float)layout.screen_x,
+        (float)layout.screen_y,
+        (float)layout.screen_w,
+        (float)layout.screen_h
+    };
+    SDL_SetRenderDrawColor(display->renderer, 0, 0, 0, 255);
+    SDL_RenderClear(display->renderer);
+    SDL_RenderTexture(display->renderer, display->canvas, NULL,
+                      &destination);
+    draw_footer(display, msx, output_w, output_h);
+    leds_render_hover(display->renderer);
     SDL_RenderPresent(display->renderer);
 }
 
@@ -231,13 +313,13 @@ void display_set_scale(Display *display, int scale) {
     if (!display->fullscreen)
         SDL_SetWindowSize(display->window,
                           DISPLAY_LOGICAL_W * scale,
-                          DISPLAY_LOGICAL_H * scale);
+                          DISPLAY_LOGICAL_H * scale + DISPLAY_FOOTER_H);
 }
 
 void display_set_smoothing(Display *display, bool smoothing) {
     display->smoothing = smoothing;
-    if (display->texture)
-        SDL_SetTextureScaleMode(display->texture,
+    if (display->canvas)
+        SDL_SetTextureScaleMode(display->canvas,
             smoothing ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
 }
 

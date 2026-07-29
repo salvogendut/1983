@@ -82,7 +82,7 @@ void leds_set_mouse_position(float x, float y, bool inside) {
 }
 
 void leds_render(SDL_Renderer *renderer, int x, int y, int w, int h) {
-    const float led_w = 28.0f;
+    const float led_w = 24.0f;
     const float led_h = 10.0f;
     const float padding = 8.0f;
     int count = 0;
@@ -149,6 +149,15 @@ void leds_render_hover(SDL_Renderer *renderer) {
     box_y = hover_y - font_h - 10.0f;
     if (box_x < 2.0f)
         box_x = 2.0f;
+    {
+        int output_w;
+        int output_h;
+
+        if (SDL_GetRenderOutputSize(renderer, &output_w, &output_h) &&
+            box_x + box_w > (float)output_w - 2.0f)
+            box_x = (float)output_w - box_w - 2.0f;
+        (void)output_h;
+    }
     if (box_y < 2.0f)
         box_y = 2.0f;
 
