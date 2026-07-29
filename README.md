@@ -66,8 +66,11 @@ available on as many SDL3-supported systems as practical.
 - V9938 control registers and masks, status-register selection, default and
   programmable palettes, direct and indirect register writes, and a 128 KB
   VRAM data path with R14 paging, extended-mode carry, and Graphics 6/7
-  planar CPU addressing. S#2 VR and HR follow PAL/NTSC beam position,
-  192/212-line selection, text/graphics blanking, and R18 adjustment.
+  planar CPU addressing. CPU reads, writes, and read-ahead requests wait for
+  measured screen-off, bitmap, character, or text access slots; the shared
+  data latch and overly fast request replacement follow V9938 behaviour.
+  S#2 VR and HR follow PAL/NTSC beam position, 192/212-line selection,
+  text/graphics blanking, and R18 adjustment.
 - V9938 SCREEN 5 through SCREEN 8 rendering, including 256/512-dot widths,
   192/212-line output, display-page selection, vertical scrolling, packed and
   planar VRAM layouts, palette transparency, and SCREEN 8 fixed colours.
@@ -77,6 +80,7 @@ available on as many SDL3-supported systems as practical.
   writes queued while TR is low are supported. Autonomous commands update
   VRAM progressively at measured bitmap-mode access slots, with separate
   schedules for screen-off, sprites-disabled, and sprites-enabled operation.
+  CPU data-port traffic takes priority when both engines request one slot.
 - TMS9918/TMS9929 sprite-mode-1 rendering with 8x8 and 16x16 patterns,
   magnification, early clock, priority, transparency, Y wrapping, the
   four-sprites-per-line limit, fifth-sprite index, and collision status.
@@ -312,7 +316,7 @@ currently supported settings.
 | CPU | Z80 instruction set, interrupts, and cycle-aware execution (initial core integrated) |
 | Machine architecture | Primary slots and linear ROM/RAM devices implemented; NMS 8250 secondary slots and internal 128 KB mapper implemented |
 | MSX video | TMS9918-family pattern modes, sprite mode 1, status flags, limits, collisions, and interrupts implemented; cycle-level timing refinement planned |
-| MSX2 video | V9938 registers, beam-timed VR/HR status, R#19/S#1 scanline interrupts, progressively timed drawing commands, palette, 128 KB VRAM, SCREEN 5-8 bitmap rendering, and sprite mode 2 implemented; advanced scrolling, CPU VRAM-port contention, and mid-scanline rendering planned |
+| MSX2 video | V9938 registers, beam-timed VR/HR status, R#19/S#1 scanline interrupts, progressively timed drawing commands, contended CPU VRAM access, palette, 128 KB VRAM, SCREEN 5-8 bitmap rendering, and sprite mode 2 implemented; advanced scrolling and mid-scanline rendering planned |
 | Audio | AY-3-8910/YM2149 PSG tone, noise, envelopes, DAC output, and SDL3 playback implemented; SCC and MSX-MUSIC planned as compatibility extensions |
 | Cartridges | Plain ROMs and common ASCII, Konami, and Konami SCC mapper families, with mapper override controls |
 | Cassette | CAS images and the standard BIOS cassette path |

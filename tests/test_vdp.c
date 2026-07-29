@@ -1329,6 +1329,14 @@ static void test_v9938_command_timing(void) {
     };
     MsxVdp vdp;
 
+    /* Without a beam clock, standalone VDP users retain immediate access. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    set_vram_address(&vdp, 0, true);
+    vdp_write_data(&vdp, 0x5a);
+    assert(!vdp.cpu_vram_pending);
+    assert(vdp.vram[0] == 0x5a);
+    assert(vdp.address == 1);
+
     setup_v9938_bitmap(&vdp, 0x06); /* SCREEN 5 */
     vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
 
@@ -1523,6 +1531,152 @@ static void test_v9938_command_timing(void) {
     }
 }
 
+static void test_v9938_cpu_vram_timing(void) {
+    enum {
+        TICKS_PER_LINE = 1368,
+        PAL_LINES = 313,
+        PAL_FRAME_TICKS = TICKS_PER_LINE * PAL_LINES,
+    };
+    MsxVdp vdp;
+
+    /*
+     * A port write updates the shared data latch immediately, but VRAM and
+     * its pointer change only at the reserved access slot. A second request
+     * made too quickly replaces the first without reserving a new slot.
+     */
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    set_vram_address(&vdp, 0, true);
+    vdp_write_data(&vdp, 0xaa);
+    assert(vdp.cpu_vram_pending);
+    assert(vdp.cpu_vram_ticks_remaining == 16);
+    assert(vdp.read_buffer == 0xaa);
+    assert(vdp.address == 0);
+    assert(vdp.vram[0] == 0);
+    vdp_advance(&vdp, 15);
+    vdp_write_data(&vdp, 0xbb);
+    assert(vdp.cpu_vram_ticks_remaining == 1);
+    assert(vdp.vram[0] == 0);
+    vdp_advance(&vdp, 1);
+    assert(!vdp.cpu_vram_pending);
+    assert(vdp.vram[0] == 0xbb);
+    assert(vdp.address == 1);
+
+    /* Read-ahead filling and pointer increments occur at the access slot. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp.vram[0] = 0x12;
+    vdp.vram[1] = 0x34;
+    vdp.read_buffer = 0xee;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    set_vram_address(&vdp, 0, false);
+    assert(vdp.cpu_vram_pending);
+    assert(vdp.read_buffer == 0xee);
+    assert(vdp.address == 0);
+    vdp_advance(&vdp, 16);
+    assert(vdp.read_buffer == 0x12);
+    assert(vdp.address == 1);
+    assert(vdp_read_data(&vdp) == 0x12);
+    assert(vdp.address == 1);
+    vdp_advance(&vdp, 16);
+    assert(vdp.read_buffer == 0x34);
+    assert(vdp.address == 2);
+    assert(vdp_read_data(&vdp) == 0x34);
+
+    /* Deferred execution retains R#14 carry and planar CPU remapping. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp.registers[14] = 1;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    set_vram_address(&vdp, 0x3fff, true);
+    vdp_write_data(&vdp, 0x77);
+    vdp_advance(&vdp, 16);
+    assert(vdp.vram[0x7fff] == 0x77);
+    assert(vdp.address == 0);
+    assert(vdp.registers[14] == 2);
+
+    setup_v9938_bitmap(&vdp, 0x0a); /* Graphics 6, planar CPU access */
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    set_vram_address(&vdp, 0, true);
+    vdp_write_data(&vdp, 0x12);
+    vdp_advance(&vdp, 16);
+    vdp_write_data(&vdp, 0x34);
+    vdp_advance(&vdp, 16);
+    assert(vdp.vram[0] == 0x12);
+    assert(vdp.vram[0x10000] == 0x34);
+
+    /* Bitmap CPU accesses select the live display/sprite slot table. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp.status2 &= (u8)~0x40;
+    set_vram_address(&vdp, 0, true);
+    vdp_write_data(&vdp, 1);
+    assert(vdp.cpu_vram_ticks_remaining == 28);
+
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp.status2 &= (u8)~0x40;
+    vdp.registers[8] |= 0x02;
+    set_vram_address(&vdp, 0, true);
+    vdp_write_data(&vdp, 1);
+    assert(vdp.cpu_vram_ticks_remaining == 22);
+
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    set_vram_address(&vdp, 0, true);
+    vdp_write_data(&vdp, 1);
+    assert(vdp.cpu_vram_ticks_remaining == 16);
+
+    /* Character and text modes use their measured V9938 schedules too. */
+    vdp_init(&vdp);
+    vdp_set_type(&vdp, MSX_VDP_V9938);
+    vdp_reset(&vdp);
+    vdp.registers[1] = 0x40;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp.status2 &= (u8)~0x40;
+    set_vram_address(&vdp, 0, true);
+    vdp_write_data(&vdp, 1);
+    assert(vdp.cpu_vram_ticks_remaining == 32);
+
+    vdp_init(&vdp);
+    vdp_set_type(&vdp, MSX_VDP_V9938);
+    vdp_reset(&vdp);
+    vdp.registers[1] = 0x50;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp.status2 &= (u8)~0x40;
+    set_vram_address(&vdp, 0, true);
+    vdp_write_data(&vdp, 1);
+    assert(vdp.cpu_vram_ticks_remaining == 18);
+
+    /*
+     * A CPU request wins a slot shared with the command engine. The
+     * command retains CE and retries its still-pending operation at the
+     * following free slot.
+     */
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp.status2 &= (u8)~0x40;
+    set_vram_address(&vdp, 0, true);
+    write_command_word(&vdp, 36, 0);
+    write_command_word(&vdp, 38, 0);
+    write_control_register(&vdp, 44, 6);
+    write_control_register(&vdp, 46, 0x50);
+    assert(vdp.command_ticks_remaining == 92);
+    vdp_advance(&vdp, 64);
+    assert(vdp.command_ticks_remaining == 28);
+    vdp.status2 &= (u8)~0x40;
+    vdp_write_data(&vdp, 0xaa);
+    assert(vdp.cpu_vram_ticks_remaining == 28);
+    vdp_advance(&vdp, 28);
+    assert(!vdp.cpu_vram_pending);
+    assert(vdp.vram[0] == 0xaa);
+    assert(vdp.status2 & 0x01);
+    assert(vdp.command_ticks_remaining == 70);
+    vdp_advance(&vdp, 69);
+    assert(vdp.vram[0] == 0xaa);
+    vdp_advance(&vdp, 1);
+    assert(vdp.vram[0] == 0x6a);
+    assert(!(vdp.status2 & 0x01));
+}
+
 int main(void) {
     test_basic_position_wrap_and_terminator();
     test_priority_transparency_and_collision();
@@ -1548,5 +1702,6 @@ int main(void) {
     test_v9938_block_commands();
     test_v9938_command_transfers();
     test_v9938_command_timing();
+    test_v9938_cpu_vram_timing();
     return 0;
 }

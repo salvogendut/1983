@@ -98,16 +98,33 @@ static const u16 v9938_slots_sprites_on[] = {
     1330,
 };
 
+static const u16 v9938_slots_character[] = {
+      32,   96,  166,  174,  188,  220,  252,  316,  348,  380,
+     444,  476,  508,  572,  604,  636,  700,  732,  764,  828,
+     860,  892,  956,  988, 1020, 1084, 1116, 1148, 1212, 1268,
+    1334,
+};
+
+static const u16 v9938_slots_text[] = {
+       2,   10,   18,   26,   34,   42,   50,   58,   66,  166,
+     174,  182,  190,  198,  206,  214,  222,  312,  408,  504,
+     600,  696,  792,  888,  984, 1080, 1176, 1206, 1214, 1222,
+    1230, 1238, 1246, 1254, 1262, 1270, 1278, 1286, 1294, 1302,
+    1310, 1318, 1326, 1336, 1346, 1354, 1362,
+};
+
 static unsigned bitmap_address(u8 mode, unsigned x, unsigned y);
 static u8 bitmap_pixel(const MsxVdp *vdp, u8 mode,
                        unsigned x, unsigned y);
 static void execute_vdp_command(MsxVdp *vdp);
 static void command_transfer_write(MsxVdp *vdp);
 static u8 command_read_colour(MsxVdp *vdp);
-static void command_engine_advance(MsxVdp *vdp, u64 ticks);
+static void vram_engine_advance(MsxVdp *vdp, u64 ticks);
 static void command_execute_step(MsxVdp *vdp);
 static bool command_has_clock(const MsxVdp *vdp);
-static u16 command_current_slot_phase(const MsxVdp *vdp);
+static u64 vram_access_delay(const MsxVdp *vdp, u16 slot_phase,
+                             u64 minimum);
+static void schedule_cpu_vram_access(MsxVdp *vdp, bool read, u8 value);
 
 static unsigned vram_size(const MsxVdp *vdp) {
     return vdp->type == MSX_VDP_V9938
@@ -649,7 +666,7 @@ void vdp_reset(MsxVdp *vdp) {
     vdp->command_line_major = 0;
     vdp->command_line_minor = 0;
     vdp->command_line_error = 0;
-    vdp->command_slot_phase = 0;
+    vdp->vram_slot_phase = 0;
     vdp->sprite_collision_x = 0;
     vdp->sprite_collision_y = 0;
     vdp->command_code = 0;
@@ -659,8 +676,11 @@ void vdp_reset(MsxVdp *vdp) {
     vdp->command_operation = 0;
     vdp->command_event = V9938_COMMAND_EVENT_NONE;
     vdp->command_transfer_pending = false;
+    vdp->cpu_vram_pending = false;
+    vdp->cpu_vram_request_read = false;
     vdp->command_ticks_remaining = 0;
-    vdp->command_tick_fraction = 0;
+    vdp->cpu_vram_ticks_remaining = 0;
+    vdp->vram_tick_fraction = 0;
     vdp->timing_cycle = 0;
     vdp->timing_frame_cycles = 0;
     vdp->timing_scanlines = 0;
@@ -702,15 +722,52 @@ static void write_register(MsxVdp *vdp, unsigned reg, u8 value) {
         update_irq(vdp);
     if (reg == 16)
         vdp->palette_pending = false;
-    if (vdp->type == MSX_VDP_V9938 && reg == 44) {
-        if (command_has_clock(vdp) &&
-            vdp->command_event == V9938_COMMAND_EVENT_NONE)
-            vdp->command_slot_phase =
-                command_current_slot_phase(vdp);
+    if (vdp->type == MSX_VDP_V9938 && reg == 44)
         command_transfer_write(vdp);
-    }
     if (vdp->type == MSX_VDP_V9938 && reg == 46)
         execute_vdp_command(vdp);
+}
+
+static void execute_cpu_vram_access(MsxVdp *vdp) {
+    unsigned address = cpu_vram_address(vdp);
+
+    if (vdp->cpu_vram_request_read)
+        vdp->read_buffer = vdp->vram[address];
+    else
+        vdp->vram[address] = vdp->read_buffer;
+    increment_vram_pointer(vdp);
+    vdp->cpu_vram_pending = false;
+    vdp->cpu_vram_ticks_remaining = 0;
+}
+
+static void schedule_cpu_vram_access(MsxVdp *vdp, bool read, u8 value) {
+    if (!read)
+        vdp->read_buffer = value;
+    vdp->cpu_vram_request_read = read;
+
+    /*
+     * The TMS9918 path remains immediate. A V9938 without an initialized
+     * beam clock uses the same fallback so standalone functional users do
+     * not have to manufacture timing state.
+     */
+    if (vdp->type != MSX_VDP_V9938 || !command_has_clock(vdp)) {
+        vdp->cpu_vram_pending = true;
+        execute_cpu_vram_access(vdp);
+        return;
+    }
+
+    /*
+     * Real V9938 CPU requests share one latch. If software accesses port
+     * #98 again before the old request executes, the new request replaces
+     * it but retains the already reserved access time.
+     */
+    if (!vdp->cpu_vram_pending) {
+        vdp->cpu_vram_pending = true;
+        vdp->cpu_vram_ticks_remaining =
+            vram_access_delay(vdp, vdp->vram_slot_phase, 16);
+        if (!vdp->cpu_vram_ticks_remaining)
+            vdp->cpu_vram_ticks_remaining = 1;
+    }
 }
 
 u8 vdp_read_data(MsxVdp *vdp) {
@@ -719,8 +776,7 @@ u8 vdp_read_data(MsxVdp *vdp) {
     if (!vdp)
         return 0xff;
     value = vdp->read_buffer;
-    vdp->read_buffer = vdp->vram[cpu_vram_address(vdp)];
-    increment_vram_pointer(vdp);
+    schedule_cpu_vram_access(vdp, true, 0);
     vdp->control_pending = false;
     return value;
 }
@@ -807,9 +863,7 @@ u8 vdp_read_status(MsxVdp *vdp) {
 void vdp_write_data(MsxVdp *vdp, u8 value) {
     if (!vdp)
         return;
-    vdp->vram[cpu_vram_address(vdp)] = value;
-    increment_vram_pointer(vdp);
-    vdp->read_buffer = value;
+    schedule_cpu_vram_access(vdp, false, value);
     vdp->control_pending = false;
 }
 
@@ -835,10 +889,8 @@ void vdp_write_control(MsxVdp *vdp, u8 value) {
 
     vdp->address =
         (u16)(((u16)(value & 0x3f) << 8) | vdp->control_first);
-    if (!(value & 0x40)) {
-        vdp->read_buffer = vdp->vram[cpu_vram_address(vdp)];
-        increment_vram_pointer(vdp);
-    }
+    if (!(value & 0x40))
+        schedule_cpu_vram_access(vdp, true, 0);
 }
 
 void vdp_write_palette(MsxVdp *vdp, u8 value) {
@@ -924,6 +976,8 @@ void vdp_begin_frame(MsxVdp *vdp, unsigned frame_cycles,
     vdp->timing_cycle = 0;
     vdp->timing_frame_cycles = frame_cycles;
     vdp->timing_scanlines = scanlines;
+    vdp->vram_slot_phase = 0;
+    vdp->vram_tick_fraction = 0;
     update_retrace_status(vdp);
 }
 
@@ -936,17 +990,16 @@ void vdp_advance(MsxVdp *vdp, unsigned cycles) {
 
     if (!vdp || !vdp->timing_frame_cycles)
         return;
-    if (vdp->type == MSX_VDP_V9938 &&
-        vdp->command_event != V9938_COMMAND_EVENT_NONE) {
+    if (vdp->type == MSX_VDP_V9938) {
         u64 frame_ticks =
             (u64)vdp->timing_scanlines * V9938_TICKS_PER_LINE;
         u64 ticks_per_cycle =
             (frame_ticks << 32) / vdp->timing_frame_cycles;
         u64 elapsed =
-            vdp->command_tick_fraction + (u64)cycles * ticks_per_cycle;
+            vdp->vram_tick_fraction + (u64)cycles * ticks_per_cycle;
 
-        vdp->command_tick_fraction = elapsed & 0xffffffffu;
-        command_engine_advance(vdp, elapsed >> 32);
+        vdp->vram_tick_fraction = elapsed & 0xffffffffu;
+        vram_engine_advance(vdp, elapsed >> 32);
     }
     if (vdp->type == MSX_VDP_V9938 &&
         (vdp->registers[0] & 0x10) &&
@@ -1307,27 +1360,21 @@ static void command_complete(MsxVdp *vdp) {
     vdp->command_code = 0;
     vdp->command_event = V9938_COMMAND_EVENT_NONE;
     vdp->command_ticks_remaining = 0;
-    vdp->command_tick_fraction = 0;
 }
 
 static bool command_has_clock(const MsxVdp *vdp) {
     return vdp->timing_frame_cycles && vdp->timing_scanlines;
 }
 
-static u16 command_current_slot_phase(const MsxVdp *vdp) {
-    u64 frame_ticks =
-        (u64)vdp->timing_scanlines * V9938_TICKS_PER_LINE;
-    u64 beam_ticks =
-        (u64)vdp->timing_cycle * frame_ticks /
-        vdp->timing_frame_cycles;
-
-    return (u16)(beam_ticks % V9938_TICKS_PER_LINE);
-}
-
-static u64 command_access_delay(const MsxVdp *vdp, u64 minimum) {
+static u64 vram_access_delay(const MsxVdp *vdp, u16 slot_phase,
+                             u64 minimum) {
     const u16 *slots;
     size_t slot_count;
-    u64 target = (u64)vdp->command_slot_phase + minimum;
+    u8 mode = display_mode(vdp);
+    bool bitmap =
+        mode == 0x0c || mode == 0x10 ||
+        mode == 0x14 || mode == 0x1c;
+    u64 target = (u64)slot_phase + minimum;
     u64 lines = target / V9938_TICKS_PER_LINE;
     unsigned phase = (unsigned)(target % V9938_TICKS_PER_LINE);
     unsigned selected = 0;
@@ -1337,6 +1384,14 @@ static u64 command_access_delay(const MsxVdp *vdp, u64 minimum) {
         slots = v9938_slots_screen_off;
         slot_count = sizeof(v9938_slots_screen_off) /
                      sizeof(v9938_slots_screen_off[0]);
+    } else if (!bitmap && (vdp->registers[1] & 0x10)) {
+        slots = v9938_slots_text;
+        slot_count = sizeof(v9938_slots_text) /
+                     sizeof(v9938_slots_text[0]);
+    } else if (!bitmap) {
+        slots = v9938_slots_character;
+        slot_count = sizeof(v9938_slots_character) /
+                     sizeof(v9938_slots_character[0]);
     } else if (vdp->registers[8] & 0x02) {
         slots = v9938_slots_sprites_off;
         slot_count = sizeof(v9938_slots_sprites_off) /
@@ -1359,15 +1414,15 @@ static u64 command_access_delay(const MsxVdp *vdp, u64 minimum) {
         selected = slots[0];
     }
     return lines * V9938_TICKS_PER_LINE +
-           selected - vdp->command_slot_phase;
+           selected - slot_phase;
 }
 
 static void command_schedule_event(MsxVdp *vdp, u8 event, u64 ticks) {
     vdp->command_event = event;
     if (command_has_clock(vdp))
-        ticks = command_access_delay(vdp, ticks);
+        ticks = vram_access_delay(
+            vdp, vdp->vram_slot_phase, ticks);
     vdp->command_ticks_remaining = ticks ? ticks : 1;
-    vdp->command_tick_fraction = 0;
 }
 
 static u64 command_transfer_ticks(const MsxVdp *vdp) {
@@ -1413,43 +1468,88 @@ static void command_load_colour(MsxVdp *vdp) {
     vdp->registers[44] = vdp->status7;
 }
 
-static void command_engine_advance(MsxVdp *vdp, u64 ticks) {
-    while (ticks &&
-           vdp->command_event != V9938_COMMAND_EVENT_NONE) {
-        u8 event;
-        u64 event_ticks;
+static void command_execute_event(MsxVdp *vdp, u8 event) {
+    if (event == V9938_COMMAND_EVENT_COMPLETE) {
+        command_complete(vdp);
+    } else if (event == V9938_COMMAND_EVENT_TRANSFER_READY &&
+               (vdp->status2 & V9938_STATUS2_CE)) {
+        if (vdp->command_code == 0x0a)
+            command_load_colour(vdp);
+        vdp->status2 |= V9938_STATUS2_TR;
+        if (vdp->command_transfer_pending &&
+            (vdp->command_code == 0x0b ||
+             vdp->command_code == 0x0f))
+            command_transfer_write(vdp);
+    } else if (event == V9938_COMMAND_EVENT_STEP &&
+               (vdp->status2 & V9938_STATUS2_CE)) {
+        command_execute_step(vdp);
+    }
+}
 
-        if (ticks < vdp->command_ticks_remaining) {
-            vdp->command_ticks_remaining -= ticks;
-            vdp->command_slot_phase = (u16)(
-                (vdp->command_slot_phase + ticks) %
+static void vram_engine_advance(MsxVdp *vdp, u64 ticks) {
+    while (ticks) {
+        bool command_pending =
+            vdp->command_event != V9938_COMMAND_EVENT_NONE;
+        u64 command_ticks = command_pending
+                          ? vdp->command_ticks_remaining
+                          : ~(u64)0;
+        u64 cpu_ticks = vdp->cpu_vram_pending
+                      ? vdp->cpu_vram_ticks_remaining
+                      : ~(u64)0;
+        u64 next_ticks =
+            command_ticks < cpu_ticks ? command_ticks : cpu_ticks;
+
+        if (next_ticks == ~(u64)0) {
+            vdp->vram_slot_phase = (u16)(
+                (vdp->vram_slot_phase + ticks) %
                 V9938_TICKS_PER_LINE);
             return;
         }
-        event_ticks = vdp->command_ticks_remaining;
-        ticks -= event_ticks;
-        event = vdp->command_event;
-        vdp->command_slot_phase = (u16)(
-            (vdp->command_slot_phase + event_ticks) %
-            V9938_TICKS_PER_LINE);
-        vdp->command_event = V9938_COMMAND_EVENT_NONE;
-        vdp->command_ticks_remaining = 0;
-        vdp->command_tick_fraction = 0;
+        if (ticks < next_ticks) {
+            if (command_pending)
+                vdp->command_ticks_remaining -= ticks;
+            if (vdp->cpu_vram_pending)
+                vdp->cpu_vram_ticks_remaining -= ticks;
+            vdp->vram_slot_phase = (u16)(
+                (vdp->vram_slot_phase + ticks) %
+                V9938_TICKS_PER_LINE);
+            return;
+        }
 
-        if (event == V9938_COMMAND_EVENT_COMPLETE) {
-            command_complete(vdp);
-        } else if (event == V9938_COMMAND_EVENT_TRANSFER_READY &&
-                   (vdp->status2 & V9938_STATUS2_CE)) {
-            if (vdp->command_code == 0x0a)
-                command_load_colour(vdp);
-            vdp->status2 |= V9938_STATUS2_TR;
-            if (vdp->command_transfer_pending &&
-                (vdp->command_code == 0x0b ||
-                 vdp->command_code == 0x0f))
-                command_transfer_write(vdp);
-        } else if (event == V9938_COMMAND_EVENT_STEP &&
-                   (vdp->status2 & V9938_STATUS2_CE)) {
-            command_execute_step(vdp);
+        ticks -= next_ticks;
+        if (command_pending)
+            vdp->command_ticks_remaining -= next_ticks;
+        if (vdp->cpu_vram_pending)
+            vdp->cpu_vram_ticks_remaining -= next_ticks;
+        vdp->vram_slot_phase = (u16)(
+            (vdp->vram_slot_phase + next_ticks) %
+            V9938_TICKS_PER_LINE);
+
+        if (vdp->cpu_vram_pending &&
+            !vdp->cpu_vram_ticks_remaining) {
+            /*
+             * CPU traffic has priority when it reaches the same slot as
+             * the command engine. The command retains its pending
+             * operation but moves to the following free access.
+             */
+            if (command_pending &&
+                !vdp->command_ticks_remaining) {
+                vdp->command_ticks_remaining =
+                    vram_access_delay(
+                        vdp, vdp->vram_slot_phase, 1);
+                if (!vdp->command_ticks_remaining)
+                    vdp->command_ticks_remaining = 1;
+            }
+            execute_cpu_vram_access(vdp);
+            continue;
+        }
+
+        if (command_pending &&
+            !vdp->command_ticks_remaining) {
+            u8 event = vdp->command_event;
+
+            vdp->command_event = V9938_COMMAND_EVENT_NONE;
+            command_execute_event(vdp, event);
         }
     }
 }
@@ -1458,7 +1558,7 @@ static void command_start_steps(MsxVdp *vdp, u64 first_ticks) {
     command_schedule_event(
         vdp, V9938_COMMAND_EVENT_STEP, first_ticks);
     if (!command_has_clock(vdp))
-        command_engine_advance(vdp, ~(u64)0);
+        vram_engine_advance(vdp, ~(u64)0);
 }
 
 static bool command_advance_block(MsxVdp *vdp,
@@ -1771,9 +1871,6 @@ static u8 command_read_colour(MsxVdp *vdp) {
                           &pixels_per_byte);
         (void)width;
         (void)colour_mask;
-        if (command_has_clock(vdp))
-            vdp->command_slot_phase =
-                command_current_slot_phase(vdp);
         more = command_advance_transfer(vdp, pixels_per_byte);
         if (!command_has_clock(vdp)) {
             if (more)
@@ -1879,10 +1976,6 @@ static void execute_vdp_command(MsxVdp *vdp) {
      */
     vdp->command_event = V9938_COMMAND_EVENT_NONE;
     vdp->command_ticks_remaining = 0;
-    vdp->command_tick_fraction = 0;
-    if (command_has_clock(vdp))
-        vdp->command_slot_phase =
-            command_current_slot_phase(vdp);
     vdp->status2 &= (u8)~V9938_STATUS2_TR;
     if (code < 4 ||
         !command_mode_info(mode, &width, &colour_mask,

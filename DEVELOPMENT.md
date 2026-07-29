@@ -188,10 +188,25 @@ only the horizontal match.
 
 The match position is converted from the V9938's 1368 ticks per scanline to
 the current CPU-frame budget, so normal PAL/NTSC execution does not assume
-one CPU cycle per VDP tick. This is functional interrupt timing; VRAM access
-slot contention and mid-scanline renderer changes remain later timing work.
+one CPU cycle per VDP tick. Mid-scanline renderer changes remain later timing
+work.
 
-## V9938 command timing
+## V9938 VRAM and command timing
+
+CPU reads and writes through V9938 port `0x98` reserve the first free VRAM
+access at least 16 VDP ticks after the request. Read-ahead loads and address
+increments happen when that access executes, while writes update the shared
+CPU data latch immediately. A second request arriving before the first access
+replaces the pending read/write operation without moving its reserved time,
+matching the V9938's behaviour under excessively fast traffic.
+
+The scheduler uses measured screen-off, bitmap-with-sprites,
+bitmap-without-sprites, character, and text access tables. TMS9918 accesses
+remain immediate, as do V9938 accesses in standalone functional tests without
+an initialized beam clock. R#14 carry and planar SCREEN 6/7 remapping are
+applied at execution time. If a CPU request and command operation reach the
+same slot, the CPU access wins and the command operation moves to the next
+free slot without clearing CE.
 
 The complete V9938 bitmap-command set now runs progressively from an
 independent command clock tied to the emulated beam. Autonomous operations
@@ -217,9 +232,9 @@ completion.
 Command time is stored in V9938 ticks and advanced with fixed-point conversion
 from the current PAL/NTSC CPU-frame budget, including commands which span a
 frame boundary. Logical read-modify-write operations currently remain one
-atomic command step. CPU data-port contention and exposing mid-scanline VRAM
-changes through the renderer remain later timing work. The access schedules
-and operation spacings follow openMSX's measured
+atomic command step. Exposing mid-scanline VRAM changes through the renderer
+remains later timing work. The access schedules and operation spacings follow
+openMSX's measured
 [V9938 VRAM timings](https://openmsx.org/vdp-vram-timing/vdp-timing.html)
 and [part II](https://openmsx.org/vdp-vram-timing/vdp-timing-2.html).
 
