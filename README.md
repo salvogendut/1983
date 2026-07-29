@@ -82,8 +82,13 @@ whole firmware set is validated before replacing the running machine.
 
 To add another model using an implemented hardware layout, copy a catalogue
 section, give it a unique ID and name, and change its firmware paths. Paths
-may be absolute or relative to the catalogue file. A graphical
-**Advanced > Machine model editor** is planned as a follow-up.
+may be absolute or relative to the catalogue file.
+
+For graphical editing, enable **General > Tinker**, then open
+**Advanced > Machine model editor**. It can add, edit, duplicate, and delete
+models; choose firmware files; validate IDs and ROM sizes; and atomically
+save the complete catalogue to the user configuration directory. Select the
+edited model under **General > Machine** to apply it.
 
 C-BIOS can be started explicitly:
 
@@ -136,9 +141,11 @@ and in the application-data directory on Windows. Use `--config PATH` for an
 isolated configuration; [`1983.conf.example`](1983.conf.example) documents
 the available settings.
 
-1983 searches for `1983-models.conf` in the current directory, the user
-configuration directory, and the installed application-data directory.
-`--models PATH` selects a different catalogue.
+1983 searches for `1983-models.conf` in the user configuration directory,
+the current directory, and the installed application-data directory.
+`--models PATH` selects a different catalogue. The graphical editor always
+writes a per-user catalogue, seeding it with the complete active catalogue
+on the first saved edit so installed or repository copies remain untouched.
 
 The local `DOS/` directory is reserved for guest DOS files. Only the
 unmodified `DOS/NEXTOR.SYS` is tracked; other DOS files are ignored.
