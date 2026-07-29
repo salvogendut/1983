@@ -20,6 +20,28 @@ int main(void) {
     MsxMachine msx;
     Display display;
     Overlay overlay;
+    DisplayLayout layout;
+
+    display_calculate_layout(640, 520, &layout);
+    assert(layout.screen_x == 0);
+    assert(layout.screen_y == 0);
+    assert(layout.screen_w == 640);
+    assert(layout.screen_h == 480);
+    assert(layout.footer_y == 480);
+
+    display_calculate_layout(1000, 1000, &layout);
+    assert(layout.screen_x == 0);
+    assert(layout.screen_y == 105);
+    assert(layout.screen_w == 1000);
+    assert(layout.screen_h == 750);
+    assert(layout.footer_y == 960);
+
+    display_calculate_layout(1600, 900, &layout);
+    assert(layout.screen_x == 227);
+    assert(layout.screen_y == 0);
+    assert(layout.screen_w == 1146);
+    assert(layout.screen_h == 860);
+    assert(layout.footer_y == 860);
 
     config_defaults(&config);
     model_catalog_defaults(&models);

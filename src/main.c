@@ -561,8 +561,7 @@ int main(int argc, char **argv) {
         draw_paused(&msx, &display);
         overlay_render(&overlay);
         notify_render(display.renderer, DISPLAY_SCREEN_H);
-        leds_render_hover(display.renderer);
-        display_present(&display);
+        display_present(&display, &msx);
 
         if (cli.exit_after >= 0 && host_frame >= cli.exit_after)
             running = false;

@@ -10,16 +10,25 @@
 #define DISPLAY_FB_W 640
 #define DISPLAY_FB_H 480
 #define DISPLAY_LOGICAL_W 640
-#define DISPLAY_SCREEN_H 480
-#define DISPLAY_STRIP_H 18
-#define DISPLAY_LED_H 22
-#define DISPLAY_LOGICAL_H \
-    (DISPLAY_SCREEN_H + DISPLAY_STRIP_H + DISPLAY_LED_H)
+#define DISPLAY_LOGICAL_H 480
+#define DISPLAY_SCREEN_H DISPLAY_LOGICAL_H
+#define DISPLAY_STRIP_H 16
+#define DISPLAY_LED_H 24
+#define DISPLAY_FOOTER_H (DISPLAY_STRIP_H + DISPLAY_LED_H)
+
+typedef struct {
+    int screen_x;
+    int screen_y;
+    int screen_w;
+    int screen_h;
+    int footer_y;
+} DisplayLayout;
 
 typedef struct {
     SDL_Window   *window;
     SDL_Renderer *renderer;
     SDL_Texture  *texture;
+    SDL_Texture  *canvas;
     u32          *pixels;
 
     int  scale;
@@ -34,7 +43,9 @@ int  display_init(Display *display, const Config *config,
 void display_quit(Display *display);
 void display_prepare_scaffold(Display *display, const MsxMachine *msx);
 void display_draw(Display *display, const MsxMachine *msx);
-void display_present(Display *display);
+void display_present(Display *display, const MsxMachine *msx);
+void display_calculate_layout(int output_w, int output_h,
+                              DisplayLayout *layout);
 void display_set_title(Display *display, const MsxMachine *msx,
                        const char *model_name);
 void display_set_scale(Display *display, int scale);
