@@ -29,6 +29,8 @@ typedef struct {
     const char *subrom_path;
     const char *disk_rom_path;
     const char *sunrise_rom_path;
+    const char *drive_a_path;
+    const char *drive_b_path;
     const char *ide_image_path;
     const char *cassette_path;
     const char *screenshot_path;
@@ -37,6 +39,7 @@ typedef struct {
     bool cartridge_mapper_set[MSX_CARTRIDGE_SLOTS];
     const char *model_name;
     int region;
+    int floppy_image_mode;
     int ide_image_mode;
     int scale;
     int exit_after;
@@ -56,6 +59,9 @@ static const char *usage =
     "  --subrom PATH       load a 16 KB MSX2 Sub-ROM in slot 3-0\n"
     "  --disk-rom PATH     load a 16 KB disk ROM in slot 3-3/page 1\n"
     "  --sunrise-rom PATH  load a 128 KB Sunrise IDE/Nextor kernel ROM\n"
+    "  --disk-a PATH       insert a raw MSX DSK image in Drive A\n"
+    "  --disk-b PATH       insert a raw MSX DSK image in Drive B\n"
+    "  --floppy-mode MODE  DSK access: read-only (default) or read-write\n"
     "  --ide PATH          mount a raw IDE disk image\n"
     "  --ide-mode MODE     image access: read-only (default) or read-write\n"
     "  --cassette PATH     insert a standard MSX CAS cassette image\n"
@@ -121,9 +127,22 @@ static int parse_ide_mode(const char *text) {
     return -1;
 }
 
+static int parse_floppy_mode(const char *text) {
+    if (strcmp(text, "read-only") == 0 ||
+        strcmp(text, "ro") == 0)
+        return FLOPPY_IMAGE_READ_ONLY;
+    if (strcmp(text, "read-write") == 0 ||
+        strcmp(text, "rw") == 0)
+        return FLOPPY_IMAGE_READ_WRITE;
+    fprintf(stderr,
+            "--floppy-mode: expected read-only or read-write\n");
+    return -1;
+}
+
 static int parse_cli(int argc, char **argv, Cli *cli) {
     memset(cli, 0, sizeof(*cli));
     cli->region = -1;
+    cli->floppy_image_mode = -1;
     cli->ide_image_mode = -1;
     cli->scale = -1;
     cli->exit_after = -1;
@@ -160,6 +179,9 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--subrom") == 0 ||
              strcmp(argument, "--disk-rom") == 0 ||
              strcmp(argument, "--sunrise-rom") == 0 ||
+             strcmp(argument, "--disk-a") == 0 ||
+             strcmp(argument, "--disk-b") == 0 ||
+             strcmp(argument, "--floppy-mode") == 0 ||
              strcmp(argument, "--ide") == 0 ||
              strcmp(argument, "--ide-mode") == 0 ||
              strcmp(argument, "--cassette") == 0 ||
@@ -190,6 +212,14 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->disk_rom_path = argv[++i];
         } else if (strcmp(argument, "--sunrise-rom") == 0) {
             cli->sunrise_rom_path = argv[++i];
+        } else if (strcmp(argument, "--disk-a") == 0) {
+            cli->drive_a_path = argv[++i];
+        } else if (strcmp(argument, "--disk-b") == 0) {
+            cli->drive_b_path = argv[++i];
+        } else if (strcmp(argument, "--floppy-mode") == 0) {
+            cli->floppy_image_mode = parse_floppy_mode(argv[++i]);
+            if (cli->floppy_image_mode < 0)
+                return -1;
         } else if (strcmp(argument, "--ide") == 0) {
             cli->ide_image_path = argv[++i];
         } else if (strcmp(argument, "--ide-mode") == 0) {
@@ -455,6 +485,19 @@ int main(int argc, char **argv) {
         config.extra_hardware = true;
         config.sunrise_ide = true;
     }
+    if (cli.drive_a_path)
+        snprintf(config.drive_a_path,
+                 sizeof(config.drive_a_path),
+                 "%s", cli.drive_a_path);
+    if (cli.drive_b_path) {
+        snprintf(config.drive_b_path,
+                 sizeof(config.drive_b_path),
+                 "%s", cli.drive_b_path);
+        config.second_drive = true;
+    }
+    if (cli.floppy_image_mode >= 0)
+        config.floppy_image_mode =
+            (FloppyImageMode)cli.floppy_image_mode;
     if (cli.ide_image_mode >= 0)
         config.ide_image_mode =
             (AtaImageMode)cli.ide_image_mode;
@@ -502,6 +545,46 @@ int main(int argc, char **argv) {
         if (cli.cassette_path) {
             msx_destroy(&msx);
             return 1;
+        }
+    }
+    if (config.drive_a_path[0]) {
+        if (!msx_floppy_supported(&msx) ||
+            msx_mount_drive_a(
+                &msx, config.drive_a_path,
+                config.floppy_image_mode) != 0) {
+            fprintf(stderr,
+                    "cannot mount Floppy A DSK image %s (%s): %s\n",
+                    config.drive_a_path,
+                    config.floppy_image_mode ==
+                        FLOPPY_IMAGE_READ_WRITE
+                    ? "read/write" : "read-only",
+                    msx_floppy_supported(&msx)
+                    ? msx_drive_a_error(&msx)
+                    : "selected machine has no Philips WD2793");
+            if (cli.drive_a_path) {
+                msx_destroy(&msx);
+                return 1;
+            }
+        }
+    }
+    if (config.second_drive && config.drive_b_path[0]) {
+        if (!msx_floppy_supported(&msx) ||
+            msx_mount_drive_b(
+                &msx, config.drive_b_path,
+                config.floppy_image_mode) != 0) {
+            fprintf(stderr,
+                    "cannot mount Floppy B DSK image %s (%s): %s\n",
+                    config.drive_b_path,
+                    config.floppy_image_mode ==
+                        FLOPPY_IMAGE_READ_WRITE
+                    ? "read/write" : "read-only",
+                    msx_floppy_supported(&msx)
+                    ? msx_drive_b_error(&msx)
+                    : "selected machine has no Philips WD2793");
+            if (cli.drive_b_path) {
+                msx_destroy(&msx);
+                return 1;
+            }
         }
     }
     if (config.sunrise_ide) {
@@ -633,6 +716,22 @@ int main(int argc, char **argv) {
                   ? ", raw disk mounted read/write"
                   : ", raw disk mounted read-only")
                : ", no disk mounted");
+    if (msx_drive_a_mounted(&msx))
+        printf("Floppy A: %s (%s, %u tracks, %u sides, %u sectors)\n",
+               config.drive_a_path,
+               msx_drive_a_writable(&msx)
+               ? "read/write" : "read-only",
+               msx.fdc.drive_a.tracks,
+               msx.fdc.drive_a.sides,
+               msx.fdc.drive_a.sectors_per_track);
+    if (msx_drive_b_mounted(&msx))
+        printf("Floppy B: %s (%s, %u tracks, %u sides, %u sectors)\n",
+               config.drive_b_path,
+               msx_drive_b_writable(&msx)
+               ? "read/write" : "read-only",
+               msx.fdc.drive_b.tracks,
+               msx.fdc.drive_b.sides,
+               msx.fdc.drive_b.sectors_per_track);
     if (msx_cassette_mounted(&msx)) {
         CassetteFileType type = msx_cassette_file_type(&msx);
 
@@ -836,6 +935,10 @@ int main(int argc, char **argv) {
         leds_set_state(LED_TAPE, msx_cassette_rolling(&msx));
         if (msx_sunrise_take_activity(&msx))
             leds_ping(LED_IDE);
+        if (msx_drive_a_take_activity(&msx))
+            leds_ping(LED_FDC_A);
+        if (msx_drive_b_take_activity(&msx))
+            leds_ping(LED_FDC_B);
         notify_tick(1000 / msx.frame_hz);
         display_draw(&display, &msx);
         draw_debug(&config, &msx, &display);
@@ -907,6 +1010,18 @@ int main(int argc, char **argv) {
         msx_flush_sunrise_disk(&msx) != 0) {
         fprintf(stderr, "cannot flush IDE image at shutdown: %s\n",
                 msx_sunrise_disk_error(&msx));
+        shutdown_status = 1;
+    }
+    if (msx_drive_a_mounted(&msx) &&
+        msx_flush_drive_a(&msx) != 0) {
+        fprintf(stderr, "cannot flush Floppy A at shutdown: %s\n",
+                msx_drive_a_error(&msx));
+        shutdown_status = 1;
+    }
+    if (msx_drive_b_mounted(&msx) &&
+        msx_flush_drive_b(&msx) != 0) {
+        fprintf(stderr, "cannot flush Floppy B at shutdown: %s\n",
+                msx_drive_b_error(&msx));
         shutdown_status = 1;
     }
     audio_output_quit(&audio);

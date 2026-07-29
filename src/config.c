@@ -151,6 +151,7 @@ void config_defaults(Config *config) {
     config->joy_port_device[0] = JOY_PORT_JOYSTICK;
     config->joy_port_device[1] = JOY_PORT_JOYSTICK;
     config->notifications = NOTIFY_MODE_SCREEN;
+    config->floppy_image_mode = FLOPPY_IMAGE_READ_ONLY;
     config->ide_image_mode = ATA_IMAGE_READ_ONLY;
 }
 
@@ -182,6 +183,8 @@ void config_normalize(Config *config) {
         config->audio_volume = 100;
     if (config->ide_image_mode != ATA_IMAGE_READ_WRITE)
         config->ide_image_mode = ATA_IMAGE_READ_ONLY;
+    if (config->floppy_image_mode != FLOPPY_IMAGE_READ_WRITE)
+        config->floppy_image_mode = FLOPPY_IMAGE_READ_ONLY;
     if (config->main_input != INPUT_PORT_B)
         config->main_input = INPUT_PORT_A;
     for (unsigned port = 0; port < 2; ++port) {
@@ -324,6 +327,18 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "ide_image") == 0)
             snprintf(config->ide_image_path,
                      sizeof(config->ide_image_path), "%s", value);
+        else if (strcmp(key, "drive_a") == 0)
+            snprintf(config->drive_a_path,
+                     sizeof(config->drive_a_path), "%s", value);
+        else if (strcmp(key, "drive_b") == 0)
+            snprintf(config->drive_b_path,
+                     sizeof(config->drive_b_path), "%s", value);
+        else if (strcmp(key, "floppy_image_mode") == 0)
+            config->floppy_image_mode =
+                strcmp(value, "read-write") == 0 ||
+                strcmp(value, "rw") == 0
+                ? FLOPPY_IMAGE_READ_WRITE :
+                  FLOPPY_IMAGE_READ_ONLY;
         else if (strcmp(key, "ide_image_mode") == 0)
             config->ide_image_mode =
                 strcmp(value, "read-write") == 0 ||
@@ -406,6 +421,11 @@ int config_save(const Config *config) {
     fprintf(file, "cartridge2_mapper = %s\n",
             msx_cartridge_mapper_name(config->cartridge_mapper[1]));
     fprintf(file, "cassette = %s\n", config->cassette_path);
+    fprintf(file, "drive_a = %s\n", config->drive_a_path);
+    fprintf(file, "drive_b = %s\n", config->drive_b_path);
+    fprintf(file, "floppy_image_mode = %s\n",
+            config->floppy_image_mode == FLOPPY_IMAGE_READ_WRITE
+            ? "read-write" : "read-only");
     fprintf(file, "ide_image = %s\n", config->ide_image_path);
     fprintf(file, "ide_image_mode = %s\n",
             config->ide_image_mode == ATA_IMAGE_READ_WRITE
@@ -414,13 +434,14 @@ int config_save(const Config *config) {
     fprintf(file, "[extensions]\n");
     fprintf(file, "extra_hardware = %s\n",
             bool_name(config->extra_hardware));
-    fprintf(file, "second_drive = %s\n", bool_name(config->second_drive));
     fprintf(file, "sunrise_ide = %s\n", bool_name(config->sunrise_ide));
     fprintf(file, "sunrise_rom = %s\n", config->sunrise_rom_path);
     fprintf(file, "scc = %s\n", bool_name(config->scc));
     fprintf(file, "msx_music = %s\n", bool_name(config->msx_music));
     fprintf(file, "kanji_rom = %s\n\n", bool_name(config->kanji_rom));
     fprintf(file, "[advanced]\n");
+    fprintf(file, "second_drive = %s\n",
+            bool_name(config->second_drive));
     fprintf(file, "tinker = %s\n", bool_name(config->tinker));
     fprintf(file, "cassette_audible_monitor = %s\n",
             bool_name(config->cassette_audible_monitor));

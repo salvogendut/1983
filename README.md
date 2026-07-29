@@ -17,11 +17,13 @@ SDL3 allows.
 > The emulator includes TMS9918-family and V9938 video, AY/YM PSG audio,
 > the international keyboard matrix, SDL3 joystick input, dual cartridge
 > slots with common mappers, MSX2 expanded slots, memory mapper, RTC, and
-> safe read-only/read-write Sunrise IDE disks. The official Sunrise Nextor
-> kernel can boot
-> the GeoBench raw image to its desktop. Standard MSX CAS cassette playback
-> is integrated with the BIOS motor and input path. Floppy, cassette
-> recording, SCC audio, and other extensions remain in development.
+> native Philips WD2793 floppy support with safe read-only/read-write raw
+> DSK images, plus safe read-only/read-write Sunrise IDE disks. The official
+> Sunrise Nextor kernel can boot the GeoBench raw image to its desktop.
+> Standard MSX CAS cassette playback
+> is integrated with the BIOS motor and input path. Protected floppy
+> formats, cassette recording, SCC audio, and other extensions remain in
+> development.
 
 ## Highlights
 
@@ -37,6 +39,8 @@ SDL3 allows.
 - Cartridge I/II presence LEDs, with a split network-access form.
 - Sunrise IDE cartridge emulation, explicit read-only/read-write raw ATA
   images, safe flush/ejection, IDE activity, and Nextor boot.
+- Philips NMS 8250 WD2793 emulation, conventional raw DSK images, safe
+  sector writes, optional second floppy, and independent activity LEDs.
 - Standard MSX CAS playback with emulated motor control, transport status,
   rewind/eject controls, and the Tape LED.
 - Headless execution and deterministic component and firmware tests.
@@ -70,6 +74,8 @@ Useful options:
 ./1983 --cart ROMS/game.rom
 ./1983 --models ./my-models.conf --model my-msx
 ./1983 --model msx1 --cassette /path/to/program.cas
+./1983 --model nms8250 --disk-a /path/to/game.dsk \
+  --floppy-mode read-only
 ./1983 --sunrise-rom /path/to/Nextor.SunriseIDE.ROM \
   --ide /path/to/disk.img --ide-mode read-only
 ./1983 --config ./test.conf
@@ -155,6 +161,19 @@ Ctrl+Enter, F9, reset, or losing window focus releases capture.
 
 **General > Extra Hardware** reveals Extensions; **General > Tinker**
 reveals Advanced.
+
+On a Philips NMS 8250, **Media > Floppy A** inserts a conventional raw
+`.dsk` image. Delete safely ejects it. With Tinker enabled,
+**Advanced > Floppy access mode** explicitly selects read-only or read/write;
+read-only is the default. **Advanced > Second floppy** adds an independently
+selectable **Floppy B** row to Media and enables its activity LED. Completed
+sector writes are flushed on replacement, ejection, and shutdown. Reset
+discards only an incomplete sector transfer and preserves mounted media.
+Host I/O failures remain visible and block unsafe ejection. Command-line
+equivalents are `--disk-a`, `--disk-b`, and `--floppy-mode`.
+The current backend accepts conventional raw 320, 360, 640, and 720 KiB
+sector images. Extended DSK, protected, and flux-level formats are not yet
+supported.
 
 **Media > Cassette** inserts a standard `.cas` image and rewinds it. The
 row shows its type, transport state, and elapsed/total time. Press R on that

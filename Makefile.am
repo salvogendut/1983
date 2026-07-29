@@ -5,6 +5,7 @@ bin_PROGRAMS = 1983
 	src/cartridge.c \
 	src/cassette.c \
 	src/ata.c \
+	src/floppy.c \
 	src/audio.c \
 	src/display.c \
 	src/gamepad.c \
@@ -20,6 +21,7 @@ bin_PROGRAMS = 1983
 	src/sunrise.c \
 	src/ui.c \
 	src/vdp.c \
+	src/wd2793.c \
 	src/z80.c
 
 noinst_HEADERS = \
@@ -27,6 +29,7 @@ noinst_HEADERS = \
 	src/cartridge.h \
 	src/cassette.h \
 	src/ata.h \
+	src/floppy.h \
 	src/audio.h \
 	src/display.h \
 	src/gamepad.h \
@@ -42,6 +45,7 @@ noinst_HEADERS = \
 	src/types.h \
 	src/ui.h \
 	src/vdp.h \
+	src/wd2793.h \
 	src/z80.h
 
 1983_CPPFLAGS = -DPKGDATADIR=\"$(pkgdatadir)\"
@@ -56,7 +60,7 @@ icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 
 CLEANFILES = icons/1983-rc.o
 
-check_PROGRAMS = test-cartridge test-cassette test-ata test-sunrise test-config test-models test-msx test-gamepad test-kbd test-overlay test-vdp test-psg test-rtc
+check_PROGRAMS = test-cartridge test-cassette test-ata test-floppy test-wd2793 test-sunrise test-config test-models test-msx test-gamepad test-kbd test-overlay test-vdp test-psg test-rtc
 TESTS = $(check_PROGRAMS) tests/test-cli.sh
 test_cartridge_SOURCES = tests/test_cartridge.c src/cartridge.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
@@ -70,19 +74,27 @@ test_ata_SOURCES = tests/test_ata.c src/ata.c
 test_ata_CPPFLAGS = -I$(top_srcdir)/src
 test_ata_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
+test_floppy_SOURCES = tests/test_floppy.c src/floppy.c
+test_floppy_CPPFLAGS = -I$(top_srcdir)/src
+test_floppy_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+
+test_wd2793_SOURCES = tests/test_wd2793.c src/floppy.c src/wd2793.c
+test_wd2793_CPPFLAGS = -I$(top_srcdir)/src
+test_wd2793_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+
 test_sunrise_SOURCES = tests/test_sunrise.c src/ata.c src/sunrise.c
 test_sunrise_CPPFLAGS = -I$(top_srcdir)/src
 test_sunrise_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
+test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_config_CPPFLAGS = -I$(top_srcdir)/src
 test_config_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
+test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_models_CPPFLAGS = -I$(top_srcdir)/src
 test_models_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
+test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
@@ -91,12 +103,12 @@ test_gamepad_CPPFLAGS = -I$(top_srcdir)/src
 test_gamepad_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_LDADD = $(SDL3_LIBS)
 
-test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/z80.c
+test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/kbd.c src/msx.c src/psg.c src/rtc.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
 
-test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/display.c src/leds.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/sunrise.c src/ui.c src/vdp.c src/z80.c
+test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/sunrise.c src/ui.c src/vdp.c src/wd2793.c src/z80.c
 test_overlay_CPPFLAGS = -I$(top_srcdir)/src
 test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_overlay_LDADD = $(SDL3_LIBS) -lm

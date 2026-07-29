@@ -35,6 +35,8 @@ enum {
 
 enum {
     ADVANCED_MODEL_EDITOR = 0,
+    ADVANCED_SECOND_FLOPPY,
+    ADVANCED_FLOPPY_IMAGE_ACCESS,
     ADVANCED_IDE_IMAGE_ACCESS,
     ADVANCED_SMOOTHING,
     ADVANCED_REAL_CRT,
@@ -89,8 +91,10 @@ static int section_rows(const Overlay *overlay,
     switch (section) {
         case OVERLAY_GENERAL:    return GENERAL_ROWS;
         case OVERLAY_MEDIA:
-            return overlay->config->sunrise_ide ? 8 : 7;
-        case OVERLAY_EXTENSIONS: return 4;
+            return 6 +
+                   (overlay->config->second_drive ? 1 : 0) +
+                   (overlay->config->sunrise_ide ? 1 : 0);
+        case OVERLAY_EXTENSIONS: return 3;
         case OVERLAY_ADVANCED:   return ADVANCED_ROWS;
         case OVERLAY_SECTION_COUNT: break;
     }
@@ -99,10 +103,6 @@ static int section_rows(const Overlay *overlay,
 
 static const char *toggle_name(bool enabled) {
     return enabled ? "On" : "Off";
-}
-
-static const char *stub_toggle_name(bool enabled) {
-    return enabled ? "On (device stub)" : "Off";
 }
 
 static const char *input_port_name(InputPort port) {
@@ -117,7 +117,21 @@ static const char *ide_mode_name(AtaImageMode mode) {
     return mode == ATA_IMAGE_READ_WRITE ? "Read/write" : "Read-only";
 }
 
+static const char *floppy_mode_name(FloppyImageMode mode) {
+    return mode == FLOPPY_IMAGE_READ_WRITE
+         ? "Read/write" : "Read-only";
+}
+
 static const char *path_basename(const char *path);
+
+static int media_floppy_b_row(const Config *config) {
+    return config->second_drive ? 6 : -1;
+}
+
+static int media_ide_row(const Config *config) {
+    return config->sunrise_ide
+         ? 6 + (config->second_drive ? 1 : 0) : -1;
+}
 
 static int cartridge_extension_slot(const Config *config,
                                     const char *name) {
@@ -220,6 +234,62 @@ static void cassette_text(const Overlay *overlay,
     } else if (path[0]) {
         snprintf(value, value_size, "%s [not mounted]",
                  path_basename(path));
+    } else {
+        snprintf(value, value_size, "[not mounted]");
+    }
+}
+
+static void drive_a_text(const Overlay *overlay,
+                         char *value, size_t value_size) {
+    const char *path = overlay->config->drive_a_path;
+
+    if (!msx_floppy_supported(overlay->msx)) {
+        snprintf(value, value_size,
+                 "[requires Philips NMS 8250]");
+    } else if (msx_drive_a_mounted(overlay->msx)) {
+        const char *state =
+            msx_drive_a_has_error(overlay->msx)
+            ? ", I/O error" :
+            msx_drive_a_dirty(overlay->msx)
+            ? ", dirty" : "";
+
+        snprintf(value, value_size, "%s [%s%s]",
+                 path_basename(path),
+                 msx_drive_a_writable(overlay->msx)
+                 ? "read/write" : "read-only", state);
+    } else if (path[0]) {
+        snprintf(value, value_size, "%s [not mounted, %s]",
+                 path_basename(path),
+                 floppy_mode_name(
+                     overlay->config->floppy_image_mode));
+    } else {
+        snprintf(value, value_size, "[not mounted]");
+    }
+}
+
+static void drive_b_text(const Overlay *overlay,
+                         char *value, size_t value_size) {
+    const char *path = overlay->config->drive_b_path;
+
+    if (!msx_floppy_supported(overlay->msx)) {
+        snprintf(value, value_size,
+                 "[requires Philips NMS 8250]");
+    } else if (msx_drive_b_mounted(overlay->msx)) {
+        const char *state =
+            msx_drive_b_has_error(overlay->msx)
+            ? ", I/O error" :
+            msx_drive_b_dirty(overlay->msx)
+            ? ", dirty" : "";
+
+        snprintf(value, value_size, "%s [%s%s]",
+                 path_basename(path),
+                 msx_drive_b_writable(overlay->msx)
+                 ? "read/write" : "read-only", state);
+    } else if (path[0]) {
+        snprintf(value, value_size, "%s [not mounted, %s]",
+                 path_basename(path),
+                 floppy_mode_name(
+                     overlay->config->floppy_image_mode));
     } else {
         snprintf(value, value_size, "[not mounted]");
     }
@@ -375,62 +445,46 @@ static void item_text(const Overlay *overlay, int row,
             }
             break;
         case OVERLAY_MEDIA:
-            switch (row) {
-                case 0:
-                    snprintf(label, label_size, "Cartridge 1");
-                    cartridge_text(overlay, 0, value, value_size);
-                    break;
-                case 1:
-                    snprintf(label, label_size, "Cart 1 mapper");
-                    mapper_text(overlay, 0, value, value_size);
-                    break;
-                case 2:
-                    snprintf(label, label_size, "Cartridge 2");
-                    cartridge_text(overlay, 1, value, value_size);
-                    break;
-                case 3:
-                    snprintf(label, label_size, "Cart 2 mapper");
-                    mapper_text(overlay, 1, value, value_size);
-                    break;
-                case 4:
-                    snprintf(label, label_size, "Cassette");
-                    cassette_text(overlay, value, value_size);
-                    break;
-                case 5:
-                    snprintf(label, label_size, "Drive A");
-                    snprintf(value, value_size,
-                             "[not mounted - loader planned]");
-                    break;
-                case 6:
-                    snprintf(label, label_size, "Drive B");
-                    snprintf(value, value_size,
-                             "[not mounted - loader planned]");
-                    break;
-                case 7:
-                    snprintf(label, label_size, "IDE hard disk");
-                    ide_image_text(overlay, value, value_size);
-                    break;
+            if (row == 0) {
+                snprintf(label, label_size, "Cartridge 1");
+                cartridge_text(overlay, 0, value, value_size);
+            } else if (row == 1) {
+                snprintf(label, label_size, "Cart 1 mapper");
+                mapper_text(overlay, 0, value, value_size);
+            } else if (row == 2) {
+                snprintf(label, label_size, "Cartridge 2");
+                cartridge_text(overlay, 1, value, value_size);
+            } else if (row == 3) {
+                snprintf(label, label_size, "Cart 2 mapper");
+                mapper_text(overlay, 1, value, value_size);
+            } else if (row == 4) {
+                snprintf(label, label_size, "Cassette");
+                cassette_text(overlay, value, value_size);
+            } else if (row == 5) {
+                snprintf(label, label_size, "Floppy A");
+                drive_a_text(overlay, value, value_size);
+            } else if (row == media_floppy_b_row(config)) {
+                snprintf(label, label_size, "Floppy B");
+                drive_b_text(overlay, value, value_size);
+            } else if (row == media_ide_row(config)) {
+                snprintf(label, label_size, "IDE hard disk");
+                ide_image_text(overlay, value, value_size);
             }
             break;
         case OVERLAY_EXTENSIONS:
             switch (row) {
                 case 0:
-                    snprintf(label, label_size, "Second floppy drive");
-                    snprintf(value, value_size, "%s",
-                             stub_toggle_name(config->second_drive));
-                    break;
-                case 1:
                     snprintf(label, label_size, "Sunrise IDE");
                     sunrise_extension_text(
                         overlay, value, value_size);
                     break;
-                case 2:
+                case 1:
                     snprintf(label, label_size, "Konami SCC");
                     cartridge_extension_text(
                         config, "Konami SCC", config->scc,
                         value, value_size);
                     break;
-                case 3:
+                case 2:
                     snprintf(label, label_size, "MSX-MUSIC");
                     cartridge_extension_text(
                         config, "MSX-MUSIC", config->msx_music,
@@ -445,6 +499,19 @@ static void item_text(const Overlay *overlay, int row,
                              "Machine model editor");
                     snprintf(value, value_size, "%zu models",
                              overlay->models->count);
+                    break;
+                case ADVANCED_SECOND_FLOPPY:
+                    snprintf(label, label_size,
+                             "Second floppy");
+                    snprintf(value, value_size, "%s",
+                             toggle_name(config->second_drive));
+                    break;
+                case ADVANCED_FLOPPY_IMAGE_ACCESS:
+                    snprintf(label, label_size,
+                             "Floppy access mode");
+                    snprintf(value, value_size, "%s",
+                             floppy_mode_name(
+                                 config->floppy_image_mode));
                     break;
                 case ADVANCED_IDE_IMAGE_ACCESS:
                     snprintf(label, label_size,
@@ -680,6 +747,40 @@ static void restore_cassette(Overlay *overlay) {
     }
 }
 
+static bool restore_floppies(Overlay *overlay) {
+    const Config *saved = &overlay->saved;
+
+    if (msx_eject_drive_a(overlay->msx) != 0) {
+        notify_post("Could not restore Floppy A: %s",
+                    msx_drive_a_error(overlay->msx));
+        return false;
+    }
+    if (msx_eject_drive_b(overlay->msx) != 0) {
+        notify_post("Could not restore Floppy B: %s",
+                    msx_drive_b_error(overlay->msx));
+        return false;
+    }
+    if (saved->model != MSX_MODEL_PHILIPS_NMS8250)
+        return true;
+    if (saved->drive_a_path[0] &&
+        msx_mount_drive_a(
+            overlay->msx, saved->drive_a_path,
+            saved->floppy_image_mode) != 0) {
+        notify_post("Could not restore Floppy A image: %s",
+                    msx_drive_a_error(overlay->msx));
+        return false;
+    }
+    if (saved->second_drive && saved->drive_b_path[0] &&
+        msx_mount_drive_b(
+            overlay->msx, saved->drive_b_path,
+            saved->floppy_image_mode) != 0) {
+        notify_post("Could not restore Floppy B image: %s",
+                    msx_drive_b_error(overlay->msx));
+        return false;
+    }
+    return true;
+}
+
 static void close_overlay(Overlay *overlay, bool save) {
     if (overlay->state == OVERLAY_STATE_MODEL_TEXT &&
         overlay->display && overlay->display->window)
@@ -700,6 +801,8 @@ static void close_overlay(Overlay *overlay, bool save) {
         restore_firmware(overlay);
         *overlay->config = overlay->saved;
         apply_config(overlay);
+        if (!restore_floppies(overlay))
+            return;
     }
     overlay->visible = false;
     overlay->dirty = false;
@@ -810,6 +913,60 @@ static void open_cassette_dialog(Overlay *overlay) {
     if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
         return;
     overlay->dialog_target = OVERLAY_DIALOG_CASSETTE;
+    overlay->dialog_ready = false;
+    overlay->dialog_failed = false;
+    overlay->dialog_error[0] = '\0';
+    SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
+                           overlay->display
+                           ? overlay->display->window : NULL,
+                           filters, 2, location, false);
+}
+
+static void open_drive_a_dialog(Overlay *overlay) {
+    static const SDL_DialogFileFilter filters[] = {
+        { "Raw MSX floppy images", "dsk;DSK" },
+        { "All files", "*" },
+    };
+    const char *location =
+        overlay->config->last_media_dir[0]
+        ? overlay->config->last_media_dir : NULL;
+
+    if (!msx_floppy_supported(overlay->msx)) {
+        notify_post("Floppy A requires the Philips NMS 8250 model");
+        return;
+    }
+    if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
+        return;
+    overlay->dialog_target = OVERLAY_DIALOG_DRIVE_A;
+    overlay->dialog_ready = false;
+    overlay->dialog_failed = false;
+    overlay->dialog_error[0] = '\0';
+    SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
+                           overlay->display
+                           ? overlay->display->window : NULL,
+                           filters, 2, location, false);
+}
+
+static void open_drive_b_dialog(Overlay *overlay) {
+    static const SDL_DialogFileFilter filters[] = {
+        { "Raw MSX floppy images", "dsk;DSK" },
+        { "All files", "*" },
+    };
+    const char *location =
+        overlay->config->last_media_dir[0]
+        ? overlay->config->last_media_dir : NULL;
+
+    if (!overlay->config->second_drive) {
+        notify_post("Enable the second floppy in Advanced first");
+        return;
+    }
+    if (!msx_floppy_supported(overlay->msx)) {
+        notify_post("Floppy B requires the Philips NMS 8250 model");
+        return;
+    }
+    if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
+        return;
+    overlay->dialog_target = OVERLAY_DIALOG_DRIVE_B;
     overlay->dialog_ready = false;
     overlay->dialog_failed = false;
     overlay->dialog_error[0] = '\0';
@@ -1560,6 +1717,74 @@ static bool set_ide_image_mode(Overlay *overlay,
     return true;
 }
 
+static bool set_floppy_image_mode(Overlay *overlay,
+                                  FloppyImageMode mode) {
+    Config *config = overlay->config;
+    FloppyImageMode old_mode = config->floppy_image_mode;
+    bool drive_a_changed = false;
+
+    if (config->floppy_image_mode == mode)
+        return true;
+    if (msx_drive_a_mounted(overlay->msx) &&
+        msx_mount_drive_a(
+            overlay->msx, config->drive_a_path, mode) != 0) {
+        notify_post("Could not switch Floppy A access: %s",
+                    msx_drive_a_error(overlay->msx));
+        return false;
+    }
+    drive_a_changed = msx_drive_a_mounted(overlay->msx);
+    if (msx_drive_b_mounted(overlay->msx) &&
+        msx_mount_drive_b(
+            overlay->msx, config->drive_b_path, mode) != 0) {
+        if (drive_a_changed &&
+            msx_mount_drive_a(
+                overlay->msx, config->drive_a_path,
+                old_mode) != 0)
+            notify_post("Could not restore Floppy A access: %s",
+                        msx_drive_a_error(overlay->msx));
+        notify_post("Could not switch Floppy B access: %s",
+                    msx_drive_b_error(overlay->msx));
+        return false;
+    }
+    config->floppy_image_mode = mode;
+    overlay->dirty = true;
+    notify_post("Floppy image access set to %s",
+                floppy_mode_name(mode));
+    return true;
+}
+
+static bool toggle_second_floppy(Overlay *overlay) {
+    Config *config = overlay->config;
+
+    if (config->second_drive) {
+        if (msx_eject_drive_b(overlay->msx) != 0) {
+            notify_post("Could not disable Floppy B: %s",
+                        msx_drive_b_error(overlay->msx));
+            return false;
+        }
+        config->second_drive = false;
+        overlay->dirty = true;
+        notify_post("Second floppy disabled");
+        return true;
+    }
+    if (!msx_floppy_supported(overlay->msx)) {
+        notify_post("Second floppy requires the Philips NMS 8250 model");
+        return false;
+    }
+    config->second_drive = true;
+    overlay->dirty = true;
+    if (config->drive_b_path[0] &&
+        msx_mount_drive_b(
+            overlay->msx, config->drive_b_path,
+            config->floppy_image_mode) != 0) {
+        notify_post("Second floppy enabled; saved image not mounted: %s",
+                    msx_drive_b_error(overlay->msx));
+    } else {
+        notify_post("Second floppy enabled");
+    }
+    return true;
+}
+
 static void activate_item(Overlay *overlay) {
     Config *config = overlay->config;
 
@@ -1616,10 +1841,6 @@ static void activate_item(Overlay *overlay) {
             }
             break;
         case OVERLAY_MEDIA: {
-            static const char *media[] = {
-                "", "", "", "", "Cassette", "Drive A", "Drive B",
-                "IDE hard disk"
-            };
             if (overlay->row == 0) {
                 open_cartridge_dialog(overlay, 0);
                 return;
@@ -1640,18 +1861,23 @@ static void activate_item(Overlay *overlay) {
                 open_cassette_dialog(overlay);
                 return;
             }
-            if (overlay->row == 7) {
+            if (overlay->row == 5) {
+                open_drive_a_dialog(overlay);
+                return;
+            }
+            if (overlay->row == media_floppy_b_row(config)) {
+                open_drive_b_dialog(overlay);
+                return;
+            }
+            if (overlay->row == media_ide_row(config)) {
                 open_ide_image_dialog(overlay);
                 return;
             }
-            notify_post("%s loading is not implemented yet",
-                        media[overlay->row]);
             return;
         }
         case OVERLAY_EXTENSIONS:
             switch (overlay->row) {
-                case 0: config->second_drive = !config->second_drive; break;
-                case 1:
+                case 0:
                     if (config->sunrise_ide) {
                         if (!disconnect_sunrise(overlay))
                             return;
@@ -1672,13 +1898,13 @@ static void activate_item(Overlay *overlay) {
                         return;
                     }
                     break;
-                case 2:
+                case 1:
                     if (!toggle_cartridge_extension(
                             overlay, &config->scc,
                             "Konami SCC"))
                         return;
                     break;
-                case 3:
+                case 2:
                     if (!toggle_cartridge_extension(
                             overlay, &config->msx_music,
                             "MSX-MUSIC"))
@@ -1691,6 +1917,19 @@ static void activate_item(Overlay *overlay) {
                 case ADVANCED_MODEL_EDITOR:
                     begin_model_editor(overlay);
                     return;
+                case ADVANCED_SECOND_FLOPPY:
+                    if (!toggle_second_floppy(overlay))
+                        return;
+                    break;
+                case ADVANCED_FLOPPY_IMAGE_ACCESS:
+                    if (!set_floppy_image_mode(
+                            overlay,
+                            config->floppy_image_mode ==
+                                FLOPPY_IMAGE_READ_ONLY
+                            ? FLOPPY_IMAGE_READ_WRITE :
+                              FLOPPY_IMAGE_READ_ONLY))
+                        return;
+                    break;
                 case ADVANCED_IDE_IMAGE_ACCESS:
                     if (!set_ide_image_mode(
                             overlay,
@@ -2075,7 +2314,29 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 leds_set_state(LED_TAPE, false);
                 notify_post("Cassette ejected");
             } else if (overlay->section == OVERLAY_MEDIA &&
-                       overlay->row == 7 &&
+                       overlay->row == 5) {
+                if (msx_eject_drive_a(overlay->msx) != 0) {
+                    notify_post("Could not eject Floppy A: %s",
+                                msx_drive_a_error(overlay->msx));
+                } else {
+                    overlay->config->drive_a_path[0] = '\0';
+                    overlay->dirty = true;
+                    notify_post("Floppy A safely ejected");
+                }
+            } else if (overlay->section == OVERLAY_MEDIA &&
+                       overlay->row ==
+                           media_floppy_b_row(overlay->config)) {
+                if (msx_eject_drive_b(overlay->msx) != 0) {
+                    notify_post("Could not eject Floppy B: %s",
+                                msx_drive_b_error(overlay->msx));
+                } else {
+                    overlay->config->drive_b_path[0] = '\0';
+                    overlay->dirty = true;
+                    notify_post("Floppy B safely ejected");
+                }
+            } else if (overlay->section == OVERLAY_MEDIA &&
+                       overlay->row ==
+                           media_ide_row(overlay->config) &&
                        overlay->config->sunrise_ide) {
                 if (msx_eject_sunrise_disk(overlay->msx) != 0) {
                     notify_post("Could not eject IDE disk: %s",
@@ -2086,7 +2347,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                     notify_post("IDE disk safely ejected");
                 }
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
-                       overlay->row == 1 &&
+                       overlay->row == 0 &&
                        overlay->config->sunrise_rom_path[0]) {
                 if (overlay->config->sunrise_ide &&
                     !disconnect_sunrise(overlay))
@@ -2114,11 +2375,11 @@ static const char *section_hint(OverlaySection section) {
         case OVERLAY_GENERAL:
             return "Machine, memory, audio, input, and optional controls.";
         case OVERLAY_MEDIA:
-            return "Enter loads; R rewinds cassette; Delete ejects.";
+            return "Enter loads; R rewinds tape; Delete safely ejects.";
         case OVERLAY_EXTENSIONS:
             return "Enter toggles; Delete forgets Sunrise firmware.";
         case OVERLAY_ADVANCED:
-            return "Machine models, IDE safety, and diagnostic controls.";
+            return "Machine models, disk safety, and diagnostic controls.";
         case OVERLAY_SECTION_COUNT:
             break;
     }
@@ -2161,6 +2422,10 @@ void overlay_tick(Overlay *overlay) {
             notify_post("Sunrise IDE ROM selection cancelled");
         else if (target == OVERLAY_DIALOG_IDE_IMAGE)
             notify_post("IDE disk selection cancelled");
+        else if (target == OVERLAY_DIALOG_DRIVE_A)
+            notify_post("Floppy A selection cancelled");
+        else if (target == OVERLAY_DIALOG_DRIVE_B)
+            notify_post("Floppy B selection cancelled");
         else if (target == OVERLAY_DIALOG_CASSETTE)
             notify_post("Cassette selection cancelled");
         return;
@@ -2185,6 +2450,52 @@ void overlay_tick(Overlay *overlay) {
                         msx_cassette_file_type(overlay->msx)),
                     cassette_load_command(
                         msx_cassette_file_type(overlay->msx)));
+        return;
+    }
+
+    if (target == OVERLAY_DIALOG_DRIVE_A) {
+        if (msx_mount_drive_a(
+                overlay->msx, overlay->dialog_path,
+                overlay->config->floppy_image_mode) != 0) {
+            notify_post("Could not mount Floppy A image: %s",
+                        msx_drive_a_error(overlay->msx));
+            return;
+        }
+        snprintf(overlay->config->drive_a_path,
+                 sizeof(overlay->config->drive_a_path), "%s",
+                 overlay->dialog_path);
+        copy_dirname(overlay->config->last_media_dir,
+                     sizeof(overlay->config->last_media_dir),
+                     overlay->dialog_path);
+        overlay->dirty = true;
+        notify_post("Floppy A mounted %s: %s",
+                    floppy_mode_name(
+                        overlay->config->floppy_image_mode),
+                    path_basename(overlay->dialog_path));
+        return;
+    }
+
+    if (target == OVERLAY_DIALOG_DRIVE_B) {
+        if (!overlay->config->second_drive)
+            return;
+        if (msx_mount_drive_b(
+                overlay->msx, overlay->dialog_path,
+                overlay->config->floppy_image_mode) != 0) {
+            notify_post("Could not mount Floppy B image: %s",
+                        msx_drive_b_error(overlay->msx));
+            return;
+        }
+        snprintf(overlay->config->drive_b_path,
+                 sizeof(overlay->config->drive_b_path), "%s",
+                 overlay->dialog_path);
+        copy_dirname(overlay->config->last_media_dir,
+                     sizeof(overlay->config->last_media_dir),
+                     overlay->dialog_path);
+        overlay->dirty = true;
+        notify_post("Floppy B mounted %s: %s",
+                    floppy_mode_name(
+                        overlay->config->floppy_image_mode),
+                    path_basename(overlay->dialog_path));
         return;
     }
 

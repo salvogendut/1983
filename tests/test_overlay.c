@@ -348,7 +348,6 @@ int main(void) {
     assert(overlay.row == 0);
     render_overlay(&display, &msx, &overlay);
 
-    send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);
     assert(!config.sunrise_ide);
@@ -482,9 +481,9 @@ int main(void) {
     overlay_tick(&overlay);
     assert(msx_cassette_mounted(&msx));
     assert(strcmp(config.cassette_path, cassette_path) == 0);
-    for (int row = 0; row < 3; ++row)
+    for (int row = 0; row < 2; ++row)
         send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 7);
+    assert(overlay.row == 6);
     assert(msx_sunrise_disk_mounted(&msx));
     assert(strcmp(config.ide_image_path, ide_image_path) == 0);
     send_key(&overlay, SDLK_DELETE);
@@ -505,14 +504,14 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
     assert(overlay.row == 0);
-    send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 1);
+    for (int row = 0; row < 3; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 3);
     send_key(&overlay, SDLK_RETURN);
     assert(config.ide_image_mode == ATA_IMAGE_READ_WRITE);
     assert(msx_sunrise_disk_writable(&msx));
     send_key(&overlay, SDLK_LEFT);
     assert(overlay.section == OVERLAY_EXTENSIONS);
-    send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(!config.sunrise_ide);
     assert(config_cartridge_slot_available(&config, 0));
@@ -525,9 +524,9 @@ int main(void) {
 
     send_key(&overlay, SDLK_LEFT);
     assert(overlay.section == OVERLAY_MEDIA);
-    for (int row = 0; row < 6; ++row)
+    for (int row = 0; row < 5; ++row)
         send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 6);
+    assert(overlay.row == 5);
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_LEFT);
@@ -542,7 +541,7 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
     assert(overlay.row == 0);
-    for (int row = 0; row < 5; ++row)
+    for (int row = 0; row < 7; ++row)
         send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.cassette_audible_monitor);
@@ -550,7 +549,7 @@ int main(void) {
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.cassette_visual_monitor);
-    for (int row = 0; row < 6; ++row)
+    for (int row = 0; row < 8; ++row)
         send_key(&overlay, SDLK_UP);
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_RETURN);
@@ -616,6 +615,36 @@ int main(void) {
     assert(!overlay.visible);
     assert(!msx_cassette_mounted(&msx));
     assert(!config.cassette_path[0]);
+
+    /* The Advanced switch conditionally adds Floppy B to Media. */
+    config_defaults(&config);
+    config.model = MSX_MODEL_PHILIPS_NMS8250;
+    snprintf(config.machine_id, sizeof(config.machine_id), "nms8250");
+    config.tinker = true;
+    msx_configure(&msx, config.model, config.region, 128);
+    overlay_init(&overlay, &config, &models, &display, &msx);
+    send_key(&overlay, SDLK_F9);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_MEDIA);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_ADVANCED);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 1);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.second_drive);
+    send_key(&overlay, SDLK_LEFT);
+    assert(overlay.section == OVERLAY_MEDIA);
+    send_key(&overlay, SDLK_UP);
+    assert(overlay.row == 6);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_ADVANCED);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.second_drive);
+    send_key(&overlay, SDLK_LEFT);
+    send_key(&overlay, SDLK_UP);
+    assert(overlay.row == 5);
+
     assert(remove(editor_path) == 0);
     assert(remove(sunrise_rom_path) == 0);
     assert(remove(sunrise_rom_path_2) == 0);

@@ -17,7 +17,8 @@ primary slots through PPI port `0xA8`.
 The Philips NMS 8250 layout implements expanded primary slot 3, its inverted
 secondary-slot register at `0xFFFF`, the MSX2 Sub-ROM, 128 KiB internal
 mapper RAM, and the disk ROM. Memory-mapper segment registers are exposed at
-ports `0xFC` through `0xFF`.
+ports `0xFC` through `0xFF`. Its disk subslot also exposes the Philips
+memory-mapped WD2793 register block and drive-control lines.
 
 The General RAM control offers power-of-two mapper capacities through
 4096 KiB (plus the smaller 16/32 KiB MSX1 layouts). Capacity above 128 KiB is
@@ -108,8 +109,8 @@ persistent manual override. The SCC register window is mapped, but SCC audio
 is not implemented yet.
 
 The Media overlay can load, eject, and independently configure both
-cartridges. Cassette is a working transport; floppy rows remain explicit
-stubs. The IDE hard-disk selector appears only when Sunrise IDE is connected;
+cartridges, the cassette, and the active floppy drives. The IDE hard-disk
+selector appears only when Sunrise IDE is connected;
 the Nextor kernel is cartridge firmware and therefore has no separate Media
 row.
 
@@ -156,6 +157,33 @@ the synthesized waveform in emulated CPU time and mixes it into the
 behind the tape head into a translucent oscilloscope with transport time and
 command guidance. Recording, WAV input, and seeking are not implemented.
 
+## Philips WD2793 and floppy storage
+
+The Philips NMS 8250 disk subslot maps the WD2793 command/status, track,
+sector, and data registers at offsets `3FF8` through `3FFB`, mirrored in all
+four 16 KiB pages. Offsets `3FFC` and `3FFD` select side, drive, and motor;
+`3FFF` exposes the active-low IRQ and DRQ lines expected by the Philips disk
+ROM. The controller implements restore, seek and step operations, single and
+multiple sector reads/writes, read address, and force interrupt. Reset
+discards an incomplete transfer but preserves inserted media and completed
+dirty sectors.
+
+The host-independent raw DSK backend accepts conventional 320, 360, 640, and
+720 KiB sector images. It prefers FAT BPB geometry when valid and otherwise
+uses known MSX geometries. Images default to read-only. Explicit read/write
+mode buffers a complete 512-byte sector before changing the host file.
+Replacement and ejection flush completed sectors; a host flush error leaves
+the dirty image attached and visible instead of claiming a successful
+ejection.
+
+Media always exposes Floppy A for the NMS 8250. With Tinker enabled,
+Advanced > Second floppy adds Floppy B and its independent image selector.
+The Philips drive register chooses between the two devices. Advanced >
+Floppy access mode applies the explicit read-only/read-write policy to
+inserted floppies. Paths, second-drive state, and access mode persist in
+`1983.conf`; `--disk-a`, `--disk-b`, and `--floppy-mode` provide the same
+startup controls. Sector access pulses the matching floppy LED.
+
 ## Sunrise IDE and ATA storage
 
 The Sunrise IDE extension is a real cartridge device rather than a generic
@@ -189,10 +217,11 @@ read-only/read-write switch. Both paths and the access mode persist in
 dedicated Sunrise IDE indicator; the owning cartridge LED remains orange to
 show physical presence.
 
-The current reference run uses the NMS 8250 BIOS and Sub-ROM without its
-internal disk ROM, because that ROM expects the not-yet-implemented WD2793.
-The external Sunrise kernel boots the 32 MiB GeoBench FAT16 image through
-Nextor to the GeoBench desktop using the stock 128 KiB mapper.
+The Sunrise reference run deliberately omits the internal disk ROM so the
+external controller owns boot. The Sunrise kernel boots the 32 MiB GeoBench
+FAT16 image through Nextor to the GeoBench desktop using the stock 128 KiB
+mapper. Independently, the NMS 8250 disk ROM boots conventional floppy
+images through its native WD2793 path.
 
 ## MSX1 video
 
@@ -319,9 +348,9 @@ frontends.
 
 ## Known major gaps
 
-- Floppy devices and images; cassette recording and sampled audio input.
-- WD2793 disk controller.
-- Writable ATA images, CHS-only edge cases, and additional ATA commands.
+- Protected/flux floppy formats, format/write-track, and unusual geometries.
+- Cassette recording and sampled audio input.
+- CHS-only ATA edge cases and additional ATA commands.
 - Separate external memory-mapper extensions.
 - Alternate national keyboard layouts.
 - SCC and MSX-MUSIC audio.

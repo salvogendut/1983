@@ -10,6 +10,7 @@ complete MSX hardware specification.
 |-------|----------------|
 | `src/main.c` | Process lifetime, command line, SDL event loop, and shared function-key bindings |
 | `src/ata.*` | Host-independent ATA task file, IDENTIFY/read/write/flush commands, and safe raw-image lifetime |
+| `src/floppy.*` | Host-independent raw DSK geometry, sector I/O, access mode, flush, and safe image lifetime |
 | `src/cartridge.*` | Host-independent cartridge image ownership, mapper detection, bank registers, and SCC register window |
 | `src/cassette.*` | Host-independent MSX CAS parser, type detection, waveform synthesis, motor-controlled transport, comparator, and monitor signal |
 | `src/audio.*` | SDL3 audio-stream lifetime and host sample submission |
@@ -28,7 +29,10 @@ complete MSX hardware specification.
 | `src/sunrise.*` | Sunrise IDE cartridge ROM banking, address decode, 16-bit data latch, and ATA bridge |
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
 | `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, sprite-mode-2, and command engine |
+| `src/wd2793.*` | Philips memory-mapped WD2793 registers, commands, drive selection, IRQ/DRQ, and transfer state |
 | `tests/test_ata.c` | ATA identify, sector reads, errors, reset, activity, and conservative mount checks |
+| `tests/test_floppy.c` | Raw DSK geometry, read/write, failed replacement, flush failure, and safe ejection |
+| `tests/test_wd2793.c` | Commands, register mirrors, dual-drive selection, IRQ/DRQ, sector transfers, reset, and write protection |
 | `tests/test_sunrise.c` | Sunrise banking, overlay decode, data latch, master/slave, soft reset, and disk lifetime |
 | `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/Nextor boot checks |
 | `tests/test_cartridge.c` | Linear, ASCII8/16, Konami, Konami SCC, detection, bank wrapping, reset, and eject checks |
@@ -107,9 +111,11 @@ primary slots 1 and 2, and expanded primary slot 3 containing the MSX2
 sub-ROM in secondary slot 0, the 128 KB internal mapper in slot 2, and the
 built-in disk ROM in slot 3/page 1. The expanded-slot register and mapper
 ports, V9938 CPU interface, bitmap renderer, command engine, and RTC are
-implemented; the WD2793 controller is not. The external Sunrise IDE/Nextor
-cartridge is also implemented, and the current GeoBench checkpoint boots on
-the internal 128 KiB mapper. A separate 512 KiB memory-mapper extension still
+implemented. The disk subslot also exposes the Philips memory-mapped WD2793
+and one or two raw-image-backed floppy drives. The external Sunrise
+IDE/Nextor cartridge is implemented independently, and the current GeoBench
+checkpoint boots on the internal 128 KiB mapper. A separate 512 KiB
+memory-mapper extension still
 has to be added; it must remain a second device rather than being folded into
 a fictitious 640 KiB allocation. Firmware discovery builds on the explicit
 `1983-models.conf` paths and the pinned hashes documented in
@@ -157,6 +163,23 @@ make check
 It omits the NMS disk ROM, pins the test RTC to 1983-01-01, boots for 2,001
 PAL frames, and verifies the CPU, slot registers, mapper registers, VDP state,
 VRAM population, and deterministic GeoBench-desktop framebuffer hash.
+
+## WD2793 and floppy boundaries
+
+`src/wd2793.c` owns controller registers, commands, side/drive/motor
+selection, active-low IRQ/DRQ reporting, and complete-sector transfer
+buffers. `src/floppy.c` knows nothing about MSX slots or controller commands;
+it validates conventional raw DSK geometry and owns host file I/O. The MSX
+bus exposes the Philips registers only when the NMS 8250 disk subslot is
+selected. This keeps future machine-specific controller wiring separate from
+the reusable image backend.
+
+Both images start read-only unless read/write is explicitly selected.
+Completed writes become dirty in the image backend, while reset can discard
+an incomplete controller transfer without changing the host file. Image
+replacement and ejection flush and synchronize dirty data. Failure preserves
+the attached image and error state. Advanced owns the second-drive and access
+controls; Media owns insertion and safe ejection.
 
 ## Bus and port assumptions
 
@@ -388,12 +411,24 @@ Run the Philips NMS 8250 firmware checkpoint with:
 MSX_NMS8250_DIR=/path/to/nms8250-roms make check
 ```
 
+Add a local conventional floppy image to exercise the real disk-ROM boot
+path:
+
+```sh
+MSX_NMS8250_DIR=/path/to/nms8250-roms \
+MSX_NMS8250_DSK=/path/to/software.dsk \
+make check
+```
+
 The C-BIOS test runs 180 NTSC frames to a stable no-cartridge state, then
 resets and verifies that C-BIOS discovers and launches a synthetic linear ROM
 cartridge. A separate CPU checkpoint executes from an ASCII8 window, switches
 a bank through the MSX bus, and copies a banked sentinel into RAM. The NMS
-8250 test currently verifies firmware loading, expanded
-slot discovery, mapper setup, and SCREEN 6 startup after 200 PAL frames.
+8250 test verifies firmware loading, expanded slot discovery, mapper setup,
+and SCREEN 6 startup after 200 PAL frames. With `MSX_NMS8250_DSK`, it
+additionally boots for 3,000 frames through the internal disk ROM, verifies
+WD2793 activity and geometry, and checks that guest execution and video
+continue after disk access.
 When the MSX Diagnostics cartridge is available, its MSX2 startup and menu
 handoff can be included with:
 

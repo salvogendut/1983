@@ -59,8 +59,37 @@ start the supplied layouts with:
 ```
 
 The NMS 8250 BIOS, Sub-ROM, and disk ROM reproduce the implemented expanded
-slot and internal mapper layout. The WD2793 controller is not implemented
-yet, so the disk ROM does not currently provide disk access.
+slot and internal mapper layout. Its Philips memory-mapped WD2793 now boots
+conventional raw DSK images through Floppy A:
+
+```sh
+./1983 --model nms8250 --region pal \
+  --disk-a /path/to/software.dsk --floppy-mode read-only
+```
+
+Enable Tinker and use **Advanced > Second floppy** to add Floppy B to Media.
+Both drives support explicit read-only/read/write policy and safe ejection.
+
+### Graphical floppy workflow
+
+1. Select **General > Machine > Philips NMS 8250** and provide its BIOS,
+   Sub-ROM, and disk ROM through the machine catalogue.
+2. Open **Media > Floppy A** and select a conventional raw `.dsk` image.
+3. Press F5 to reset. The internal disk ROM will boot the inserted image when
+   it is bootable; the Floppy A LED reports sector activity.
+4. For a second drive, enable **General > Tinker**, then
+   **Advanced > Second floppy**. **Media > Floppy B** appears immediately and
+   has its own selector and activity LED.
+5. Read-only is the safe default for both drives. To permit guest writes,
+   select **Advanced > Floppy access mode > Read/write**. Delete on a Media
+   row safely ejects that image.
+
+The second-drive setting controls both the emulated Philips drive-select
+target and the presence of the Floppy B Media row. Disabling it safely ejects
+Floppy B but retains its configured path, so enabling it again can restore the
+same image. The access mode is shared by A and B and changes mounted images
+conservatively: if either image cannot be reopened, the previous usable mode
+is retained where possible and the failure is reported.
 
 Boot the local diagnostic cartridge with:
 
@@ -85,11 +114,11 @@ after making the selections. Later activations simply disconnect or reconnect
 that configuration; Delete forgets the stored controller firmware and opens
 the setup path again next time. **Media > IDE hard disk** handles later disk
 changes while the controller is connected. Images must be non-empty multiples
-of 512 bytes and are mounted read-only.
+of 512 bytes and default to read-only; Advanced > IDE access mode can
+explicitly switch them to read/write.
 
-The current NMS 8250 reference command deliberately suppresses the internal
-disk ROM: that firmware expects a WD2793, while the boot device here is the
-external Sunrise cartridge.
+The Sunrise reference command deliberately suppresses the internal disk ROM
+so the external controller owns boot.
 
 ```sh
 ./1983 --model nms8250 --disk-rom "" \
@@ -114,6 +143,9 @@ MSX_CBIOS_DIR=/path/to/cbios make check
 MSX_DIAG_BIOS_ROM=../msx-diag/msxdiag.rom make check
 MSX_NMS8250_DIR=ROMS make check
 MSX_NMS8250_DIR=ROMS MSX_DIAG_ROM=ROMS/diag.rom make check
+MSX_NMS8250_DIR=ROMS \
+MSX_NMS8250_DSK=/path/to/software.dsk \
+make check
 MSX_NMS8250_DIR=ROMS \
 MSX_NEXTOR_SUNRISE_ROM=/path/to/Nextor-2.1.1.SunriseIDE.ROM \
 MSX_NEXTOR_IDE_IMAGE=/path/to/GBMSX.IMG \
@@ -231,7 +263,10 @@ Development tests advance through explicit checkpoints:
    checkpoint reaches its blue menu at `PC=468C`, restores status selection
    to S#0, and displays `MSX DIAGNOSTICS`. SCREEN 5-8 bitmap layouts, all
    twelve V9938 commands, retrace transitions, and interrupt acknowledgement
-   are covered independently.
+   are covered independently. The native disk-ROM path also boots the local
+   720 KiB `Mahjong Kyo Special` raw DSK
+   (`SHA-256 95d94e18f71b3106d8a41207e717fbf5da6380e1e58f595e76836771445b483d`)
+   to its title screen; the image remains user-supplied and untracked.
 4. **Partially reached:** the official Nextor kernel ROM enumerates the
    Sunrise cartridge and its ATA master on the stock NMS 8250 mapper. The
    separate external 512 KiB mapper remains to be implemented.
@@ -241,9 +276,10 @@ Development tests advance through explicit checkpoints:
    still needs its own fixture.
 6. **Reached beyond the prompt:** Nextor loads the system files from the
    GeoBench image and executes its startup, reaching the GeoBench desktop.
-7. **Partially reached:** reset preserves the mounted read-only device and
-   disk reads pulse the dedicated IDE LED. Guest writes
-   deliberately return ATA ABRT; writable media and FAT12 coverage remain.
+7. **Reached:** reset preserves mounted ATA and floppy images, completed
+   read/write sectors flush safely, partial transfers do not corrupt host
+   media, host I/O errors block unsafe ejection, and activity pulses the
+   appropriate IDE or floppy LED.
 
 Each checkpoint should be scriptable in headless mode and should record the
 firmware hashes, machine profile, disk-image hash, CPU milestone, and
@@ -272,7 +308,8 @@ also provides:
 - a guided Sunrise IDE controller setup under Extensions;
 - a raw IDE hard-disk selector under Media while Sunrise is connected;
 - a persistent standard MSX CAS cassette selector and transport under Media;
-- explicit floppy placeholders for their future devices.
+- a persistent Floppy A selector for the NMS 8250;
+- an Advanced second-floppy switch which conditionally adds Floppy B.
 
 Each cartridge selector opens the shared SDL3 file-dialog workflow and has an
 adjacent `auto`/manual mapper selector. Delete ejects the selected cartridge.
@@ -283,8 +320,9 @@ ROM and optional disk before reserving a cartridge slot; canceling it leaves
 the live machine unchanged. Sunrise ROM and disk paths persist in `1983.conf`;
 mounting is conservative and a failed replacement leaves the previous image
 active. Cassette mounts are also conservative, persist in `1983.conf`, and
-expose rewind and eject controls. Floppy selectors remain explicit stubs
-until their devices are implemented.
+expose rewind and eject controls. Floppy mounts follow the same conservative
+replacement and safe-ejection policy; paths, the shared access mode, and
+second-drive state persist independently.
 
 Selecting the Sunrise extension must not silently replace a cartridge or
 firmware image. It reserves a physical cartridge slot through the same
@@ -293,11 +331,11 @@ profile reproduces slot 0 BIOS/BASIC and expanded primary slot 3 with the
 MSX2 Sub-ROM, internal mapper, and disk ROM; Sunrise remains an independent
 external cartridge. The separate external mapper is future work.
 
-Hard-disk images are currently opened read-only and guest write commands
-abort. Read activity drives the dedicated IDE status LED while the owning
-cartridge LED remains monochrome orange. Writable mode will require an
-explicit user choice and stronger persistence/error tests before it is
-enabled.
+Hard-disk and floppy images default to read-only and require an explicit
+Advanced-menu choice for read/write access. Completed writes are flushed on
+guest flush commands where applicable, replacement, ejection, and shutdown.
+Read/write activity drives the dedicated IDE or floppy status LED while the
+Sunrise owning cartridge LED remains monochrome orange.
 
 ## Distribution and licensing
 
