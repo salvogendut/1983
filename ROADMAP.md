@@ -22,14 +22,14 @@ the 1984 and 1985 sibling emulators.
 | Area | Current position and intended support |
 |------|---------------------------------------|
 | CPU | Z80 instruction set, interrupts, and cycle-aware execution are integrated |
-| Machine architecture | Primary slots, NMS 8250 expanded slots, and its internal 128 KiB mapper are implemented |
+| Machine architecture | Primary slots, NMS 8250 expanded slots, its internal mapper, and configurable mapper capacity through 4 MiB are implemented |
 | MSX video | Pattern modes, sprite mode 1, status, collisions, and interrupts are implemented; timing refinement remains |
 | MSX2 video | V9938 registers, palette, bitmap modes, sprite mode 2, commands, interrupts, contended VRAM, and scanline-progressive output are implemented |
 | Audio | AY/YM PSG and SDL3 output are implemented; SCC and MSX-MUSIC are planned |
 | Cartridges | Dual Linear, ASCII8/16, Konami, and Konami SCC devices with persistent mapper controls are implemented |
 | Cassette | CAS images and the standard BIOS cassette path are planned |
 | Disk | DSK images, WD2793 behavior, Sunrise ATA-IDE, guest writes, and multiple drives are planned |
-| Input | International keyboard is implemented; joysticks, mouse, alternate matrices, and clipboard paste are planned |
+| Input | International keyboard and persistent Joy Port A/B device selections are implemented; joystick and mouse protocols, alternate matrices, and clipboard paste are planned |
 | MSX2 hardware | Internal mapper, RTC, and editable firmware catalogue are implemented; persistent CMOS and more extensions are planned |
 | Tools | Screenshots and headless automation exist; snapshots, debugger, disassembler, and deterministic capture are planned |
 

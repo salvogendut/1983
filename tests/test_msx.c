@@ -751,6 +751,7 @@ int main(void) {
     assert(msx.profile->vram_kb == 16);
     assert(!msx.profile->expanded_slots);
     assert(!msx.profile->memory_mapper);
+    assert(!msx_has_memory_mapper(&msx));
     assert(!msx.profile->rtc);
     assert(msx.frame_hz == 50);
 
@@ -766,13 +767,15 @@ int main(void) {
     assert(msx.profile->vram_kb == 128);
     assert(msx.profile->expanded_slots);
     assert(msx.profile->memory_mapper);
+    assert(msx_has_memory_mapper(&msx));
     assert(msx.profile->rtc);
     assert(msx.frame_hz == 60);
     assert(msx.frame == 0);
 
-    assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX1, 64, 1) == 16);
-    assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX1, 16, -1) == 64);
-    assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX2, 128, 1) == 64);
+    assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX1, 64, 1) == 128);
+    assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX1, 16, -1) == 4096);
+    assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX2, 128, 1) == 256);
+    assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX2, 4096, 1) == 64);
     {
         MsxModel detected;
         assert(msx_model_from_name("nms8250", &detected));
@@ -783,10 +786,28 @@ int main(void) {
         assert(msx_profile(detected)->requires_subrom);
         assert(msx_profile(detected)->requires_disk_rom);
     }
+
+    msx_configure(&msx, MSX_MODEL_GENERIC_MSX1,
+                  MSX_REGION_PAL, 4096);
+    assert(msx.ram_kb == 4096);
+    assert(msx.ram_capacity == MSX_RAM_MAX_SIZE);
+    assert(msx.ram != msx.internal_ram);
+    assert(msx_has_memory_mapper(&msx));
+    msx_io_write(&msx, 0xa8, 0xff);
+    msx_io_write(&msx, 0xfc, 0xff);
+    assert(msx_io_read(&msx, 0xfc) == 0xff);
+    msx_memory_write(&msx, 0x0123, 0x83);
+    assert(msx.ram[0x3fc123] == 0x83);
+    msx_io_write(&msx, 0xfc, 0xfe);
+    assert(msx_memory_read(&msx, 0x0123) == 0);
+    msx_io_write(&msx, 0xfc, 0xff);
+    assert(msx_memory_read(&msx, 0x0123) == 0x83);
+
     msx_configure(&msx, MSX_MODEL_PHILIPS_NMS8250,
                   MSX_REGION_PAL, 128);
     assert(strcmp(msx.profile->name, "Philips NMS 8250") == 0);
     assert(msx.vdp.type == MSX_VDP_V9938);
+    assert(msx.ram == msx.internal_ram);
 
     test_slot_bus_and_cpu();
     test_dual_cartridge_slots_and_mapper_reset();

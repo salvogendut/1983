@@ -15,18 +15,26 @@ typedef struct {
 } LedPalette;
 
 static const LedPalette palette[LED_COUNT] = {
-    [LED_POWER] = { 18, 60, 18, 80, 255, 80 },
-    [LED_CAPS]  = { 60, 30,  0, 255, 160, 30 },
-    [LED_KANA]  = { 60, 20, 60, 255, 90, 255 },
-    [LED_FDC_A] = { 70, 18, 18, 255, 70, 70 },
-    [LED_FDC_B] = { 70, 18, 18, 255, 70, 70 },
-    [LED_TAPE]  = { 18, 35, 65, 70, 150, 255 },
-    [LED_IDE]   = { 55, 45,  8, 255, 220, 40 },
+    [LED_POWER]       = { 18, 60, 18, 80, 255, 80 },
+    [LED_CARTRIDGE_I] = { 60, 30,  0, 255, 160, 30 },
+    [LED_CARTRIDGE_II]= { 60, 30,  0, 255, 160, 30 },
+    [LED_CAPS]        = { 60, 30,  0, 255, 160, 30 },
+    [LED_KANA]        = { 60, 20, 60, 255, 90, 255 },
+    [LED_FDC_A]       = { 70, 18, 18, 255, 70, 70 },
+    [LED_FDC_B]       = { 70, 18, 18, 255, 70, 70 },
+    [LED_TAPE]        = { 18, 35, 65, 70, 150, 255 },
+    [LED_IDE]         = { 55, 45,  8, 255, 220, 40 },
 };
+
+static const LedPalette cartridge_ide_activity =
+    { 18, 60, 18, 80, 255, 80 };
+static const LedPalette cartridge_network_activity =
+    { 48, 48, 48, 245, 245, 245 };
 
 static bool enabled[LED_COUNT];
 static bool state[LED_COUNT];
 static Uint64 last_ping[LED_COUNT];
+static LedCartridgeState cartridges[2];
 static bool mouse_inside;
 static float mouse_x;
 static float mouse_y;
@@ -38,6 +46,8 @@ static float hover_y;
 static const char *label_for(LedId id) {
     switch (id) {
         case LED_POWER: return "Power";
+        case LED_CARTRIDGE_I: return "Cartridge I";
+        case LED_CARTRIDGE_II: return "Cartridge II";
         case LED_CAPS:  return "Caps Lock";
         case LED_KANA:  return "Kana";
         case LED_FDC_A: return "Drive A";
@@ -49,10 +59,33 @@ static const char *label_for(LedId id) {
     return "";
 }
 
+static int cartridge_slot_for_led(LedId id) {
+    if (id == LED_CARTRIDGE_I)
+        return 0;
+    if (id == LED_CARTRIDGE_II)
+        return 1;
+    return -1;
+}
+
+static LedId cartridge_led_for_slot(unsigned slot) {
+    return slot == 0 ? LED_CARTRIDGE_I : LED_CARTRIDGE_II;
+}
+
+static void fill_palette(SDL_Renderer *renderer, float x, float y,
+                         float w, float h, const LedPalette *colors,
+                         bool active) {
+    ui_fill_rect(renderer, x, y, w, h,
+                 active ? colors->active_red : colors->idle_red,
+                 active ? colors->active_green : colors->idle_green,
+                 active ? colors->active_blue : colors->idle_blue,
+                 255);
+}
+
 void leds_init(void) {
     memset(enabled, 0, sizeof(enabled));
     memset(state, 0, sizeof(state));
     memset(last_ping, 0, sizeof(last_ping));
+    memset(cartridges, 0, sizeof(cartridges));
     mouse_inside = false;
     hover_active = false;
     hover_label[0] = '\0';
@@ -64,13 +97,61 @@ void leds_set_enabled(LedId id, bool value) {
 }
 
 void leds_set_state(LedId id, bool active) {
-    if ((unsigned)id < LED_COUNT)
+    int slot = cartridge_slot_for_led(id);
+
+    if ((unsigned)id < LED_COUNT) {
         state[id] = active;
+        if (slot >= 0)
+            cartridges[slot].present = active;
+    }
 }
 
 void leds_ping(LedId id) {
     if ((unsigned)id < LED_COUNT)
         last_ping[id] = SDL_GetTicks();
+}
+
+void leds_set_cartridge(unsigned slot, LedCartridgeType type, bool present) {
+    LedId id;
+
+    if (slot >= 2)
+        return;
+    if (type < LED_CARTRIDGE_STANDARD ||
+        type > LED_CARTRIDGE_NETWORK)
+        type = LED_CARTRIDGE_STANDARD;
+    id = cartridge_led_for_slot(slot);
+    if (cartridges[slot].type != type || !present) {
+        cartridges[slot].activity = false;
+        last_ping[id] = 0;
+    }
+    cartridges[slot].type = type;
+    cartridges[slot].present = present;
+    enabled[id] = true;
+    state[id] = present;
+}
+
+void leds_set_cartridge_activity(unsigned slot, bool active) {
+    if (slot >= 2)
+        return;
+    cartridges[slot].activity =
+        cartridges[slot].present &&
+        cartridges[slot].type != LED_CARTRIDGE_STANDARD &&
+        active;
+}
+
+void leds_ping_cartridge_activity(unsigned slot) {
+    if (slot >= 2 || !cartridges[slot].present ||
+        cartridges[slot].type == LED_CARTRIDGE_STANDARD)
+        return;
+    last_ping[cartridge_led_for_slot(slot)] = SDL_GetTicks();
+}
+
+LedCartridgeState leds_get_cartridge_state(unsigned slot) {
+    LedCartridgeState empty = {
+        LED_CARTRIDGE_STANDARD, false, false
+    };
+
+    return slot < 2 ? cartridges[slot] : empty;
 }
 
 void leds_set_mouse_position(float x, float y, bool inside) {
@@ -109,25 +190,63 @@ void leds_render(SDL_Renderer *renderer, int x, int y, int w, int h) {
     for (int i = 0; i < LED_COUNT; ++i) {
         const LedPalette *colors;
         bool active;
+        int cartridge_slot;
 
         if (!enabled[i])
             continue;
         colors = &palette[i];
+        cartridge_slot = cartridge_slot_for_led((LedId)i);
         active = state[i] ||
                  (last_ping[i] && now - last_ping[i] < LED_GLOW_MS);
-        ui_fill_rect(renderer, cursor_x, led_y, led_w, led_h,
-                     active ? colors->active_red : colors->idle_red,
-                     active ? colors->active_green : colors->idle_green,
-                     active ? colors->active_blue : colors->idle_blue,
-                     255);
+        if (cartridge_slot >= 0 &&
+            cartridges[cartridge_slot].type !=
+                LED_CARTRIDGE_STANDARD) {
+            const LedPalette *activity_colors =
+                cartridges[cartridge_slot].type == LED_CARTRIDGE_IDE
+                ? &cartridge_ide_activity
+                : &cartridge_network_activity;
+            float half_w = led_w * 0.5f;
+            bool access =
+                cartridges[cartridge_slot].activity ||
+                (last_ping[i] &&
+                 now - last_ping[i] < LED_GLOW_MS);
+
+            fill_palette(renderer, cursor_x, led_y, half_w, led_h,
+                         colors, cartridges[cartridge_slot].present);
+            fill_palette(renderer, cursor_x + half_w, led_y,
+                         led_w - half_w, led_h, activity_colors, access);
+        } else {
+            fill_palette(renderer, cursor_x, led_y, led_w, led_h,
+                         colors, active);
+        }
         ui_draw_rect(renderer, cursor_x, led_y, led_w, led_h, 0, 0, 0);
 
         if (mouse_inside &&
             mouse_x >= cursor_x && mouse_x < cursor_x + led_w &&
             mouse_y >= led_y && mouse_y < led_y + led_h) {
-            snprintf(hover_label, sizeof(hover_label), "%s",
-                     label_for((LedId)i));
-            hover_x = cursor_x + led_w * 0.5f;
+            bool split =
+                cartridge_slot >= 0 &&
+                cartridges[cartridge_slot].type !=
+                    LED_CARTRIDGE_STANDARD;
+            bool activity_half =
+                split && mouse_x >= cursor_x + led_w * 0.5f;
+
+            if (activity_half) {
+                snprintf(
+                    hover_label, sizeof(hover_label),
+                    "Cartridge %s %s",
+                    cartridge_slot == 0 ? "I" : "II",
+                    cartridges[cartridge_slot].type ==
+                        LED_CARTRIDGE_IDE
+                    ? "IDE activity" : "network access");
+            } else {
+                snprintf(hover_label, sizeof(hover_label), "%s",
+                         label_for((LedId)i));
+            }
+            hover_x = cursor_x +
+                      led_w * (split
+                               ? (activity_half ? 0.75f : 0.25f)
+                               : 0.5f);
             hover_y = (float)y;
             hover_active = true;
         }

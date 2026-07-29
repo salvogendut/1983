@@ -13,6 +13,16 @@
 
 #define DISPLAY_CRT_SCANLINES_DEFAULT 35
 
+typedef enum {
+    INPUT_PORT_A = 0,
+    INPUT_PORT_B
+} InputPort;
+
+typedef enum {
+    JOY_PORT_JOYSTICK = 0,
+    JOY_PORT_MOUSE
+} JoyPortDevice;
+
 typedef struct {
     MsxModel  model;
     char      machine_id[MODEL_ID_MAX];
@@ -27,6 +37,10 @@ typedef struct {
 
     int audio_volume;
 
+    InputPort     main_input;
+    JoyPortDevice joy_port_device[2];
+
+    bool extra_hardware;
     bool second_drive;
     bool sunrise_ide;
     bool scc;
@@ -51,3 +65,8 @@ void config_defaults(Config *config);
 void config_normalize(Config *config);
 void config_load(Config *config, const char *path);
 int  config_save(const Config *config);
+unsigned config_cartridge_extension_count(const Config *config);
+const char *config_cartridge_slot_owner(const Config *config,
+                                        unsigned slot);
+bool config_cartridge_slot_available(const Config *config,
+                                     unsigned slot);

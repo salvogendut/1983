@@ -26,9 +26,9 @@ complete MSX hardware specification.
 | `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, sprite-mode-2, and command engine |
 | `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/diagnostic boot checks |
 | `tests/test_cartridge.c` | Linear, ASCII8/16, Konami, Konami SCC, detection, bank wrapping, reset, and eject checks |
-| `tests/test_config.c` | Persistent cartridge paths and mapper overrides |
+| `tests/test_config.c` | Persistent cartridge, mapper, extension, and Joy Port settings |
 | `tests/test_models.c` | Machine-catalogue parsing, hardware mapping, relative paths, and invalid-entry filtering |
-| `tests/test_overlay.c` | General > Machine chooser navigation and cancellation |
+| `tests/test_overlay.c` | Overlay navigation, dynamic hardware rows, cartridge-slot LEDs, and model editing |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
 | `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
 | `tests/test_rtc.c` | RP-5C01 banks, masks, reset behavior, calendar rollover, and clock advancement |
@@ -44,8 +44,8 @@ hosts.
 The window has a 640x520 logical size:
 
 - 640x480 guest framebuffer;
-- 18-pixel shared shortcut footer;
-- 22-pixel MSX LED strip.
+- 16-pixel shared shortcut footer;
+- 24-pixel MSX LED strip.
 
 Without firmware, the framebuffer remains a diagnostic scaffold. Once an
 MSX1 BIOS is loaded, the TMS9918/TMS9929 core supplies a 256x192 framebuffer
@@ -66,7 +66,7 @@ hardware layouts are:
 | VRAM | 16 KB | 128 KB | 128 KB |
 | VDP | TMS9918A (NTSC) or TMS9929A (PAL) | V9938 | V9938 |
 | Expanded slots | No | Yes | Yes |
-| RAM mapper | No | Yes | Yes |
+| RAM mapper | With RAM above 64 KB | Yes | Yes |
 | RTC | No | Yes | Yes |
 | Required firmware | BIOS | BIOS + Sub-ROM | BIOS + Sub-ROM + disk ROM |
 
@@ -102,6 +102,20 @@ two mapper devices, not one combined RAM allocation. Firmware discovery will
 build on the explicit `1983-models.conf` paths and eventually match the
 pinned hashes documented in `BOOT_TARGETS.md`; no machine ROM belongs in the
 repository.
+
+The frontend RAM control currently scales the active system mapper from its
+profile default through 4 MiB; allocations above 128 KiB live on the heap.
+The generic MSX1 layout exposes mapper ports when more than 64 KiB is
+selected. This compatibility setting does not remove the future requirement
+to model GeoBench's internal and external mappers as distinct devices.
+
+`config_cartridge_slot_owner()` is the shared authority for physical
+cartridge-port reservations. Sunrise IDE, SCC, and MSX-MUSIC reserve slot 2
+then slot 1 in deterministic order. Startup and overlay media operations
+must consult that function rather than duplicating extension policy.
+`configure_leds()` maps the resolved owner and mounted-media state onto the
+two physical slot indicators. Storage and network backends should report
+access through `leds_ping_cartridge_activity()` for their owning slot.
 
 ## Bus and port assumptions
 

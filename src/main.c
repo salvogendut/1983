@@ -395,7 +395,22 @@ int main(int argc, char **argv) {
     }
     for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
         const char *path = config.cartridge_path[slot];
+        const char *owner =
+            config_cartridge_slot_owner(&config, slot);
 
+        if (owner) {
+            if (path[0] || cli.cartridge_mapper_set[slot])
+                fprintf(stderr,
+                        "cartridge slot %u unavailable: "
+                        "reserved by %s\n",
+                        slot + 1, owner);
+            if (cli.cartridge_path[slot] ||
+                cli.cartridge_mapper_set[slot]) {
+                msx_destroy(&msx);
+                return 1;
+            }
+            continue;
+        }
         if (!path[0])
             continue;
         if (msx_load_cartridge_slot(

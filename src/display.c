@@ -184,7 +184,7 @@ static void draw_scaffold_text(Display *display, const MsxMachine *msx) {
     ui_draw_text(display->renderer, 40.0f, 130.0f, line, 235, 235, 235);
     snprintf(line, sizeof(line), "Memory:  %d KB RAM%s",
              msx->ram_kb,
-             msx->profile->memory_mapper ? " with mapper" : "");
+             msx_has_memory_mapper(msx) ? " with mapper" : "");
     ui_draw_text(display->renderer, 40.0f, 148.0f, line, 235, 235, 235);
     snprintf(line, sizeof(line), "CPU:     Z80 at %.6f MHz",
              (double)MSX_CPU_HZ / 1000000.0);

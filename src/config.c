@@ -59,6 +59,30 @@ static NotifyMode parse_notifications(const char *value,
     return fallback;
 }
 
+static InputPort parse_input_port(const char *value,
+                                  InputPort fallback) {
+    if (!value)
+        return fallback;
+    if (strcasecmp(value, "joy_port_a") == 0 ||
+        strcasecmp(value, "a") == 0)
+        return INPUT_PORT_A;
+    if (strcasecmp(value, "joy_port_b") == 0 ||
+        strcasecmp(value, "b") == 0)
+        return INPUT_PORT_B;
+    return fallback;
+}
+
+static JoyPortDevice parse_joy_port_device(
+    const char *value, JoyPortDevice fallback) {
+    if (!value)
+        return fallback;
+    if (strcasecmp(value, "joystick") == 0)
+        return JOY_PORT_JOYSTICK;
+    if (strcasecmp(value, "mouse") == 0)
+        return JOY_PORT_MOUSE;
+    return fallback;
+}
+
 static void default_path(char *out, size_t out_size) {
 #ifdef _WIN32
     const char *base = getenv("APPDATA");
@@ -123,10 +147,20 @@ void config_defaults(Config *config) {
     config->smoothing = false;
     config->crt_scanlines = DISPLAY_CRT_SCANLINES_DEFAULT;
     config->audio_volume = 80;
+    config->main_input = INPUT_PORT_A;
+    config->joy_port_device[0] = JOY_PORT_JOYSTICK;
+    config->joy_port_device[1] = JOY_PORT_JOYSTICK;
     config->notifications = NOTIFY_MODE_SCREEN;
 }
 
 void config_normalize(Config *config) {
+    bool *cartridge_extensions[] = {
+        &config->sunrise_ide,
+        &config->scc,
+        &config->msx_music,
+    };
+    unsigned connected = 0;
+
     if ((unsigned)config->model >= MSX_MODEL_COUNT)
         config->model = MSX_MODEL_GENERIC_MSX1;
     if (config->region != MSX_REGION_NTSC)
@@ -145,12 +179,29 @@ void config_normalize(Config *config) {
         config->audio_volume = 0;
     if (config->audio_volume > 100)
         config->audio_volume = 100;
+    if (config->main_input != INPUT_PORT_B)
+        config->main_input = INPUT_PORT_A;
+    for (unsigned port = 0; port < 2; ++port) {
+        if (config->joy_port_device[port] != JOY_PORT_MOUSE)
+            config->joy_port_device[port] = JOY_PORT_JOYSTICK;
+    }
     if ((unsigned)config->notifications > NOTIFY_MODE_CONSOLE)
         config->notifications = NOTIFY_MODE_SCREEN;
     for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
         if ((unsigned)config->cartridge_mapper[slot] >=
             MSX_CART_MAPPER_COUNT)
             config->cartridge_mapper[slot] = MSX_CART_MAPPER_AUTO;
+    }
+    for (size_t i = 0;
+         i < sizeof(cartridge_extensions) /
+             sizeof(cartridge_extensions[0]);
+         ++i) {
+        if (!*cartridge_extensions[i])
+            continue;
+        if (connected >= MSX_CARTRIDGE_SLOTS)
+            *cartridge_extensions[i] = false;
+        else
+            ++connected;
     }
 }
 
@@ -215,6 +266,20 @@ void config_load(Config *config, const char *path) {
             config->crt_scanlines = atoi(value);
         else if (strcmp(key, "audio_volume") == 0)
             config->audio_volume = atoi(value);
+        else if (strcmp(key, "main_input") == 0)
+            config->main_input =
+                parse_input_port(value, config->main_input);
+        else if (strcmp(key, "joy_port_a") == 0)
+            config->joy_port_device[0] =
+                parse_joy_port_device(
+                    value, config->joy_port_device[0]);
+        else if (strcmp(key, "joy_port_b") == 0)
+            config->joy_port_device[1] =
+                parse_joy_port_device(
+                    value, config->joy_port_device[1]);
+        else if (strcmp(key, "extra_hardware") == 0)
+            config->extra_hardware =
+                parse_bool(value, config->extra_hardware);
         else if (strcmp(key, "second_drive") == 0)
             config->second_drive = parse_bool(value, config->second_drive);
         else if (strcmp(key, "sunrise_ide") == 0)
@@ -300,6 +365,16 @@ int config_save(const Config *config) {
     fprintf(file, "crt_scanlines = %d\n\n", config->crt_scanlines);
     fprintf(file, "[audio]\n");
     fprintf(file, "audio_volume = %d\n\n", config->audio_volume);
+    fprintf(file, "[input]\n");
+    fprintf(file, "main_input = %s\n",
+            config->main_input == INPUT_PORT_B
+            ? "joy_port_b" : "joy_port_a");
+    fprintf(file, "joy_port_a = %s\n",
+            config->joy_port_device[0] == JOY_PORT_MOUSE
+            ? "mouse" : "joystick");
+    fprintf(file, "joy_port_b = %s\n\n",
+            config->joy_port_device[1] == JOY_PORT_MOUSE
+            ? "mouse" : "joystick");
     fprintf(file, "[media]\n");
     fprintf(file, "cartridge1 = %s\n", config->cartridge_path[0]);
     fprintf(file, "cartridge1_mapper = %s\n",
@@ -309,6 +384,8 @@ int config_save(const Config *config) {
             msx_cartridge_mapper_name(config->cartridge_mapper[1]));
     fprintf(file, "last_media_dir = %s\n\n", config->last_media_dir);
     fprintf(file, "[extensions]\n");
+    fprintf(file, "extra_hardware = %s\n",
+            bool_name(config->extra_hardware));
     fprintf(file, "second_drive = %s\n", bool_name(config->second_drive));
     fprintf(file, "sunrise_ide = %s\n", bool_name(config->sunrise_ide));
     fprintf(file, "scc = %s\n", bool_name(config->scc));
@@ -322,4 +399,44 @@ int config_save(const Config *config) {
             config->notifications == NOTIFY_MODE_CONSOLE ? "console" : "off");
 
     return fclose(file) == 0 ? 0 : -1;
+}
+
+unsigned config_cartridge_extension_count(const Config *config) {
+    if (!config)
+        return 0;
+    return (config->sunrise_ide ? 1u : 0u) +
+           (config->scc ? 1u : 0u) +
+           (config->msx_music ? 1u : 0u);
+}
+
+const char *config_cartridge_slot_owner(const Config *config,
+                                        unsigned slot) {
+    const char *extensions[MSX_CARTRIDGE_SLOTS];
+    unsigned count = 0;
+
+    if (!config || slot >= MSX_CARTRIDGE_SLOTS)
+        return NULL;
+    if (config->sunrise_ide && count < MSX_CARTRIDGE_SLOTS)
+        extensions[count++] = "Sunrise IDE";
+    if (config->scc && count < MSX_CARTRIDGE_SLOTS)
+        extensions[count++] = "Konami SCC";
+    if (config->msx_music && count < MSX_CARTRIDGE_SLOTS)
+        extensions[count++] = "MSX-MUSIC";
+
+    /*
+     * Keep cartridge 1 available for ordinary software until a second
+     * extension is connected. This also gives every valid configuration a
+     * deterministic physical-port assignment.
+     */
+    if (slot == 1 && count >= 1)
+        return extensions[0];
+    if (slot == 0 && count >= 2)
+        return extensions[1];
+    return NULL;
+}
+
+bool config_cartridge_slot_available(const Config *config,
+                                     unsigned slot) {
+    return slot < MSX_CARTRIDGE_SLOTS &&
+           config_cartridge_slot_owner(config, slot) == NULL;
 }
