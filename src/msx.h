@@ -34,6 +34,19 @@
 #define MSX_JOY_TRIGGER_B 0x20u
 #define MSX_JOY_MASK 0x3fu
 
+typedef struct {
+    bool enabled;
+    u8 phase;
+    s8 latched_x;
+    s8 latched_y;
+    int pending_x;
+    int pending_y;
+    int fractional_x;
+    int fractional_y;
+    u8 buttons_pressed;
+    u64 last_write_cycle;
+} MsxMouse;
+
 typedef enum {
     MSX_MODEL_GENERIC_MSX1 = 0,
     MSX_MODEL_GENERIC_MSX2,
@@ -105,6 +118,7 @@ typedef struct {
     u8 keyboard_rows[MSX_KEYBOARD_ROWS];
     u8 keyboard_refs[MSX_KEYBOARD_ROWS][MSX_KEYBOARD_COLUMNS];
     u8 joystick_pressed[MSX_JOYSTICK_PORTS];
+    MsxMouse mouse[MSX_JOYSTICK_PORTS];
 
     s16 audio_samples[MSX_AUDIO_FRAME_CAPACITY];
     size_t audio_sample_count;
@@ -148,6 +162,13 @@ void msx_keyboard_release(MsxMachine *msx, unsigned row, unsigned column);
 u8   msx_keyboard_read_row(const MsxMachine *msx, unsigned row);
 void msx_joystick_set_pressed(MsxMachine *msx, unsigned port, u8 pressed);
 u8   msx_joystick_read_port(const MsxMachine *msx, unsigned port);
+void msx_mouse_set_enabled(MsxMachine *msx, unsigned port, bool enabled);
+bool msx_mouse_enabled(const MsxMachine *msx, unsigned port);
+void msx_mouse_add_host_motion(MsxMachine *msx, unsigned port,
+                               int delta_x, int delta_y);
+void msx_mouse_set_button(MsxMachine *msx, unsigned port,
+                          unsigned button, bool pressed);
+void msx_mouse_clear_input(MsxMachine *msx, unsigned port);
 
 int msx_install_bios(MsxMachine *msx, const u8 *data, size_t size);
 int msx_install_logo(MsxMachine *msx, const u8 *data, size_t size);

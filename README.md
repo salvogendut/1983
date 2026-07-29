@@ -132,6 +132,8 @@ checkpoints, the GeoBench/Nextor target, and licensing boundaries.
 | Ctrl++ / Ctrl+- | Change window scale |
 | Shift+F1…F5 | Send MSX F1…F5 |
 | Shift+F7 / Shift+F8 | Send MSX SELECT / STOP |
+| Click in window | Capture the mouse when the selected port is Mouse |
+| Ctrl+Enter | Release captured mouse input |
 
 Inside the overlay, Left and Right change section, Up and Down select a row,
 Enter activates it, F9 saves, and Escape closes or offers to discard changes.
@@ -141,8 +143,11 @@ entries select Joystick or Mouse for each connector. These selections are
 persisted. The primary SDL3 gamepad drives the selected connector when that
 port is set to Joystick: the D-pad or left stick provides direction, while
 the south and east face buttons provide triggers A and B. Gamepads may be
-connected or removed while 1983 is running. Mouse mode currently leaves its
-port idle while the MSX mouse protocol is developed.
+connected or removed while 1983 is running. When the selected Main Input
+connector is set to Mouse, click the emulator window to capture relative host
+movement. The left and right host buttons become MSX buttons A and B.
+Ctrl+Enter, F9, reset, or losing window focus releases capture.
+
 **General > Extra Hardware** reveals Extensions; **General > Tinker**
 reveals Advanced.
 

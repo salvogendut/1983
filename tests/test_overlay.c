@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "leds.h"
@@ -101,6 +102,85 @@ static void test_cartridge_led_rendering(SDL_Renderer *renderer) {
     SDL_DestroySurface(pixels);
 }
 
+static void fill_vdp_pixels(MsxVdp *vdp, u32 colour) {
+    for (unsigned y = 0; y < vdp->render_height; ++y)
+        for (unsigned x = 0; x < vdp->render_width; ++x)
+            vdp->pixels[y * vdp->render_width + x] = colour;
+}
+
+static void test_vdp_presentation_geometry(void) {
+    static const u32 active_colour = 0x123456;
+    static const u32 adjusted_colour = 0xabcdef;
+    MsxVdp vdp;
+    u32 *pixels = malloc(
+        (size_t)DISPLAY_FB_W * DISPLAY_FB_H * sizeof(*pixels));
+    u32 border;
+
+    assert(pixels);
+    vdp_init(&vdp);
+    vdp.registers[7] = 4;
+    fill_vdp_pixels(&vdp, active_colour);
+    border = vdp_border_colour(&vdp, 0);
+    assert(border != active_colour);
+    display_compose_vdp(pixels, &vdp);
+
+    /* A 256x192 source is centred in the 280x240 visible aperture. */
+    assert(pixels[47 * DISPLAY_FB_W + 320] == border);
+    assert(pixels[48 * DISPLAY_FB_W + 320] == active_colour);
+    assert(pixels[431 * DISPLAY_FB_W + 320] == active_colour);
+    assert(pixels[432 * DISPLAY_FB_W + 320] == border);
+    assert(pixels[240 * DISPLAY_FB_W + 26] == border);
+    assert(pixels[240 * DISPLAY_FB_W + 27] == active_colour);
+    assert(pixels[240 * DISPLAY_FB_W + 612] == active_colour);
+    assert(pixels[240 * DISPLAY_FB_W + 613] == border);
+
+    vdp_set_type(&vdp, MSX_VDP_V9938);
+    vdp_reset(&vdp);
+    vdp.render_width = MSX2_VIDEO_W;
+    vdp.render_height = MSX2_VIDEO_H;
+    fill_vdp_pixels(&vdp, adjusted_colour);
+    display_compose_vdp(pixels, &vdp);
+
+    /* Neutral R#18 centres 212 lines with 14 border lines per side. */
+    assert(pixels[27 * DISPLAY_FB_W + 320] ==
+           vdp_border_colour(&vdp, 0));
+    assert(pixels[28 * DISPLAY_FB_W + 320] == adjusted_colour);
+    assert(pixels[451 * DISPLAY_FB_W + 320] == adjusted_colour);
+    assert(pixels[452 * DISPLAY_FB_W + 320] ==
+           vdp_border_colour(&vdp, 0));
+
+    /*
+     * Encoded R#18 value 7 selects adjustment zero: seven lines up and
+     * fourteen high-resolution dots left from the neutral position.
+     */
+    vdp.registers[18] = 0x77;
+    display_compose_vdp(pixels, &vdp);
+    assert(pixels[13 * DISPLAY_FB_W + 320] ==
+           vdp_border_colour(&vdp, 0));
+    assert(pixels[14 * DISPLAY_FB_W + 320] == adjusted_colour);
+    assert(pixels[437 * DISPLAY_FB_W + 320] == adjusted_colour);
+    assert(pixels[438 * DISPLAY_FB_W + 320] ==
+           vdp_border_colour(&vdp, 0));
+    assert(pixels[240 * DISPLAY_FB_W + 10] ==
+           vdp_border_colour(&vdp, 0));
+    assert(pixels[240 * DISPLAY_FB_W + 11] == adjusted_colour);
+    assert(pixels[240 * DISPLAY_FB_W + 596] == adjusted_colour);
+    assert(pixels[240 * DISPLAY_FB_W + 597] ==
+           vdp_border_colour(&vdp, 0));
+
+    /* SCREEN 6 has a striped border; SCREEN 8 uses direct GRB colour. */
+    vdp.registers[0] = 0x08;
+    vdp.registers[7] = 0x0e;
+    assert(vdp_border_colour(&vdp, 0) !=
+           vdp_border_colour(&vdp, 1));
+    vdp.registers[0] = 0x0e;
+    vdp.registers[7] = 0xe3;
+    assert(vdp_border_colour(&vdp, 0) == 0x00ffff);
+    assert(vdp_border_colour(&vdp, 1) == 0x00ffff);
+
+    free(pixels);
+}
+
 int main(void) {
     const char *editor_path = "tests/test-model-editor.tmp";
     const char *sunrise_rom_path = "tests/test-sunrise-rom.tmp";
@@ -116,6 +196,7 @@ int main(void) {
     u8 sunrise_rom[MSX_SUNRISE_ROM_SIZE];
     FILE *fixture;
 
+    test_vdp_presentation_geometry();
     display_calculate_layout(640, 520, &layout);
     assert(layout.screen_x == 0);
     assert(layout.screen_y == 0);
