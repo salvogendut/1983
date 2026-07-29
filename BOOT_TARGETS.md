@@ -66,12 +66,13 @@ MSX-specific Sunrise register wrapper.
 
 ### Local system ROM contract
 
-1983 will reuse ROMs from the user's openMSX setup without copying them into
-the source tree. On Unix-like systems the first search root will be
-`~/.openMSX/share/systemroms`; configured additional roots and explicit file
-overrides will take precedence. Search roots will be recursive, and known
-components will be selected by checksum rather than depending on their
-filenames.
+1983 reuses user-supplied ROMs without copying them into the source tree.
+`1983-models.conf` currently maps each selectable model to explicit BIOS,
+logo, Sub-ROM, and disk-ROM paths; those paths can point into an existing
+openMSX ROM pool or the ignored local `ROMS/` directory. A later catalogue
+editor and discovery pass can search roots such as
+`~/.openMSX/share/systemroms` recursively and select known contents by
+checksum rather than filename.
 
 The pinned reference set is:
 
@@ -144,10 +145,10 @@ and `cbios_logo_msx1.rom` with SHA-256
 
 ## Media and configuration contract
 
-The frontend provides independent, persistent selectors for both external
-cartridge slots and reserves selectors for:
+The frontend provides an editable catalogue-backed machine selector and
+independent, persistent selectors for both external cartridge slots. It
+reserves selectors for:
 
-- the machine profile and its firmware components;
 - recursive system-ROM search roots;
 - floppy and cassette media;
 - the Nextor kernel ROM;
@@ -155,8 +156,10 @@ cartridge slots and reserves selectors for:
 
 Each cartridge selector opens the shared SDL3 file-dialog workflow and has an
 adjacent `auto`/manual mapper selector. Delete ejects the selected cartridge.
-The remaining media selectors stay as explicit stubs until their devices are
-implemented.
+General > Machine enumerates `1983-models.conf`, loads complete mappings
+directly, and opens sequential file dialogs for missing required components.
+The firmware set is applied atomically. The remaining media selectors stay as
+explicit stubs until their devices are implemented.
 
 Selecting the Sunrise extension must not silently replace a cartridge or
 firmware image. The NMS 8250 profile will explicitly reproduce slot 0

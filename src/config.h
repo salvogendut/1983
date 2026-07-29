@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 #include "msx.h"
+#include "models.h"
 #include "notify.h"
 
 #ifndef PATH_MAX
@@ -14,6 +15,7 @@
 
 typedef struct {
     MsxModel  model;
+    char      machine_id[MODEL_ID_MAX];
     MsxRegion region;
     int       memory_kb;
 
@@ -35,6 +37,10 @@ typedef struct {
     bool       debug;
     NotifyMode notifications;
 
+    char bios_path[PATH_MAX];
+    char logo_path[PATH_MAX];
+    char subrom_path[PATH_MAX];
+    char disk_rom_path[PATH_MAX];
     char cartridge_path[MSX_CARTRIDGE_SLOTS][PATH_MAX];
     MsxCartridgeMapper cartridge_mapper[MSX_CARTRIDGE_SLOTS];
     char last_media_dir[PATH_MAX];

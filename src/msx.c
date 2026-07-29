@@ -5,10 +5,16 @@
 #include <stddef.h>
 #include <string.h>
 
+#ifdef _WIN32
+#define strcasecmp _stricmp
+#else
+#include <strings.h>
+#endif
+
 static const MsxProfile profiles[MSX_MODEL_COUNT] = {
     [MSX_MODEL_GENERIC_MSX1] = {
         .model = MSX_MODEL_GENERIC_MSX1,
-        .name = "Generic MSX1",
+        .name = "MSX",
         .default_ram_kb = 64,
         .vram_kb = 16,
         .expanded_slots = false,
@@ -18,13 +24,26 @@ static const MsxProfile profiles[MSX_MODEL_COUNT] = {
     },
     [MSX_MODEL_GENERIC_MSX2] = {
         .model = MSX_MODEL_GENERIC_MSX2,
-        .name = "Generic MSX2",
+        .name = "MSX2",
         .default_ram_kb = 128,
         .vram_kb = 128,
         .expanded_slots = true,
         .memory_mapper = true,
         .rtc = true,
         .psg_variant = PSG_VARIANT_YM2149,
+        .requires_subrom = true,
+    },
+    [MSX_MODEL_PHILIPS_NMS8250] = {
+        .model = MSX_MODEL_PHILIPS_NMS8250,
+        .name = "Philips NMS 8250",
+        .default_ram_kb = 128,
+        .vram_kb = 128,
+        .expanded_slots = true,
+        .memory_mapper = true,
+        .rtc = true,
+        .psg_variant = PSG_VARIANT_YM2149,
+        .requires_subrom = true,
+        .requires_disk_rom = true,
     },
 };
 
@@ -140,12 +159,54 @@ const char *msx_model_name(MsxModel model) {
     return msx_profile(model)->name;
 }
 
+const char *msx_model_config_name(MsxModel model) {
+    switch (model) {
+        case MSX_MODEL_GENERIC_MSX1:
+            return "msx1";
+        case MSX_MODEL_GENERIC_MSX2:
+            return "msx2";
+        case MSX_MODEL_PHILIPS_NMS8250:
+            return "nms8250";
+        case MSX_MODEL_COUNT:
+            break;
+    }
+    return "msx1";
+}
+
+bool msx_model_from_name(const char *name, MsxModel *model) {
+    if (!name || !model)
+        return false;
+    if (strcasecmp(name, "msx") == 0 ||
+        strcasecmp(name, "msx1") == 0 ||
+        strcasecmp(name, "generic-msx1") == 0) {
+        *model = MSX_MODEL_GENERIC_MSX1;
+        return true;
+    }
+    if (strcasecmp(name, "msx2") == 0 ||
+        strcasecmp(name, "generic-msx2") == 0) {
+        *model = MSX_MODEL_GENERIC_MSX2;
+        return true;
+    }
+    if (strcasecmp(name, "nms8250") == 0 ||
+        strcasecmp(name, "philips-nms8250") == 0 ||
+        strcasecmp(name, "philips_nms_8250") == 0) {
+        *model = MSX_MODEL_PHILIPS_NMS8250;
+        return true;
+    }
+    return false;
+}
+
+bool msx_model_is_msx2(MsxModel model) {
+    return model == MSX_MODEL_GENERIC_MSX2 ||
+           model == MSX_MODEL_PHILIPS_NMS8250;
+}
+
 const char *msx_region_name(MsxRegion region) {
     return region == MSX_REGION_NTSC ? "NTSC 60 Hz" : "PAL 50 Hz";
 }
 
 const char *msx_vdp_name(const MsxMachine *msx) {
-    if (msx && msx->profile->model == MSX_MODEL_GENERIC_MSX2)
+    if (msx && msx_model_is_msx2(msx->profile->model))
         return "V9938";
     return msx && msx->region == MSX_REGION_NTSC
          ? "TMS9918A" : "TMS9929A";
@@ -156,7 +217,7 @@ int msx_default_ram_kb(MsxModel model) {
 }
 
 static const int *ram_sizes(MsxModel model, size_t *count) {
-    if (model == MSX_MODEL_GENERIC_MSX2) {
+    if (msx_model_is_msx2(model)) {
         *count = sizeof(msx2_ram_sizes) / sizeof(msx2_ram_sizes[0]);
         return msx2_ram_sizes;
     }
@@ -238,7 +299,7 @@ void msx_configure(MsxMachine *msx, MsxModel model, MsxRegion region,
     msx->ram_kb = msx_normalize_ram_kb(msx->profile->model, ram_kb);
     msx->frame_hz = msx->region == MSX_REGION_NTSC ? 60 : 50;
     vdp_set_type(&msx->vdp,
-                 msx->profile->model == MSX_MODEL_GENERIC_MSX2
+                 msx_model_is_msx2(msx->profile->model)
                  ? MSX_VDP_V9938 : MSX_VDP_TMS9918);
     msx_reset(msx);
 }
@@ -620,15 +681,15 @@ int msx_install_cartridge_slot(MsxMachine *msx, unsigned slot,
 
 typedef int (*RomInstaller)(MsxMachine *, const u8 *, size_t);
 
-static int load_rom(MsxMachine *msx, const char *path,
-                    size_t maximum_size, RomInstaller install) {
+static int read_rom_file(const char *path, size_t maximum_size,
+                         u8 **data_out, size_t *size_out) {
     FILE *file;
     u8 *data;
     long length;
     size_t got;
     int result;
 
-    if (!msx || !path || !path[0])
+    if (!path || !path[0] || !data_out || !size_out)
         return -1;
     file = fopen(path, "rb");
     if (!file)
@@ -654,7 +715,21 @@ static int load_rom(MsxMachine *msx, const char *path,
         free(data);
         return -1;
     }
-    result = install(msx, data, got);
+    *data_out = data;
+    *size_out = got;
+    return 0;
+}
+
+static int load_rom(MsxMachine *msx, const char *path,
+                    size_t maximum_size, RomInstaller install) {
+    u8 *data;
+    size_t size;
+    int result;
+
+    if (!msx ||
+        read_rom_file(path, maximum_size, &data, &size) != 0)
+        return -1;
+    result = install(msx, data, size);
     free(data);
     return result;
 }
@@ -682,40 +757,16 @@ int msx_load_cartridge(MsxMachine *msx, const char *path) {
 
 int msx_load_cartridge_slot(MsxMachine *msx, unsigned slot,
                             const char *path, MsxCartridgeMapper mapper) {
-    FILE *file;
     u8 *data;
-    long length;
-    size_t got;
-    int result;
+    size_t size;
 
     if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
         !path || !path[0])
         return -1;
-    file = fopen(path, "rb");
-    if (!file)
+    if (read_rom_file(path, MSX_CART_MAX_SIZE, &data, &size) != 0)
         return -1;
-    if (fseek(file, 0, SEEK_END) != 0) {
-        fclose(file);
-        return -1;
-    }
-    length = ftell(file);
-    if (length <= 0 || (unsigned long)length > MSX_CART_MAX_SIZE ||
-        fseek(file, 0, SEEK_SET) != 0) {
-        fclose(file);
-        return -1;
-    }
-    data = malloc((size_t)length);
-    if (!data) {
-        fclose(file);
-        return -1;
-    }
-    got = fread(data, 1, (size_t)length, file);
-    result = fclose(file);
-    if (got != (size_t)length || result != 0) {
-        free(data);
-        return -1;
-    }
-    result = msx_install_cartridge_slot(msx, slot, data, got, mapper);
+    int result =
+        msx_install_cartridge_slot(msx, slot, data, size, mapper);
     free(data);
     return result;
 }
@@ -740,6 +791,85 @@ const MsxCartridge *msx_get_cartridge(const MsxMachine *msx, unsigned slot) {
     if (!msx || slot >= MSX_CARTRIDGE_SLOTS)
         return NULL;
     return &msx->cartridges[slot];
+}
+
+static int read_firmware_component(const char *path, size_t required_size,
+                                   u8 **data_out) {
+    size_t size;
+
+    if (read_rom_file(path, required_size, data_out, &size) != 0)
+        return -1;
+    if (size != required_size) {
+        free(*data_out);
+        *data_out = NULL;
+        return -1;
+    }
+    return 0;
+}
+
+int msx_load_firmware_set(MsxMachine *msx, const char *bios_path,
+                          const char *logo_path,
+                          const char *subrom_path,
+                          const char *disk_rom_path) {
+    u8 *bios = NULL;
+    u8 *logo = NULL;
+    u8 *subrom = NULL;
+    u8 *disk_rom = NULL;
+    int result = -1;
+
+    if (!msx ||
+        read_firmware_component(bios_path, MSX_BIOS_SIZE, &bios) != 0)
+        goto done;
+    if (logo_path && logo_path[0] &&
+        read_firmware_component(
+            logo_path, MSX_LOGO_SIZE, &logo) != 0)
+        goto done;
+    if (subrom_path && subrom_path[0] &&
+        read_firmware_component(
+            subrom_path, MSX_SUBROM_SIZE, &subrom) != 0)
+        goto done;
+    if (disk_rom_path && disk_rom_path[0] &&
+        read_firmware_component(
+            disk_rom_path, MSX_DISK_ROM_SIZE, &disk_rom) != 0)
+        goto done;
+
+    memcpy(msx->bios, bios, MSX_BIOS_SIZE);
+    msx->bios_loaded = true;
+    memset(msx->logo, 0xff, sizeof(msx->logo));
+    msx->logo_loaded = logo != NULL;
+    if (logo)
+        memcpy(msx->logo, logo, MSX_LOGO_SIZE);
+    memset(msx->subrom, 0xff, sizeof(msx->subrom));
+    msx->subrom_loaded = subrom != NULL;
+    if (subrom)
+        memcpy(msx->subrom, subrom, MSX_SUBROM_SIZE);
+    memset(msx->disk_rom, 0xff, sizeof(msx->disk_rom));
+    msx->disk_rom_loaded = disk_rom != NULL;
+    if (disk_rom)
+        memcpy(msx->disk_rom, disk_rom, MSX_DISK_ROM_SIZE);
+    msx_reset(msx);
+    result = 0;
+
+done:
+    free(bios);
+    free(logo);
+    free(subrom);
+    free(disk_rom);
+    return result;
+}
+
+void msx_eject_firmware(MsxMachine *msx) {
+    if (!msx)
+        return;
+    memset(msx->bios, 0xff, sizeof(msx->bios));
+    memset(msx->logo, 0xff, sizeof(msx->logo));
+    memset(msx->subrom, 0xff, sizeof(msx->subrom));
+    memset(msx->disk_rom, 0xff, sizeof(msx->disk_rom));
+    msx->bios_loaded = false;
+    msx->logo_loaded = false;
+    msx->subrom_loaded = false;
+    msx->disk_rom_loaded = false;
+    msx_reset(msx);
 }
 
 bool msx_can_boot(const MsxMachine *msx) {

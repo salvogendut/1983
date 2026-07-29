@@ -26,6 +26,14 @@ static void write_vdp_ppm_if_requested(const MsxVdp *vdp) {
     assert(fclose(file) == 0);
 }
 
+static void write_fixture(const char *path, const u8 *data, size_t size) {
+    FILE *file = fopen(path, "wb");
+
+    assert(file);
+    assert(fwrite(data, 1, size, file) == size);
+    assert(fclose(file) == 0);
+}
+
 static void test_slot_bus_and_cpu(void) {
     MsxMachine *msx = malloc(sizeof(*msx));
     u8 bios[MSX_BIOS_SIZE];
@@ -175,6 +183,69 @@ static void test_ascii8_cpu_boot_checkpoint(void) {
     msx_destroy(&msx);
 }
 
+static void test_atomic_firmware_set_and_eject(void) {
+    static const char *bios_path = "test-firmware-bios.tmp";
+    static const char *logo_path = "test-firmware-logo.tmp";
+    static const char *subrom_path = "test-firmware-subrom.tmp";
+    static const char *disk_path = "test-firmware-disk.tmp";
+    static const char *bad_path = "test-firmware-bad.tmp";
+    MsxMachine msx;
+    u8 old_bios[MSX_BIOS_SIZE];
+    u8 bios[MSX_BIOS_SIZE];
+    u8 logo[MSX_LOGO_SIZE];
+    u8 subrom[MSX_SUBROM_SIZE];
+    u8 disk_rom[MSX_DISK_ROM_SIZE];
+    u8 cartridge[0x4000];
+    u8 bad = 0;
+
+    memset(old_bios, 0x11, sizeof(old_bios));
+    memset(bios, 0x22, sizeof(bios));
+    memset(logo, 0x2a, sizeof(logo));
+    memset(subrom, 0x33, sizeof(subrom));
+    memset(disk_rom, 0x44, sizeof(disk_rom));
+    memset(cartridge, 0x55, sizeof(cartridge));
+    write_fixture(bios_path, bios, sizeof(bios));
+    write_fixture(logo_path, logo, sizeof(logo));
+    write_fixture(subrom_path, subrom, sizeof(subrom));
+    write_fixture(disk_path, disk_rom, sizeof(disk_rom));
+    write_fixture(bad_path, &bad, sizeof(bad));
+
+    msx_init(&msx, MSX_MODEL_PHILIPS_NMS8250,
+             MSX_REGION_PAL, 128);
+    assert(msx_install_bios(&msx, old_bios, sizeof(old_bios)) == 0);
+    assert(msx_install_cartridge(&msx, cartridge, sizeof(cartridge)) == 0);
+    assert(msx_load_firmware_set(
+               &msx, bios_path, NULL, bad_path, disk_path) < 0);
+    assert(msx.bios_loaded);
+    assert(msx.bios[0] == 0x11);
+    assert(!msx.subrom_loaded);
+    assert(!msx.disk_rom_loaded);
+
+    assert(msx_load_firmware_set(
+               &msx, bios_path, logo_path,
+               subrom_path, disk_path) == 0);
+    assert(msx.bios_loaded && msx.bios[0] == 0x22);
+    assert(msx.logo_loaded && msx.logo[0] == 0x2a);
+    assert(msx.subrom_loaded && msx.subrom[0] == 0x33);
+    assert(msx.disk_rom_loaded && msx.disk_rom[0] == 0x44);
+    assert(msx_get_cartridge(&msx, 0)->loaded);
+    msx_eject_firmware(&msx);
+    assert(!msx_can_boot(&msx));
+    assert(!msx.bios_loaded);
+    assert(!msx.logo_loaded);
+    assert(!msx.subrom_loaded);
+    assert(!msx.disk_rom_loaded);
+    assert(msx.bios[0] == 0xff);
+    assert(msx_get_cartridge(&msx, 0)->loaded);
+    msx_destroy(&msx);
+
+    assert(remove(bios_path) == 0);
+    assert(remove(logo_path) == 0);
+    assert(remove(subrom_path) == 0);
+    assert(remove(disk_path) == 0);
+    assert(remove(bad_path) == 0);
+}
+
 static void test_msx2_expanded_slots_and_firmware(void) {
     MsxMachine *msx = malloc(sizeof(*msx));
     u8 subrom[MSX_SUBROM_SIZE];
@@ -186,7 +257,7 @@ static void test_msx2_expanded_slots_and_firmware(void) {
     for (size_t i = 0; i < sizeof(disk_rom); ++i)
         disk_rom[i] = (u8)(i ^ 0xa5);
 
-    msx_init(msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
+    msx_init(msx, MSX_MODEL_PHILIPS_NMS8250, MSX_REGION_PAL, 128);
     assert(msx_install_subrom(msx, subrom, sizeof(subrom)) == 0);
     assert(msx_install_disk_rom(msx, disk_rom, sizeof(disk_rom)) == 0);
     assert(msx->subrom_loaded);
@@ -675,7 +746,7 @@ int main(void) {
     MsxMachine msx;
 
     msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
-    assert(strcmp(msx.profile->name, "Generic MSX1") == 0);
+    assert(strcmp(msx.profile->name, "MSX") == 0);
     assert(strcmp(msx_vdp_name(&msx), "TMS9929A") == 0);
     assert(msx.profile->vram_kb == 16);
     assert(!msx.profile->expanded_slots);
@@ -702,10 +773,25 @@ int main(void) {
     assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX1, 64, 1) == 16);
     assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX1, 16, -1) == 64);
     assert(msx_next_ram_kb(MSX_MODEL_GENERIC_MSX2, 128, 1) == 64);
+    {
+        MsxModel detected;
+        assert(msx_model_from_name("nms8250", &detected));
+        assert(detected == MSX_MODEL_PHILIPS_NMS8250);
+        assert(strcmp(msx_model_config_name(detected),
+                      "nms8250") == 0);
+        assert(msx_model_is_msx2(detected));
+        assert(msx_profile(detected)->requires_subrom);
+        assert(msx_profile(detected)->requires_disk_rom);
+    }
+    msx_configure(&msx, MSX_MODEL_PHILIPS_NMS8250,
+                  MSX_REGION_PAL, 128);
+    assert(strcmp(msx.profile->name, "Philips NMS 8250") == 0);
+    assert(msx.vdp.type == MSX_VDP_V9938);
 
     test_slot_bus_and_cpu();
     test_dual_cartridge_slots_and_mapper_reset();
     test_ascii8_cpu_boot_checkpoint();
+    test_atomic_firmware_set_and_eject();
     test_msx2_expanded_slots_and_firmware();
     test_vdp_ports_and_renderer();
     test_msx2_vdp_extended_ports();

@@ -44,8 +44,9 @@ available on as many SDL3-supported systems as practical.
   integer window scaling.
 - F9 options overlay with General, Media, Audio, Extensions, and Advanced
   sections.
-- Persistent generic MSX1/MSX2, PAL/NTSC, RAM, cartridge media/mapper,
-  display, extension, and notification settings.
+- Persistent machine selection from an editable `1983-models.conf`
+  catalogue, plus PAL/NTSC, RAM, cartridge media/mapper, display, extension,
+  and notification settings.
 - Power, Caps, Kana, drive, and cassette LEDs with hover descriptions.
 - Cycle-budgeted Z80 execution and maskable interrupts, adapted from the
   sibling projects behind machine-owned memory and I/O callbacks. The VDP
@@ -108,17 +109,19 @@ available on as many SDL3-supported systems as practical.
 - Standard PSG port directions, international-layout and empty-cassette input
   defaults, and Kana LED output. Joystick and mouse signals are not connected
   yet.
-- Explicit `--bios`, `--logo`, `--subrom`, `--disk-rom`, `--cart1`, and
-  `--cart2` loaders, with per-slot mapper controls and backwards-compatible
-  `--cart`/`--mapper` aliases. The tests include deterministic C-BIOS,
+- Catalogue-backed firmware loading plus explicit `--bios`, `--logo`,
+  `--subrom`, `--disk-rom`, `--cart1`, and `--cart2` overrides, with
+  per-slot mapper controls and backwards-compatible `--cart`/`--mapper`
+  aliases. The tests include deterministic C-BIOS,
   standalone MSX-DIAG BIOS, NMS 8250 firmware, synthetic mapped-cartridge,
   and optional MSX2 diagnostic-cartridge checkpoints below SDL.
 - Reserved Nextor-kernel, Sunrise IDE, and raw hard-disk surfaces, clearly
   identified as unimplemented device and loader stubs.
 - On-screen and console notifications, screenshots, pause, reset, and
   placeholders for capture and monitor tools.
-- Generic MSX1 and MSX2 profiles that establish the VDP, slot, memory
-  mapper, RTC, RAM, and VRAM boundaries.
+- MSX, MSX2, and Philips NMS 8250 catalogue entries backed by validated
+  hardware layouts that establish the VDP, slots, memory mapper, RTC, RAM,
+  and VRAM boundaries.
 - Component tests, an optional C-BIOS boot fixture, headless execution, and a
   machine-state dump for smoke testing.
 
@@ -149,10 +152,50 @@ Useful development invocations include:
 
 ```sh
 ./1983 --model msx2 --region ntsc
+./1983 --models ./my-models.conf --model my-msx
 ./1983 --config ./test.conf
 ./1983 --headless --unthrottled --exit-after 10
 ./1983 --help
 ```
+
+### Machine catalogue
+
+[`1983-models.conf`](1983-models.conf) is the editable machine catalogue used
+by the command line and by **General > Machine** in the F9 overlay. The
+shipped catalogue defines `msx1`, `msx2`, and `nms8250`, displayed as MSX,
+MSX2, and Philips NMS 8250. It contains paths only; no firmware image is
+tracked or distributed.
+
+Each section has this form:
+
+```ini
+[model my-msx2]
+name = My MSX2
+hardware = msx2
+bios = ROMS/my-bios.rom
+logo =
+subrom = ROMS/my-subrom.rom
+disk_rom =
+```
+
+`hardware` selects an emulated layout currently understood by 1983:
+`msx1`, `msx2`, or `nms8250`. New catalogue entries can reuse one of those
+layouts with a different name and firmware set without recompiling the
+emulator. Firmware paths may be absolute or relative to the catalogue file.
+Blank required paths open the SDL file picker when the model is selected;
+valid complete mappings load directly and atomically.
+
+1983 searches for the catalogue in the current directory, the user's
+configuration directory, and the installed application-data directory, in
+that order. `--models PATH` selects another file explicitly. Adding new
+hardware layouts—not just another firmware/model mapping—still requires
+emulator code and tests. For a per-user catalogue, copy the shipped file to
+`~/.config/1983/1983-models.conf` and adjust its firmware paths.
+
+A later **Advanced > Machine model editor** will provide the same
+add/change/delete workflow in the overlay. It will remain behind
+**General > Tinker** and will write this documented format rather than
+introducing a second model database.
 
 ### Keyboard
 
@@ -223,17 +266,16 @@ but visibly slower or faster movement.
 
 ### Trying the MSX2 firmware layout
 
-The user-supplied Philips NMS 8250 firmware set can exercise the new expanded
-slot and mapper foundation:
+The user-supplied Philips NMS 8250 firmware set can exercise its expanded
+slot and mapper layout. With the default catalogue paths in place, launch it
+without repeating the three firmware options:
 
 ```sh
-./1983 --model msx2 --region pal \
-  --bios ROMS/nms8250_basic-bios2.rom \
-  --subrom ROMS/nms8250_msx2sub.rom \
-  --disk-rom ROMS/nms8250_disk.rom
+./1983 --model nms8250 --region pal
 ```
 
-These options reproduce the firmware placement of the real machine. With the
+The `nms8250` catalogue entry reproduces the firmware placement of the real
+machine. With the
 RTC present, the firmware progresses through its Sub-ROM initialization,
 programs the V9938 for PAL, and draws the MSX2 startup mark in a 512x192
 SCREEN 6 display. Beam-timed retrace status, the preloaded R44 command
@@ -244,10 +286,7 @@ behind the disk ROM is still absent, so this is not yet a disk boot.
 For example, the local diagnostic cartridge can be booted with:
 
 ```sh
-./1983 --model msx2 --region pal \
-  --bios ROMS/MSX2.ROM \
-  --subrom ROMS/MSX2EXT.ROM \
-  --cart ROMS/diag.rom
+./1983 --model msx2 --region pal --cart ROMS/diag.rom
 ```
 
 The verified path reaches its blue MSX Diagnostics menu and reports the
@@ -280,14 +319,11 @@ copying the GPL-3.0 diagnostic source or generated ROM into this repository:
 MSX_DIAG_BIOS_ROM=../msx-diag/msxdiag.rom make check
 ```
 
-The current command line deliberately uses explicit firmware paths. The
-planned Philips NMS 8250 profile will first search the user's existing
-openMSX ROM pool at `~/.openMSX/share/systemroms`, then any configured
-additional roots. It will search recursively, identify known ROM contents
-primarily by checksum rather than filename, and report missing profile
-components clearly. Vendor system ROMs will remain user-provided and will
-not be copied into this repository.
-This follows the practical and legal separation described by the
+The machine catalogue can point directly into the user's existing openMSX
+ROM pool or another private firmware directory. Future catalogue tooling can
+add recursive checksum-based discovery; filenames are currently explicit.
+Vendor system ROMs remain user-provided and are never copied into this
+repository. This follows the practical and legal separation described by the
 [openMSX system-ROM guide](https://openmsx.org/manual/setup.html#systemroms).
 
 The reproducible headless firmware checkpoint is:
@@ -331,10 +367,20 @@ SDL file picker, Enter on the adjacent mapper row cycles its override, and
 Delete ejects the selected cartridge. Mounted paths and overrides are saved;
 the command line takes precedence when supplied.
 
+In General, Enter on Machine opens the catalogue chooser. Selecting a model
+uses its mapped firmware and prompts only for required components whose paths
+are blank or unavailable. The BIOS, optional C-BIOS logo, Sub-ROM, and disk
+ROM are validated and committed as one set, so a cancelled picker or bad-size
+image leaves the running machine unchanged. Delete unloads the current
+firmware set.
+
 Configuration is saved to `~/.config/1983/1983.conf` on Unix-like systems and
 under the user's application-data directory on Windows. Pass `--config PATH`
 to use an isolated file. See [`1983.conf.example`](1983.conf.example) for the
-currently supported settings.
+currently supported settings. Firmware paths saved there are per-user
+overrides; clear them to inherit the selected entry from
+`1983-models.conf` again. Its `hardware` line records the resolved layout so
+settings can be normalized correctly even for a user-defined model ID.
 
 ## Goals
 
@@ -365,7 +411,7 @@ currently supported settings.
 | Cassette | CAS images and the standard BIOS cassette path |
 | Disk | DSK images, common MSX disk-ROM behaviour, Sunrise ATA-IDE, Nextor-compatible block storage, guest writes, and multiple drives |
 | Input | International MSX keyboard matrix implemented; joysticks, mouse, alternate national layouts, and host clipboard paste planned |
-| MSX2 hardware | Internal RAM mapper and RP-5C01 RTC implemented; persistent CMOS files, additional mapper devices, and complete model firmware configuration planned |
+| MSX2 hardware | Internal RAM mapper and RP-5C01 RTC implemented; editable model/firmware catalogue implemented; persistent CMOS files and additional mapper devices planned |
 | Tools | Debugger and disassembler, screenshots, snapshots, headless execution, and deterministic automation |
 
 The first compatibility target is standard MSX1 software. The first

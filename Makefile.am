@@ -8,6 +8,7 @@ bin_PROGRAMS = 1983
 	src/kbd.c \
 	src/leds.c \
 	src/main.c \
+	src/models.c \
 	src/msx.c \
 	src/notify.c \
 	src/overlay.c \
@@ -24,6 +25,7 @@ noinst_HEADERS = \
 	src/display.h \
 	src/kbd.h \
 	src/leds.h \
+	src/models.h \
 	src/msx.h \
 	src/notify.h \
 	src/overlay.h \
@@ -34,6 +36,7 @@ noinst_HEADERS = \
 	src/vdp.h \
 	src/z80.h
 
+1983_CPPFLAGS = -DPKGDATADIR=\"$(pkgdatadir)\"
 1983_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic \
 	-DPROG_GIT_COMMIT=\"$(PROG_GIT_COMMIT)\"
 1983_LDADD = $(SDL3_LIBS) -lm $(WIN_RC_OBJ)
@@ -45,7 +48,7 @@ icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 
 CLEANFILES = icons/1983-rc.o
 
-check_PROGRAMS = test-cartridge test-config test-msx test-kbd test-vdp test-psg test-rtc
+check_PROGRAMS = test-cartridge test-config test-models test-msx test-kbd test-overlay test-vdp test-psg test-rtc
 TESTS = $(check_PROGRAMS) tests/test-cli.sh
 test_cartridge_SOURCES = tests/test_cartridge.c src/cartridge.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
@@ -55,6 +58,10 @@ test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/msx.c
 test_config_CPPFLAGS = -I$(top_srcdir)/src
 test_config_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
+test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
+test_models_CPPFLAGS = -I$(top_srcdir)/src
+test_models_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+
 test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/msx.c src/psg.c src/rtc.c src/vdp.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
@@ -63,6 +70,11 @@ test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/kbd.c src/msx.c src/psg.
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
+
+test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/display.c src/leds.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/ui.c src/vdp.c src/z80.c
+test_overlay_CPPFLAGS = -I$(top_srcdir)/src
+test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
+test_overlay_LDADD = $(SDL3_LIBS) -lm
 
 test_vdp_SOURCES = tests/test_vdp.c src/vdp.c
 test_vdp_CPPFLAGS = -I$(top_srcdir)/src
@@ -81,6 +93,8 @@ dist_desktop_DATA  = io.github.salvogendut.Emulator1983.desktop
 
 metainfodir        = $(datadir)/metainfo
 dist_metainfo_DATA = io.github.salvogendut.Emulator1983.metainfo.xml
+
+dist_pkgdata_DATA = 1983-models.conf
 
 icon16dir        = $(datadir)/icons/hicolor/16x16/apps
 dist_icon16_DATA = icons/16x16/apps/io.github.salvogendut.Emulator1983.png

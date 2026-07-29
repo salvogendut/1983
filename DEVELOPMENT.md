@@ -16,6 +16,7 @@ hardware specification.
 | `src/kbd.*` | SDL scancode translation and shared frontend/guest function-key routing |
 | `src/overlay.*` | F9 options workflow and live application of frontend and machine-profile settings |
 | `src/leds.*` | Shared bottom status strip and MSX-specific indicator definitions |
+| `src/models.*` | Editable machine catalogue parsing, firmware-path resolution, and built-in fallback entries |
 | `src/notify.*` | On-screen and console notifications |
 | `src/ui.*` | Small renderer primitives used by the frontend |
 | `src/msx.*` | Machine profiles, slot-aware memory and I/O bus, active-low keyboard matrix, ROM loading, and frame scheduler |
@@ -26,6 +27,8 @@ hardware specification.
 | `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/diagnostic boot checks |
 | `tests/test_cartridge.c` | Linear, ASCII8/16, Konami, Konami SCC, detection, bank wrapping, reset, and eject checks |
 | `tests/test_config.c` | Persistent cartridge paths and mapper overrides |
+| `tests/test_models.c` | Machine-catalogue parsing, hardware mapping, relative paths, and invalid-entry filtering |
+| `tests/test_overlay.c` | General > Machine chooser navigation and cancellation |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
 | `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
 | `tests/test_rtc.c` | RP-5C01 banks, masks, reset behavior, calendar rollover, and clock advancement |
@@ -50,27 +53,39 @@ which the SDL layer scales into the 640x480 guest canvas. V9938 bitmap modes
 supply either 256- or 512-dot output and 192 or 212 lines through the same
 dynamic framebuffer boundary.
 
-## Initial generic profiles
+## Hardware profiles and machine catalogue
 
-The profiles are compatibility starting points rather than claims about every
-vendor machine:
+Compiled hardware profiles define emulation capabilities. Catalogue entries
+define the user-visible model names and firmware mappings. The initial
+hardware layouts are:
 
-| Setting | Generic MSX1 | Generic MSX2 |
-|---------|--------------|--------------|
-| CPU clock | 3,579,545 Hz | 3,579,545 Hz |
-| Default RAM | 64 KB | 128 KB |
-| VRAM | 16 KB | 128 KB |
-| VDP | TMS9918A (NTSC) or TMS9929A (PAL) | V9938 |
-| Expanded slots | No | Yes |
-| RAM mapper | No | Yes |
-| RTC | No | Yes |
+| Setting | MSX1 | MSX2 | Philips NMS 8250 |
+|---------|------|------|------------------|
+| CPU clock | 3,579,545 Hz | 3,579,545 Hz | 3,579,545 Hz |
+| Default RAM | 64 KB | 128 KB | 128 KB |
+| VRAM | 16 KB | 128 KB | 128 KB |
+| VDP | TMS9918A (NTSC) or TMS9929A (PAL) | V9938 | V9938 |
+| Expanded slots | No | Yes | Yes |
+| RAM mapper | No | Yes | Yes |
+| RTC | No | Yes | Yes |
+| Required firmware | BIOS | BIOS + Sub-ROM | BIOS + Sub-ROM + disk ROM |
 
 The MSX1 executable layout follows the C-BIOS machine definition: slot 0
 contains a 32 KB main ROM and optional 16 KB logo ROM, primary slots 1 and 2
 contain independent external cartridge devices, and slot 3 contains RAM.
-Each cartridge can be linear, ASCII8, ASCII16, Konami, or Konami SCC. Vendor
-and firmware layouts should eventually become data-driven rather than
-accumulating model checks throughout device code.
+Each cartridge can be linear, ASCII8, ASCII16, Konami, or Konami SCC.
+
+`1983-models.conf` provides the data-driven layer above these hardware
+profiles. A `[model id]` entry supplies `name`, `hardware`, `bios`, `logo`,
+`subrom`, and `disk_rom`. Paths are resolved relative to that file. A user
+can add any number of named models which reuse an implemented hardware layout
+without recompiling 1983. The parser caps the catalogue at 64 valid entries,
+ignores unknown hardware layouts and duplicate IDs, and falls back to the
+three built-in entries when no valid file is available. A future editor can
+write the same format without changing the runtime contract. That editor is
+planned as **Advanced > Machine model editor**, behind the existing Tinker
+gate, with add/change/delete operations and explicit confirmation before
+removing an entry.
 
 The first concrete MSX2 layout matches the Philips NMS 8250 used by
 `../geobench/tools/run_msx.sh`: BIOS/BASIC in primary slot 0, external
@@ -325,7 +340,7 @@ Run the pinned C-BIOS checkpoint when C-BIOS 0.29 is available:
 MSX_CBIOS_DIR=/path/to/cbios make check
 ```
 
-Run the in-progress Philips NMS 8250 firmware checkpoint with:
+Run the Philips NMS 8250 firmware checkpoint with:
 
 ```sh
 MSX_NMS8250_DIR=/path/to/nms8250-roms make check

@@ -10,6 +10,7 @@
 #include "display.h"
 #include "kbd.h"
 #include "leds.h"
+#include "models.h"
 #include "msx.h"
 #include "notify.h"
 #include "overlay.h"
@@ -21,6 +22,7 @@
 
 typedef struct {
     const char *config_path;
+    const char *models_path;
     const char *bios_path;
     const char *logo_path;
     const char *subrom_path;
@@ -28,7 +30,7 @@ typedef struct {
     const char *cartridge_path[MSX_CARTRIDGE_SLOTS];
     MsxCartridgeMapper cartridge_mapper[MSX_CARTRIDGE_SLOTS];
     bool cartridge_mapper_set[MSX_CARTRIDGE_SLOTS];
-    int model;
+    const char *model_name;
     int region;
     int scale;
     int exit_after;
@@ -40,7 +42,8 @@ typedef struct {
 static const char *usage =
     "Usage: 1983 [options]\n"
     "  --config PATH       use an alternative configuration file\n"
-    "  --model msx1|msx2   override the configured generic machine\n"
+    "  --models PATH       use an alternative machine catalogue\n"
+    "  --model NAME        select a model ID from the machine catalogue\n"
     "  --region pal|ntsc   override the configured video standard\n"
     "  --bios PATH         load a 32 KB MSX BIOS ROM\n"
     "  --logo PATH         load a 16 KB C-BIOS logo ROM in slot 0/page 2\n"
@@ -76,15 +79,6 @@ static int parse_integer(const char *text, int minimum, int maximum,
     return (int)value;
 }
 
-static int parse_model(const char *text) {
-    if (strcmp(text, "msx1") == 0)
-        return MSX_MODEL_GENERIC_MSX1;
-    if (strcmp(text, "msx2") == 0)
-        return MSX_MODEL_GENERIC_MSX2;
-    fprintf(stderr, "--model: expected msx1 or msx2\n");
-    return -1;
-}
-
 static int parse_region(const char *text) {
     if (strcmp(text, "pal") == 0)
         return MSX_REGION_PAL;
@@ -106,7 +100,6 @@ static int parse_mapper(const char *text, const char *option,
 
 static int parse_cli(int argc, char **argv, Cli *cli) {
     memset(cli, 0, sizeof(*cli));
-    cli->model = -1;
     cli->region = -1;
     cli->scale = -1;
     cli->exit_after = -1;
@@ -135,6 +128,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             continue;
         }
         if ((strcmp(argument, "--config") == 0 ||
+             strcmp(argument, "--models") == 0 ||
              strcmp(argument, "--model") == 0 ||
              strcmp(argument, "--region") == 0 ||
              strcmp(argument, "--bios") == 0 ||
@@ -155,6 +149,8 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
         }
         if (strcmp(argument, "--config") == 0) {
             cli->config_path = argv[++i];
+        } else if (strcmp(argument, "--models") == 0) {
+            cli->models_path = argv[++i];
         } else if (strcmp(argument, "--bios") == 0) {
             cli->bios_path = argv[++i];
         } else if (strcmp(argument, "--logo") == 0) {
@@ -180,9 +176,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
                 return -1;
             cli->cartridge_mapper_set[1] = true;
         } else if (strcmp(argument, "--model") == 0) {
-            cli->model = parse_model(argv[++i]);
-            if (cli->model < 0)
-                return -1;
+            cli->model_name = argv[++i];
         } else if (strcmp(argument, "--region") == 0) {
             cli->region = parse_region(argv[++i]);
             if (cli->region < 0)
@@ -277,6 +271,8 @@ static void draw_paused(const MsxMachine *msx, Display *display) {
 int main(int argc, char **argv) {
     Cli cli;
     Config config;
+    ModelCatalog models;
+    const ModelDefinition *definition;
     MsxMachine msx;
     KbdHost keyboard;
     static Display display;
@@ -294,14 +290,77 @@ int main(int argc, char **argv) {
         return cli_result > 0 ? 0 : 1;
 
     config_load(&config, cli.config_path);
-    if (cli.model >= 0) {
-        config.model = (MsxModel)cli.model;
+    if (model_catalog_load(&models, cli.models_path) != 0) {
+        if (cli.models_path) {
+            fprintf(stderr, "cannot load machine catalogue: %s\n",
+                    cli.models_path);
+            return 1;
+        }
+        fprintf(stderr,
+                "warning: 1983-models.conf not found or invalid; "
+                "using built-in models\n");
+    }
+    definition = model_catalog_find(&models, config.machine_id);
+    if (!definition)
+        definition = model_catalog_find_hardware(&models, config.model);
+    if (definition) {
+        config.model = definition->hardware;
+        snprintf(config.machine_id, sizeof(config.machine_id),
+                 "%s", definition->id);
+        if (!config.bios_path[0])
+            snprintf(config.bios_path, sizeof(config.bios_path),
+                     "%s", definition->bios_path);
+        if (!config.logo_path[0])
+            snprintf(config.logo_path, sizeof(config.logo_path),
+                     "%s", definition->logo_path);
+        if (!config.subrom_path[0])
+            snprintf(config.subrom_path, sizeof(config.subrom_path),
+                     "%s", definition->subrom_path);
+        if (!config.disk_rom_path[0])
+            snprintf(config.disk_rom_path, sizeof(config.disk_rom_path),
+                     "%s", definition->disk_rom_path);
+    }
+    if (cli.model_name) {
+        MsxModel hardware;
+
+        definition = model_catalog_find(&models, cli.model_name);
+        if (!definition &&
+            msx_model_from_name(cli.model_name, &hardware))
+            definition = model_catalog_find_hardware(&models, hardware);
+        if (!definition) {
+            fprintf(stderr, "--model: unknown catalogue model: %s\n",
+                    cli.model_name);
+            return 1;
+        }
+        config.model = definition->hardware;
+        snprintf(config.machine_id, sizeof(config.machine_id),
+                 "%s", definition->id);
         config.memory_kb = msx_default_ram_kb(config.model);
+        snprintf(config.bios_path, sizeof(config.bios_path),
+                 "%s", definition->bios_path);
+        snprintf(config.logo_path, sizeof(config.logo_path),
+                 "%s", definition->logo_path);
+        snprintf(config.subrom_path, sizeof(config.subrom_path),
+                 "%s", definition->subrom_path);
+        snprintf(config.disk_rom_path, sizeof(config.disk_rom_path),
+                 "%s", definition->disk_rom_path);
     }
     if (cli.region >= 0)
         config.region = (MsxRegion)cli.region;
     if (cli.scale >= 0)
         config.scale = cli.scale;
+    if (cli.bios_path)
+        snprintf(config.bios_path, sizeof(config.bios_path),
+                 "%s", cli.bios_path);
+    if (cli.logo_path)
+        snprintf(config.logo_path, sizeof(config.logo_path),
+                 "%s", cli.logo_path);
+    if (cli.subrom_path)
+        snprintf(config.subrom_path, sizeof(config.subrom_path),
+                 "%s", cli.subrom_path);
+    if (cli.disk_rom_path)
+        snprintf(config.disk_rom_path, sizeof(config.disk_rom_path),
+                 "%s", cli.disk_rom_path);
     for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
         if (cli.cartridge_path[slot])
             snprintf(config.cartridge_path[slot],
@@ -321,24 +380,18 @@ int main(int argc, char **argv) {
 
     msx_init(&msx, config.model, config.region, config.memory_kb);
     kbd_init(&keyboard);
-    if (cli.bios_path && msx_load_bios(&msx, cli.bios_path) < 0) {
-        fprintf(stderr, "cannot load 32 KB BIOS ROM: %s\n", cli.bios_path);
-        return 1;
-    }
-    if (cli.logo_path && msx_load_logo(&msx, cli.logo_path) < 0) {
-        fprintf(stderr, "cannot load 16 KB logo ROM: %s\n", cli.logo_path);
-        return 1;
-    }
-    if (cli.subrom_path && msx_load_subrom(&msx, cli.subrom_path) < 0) {
-        fprintf(stderr, "cannot load 16 KB MSX2 Sub-ROM: %s\n",
-                cli.subrom_path);
-        return 1;
-    }
-    if (cli.disk_rom_path &&
-        msx_load_disk_rom(&msx, cli.disk_rom_path) < 0) {
-        fprintf(stderr, "cannot load 16 KB disk ROM: %s\n",
-                cli.disk_rom_path);
-        return 1;
+    if (config.bios_path[0] &&
+        msx_load_firmware_set(
+            &msx, config.bios_path, config.logo_path,
+            config.subrom_path, config.disk_rom_path) < 0) {
+        fprintf(stderr, "cannot load firmware set for %s\n",
+                config.machine_id);
+        if (cli.bios_path || cli.logo_path ||
+            cli.subrom_path || cli.disk_rom_path ||
+            cli.model_name) {
+            msx_destroy(&msx);
+            return 1;
+        }
     }
     for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
         const char *path = config.cartridge_path[slot];
@@ -356,7 +409,9 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
-    if (display_init(&display, &config, &msx) < 0) {
+    definition = model_catalog_find(&models, config.machine_id);
+    if (display_init(&display, &config, &msx,
+                     definition ? definition->name : NULL) < 0) {
         display_quit(&display);
         msx_destroy(&msx);
         return 1;
@@ -367,7 +422,7 @@ int main(int argc, char **argv) {
     notify_init();
     notify_set_mode(config.notifications);
     leds_init();
-    overlay_init(&overlay, &config, &display, &msx);
+    overlay_init(&overlay, &config, &models, &display, &msx);
     if (msx_can_boot(&msx))
         notify_post("Firmware running - F9 opens options");
     else
@@ -375,8 +430,11 @@ int main(int argc, char **argv) {
 
     printf("1983 - MSX / MSX2 emulator (git %s)\n",
            PROG_GIT_COMMIT);
+    printf("Machine catalogue: %s\n",
+           models.path[0] ? models.path : "built-in defaults");
     printf("%s, %s, %d KB RAM, %d KB VRAM, %s, %s PSG\n",
-           msx.profile->name, msx_region_name(msx.region),
+           definition ? definition->name : msx.profile->name,
+           msx_region_name(msx.region),
            msx.ram_kb, msx.profile->vram_kb, msx_vdp_name(&msx),
            msx.profile->psg_variant == PSG_VARIANT_YM2149
            ? "YM2149" : "AY-3-8910");
