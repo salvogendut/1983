@@ -125,6 +125,9 @@ static bool command_has_clock(const MsxVdp *vdp);
 static u64 vram_access_delay(const MsxVdp *vdp, u16 slot_phase,
                              u64 minimum);
 static void schedule_cpu_vram_access(MsxVdp *vdp, bool read, u8 value);
+static void configure_render_geometry(MsxVdp *vdp);
+static void render_flush_completed(MsxVdp *vdp);
+static void render_to_line(MsxVdp *vdp, unsigned limit_y);
 
 static unsigned vram_size(const MsxVdp *vdp) {
     return vdp->type == MSX_VDP_V9938
@@ -365,7 +368,8 @@ static bool sprite_dot(const SpriteLine *line, int size, int scale, int x) {
     return (line->pattern & (0x8000u >> source_x)) != 0;
 }
 
-static void render_sprites_mode1(MsxVdp *vdp) {
+static void render_sprites_mode1(MsxVdp *vdp, unsigned first_y,
+                                 unsigned limit_y) {
     unsigned attribute_base =
         (unsigned)(vdp->registers[5] &
                    (vdp->type == MSX_VDP_V9938 ? 0xff : 0x7f)) << 7;
@@ -385,7 +389,7 @@ static void render_sprites_mode1(MsxVdp *vdp) {
         ++sprite_end;
     last_sprite = sprite_end < 32 ? sprite_end : 31;
 
-    for (int y = 0; y < MSX1_VIDEO_H; ++y) {
+    for (unsigned y = first_y; y < limit_y; ++y) {
         SpriteLine visible[4];
         unsigned visible_count = 0;
         bool occupied[MSX1_VIDEO_W] = { false };
@@ -447,7 +451,7 @@ static void render_sprites_mode1(MsxVdp *vdp) {
                         colour || colour_zero_opaque) {
                         if (occupied[x])
                             latch_sprite_collision(
-                                vdp, x, y, &collision);
+                                vdp, x, (int)y, &collision);
                         occupied[x] = true;
                     }
                     if ((colour || colour_zero_opaque) &&
@@ -513,7 +517,9 @@ static void draw_sprite2_pixel(MsxVdp *vdp, u8 mode,
     }
 }
 
-static void render_sprites_mode2(MsxVdp *vdp, u8 mode) {
+static void render_sprites_mode2(MsxVdp *vdp, u8 mode,
+                                 unsigned first_y,
+                                 unsigned limit_y) {
     bool planar = mode == 0x14 || mode == 0x1c;
     int size = vdp->registers[1] & 0x02 ? 16 : 8;
     int scale = vdp->registers[1] & 0x01 ? 2 : 1;
@@ -529,7 +535,7 @@ static void render_sprites_mode2(MsxVdp *vdp, u8 mode) {
         ++sprite_end;
     last_sprite = sprite_end < 32 ? sprite_end : 31;
 
-    for (unsigned y = 0; y < vdp->render_height; ++y) {
+    for (unsigned y = first_y; y < limit_y; ++y) {
         SpriteLine visible[8];
         unsigned visible_count = 0;
         bool occupied[MSX1_VIDEO_W] = { false };
@@ -666,7 +672,6 @@ void vdp_reset(MsxVdp *vdp) {
     vdp->command_line_major = 0;
     vdp->command_line_minor = 0;
     vdp->command_line_error = 0;
-    vdp->vram_slot_phase = 0;
     vdp->sprite_collision_x = 0;
     vdp->sprite_collision_y = 0;
     vdp->command_code = 0;
@@ -681,11 +686,14 @@ void vdp_reset(MsxVdp *vdp) {
     vdp->command_ticks_remaining = 0;
     vdp->cpu_vram_ticks_remaining = 0;
     vdp->vram_tick_fraction = 0;
+    vdp->vram_frame_tick = 0;
     vdp->timing_cycle = 0;
     vdp->timing_frame_cycles = 0;
     vdp->timing_scanlines = 0;
     vdp->render_width = MSX1_VIDEO_W;
     vdp->render_height = MSX1_VIDEO_H;
+    vdp->render_line_zero = 0;
+    vdp->rendered_lines = 0;
     memset(vdp->pixels, 0, sizeof(vdp->pixels));
 }
 
@@ -714,6 +722,8 @@ static void write_register(MsxVdp *vdp, unsigned reg, u8 value) {
         return;
     }
 
+    if (vdp->type == MSX_VDP_V9938)
+        render_flush_completed(vdp);
     vdp->registers[reg] = value;
     if (vdp->type == MSX_VDP_V9938 &&
         reg == 0 && !(value & 0x10))
@@ -731,10 +741,12 @@ static void write_register(MsxVdp *vdp, unsigned reg, u8 value) {
 static void execute_cpu_vram_access(MsxVdp *vdp) {
     unsigned address = cpu_vram_address(vdp);
 
-    if (vdp->cpu_vram_request_read)
+    if (vdp->cpu_vram_request_read) {
         vdp->read_buffer = vdp->vram[address];
-    else
+    } else {
+        render_flush_completed(vdp);
         vdp->vram[address] = vdp->read_buffer;
+    }
     increment_vram_pointer(vdp);
     vdp->cpu_vram_pending = false;
     vdp->cpu_vram_ticks_remaining = 0;
@@ -764,7 +776,11 @@ static void schedule_cpu_vram_access(MsxVdp *vdp, bool read, u8 value) {
     if (!vdp->cpu_vram_pending) {
         vdp->cpu_vram_pending = true;
         vdp->cpu_vram_ticks_remaining =
-            vram_access_delay(vdp, vdp->vram_slot_phase, 16);
+            vram_access_delay(
+                vdp,
+                (u16)(vdp->vram_frame_tick %
+                      V9938_TICKS_PER_LINE),
+                16);
         if (!vdp->cpu_vram_ticks_remaining)
             vdp->cpu_vram_ticks_remaining = 1;
     }
@@ -905,6 +921,7 @@ void vdp_write_palette(MsxVdp *vdp, u8 value) {
     }
 
     index = vdp->registers[16] & 0x0f;
+    render_flush_completed(vdp);
     vdp->palette_grb[index] =
         (u16)(((u16)value << 8) | vdp->control_first) & 0x0777;
     vdp->registers[16] = (u8)((index + 1) & 0x0f);
@@ -976,8 +993,13 @@ void vdp_begin_frame(MsxVdp *vdp, unsigned frame_cycles,
     vdp->timing_cycle = 0;
     vdp->timing_frame_cycles = frame_cycles;
     vdp->timing_scanlines = scanlines;
-    vdp->vram_slot_phase = 0;
     vdp->vram_tick_fraction = 0;
+    vdp->vram_frame_tick = 0;
+    configure_render_geometry(vdp);
+    vdp->render_line_zero =
+        vdp->type == MSX_VDP_V9938
+        ? v9938_line_zero(vdp) : 0;
+    vdp->rendered_lines = 0;
     update_retrace_status(vdp);
 }
 
@@ -1000,6 +1022,7 @@ void vdp_advance(MsxVdp *vdp, unsigned cycles) {
 
         vdp->vram_tick_fraction = elapsed & 0xffffffffu;
         vram_engine_advance(vdp, elapsed >> 32);
+        render_flush_completed(vdp);
     }
     if (vdp->type == MSX_VDP_V9938 &&
         (vdp->registers[0] & 0x10) &&
@@ -1030,12 +1053,17 @@ void vdp_end_frame(MsxVdp *vdp) {
      * Sprite evaluation takes place during the visible scanlines, before
      * vertical blank raises the F flag.
      */
-    vdp_render(vdp);
+    if (vdp->type == MSX_VDP_V9938 &&
+        command_has_clock(vdp))
+        render_to_line(vdp, vdp->render_height);
+    else
+        vdp_render(vdp);
     vdp->status |= 0x80;
     update_irq(vdp);
 }
 
-static void render_graphics_1(MsxVdp *vdp) {
+static void render_graphics_1(MsxVdp *vdp, unsigned first_y,
+                              unsigned limit_y) {
     unsigned name_mask =
         vdp->type == MSX_VDP_V9938 ? 0x7f : 0x0f;
     unsigned pattern_mask =
@@ -1049,9 +1077,9 @@ static void render_graphics_1(MsxVdp *vdp) {
     if (vdp->type == MSX_VDP_V9938)
         colour_base |= (unsigned)(vdp->registers[10] & 0x07) << 14;
 
-    for (int y = 0; y < MSX1_VIDEO_H; ++y) {
-        int row = y >> 3;
-        int line = y & 7;
+    for (unsigned y = first_y; y < limit_y; ++y) {
+        unsigned row = y >> 3;
+        unsigned line = y & 7;
         for (int column = 0; column < 32; ++column) {
             u8 name = vdp->vram[wrap_address(vdp,
                 name_base + row * 32 + column)];
@@ -1068,7 +1096,8 @@ static void render_graphics_1(MsxVdp *vdp) {
     }
 }
 
-static void render_graphics_2(MsxVdp *vdp) {
+static void render_graphics_2(MsxVdp *vdp, unsigned first_y,
+                              unsigned limit_y) {
     unsigned name_mask =
         vdp->type == MSX_VDP_V9938 ? 0x7f : 0x0f;
     unsigned name_base =
@@ -1083,10 +1112,10 @@ static void render_graphics_2(MsxVdp *vdp) {
     else
         pattern_base = (unsigned)(vdp->registers[4] & 0x04) << 11;
 
-    for (int y = 0; y < MSX1_VIDEO_H; ++y) {
-        int row = y >> 3;
-        int line = y & 7;
-        int third = (y >> 6) * 0x800;
+    for (unsigned y = first_y; y < limit_y; ++y) {
+        unsigned row = y >> 3;
+        unsigned line = y & 7;
+        unsigned third = (y >> 6) * 0x800;
         for (int column = 0; column < 32; ++column) {
             u8 name = vdp->vram[wrap_address(vdp,
                 name_base + row * 32 + column)];
@@ -1104,7 +1133,8 @@ static void render_graphics_2(MsxVdp *vdp) {
     }
 }
 
-static void render_text(MsxVdp *vdp) {
+static void render_text(MsxVdp *vdp, unsigned first_y,
+                        unsigned limit_y) {
     unsigned name_mask =
         vdp->type == MSX_VDP_V9938 ? 0x7f : 0x0f;
     unsigned pattern_mask =
@@ -1116,9 +1146,9 @@ static void render_text(MsxVdp *vdp) {
     u8 foreground = vdp->registers[7] >> 4;
     u8 background = vdp->registers[7] & 0x0f;
 
-    for (int y = 0; y < MSX1_VIDEO_H; ++y) {
-        int row = y >> 3;
-        int line = y & 7;
+    for (unsigned y = first_y; y < limit_y; ++y) {
+        unsigned row = y >> 3;
+        unsigned line = y & 7;
         for (int column = 0; column < 40; ++column) {
             u8 name = vdp->vram[wrap_address(vdp,
                 name_base + row * 40 + column)];
@@ -1132,7 +1162,8 @@ static void render_text(MsxVdp *vdp) {
     }
 }
 
-static void render_multicolour(MsxVdp *vdp) {
+static void render_multicolour(MsxVdp *vdp, unsigned first_y,
+                               unsigned limit_y) {
     unsigned name_mask =
         vdp->type == MSX_VDP_V9938 ? 0x7f : 0x0f;
     unsigned pattern_mask =
@@ -1142,9 +1173,9 @@ static void render_multicolour(MsxVdp *vdp) {
     unsigned pattern_base =
         (unsigned)(vdp->registers[4] & pattern_mask) << 11;
 
-    for (int y = 0; y < MSX1_VIDEO_H; ++y) {
-        int row = y >> 3;
-        int pattern_line = ((y & 0x1c) >> 2);
+    for (unsigned y = first_y; y < limit_y; ++y) {
+        unsigned row = y >> 3;
+        unsigned pattern_line = ((y & 0x1c) >> 2);
         for (int column = 0; column < 32; ++column) {
             u8 name = vdp->vram[wrap_address(vdp,
                 name_base + row * 32 + column)];
@@ -1421,7 +1452,10 @@ static void command_schedule_event(MsxVdp *vdp, u8 event, u64 ticks) {
     vdp->command_event = event;
     if (command_has_clock(vdp))
         ticks = vram_access_delay(
-            vdp, vdp->vram_slot_phase, ticks);
+            vdp,
+            (u16)(vdp->vram_frame_tick %
+                  V9938_TICKS_PER_LINE),
+            ticks);
     vdp->command_ticks_remaining = ticks ? ticks : 1;
 }
 
@@ -1469,6 +1503,7 @@ static void command_load_colour(MsxVdp *vdp) {
 }
 
 static void command_execute_event(MsxVdp *vdp, u8 event) {
+    render_flush_completed(vdp);
     if (event == V9938_COMMAND_EVENT_COMPLETE) {
         command_complete(vdp);
     } else if (event == V9938_COMMAND_EVENT_TRANSFER_READY &&
@@ -1486,6 +1521,19 @@ static void command_execute_event(MsxVdp *vdp, u8 event) {
     }
 }
 
+static void advance_vram_beam(MsxVdp *vdp, u64 ticks) {
+    u64 frame_ticks;
+    u64 next_tick;
+
+    if (!vdp->timing_scanlines)
+        return;
+    frame_ticks =
+        (u64)vdp->timing_scanlines * V9938_TICKS_PER_LINE;
+    next_tick = (u64)vdp->vram_frame_tick + ticks;
+    vdp->vram_frame_tick =
+        (u32)(next_tick < frame_ticks ? next_tick : frame_ticks);
+}
+
 static void vram_engine_advance(MsxVdp *vdp, u64 ticks) {
     while (ticks) {
         bool command_pending =
@@ -1500,9 +1548,7 @@ static void vram_engine_advance(MsxVdp *vdp, u64 ticks) {
             command_ticks < cpu_ticks ? command_ticks : cpu_ticks;
 
         if (next_ticks == ~(u64)0) {
-            vdp->vram_slot_phase = (u16)(
-                (vdp->vram_slot_phase + ticks) %
-                V9938_TICKS_PER_LINE);
+            advance_vram_beam(vdp, ticks);
             return;
         }
         if (ticks < next_ticks) {
@@ -1510,9 +1556,7 @@ static void vram_engine_advance(MsxVdp *vdp, u64 ticks) {
                 vdp->command_ticks_remaining -= ticks;
             if (vdp->cpu_vram_pending)
                 vdp->cpu_vram_ticks_remaining -= ticks;
-            vdp->vram_slot_phase = (u16)(
-                (vdp->vram_slot_phase + ticks) %
-                V9938_TICKS_PER_LINE);
+            advance_vram_beam(vdp, ticks);
             return;
         }
 
@@ -1521,9 +1565,7 @@ static void vram_engine_advance(MsxVdp *vdp, u64 ticks) {
             vdp->command_ticks_remaining -= next_ticks;
         if (vdp->cpu_vram_pending)
             vdp->cpu_vram_ticks_remaining -= next_ticks;
-        vdp->vram_slot_phase = (u16)(
-            (vdp->vram_slot_phase + next_ticks) %
-            V9938_TICKS_PER_LINE);
+        advance_vram_beam(vdp, next_ticks);
 
         if (vdp->cpu_vram_pending &&
             !vdp->cpu_vram_ticks_remaining) {
@@ -1536,7 +1578,10 @@ static void vram_engine_advance(MsxVdp *vdp, u64 ticks) {
                 !vdp->command_ticks_remaining) {
                 vdp->command_ticks_remaining =
                     vram_access_delay(
-                        vdp, vdp->vram_slot_phase, 1);
+                        vdp,
+                        (u16)(vdp->vram_frame_tick %
+                              V9938_TICKS_PER_LINE),
+                        1);
                 if (!vdp->command_ticks_remaining)
                     vdp->command_ticks_remaining = 1;
             }
@@ -2163,11 +2208,12 @@ static u32 screen8_colour(u8 colour) {
     return ((u32)red << 16) | ((u32)green << 8) | blue;
 }
 
-static void render_bitmap(MsxVdp *vdp, u8 mode) {
+static void render_bitmap(MsxVdp *vdp, u8 mode,
+                          unsigned first_y, unsigned limit_y) {
     unsigned page_y = bitmap_page_y(vdp, mode);
     unsigned vertical_scroll = vdp->registers[23];
 
-    for (unsigned y = 0; y < vdp->render_height; ++y) {
+    for (unsigned y = first_y; y < limit_y; ++y) {
         unsigned source_y = page_y + ((y + vertical_scroll) & 0xff);
         for (unsigned x = 0; x < vdp->render_width; ++x) {
             u8 colour = bitmap_pixel(vdp, mode, x, source_y);
@@ -2190,34 +2236,28 @@ static void render_bitmap(MsxVdp *vdp, u8 mode) {
     }
 }
 
-void vdp_render(MsxVdp *vdp) {
-    u8 backdrop;
-    u8 mode;
-    int sprites;
-
-    if (!vdp)
-        return;
-    mode = display_mode(vdp);
-    sprites = 0;
+static int render_sprite_mode(const MsxVdp *vdp, u8 mode) {
     switch (mode) {
         case 0x00: /* Graphics 1 */
         case 0x02: /* Multicolour */
         case 0x04: /* Graphics 2 */
-            sprites = 1;
-            break;
+            return 1;
         case 0x06: /* Undocumented Multicolour/Graphics 2 combination. */
-            sprites = vdp->type == MSX_VDP_TMS9918 ? 1 : 0;
-            break;
+            return vdp->type == MSX_VDP_TMS9918 ? 1 : 0;
         case 0x08: /* SCREEN 4 */
         case 0x0c: /* SCREEN 5 */
         case 0x10: /* SCREEN 6 */
         case 0x14: /* SCREEN 7 */
         case 0x1c: /* SCREEN 8 */
-            sprites = vdp->type == MSX_VDP_V9938 ? 2 : 0;
-            break;
+            return vdp->type == MSX_VDP_V9938 ? 2 : 0;
         default:
-            break;
+            return 0;
     }
+}
+
+static void configure_render_geometry(MsxVdp *vdp) {
+    u8 mode = display_mode(vdp);
+
     if (vdp->type == MSX_VDP_V9938 &&
         (mode == 0x08 || mode == 0x0c || mode == 0x10 ||
          mode == 0x14 || mode == 0x1c)) {
@@ -2231,32 +2271,80 @@ void vdp_render(MsxVdp *vdp) {
         vdp->render_width = MSX1_VIDEO_W;
         vdp->render_height = MSX1_VIDEO_H;
     }
-    backdrop = vdp->registers[7] & 0x0f;
-    for (size_t i = 0;
-         i < vdp->render_width * vdp->render_height; ++i)
-        vdp->pixels[i] = palette_colour(vdp, backdrop);
+}
 
+static void render_line_range(MsxVdp *vdp, unsigned first_y,
+                              unsigned limit_y) {
+    u8 mode = display_mode(vdp);
+    u8 backdrop = vdp->registers[7] & 0x0f;
+    int sprites = render_sprite_mode(vdp, mode);
+
+    if (limit_y > vdp->render_height)
+        limit_y = vdp->render_height;
+    if (first_y >= limit_y)
+        return;
+    for (unsigned y = first_y; y < limit_y; ++y)
+        for (unsigned x = 0; x < vdp->render_width; ++x)
+            vdp->pixels[y * vdp->render_width + x] =
+                palette_colour(vdp, backdrop);
     if (!(vdp->registers[1] & 0x40))
         return;
     if (vdp->type == MSX_VDP_V9938 &&
         (mode == 0x0c || mode == 0x10 ||
          mode == 0x14 || mode == 0x1c)) {
-        render_bitmap(vdp, mode);
+        render_bitmap(vdp, mode, first_y, limit_y);
     } else if (vdp->registers[1] & 0x10) {
-        render_text(vdp);
+        render_text(vdp, first_y, limit_y);
         return;
     } else if (mode == 0x04 || mode == 0x08)
-        render_graphics_2(vdp);
+        render_graphics_2(vdp, first_y, limit_y);
     else if (mode == 0x02)
-        render_multicolour(vdp);
+        render_multicolour(vdp, first_y, limit_y);
     else
-        render_graphics_1(vdp);
+        render_graphics_1(vdp, first_y, limit_y);
 
     if (vdp->type == MSX_VDP_V9938 &&
         (vdp->registers[8] & 0x02))
         return;
     if (sprites == 1)
-        render_sprites_mode1(vdp);
+        render_sprites_mode1(vdp, first_y, limit_y);
     else if (sprites == 2)
-        render_sprites_mode2(vdp, mode);
+        render_sprites_mode2(
+            vdp, mode, first_y, limit_y);
+}
+
+static void render_to_line(MsxVdp *vdp, unsigned limit_y) {
+    if (limit_y > vdp->render_height)
+        limit_y = vdp->render_height;
+    if (limit_y <= vdp->rendered_lines)
+        return;
+    render_line_range(vdp, vdp->rendered_lines, limit_y);
+    vdp->rendered_lines = limit_y;
+}
+
+static void render_flush_completed(MsxVdp *vdp) {
+    unsigned line;
+    unsigned line_phase;
+    unsigned completed;
+
+    if (!vdp || vdp->type != MSX_VDP_V9938 ||
+        !command_has_clock(vdp))
+        return;
+    line = vdp->vram_frame_tick / V9938_TICKS_PER_LINE;
+    line_phase =
+        vdp->vram_frame_tick % V9938_TICKS_PER_LINE;
+    if (line < vdp->render_line_zero)
+        return;
+    completed = line - vdp->render_line_zero;
+    if (line_phase >= v9938_right_border(vdp))
+        ++completed;
+    render_to_line(vdp, completed);
+}
+
+void vdp_render(MsxVdp *vdp) {
+    if (!vdp)
+        return;
+    configure_render_geometry(vdp);
+    vdp->rendered_lines = 0;
+    render_to_line(vdp, vdp->render_height);
 }

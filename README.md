@@ -74,6 +74,10 @@ available on as many SDL3-supported systems as practical.
 - V9938 SCREEN 5 through SCREEN 8 rendering, including 256/512-dot widths,
   192/212-line output, display-page selection, vertical scrolling, packed and
   planar VRAM layouts, palette transparency, and SCREEN 8 fixed colours.
+- Progressive V9938 frame rendering at completed-scanline granularity. Timed
+  CPU/command VRAM writes and mid-frame palette, backdrop, page, scroll, and
+  display-enable changes preserve rows already fetched by the beam and affect
+  only the remaining display rows.
 - V9938 POINT, PSET, SRCH, LINE, LMMV, LMMM, LMCM, LMMC, HMMV, HMMM, YMMM,
   and HMMC commands, including logical operations and beam-driven S#2 CE/TR,
   S#7, and R#44 CPU-transfer handshakes. Preloaded LMMC/HMMC colours and
@@ -99,8 +103,8 @@ available on as many SDL3-supported systems as practical.
   defaults, and Kana LED output. Joystick and mouse signals are not connected
   yet.
 - Explicit `--bios`, `--logo`, `--subrom`, `--disk-rom`, and `--cart`
-  loaders, plus deterministic C-BIOS, NMS 8250 firmware, and optional MSX2
-  diagnostic-cartridge checkpoints below SDL.
+  loaders, plus deterministic C-BIOS, standalone MSX-DIAG BIOS, NMS 8250
+  firmware, and optional MSX2 diagnostic-cartridge checkpoints below SDL.
 - Reserved Nextor-kernel, Sunrise IDE, and raw hard-disk surfaces, clearly
   identified as unimplemented device and loader stubs.
 - On-screen and console notifications, screenshots, pause, reset, and
@@ -240,6 +244,21 @@ the 1,500-frame cartridge handoff and menu regression:
 MSX_NMS8250_DIR=ROMS MSX_DIAG_ROM=ROMS/diag.rom make check
 ```
 
+The separate `msxdiag.rom` built by the sibling `../msx-diag` source tree is
+a replacement MSX1 BIOS, not a cartridge. Build and boot it with:
+
+```sh
+make -C ../msx-diag
+./1983 --model msx1 --region pal --bios ../msx-diag/msxdiag.rom
+```
+
+Its optional 300-frame self-test and menu checkpoint can be included without
+copying the GPL-3.0 diagnostic source or generated ROM into this repository:
+
+```sh
+MSX_DIAG_BIOS_ROM=../msx-diag/msxdiag.rom make check
+```
+
 The current command line deliberately uses explicit firmware paths. The
 planned Philips NMS 8250 profile will first search the user's existing
 openMSX ROM pool at `~/.openMSX/share/systemroms`, then any configured
@@ -316,7 +335,7 @@ currently supported settings.
 | CPU | Z80 instruction set, interrupts, and cycle-aware execution (initial core integrated) |
 | Machine architecture | Primary slots and linear ROM/RAM devices implemented; NMS 8250 secondary slots and internal 128 KB mapper implemented |
 | MSX video | TMS9918-family pattern modes, sprite mode 1, status flags, limits, collisions, and interrupts implemented; cycle-level timing refinement planned |
-| MSX2 video | V9938 registers, beam-timed VR/HR status, R#19/S#1 scanline interrupts, progressively timed drawing commands, contended CPU VRAM access, palette, 128 KB VRAM, SCREEN 5-8 bitmap rendering, and sprite mode 2 implemented; advanced scrolling and mid-scanline rendering planned |
+| MSX2 video | V9938 registers, beam-timed VR/HR status, R#19/S#1 scanline interrupts, progressively timed drawing commands, contended CPU VRAM access, scanline-progressive output, palette, 128 KB VRAM, SCREEN 5-8 bitmap rendering, and sprite mode 2 implemented; advanced scrolling and within-scanline pixel timing planned |
 | Audio | AY-3-8910/YM2149 PSG tone, noise, envelopes, DAC output, and SDL3 playback implemented; SCC and MSX-MUSIC planned as compatibility extensions |
 | Cartridges | Plain ROMs and common ASCII, Konami, and Konami SCC mapper families, with mapper override controls |
 | Cassette | CAS images and the standard BIOS cassette path |
@@ -360,7 +379,8 @@ does not silently break another.
    NMS 8250 reference profile. The V9938 CPU interface, SCREEN 5-8 renderer,
    sprite-mode-2 engine, synchronous command engine, MSX2 secondary slots,
    internal mapper, and RTC are in place, and vendor firmware launches a plain
-   cartridge; detailed mid-frame rendering remains. Then boot its
+   cartridge, with mid-frame changes committed progressively by scanline.
+   Then boot its
    user-supplied Nextor 2.1.1 Sunrise IDE ROM and the same raw hard-disk image
    used by `../geobench/tools/run_msx.sh`.
 5. Add commonly required sound and cartridge extensions, improve timing
