@@ -26,6 +26,8 @@ int main(void) {
     assert(config.joy_port_device[0] == JOY_PORT_JOYSTICK);
     assert(config.joy_port_device[1] == JOY_PORT_JOYSTICK);
     assert(!config.extra_hardware);
+    assert(!config.cassette_audible_monitor);
+    assert(!config.cassette_visual_monitor);
     assert(config_cartridge_extension_count(&config) == 0);
     assert(config_cartridge_slot_available(&config, 0));
     assert(config_cartridge_slot_available(&config, 1));
@@ -65,6 +67,9 @@ int main(void) {
              sizeof(config.cassette_path),
              "/tapes/software.cas");
     config.scc = true;
+    config.tinker = true;
+    config.cassette_audible_monitor = true;
+    config.cassette_visual_monitor = true;
     assert(config_cartridge_extension_count(&config) == 2);
     assert(strcmp(config_cartridge_slot_owner(&config, 0),
                   "Konami SCC") == 0);
@@ -89,6 +94,9 @@ int main(void) {
     assert(strcmp(loaded.cassette_path,
                   "/tapes/software.cas") == 0);
     assert(loaded.scc);
+    assert(loaded.tinker);
+    assert(loaded.cassette_audible_monitor);
+    assert(loaded.cassette_visual_monitor);
     assert(strcmp(loaded.bios_path,
                   "/roms/nms8250_basic-bios2.rom") == 0);
     assert(strcmp(loaded.logo_path, "/roms/cbios_logo.rom") == 0);

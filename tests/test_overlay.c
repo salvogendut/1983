@@ -183,7 +183,9 @@ static void test_vdp_presentation_geometry(void) {
 
 int main(void) {
     static const u8 cassette_image[] = {
-        0x1f, 0xa6, 0xde, 0xba, 0xcc, 0x13, 0x7d, 0x74, 0x01
+        0x1f, 0xa6, 0xde, 0xba, 0xcc, 0x13, 0x7d, 0x74,
+        0xea, 0xea, 0xea, 0xea, 0xea,
+        0xea, 0xea, 0xea, 0xea, 0xea, 0x1a
     };
     const char *editor_path = "tests/test-model-editor.tmp";
     const char *sunrise_rom_path = "tests/test-sunrise-rom.tmp";
@@ -461,6 +463,7 @@ int main(void) {
     overlay.dialog_ready = true;
     overlay_tick(&overlay);
     assert(msx_cassette_mounted(&msx));
+    assert(msx_cassette_file_type(&msx) == CASSETTE_FILE_ASCII);
     assert(strcmp(config.cassette_path, cassette_path) == 0);
     render_overlay(&display, &msx, &overlay);
     msx.cassette.position = 10;
@@ -525,6 +528,17 @@ int main(void) {
     assert(overlay.section == OVERLAY_MEDIA);
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
+    assert(overlay.row == 0);
+    for (int row = 0; row < 4; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.cassette_audible_monitor);
+    assert(msx.cassette_audible_monitor);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.cassette_visual_monitor);
+    for (int row = 0; row < 5; ++row)
+        send_key(&overlay, SDLK_UP);
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_RETURN);
     assert(overlay.state == OVERLAY_STATE_MODEL_LIST);

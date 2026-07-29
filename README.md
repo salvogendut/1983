@@ -156,12 +156,21 @@ Ctrl+Enter, F9, reset, or losing window focus releases capture.
 reveals Advanced.
 
 **Media > Cassette** inserts a standard `.cas` image and rewinds it. The
-row shows its transport state and elapsed/total time. Press R on that row to
-rewind and Delete to eject. Playback advances only while guest software
-turns on the cassette motor; the Tape LED follows that signal. With a
-compatible MSX BIOS, use its normal cassette commands such as `CLOAD`,
-`RUN "CAS:"`, or `BLOAD "CAS:",R`. Recording and sampled audio formats are
-not implemented yet.
+row shows its type, transport state, and elapsed/total time. Press R on that
+row to rewind and Delete to eject. Playback advances only while guest
+software turns on the cassette motor; the Tape LED follows that signal.
+1983 also identifies the appropriate BIOS command: use `RUN"CAS:"` for an
+ASCII tape, `BLOAD"CAS:",R` for a binary tape, or `CLOAD` followed by plain
+`RUN` for a tokenized BASIC tape. Rewind before trying a different command
+after an unsuccessful load, because the first attempt may have consumed
+part of the stream.
+
+With Tinker enabled, Advanced provides independent Cassette audible monitor
+and Cassette visual monitor toggles. The audible monitor mixes the data tone
+with PSG output. The translucent visual scope appears while the tape motor
+is running and shows the waveform, detected type, required command, and
+elapsed/total time. Recording and sampled audio formats are not implemented
+yet.
 
 Sunrise IDE, SCC, and MSX-MUSIC are cartridge-connected extensions. The
 first configured device reserves cartridge slot 2 and the second reserves

@@ -26,6 +26,51 @@ static size_t make_basic_cas(u8 *data, size_t capacity) {
     return position;
 }
 
+static size_t make_single_file_cas(u8 *data, size_t capacity,
+                                   u8 type) {
+    size_t position = 0;
+
+    assert(capacity >= 19);
+    memcpy(data + position, header, sizeof(header));
+    position += sizeof(header);
+    memset(data + position, type, 10);
+    position += 10;
+    data[position++] = 0x1a;
+    return position;
+}
+
+static void test_file_types_and_commands(void) {
+    static const struct {
+        u8 marker;
+        CassetteFileType type;
+        const char *name;
+        const char *command;
+    } cases[] = {
+        { 0xea, CASSETTE_FILE_ASCII, "ASCII", "RUN\"CAS:\"" },
+        { 0xd0, CASSETTE_FILE_BINARY, "binary", "BLOAD\"CAS:\",R" },
+        { 0xd3, CASSETTE_FILE_BASIC, "BASIC", "CLOAD, then RUN" },
+    };
+    u8 data[32];
+    Cassette cassette;
+
+    cassette_init(&cassette);
+    assert(cassette_file_type(&cassette) == CASSETTE_FILE_UNKNOWN);
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i) {
+        size_t size =
+            make_single_file_cas(data, sizeof(data), cases[i].marker);
+
+        assert(cassette_mount(&cassette, data, size, 0) == 0);
+        assert(cassette_file_type(&cassette) == cases[i].type);
+        assert(strcmp(cassette_file_type_name(cases[i].type),
+                      cases[i].name) == 0);
+        assert(strcmp(cassette_load_command(cases[i].type),
+                      cases[i].command) == 0);
+    }
+    cassette_eject(&cassette, 0);
+    assert(cassette_file_type(&cassette) == CASSETTE_FILE_UNKNOWN);
+    cassette_destroy(&cassette);
+}
+
 static void test_parser_and_waveform(void) {
     u8 data[64];
     size_t size = make_basic_cas(data, sizeof(data));
@@ -43,6 +88,7 @@ static void test_parser_and_waveform(void) {
     cassette_init(&cassette);
     assert(cassette_mount(&cassette, data, size, 0) == 0);
     assert(cassette_is_mounted(&cassette));
+    assert(cassette_file_type(&cassette) == CASSETTE_FILE_BASIC);
     assert(cassette.sample_count == expected);
     assert(cassette_duration_ms(&cassette) ==
            (u64)expected * 1000u / CASSETTE_SAMPLE_RATE);
@@ -75,6 +121,7 @@ static void test_timing_controls_and_atomic_mount(void) {
     assert(cassette_mount(&cassette, data, size, 100) == 0);
     mounted_samples = cassette.samples;
     mounted_count = cassette.sample_count;
+    assert(cassette_file_type(&cassette) == CASSETTE_FILE_BASIC);
 
     cassette_set_motor(&cassette, true, 100);
     assert(cassette_is_motor_on(&cassette));
@@ -96,6 +143,7 @@ static void test_timing_controls_and_atomic_mount(void) {
     assert(cassette.samples == mounted_samples);
     assert(cassette.sample_count == mounted_count);
     assert(cassette.position == CASSETTE_SAMPLE_RATE);
+    assert(cassette_file_type(&cassette) == CASSETTE_FILE_BASIC);
 
     cassette_rewind(&cassette, 100 + 2u * TEST_CPU_HZ);
     assert(cassette.position == 0);
@@ -125,6 +173,28 @@ static void test_timing_controls_and_atomic_mount(void) {
     cassette_destroy(&cassette);
 }
 
+static void test_monitor_waveform(void) {
+    u8 data[64];
+    size_t size = make_basic_cas(data, sizeof(data));
+    Cassette cassette;
+    s16 waveform[8];
+
+    cassette_init(&cassette);
+    assert(cassette_mount(&cassette, data, size, 0) == 0);
+    cassette_set_motor(&cassette, true, 0);
+    assert(cassette_monitor_sample(
+               &cassette, 2u * TEST_CPU_HZ) != 0);
+    assert(cassette_waveform_copy(
+               &cassette, 2u * TEST_CPU_HZ,
+               waveform, sizeof(waveform) / sizeof(waveform[0])) ==
+           sizeof(waveform) / sizeof(waveform[0]));
+    assert(waveform[sizeof(waveform) / sizeof(waveform[0]) - 1] != 0);
+    cassette_set_motor(&cassette, false, 2u * TEST_CPU_HZ);
+    assert(cassette_monitor_sample(
+               &cassette, 3u * TEST_CPU_HZ) == 0);
+    cassette_destroy(&cassette);
+}
+
 static void test_file_mount(void) {
     const char *path = "test-cassette-image.tmp";
     u8 data[64];
@@ -148,8 +218,10 @@ static void test_file_mount(void) {
 }
 
 int main(void) {
+    test_file_types_and_commands();
     test_parser_and_waveform();
     test_timing_controls_and_atomic_mount();
+    test_monitor_waveform();
     test_file_mount();
     puts("cassette parser, waveform, and transport tests passed");
     return 0;

@@ -142,11 +142,19 @@ Transport advances against emulated Z80 time only while the motor is on, so
 headless and unthrottled runs remain deterministic. Reset stops the motor
 without ejecting or rewinding the tape.
 
-Media > Cassette loads a `.cas` file atomically, displays stopped/playing/end
-state and elapsed time, supports R to rewind and Delete to eject, and persists
-the selected path. `--cassette PATH` provides the same startup mount. The
-Tape LED reports guest motor activity. Recording, WAV input, seeking, and
-audio monitoring are not implemented.
+Media > Cassette loads a `.cas` file atomically, retains the first file's
+ASCII, binary, or tokenized BASIC type, displays stopped/playing/end state
+and elapsed time, supports R to rewind and Delete to eject, and persists the
+selected path. The detected type selects the `RUN"CAS:"`, `BLOAD"CAS:",R`,
+or `CLOAD` followed by `RUN` hint. `--cassette PATH` provides the same
+startup mount.
+
+The Tape LED reports guest motor activity. Tinker exposes independent
+audible and visual monitor settings in Advanced. The audible path samples
+the synthesized waveform in emulated CPU time and mixes it into the
+44.1 kHz PSG stream. The visual monitor copies the waveform immediately
+behind the tape head into a translucent oscilloscope with transport time and
+command guidance. Recording, WAV input, and seeking are not implemented.
 
 ## Sunrise IDE and ATA storage
 

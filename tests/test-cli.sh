@@ -52,10 +52,11 @@ if ./1983 --config /dev/null --cassette missing.cas >"$log" 2>&1; then
 fi
 grep -q "cannot load MSX CAS cassette image" "$log"
 
-printf '\037\246\336\272\314\023\175\164\001' >"$cassette"
+printf '\037\246\336\272\314\023\175\164\352\352\352\352\352\352\352\352\352\352\032' >"$cassette"
 ./1983 --config /dev/null --cassette "$cassette" --headless \
     --unthrottled --exit-after 0 >"$log" 2>&1
 grep -q "Cassette inserted:" "$log"
+grep -q 'ASCII; RUN"CAS:"' "$log"
 
 ./1983 --help >"$log"
 grep -q -- "--model NAME" "$log"

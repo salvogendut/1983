@@ -52,5 +52,8 @@ kanji_rom = false
 
 [advanced]
 tinker = false
+# These monitors are active only while Tinker is enabled.
+cassette_audible_monitor = false
+cassette_visual_monitor = false
 debug = false
 notifications = screen

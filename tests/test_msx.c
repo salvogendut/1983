@@ -602,6 +602,36 @@ static void test_cassette_ppi_and_psg_path(void) {
     msx_destroy(&msx);
 }
 
+static void test_cassette_audible_monitor_mix(void) {
+    static const u8 cas[] = {
+        0x1f, 0xa6, 0xde, 0xba, 0xcc, 0x13, 0x7d, 0x74,
+        0xea, 0xea, 0xea, 0xea, 0xea,
+        0xea, 0xea, 0xea, 0xea, 0xea, 0x1a
+    };
+    u8 bios[MSX_BIOS_SIZE] = { 0 };
+    MsxMachine msx;
+    bool heard_tape = false;
+
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(msx_install_bios(&msx, bios, sizeof(bios)) == 0);
+    assert(cassette_mount(
+               &msx.cassette, cas, sizeof(cas), msx.cycles) == 0);
+    msx.cassette.position = CASSETTE_SAMPLE_RATE * 2u;
+    cassette_set_motor(&msx.cassette, true, msx.cycles);
+    msx_set_cassette_audible_monitor(&msx, true);
+    msx_run_frame(&msx);
+    for (size_t i = 0; i < msx.audio_sample_count; ++i)
+        if (msx.audio_samples[i] != 0)
+            heard_tape = true;
+    assert(heard_tape);
+
+    msx_set_cassette_audible_monitor(&msx, false);
+    msx_run_frame(&msx);
+    for (size_t i = 0; i < msx.audio_sample_count; ++i)
+        assert(msx.audio_samples[i] == 0);
+    msx_destroy(&msx);
+}
+
 static void write_psg_register(MsxMachine *msx, u8 reg, u8 value) {
     msx_io_write(msx, 0xa0, reg);
     msx_io_write(msx, 0xa1, value);
@@ -1136,6 +1166,7 @@ int main(void) {
     test_keyboard_matrix_and_ppi();
     test_dual_joystick_psg_ports();
     test_cassette_ppi_and_psg_path();
+    test_cassette_audible_monitor_mix();
     test_msx_mouse_psg_protocol();
     test_psg_ports_and_cycle_timed_audio();
     test_cbios_checkpoint_if_available();

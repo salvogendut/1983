@@ -346,6 +346,16 @@ static void advance_machine(MsxMachine *msx, int cycles) {
 
         psg_render(&msx->psg, sample, 1,
                    MSX_PSG_CLOCK_HZ, MSX_AUDIO_SAMPLE_RATE);
+        if (msx->cassette_audible_monitor) {
+            int mixed = (int)*sample +
+                cassette_monitor_sample(&msx->cassette, msx->cycles);
+
+            if (mixed > 32767)
+                mixed = 32767;
+            else if (mixed < -32768)
+                mixed = -32768;
+            *sample = (s16)mixed;
+        }
         if (msx->audio_sample_count < MSX_AUDIO_FRAME_CAPACITY)
             ++msx->audio_sample_count;
         msx->audio_sample_cycles -= MSX_CPU_HZ;
@@ -980,6 +990,25 @@ u64 msx_cassette_position_ms(MsxMachine *msx) {
 u64 msx_cassette_duration_ms(const MsxMachine *msx) {
     return msx
          ? cassette_duration_ms(&msx->cassette)
+         : 0;
+}
+
+CassetteFileType msx_cassette_file_type(const MsxMachine *msx) {
+    return msx
+         ? cassette_file_type(&msx->cassette)
+         : CASSETTE_FILE_UNKNOWN;
+}
+
+void msx_set_cassette_audible_monitor(MsxMachine *msx, bool enabled) {
+    if (msx)
+        msx->cassette_audible_monitor = enabled;
+}
+
+size_t msx_cassette_waveform_copy(MsxMachine *msx, s16 *samples,
+                                  size_t capacity) {
+    return msx
+         ? cassette_waveform_copy(
+               &msx->cassette, msx->cycles, samples, capacity)
          : 0;
 }
 

@@ -11,7 +11,7 @@ complete MSX hardware specification.
 | `src/main.c` | Process lifetime, command line, SDL event loop, and shared function-key bindings |
 | `src/ata.*` | Host-independent ATA task file, IDENTIFY/read commands, and read-only raw-image lifetime |
 | `src/cartridge.*` | Host-independent cartridge image ownership, mapper detection, bank registers, and SCC register window |
-| `src/cassette.*` | Host-independent MSX CAS parser, waveform synthesis, motor-controlled transport, and comparator |
+| `src/cassette.*` | Host-independent MSX CAS parser, type detection, waveform synthesis, motor-controlled transport, comparator, and monitor signal |
 | `src/audio.*` | SDL3 audio-stream lifetime and host sample submission |
 | `src/config.*` | Defaults, normalization, persistent settings, and platform-specific configuration path |
 | `src/display.*` | SDL window and renderer, fixed logical canvas, framebuffer presentation, footer, and screenshots |
@@ -32,7 +32,7 @@ complete MSX hardware specification.
 | `tests/test_sunrise.c` | Sunrise banking, overlay decode, data latch, master/slave, soft reset, and disk lifetime |
 | `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/Nextor boot checks |
 | `tests/test_cartridge.c` | Linear, ASCII8/16, Konami, Konami SCC, detection, bank wrapping, reset, and eject checks |
-| `tests/test_cassette.c` | CAS parsing, waveform layout, emulated-time transport, reset, rewind, eject, and conservative mounts |
+| `tests/test_cassette.c` | CAS type and command detection, waveform layout and monitor sampling, emulated-time transport, reset, rewind, eject, and conservative mounts |
 | `tests/test_config.c` | Persistent cartridge, cassette, mapper, extension, and Joy Port settings |
 | `tests/test_gamepad.c` | SDL-independent direction, trigger, dead-zone, and opposing-input mapping |
 | `tests/test_models.c` | Machine-catalogue parsing, hardware mapping, relative paths, and invalid-entry filtering |

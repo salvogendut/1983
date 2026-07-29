@@ -22,15 +22,9 @@ typedef struct {
     size_t count;
     size_t capacity;
     size_t data_bytes;
+    CassetteFileType first_file_type;
     bool failed;
 } CassetteBuilder;
-
-typedef enum {
-    CAS_FILE_UNKNOWN = 0,
-    CAS_FILE_ASCII,
-    CAS_FILE_BINARY,
-    CAS_FILE_BASIC
-} CasFileType;
 
 static bool bytes_equal(const u8 *data, const u8 *pattern,
                         size_t size) {
@@ -110,21 +104,21 @@ static void builder_byte(CassetteBuilder *builder, u8 value) {
     ++builder->data_bytes;
 }
 
-static CasFileType cas_file_type(const u8 *data, size_t size,
-                                 size_t position) {
+static CassetteFileType detect_file_type(const u8 *data, size_t size,
+                                         size_t position) {
     u8 value;
 
     if (position > size || size - position < 10)
-        return CAS_FILE_UNKNOWN;
+        return CASSETTE_FILE_UNKNOWN;
     value = data[position];
     for (unsigned i = 1; i < 10; ++i)
         if (data[position + i] != value)
-            return CAS_FILE_UNKNOWN;
+            return CASSETTE_FILE_UNKNOWN;
     switch (value) {
-        case 0xea: return CAS_FILE_ASCII;
-        case 0xd0: return CAS_FILE_BINARY;
-        case 0xd3: return CAS_FILE_BASIC;
-        default:   return CAS_FILE_UNKNOWN;
+        case 0xea: return CASSETTE_FILE_ASCII;
+        case 0xd0: return CASSETTE_FILE_BINARY;
+        case 0xd3: return CASSETTE_FILE_BASIC;
+        default:   return CASSETTE_FILE_UNKNOWN;
     }
 }
 
@@ -150,7 +144,7 @@ static int build_msx_cas(CassetteBuilder *builder, const u8 *data,
     bool found_header = false;
 
     while (position < size) {
-        CasFileType type;
+        CassetteFileType type;
 
         if (!is_header_at(data, size, position)) {
             ++position;
@@ -160,9 +154,12 @@ static int build_msx_cas(CassetteBuilder *builder, const u8 *data,
         position += sizeof(cas_header);
         builder_repeat(builder, CASSETTE_LONG_SILENCE, 0);
         builder_header(builder, CASSETTE_LONG_HEADER_BITS);
-        type = cas_file_type(data, size, position);
+        type = detect_file_type(data, size, position);
+        if (builder->first_file_type == CASSETTE_FILE_UNKNOWN &&
+            type != CASSETTE_FILE_UNKNOWN)
+            builder->first_file_type = type;
 
-        if (type == CAS_FILE_ASCII) {
+        if (type == CASSETTE_FILE_ASCII) {
             (void)builder_data(builder, data, size, &position);
             while (is_header_at(data, size, position)) {
                 bool eof;
@@ -175,8 +172,8 @@ static int build_msx_cas(CassetteBuilder *builder, const u8 *data,
                 if (eof)
                     break;
             }
-        } else if (type == CAS_FILE_BINARY ||
-                   type == CAS_FILE_BASIC) {
+        } else if (type == CASSETTE_FILE_BINARY ||
+                   type == CASSETTE_FILE_BASIC) {
             (void)builder_data(builder, data, size, &position);
             if (is_header_at(data, size, position)) {
                 builder_repeat(builder, CASSETTE_SHORT_SILENCE, 0);
@@ -278,6 +275,7 @@ int cassette_mount(Cassette *cassette, const u8 *data, size_t size,
     cassette->cycle_fraction = 0;
     cassette->last_cycle = current_cycle;
     cassette->mounted = true;
+    cassette->file_type = builder.first_file_type;
     return 0;
 }
 
@@ -328,6 +326,7 @@ void cassette_eject(Cassette *cassette, u64 current_cycle) {
     cassette->cycle_fraction = 0;
     cassette->last_cycle = current_cycle;
     cassette->mounted = false;
+    cassette->file_type = CASSETTE_FILE_UNKNOWN;
 }
 
 void cassette_rewind(Cassette *cassette, u64 current_cycle) {
@@ -402,4 +401,61 @@ u64 cassette_duration_ms(const Cassette *cassette) {
         return 0;
     return (u64)cassette->sample_count * 1000u /
            CASSETTE_SAMPLE_RATE;
+}
+
+CassetteFileType cassette_file_type(const Cassette *cassette) {
+    return cassette && cassette->mounted
+         ? cassette->file_type : CASSETTE_FILE_UNKNOWN;
+}
+
+const char *cassette_file_type_name(CassetteFileType type) {
+    switch (type) {
+        case CASSETTE_FILE_ASCII:  return "ASCII";
+        case CASSETTE_FILE_BINARY: return "binary";
+        case CASSETTE_FILE_BASIC:  return "BASIC";
+        case CASSETTE_FILE_UNKNOWN:
+            break;
+    }
+    return "unknown";
+}
+
+const char *cassette_load_command(CassetteFileType type) {
+    switch (type) {
+        case CASSETTE_FILE_ASCII:  return "RUN\"CAS:\"";
+        case CASSETTE_FILE_BINARY: return "BLOAD\"CAS:\",R";
+        case CASSETTE_FILE_BASIC:  return "CLOAD, then RUN";
+        case CASSETTE_FILE_UNKNOWN:
+            break;
+    }
+    return "use the program's documented cassette command";
+}
+
+s16 cassette_monitor_sample(Cassette *cassette, u64 current_cycle) {
+    if (!cassette)
+        return 0;
+    cassette_sync(cassette, current_cycle);
+    if (!cassette->mounted || !cassette->motor ||
+        cassette->position >= cassette->sample_count)
+        return 0;
+    return (s16)((int)cassette->samples[cassette->position] * 20);
+}
+
+size_t cassette_waveform_copy(Cassette *cassette, u64 current_cycle,
+                              s16 *samples, size_t capacity) {
+    size_t available;
+    size_t count;
+    size_t start;
+
+    if (!cassette || !samples || capacity == 0)
+        return 0;
+    cassette_sync(cassette, current_cycle);
+    if (!cassette->mounted || cassette->sample_count == 0)
+        return 0;
+    available = cassette->position < cassette->sample_count
+              ? cassette->position + 1u : cassette->sample_count;
+    count = available < capacity ? available : capacity;
+    start = available - count;
+    for (size_t i = 0; i < count; ++i)
+        samples[i] = (s16)((int)cassette->samples[start + i] * 258);
+    return count;
 }

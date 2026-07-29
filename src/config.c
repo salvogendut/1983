@@ -266,6 +266,12 @@ void config_load(Config *config, const char *path) {
             config->crt_scanlines = atoi(value);
         else if (strcmp(key, "audio_volume") == 0)
             config->audio_volume = atoi(value);
+        else if (strcmp(key, "cassette_audible_monitor") == 0)
+            config->cassette_audible_monitor =
+                parse_bool(value, config->cassette_audible_monitor);
+        else if (strcmp(key, "cassette_visual_monitor") == 0)
+            config->cassette_visual_monitor =
+                parse_bool(value, config->cassette_visual_monitor);
         else if (strcmp(key, "main_input") == 0)
             config->main_input =
                 parse_input_port(value, config->main_input);
@@ -405,6 +411,10 @@ int config_save(const Config *config) {
     fprintf(file, "kanji_rom = %s\n\n", bool_name(config->kanji_rom));
     fprintf(file, "[advanced]\n");
     fprintf(file, "tinker = %s\n", bool_name(config->tinker));
+    fprintf(file, "cassette_audible_monitor = %s\n",
+            bool_name(config->cassette_audible_monitor));
+    fprintf(file, "cassette_visual_monitor = %s\n",
+            bool_name(config->cassette_visual_monitor));
     fprintf(file, "debug = %s\n", bool_name(config->debug));
     fprintf(file, "notifications = %s\n",
             config->notifications == NOTIFY_MODE_SCREEN ? "screen" :

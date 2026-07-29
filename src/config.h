@@ -48,6 +48,8 @@ typedef struct {
     bool kanji_rom;
 
     bool       tinker;
+    bool       cassette_audible_monitor;
+    bool       cassette_visual_monitor;
     bool       debug;
     NotifyMode notifications;
 

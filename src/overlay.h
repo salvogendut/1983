@@ -90,4 +90,5 @@ void overlay_init(Overlay *overlay, Config *config,
                   MsxMachine *msx);
 bool overlay_handle_event(Overlay *overlay, const SDL_Event *event);
 void overlay_tick(Overlay *overlay);
+void overlay_render_cassette_scope(const Overlay *overlay);
 void overlay_render(const Overlay *overlay);

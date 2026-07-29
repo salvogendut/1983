@@ -603,8 +603,14 @@ int main(int argc, char **argv) {
                msx_sunrise_slot(&msx) + 1,
                msx_sunrise_disk_mounted(&msx)
                ? ", raw disk mounted read-only" : ", no disk mounted");
-    if (msx_cassette_mounted(&msx))
-        printf("Cassette inserted: %s\n", config.cassette_path);
+    if (msx_cassette_mounted(&msx)) {
+        CassetteFileType type = msx_cassette_file_type(&msx);
+
+        printf("Cassette inserted: %s (%s; %s)\n",
+               config.cassette_path,
+               cassette_file_type_name(type),
+               cassette_load_command(type));
+    }
 
     next_frame_ns = SDL_GetTicksNS();
     paced_frame_hz = msx.frame_hz;
@@ -804,6 +810,7 @@ int main(int argc, char **argv) {
         display_draw(&display, &msx);
         draw_debug(&config, &msx, &display);
         draw_paused(&msx, &display);
+        overlay_render_cassette_scope(&overlay);
         overlay_render(&overlay);
         notify_render(display.renderer, DISPLAY_SCREEN_H);
         display_present(&display, &msx);

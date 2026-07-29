@@ -125,6 +125,7 @@ typedef struct {
     s16 audio_samples[MSX_AUDIO_FRAME_CAPACITY];
     size_t audio_sample_count;
     u64 audio_sample_cycles;
+    bool cassette_audible_monitor;
     int bus_ticked_in_step;
 
     u64 cycles;
@@ -180,6 +181,10 @@ bool msx_cassette_rolling(MsxMachine *msx);
 bool msx_cassette_at_end(MsxMachine *msx);
 u64  msx_cassette_position_ms(MsxMachine *msx);
 u64  msx_cassette_duration_ms(const MsxMachine *msx);
+CassetteFileType msx_cassette_file_type(const MsxMachine *msx);
+void msx_set_cassette_audible_monitor(MsxMachine *msx, bool enabled);
+size_t msx_cassette_waveform_copy(MsxMachine *msx, s16 *samples,
+                                  size_t capacity);
 
 int msx_install_bios(MsxMachine *msx, const u8 *data, size_t size);
 int msx_install_logo(MsxMachine *msx, const u8 *data, size_t size);

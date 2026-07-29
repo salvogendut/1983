@@ -7,6 +7,13 @@
 
 #define CASSETTE_SAMPLE_RATE 14976u
 
+typedef enum {
+    CASSETTE_FILE_UNKNOWN = 0,
+    CASSETTE_FILE_ASCII,
+    CASSETTE_FILE_BINARY,
+    CASSETTE_FILE_BASIC
+} CassetteFileType;
+
 typedef struct {
     s8 *samples;
     size_t sample_count;
@@ -16,6 +23,7 @@ typedef struct {
     bool mounted;
     bool motor;
     bool output;
+    CassetteFileType file_type;
 } Cassette;
 
 void cassette_init(Cassette *cassette);
@@ -41,3 +49,9 @@ bool cassette_is_rolling(Cassette *cassette, u64 current_cycle);
 bool cassette_at_end(Cassette *cassette, u64 current_cycle);
 u64 cassette_position_ms(Cassette *cassette, u64 current_cycle);
 u64 cassette_duration_ms(const Cassette *cassette);
+CassetteFileType cassette_file_type(const Cassette *cassette);
+const char *cassette_file_type_name(CassetteFileType type);
+const char *cassette_load_command(CassetteFileType type);
+s16 cassette_monitor_sample(Cassette *cassette, u64 current_cycle);
+size_t cassette_waveform_copy(Cassette *cassette, u64 current_cycle,
+                              s16 *samples, size_t capacity);
