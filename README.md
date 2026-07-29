@@ -32,7 +32,7 @@ SDL3 allows.
 - Complete international MSX keyboard matrix.
 - Familiar F9 overlay, function-key controls, status LEDs, notifications,
   screenshots, fullscreen, and integer scaling.
-- Cartridge I/II presence LEDs, with split IDE and network activity forms.
+- Cartridge I/II presence LEDs, with a split network-access form.
 - Sunrise IDE cartridge emulation, read-only raw ATA images, IDE activity,
   and Nextor boot.
 - Headless execution and deterministic component and firmware tests.

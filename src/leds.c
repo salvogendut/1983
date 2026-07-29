@@ -26,8 +26,6 @@ static const LedPalette palette[LED_COUNT] = {
     [LED_IDE]         = { 55, 45,  8, 255, 220, 40 },
 };
 
-static const LedPalette cartridge_ide_activity =
-    { 18, 60, 18, 80, 255, 80 };
 static const LedPalette cartridge_network_activity =
     { 48, 48, 48, 245, 245, 245 };
 
@@ -201,10 +199,6 @@ void leds_render(SDL_Renderer *renderer, int x, int y, int w, int h) {
         if (cartridge_slot >= 0 &&
             cartridges[cartridge_slot].type !=
                 LED_CARTRIDGE_STANDARD) {
-            const LedPalette *activity_colors =
-                cartridges[cartridge_slot].type == LED_CARTRIDGE_IDE
-                ? &cartridge_ide_activity
-                : &cartridge_network_activity;
             float half_w = led_w * 0.5f;
             bool access =
                 cartridges[cartridge_slot].activity ||
@@ -214,7 +208,8 @@ void leds_render(SDL_Renderer *renderer, int x, int y, int w, int h) {
             fill_palette(renderer, cursor_x, led_y, half_w, led_h,
                          colors, cartridges[cartridge_slot].present);
             fill_palette(renderer, cursor_x + half_w, led_y,
-                         led_w - half_w, led_h, activity_colors, access);
+                         led_w - half_w, led_h,
+                         &cartridge_network_activity, access);
         } else {
             fill_palette(renderer, cursor_x, led_y, led_w, led_h,
                          colors, active);
@@ -234,11 +229,8 @@ void leds_render(SDL_Renderer *renderer, int x, int y, int w, int h) {
             if (activity_half) {
                 snprintf(
                     hover_label, sizeof(hover_label),
-                    "Cartridge %s %s",
-                    cartridge_slot == 0 ? "I" : "II",
-                    cartridges[cartridge_slot].type ==
-                        LED_CARTRIDGE_IDE
-                    ? "IDE activity" : "network access");
+                    "Cartridge %s network access",
+                    cartridge_slot == 0 ? "I" : "II");
             } else {
                 snprintf(hover_label, sizeof(hover_label), "%s",
                          label_for((LedId)i));

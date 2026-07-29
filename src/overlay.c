@@ -424,12 +424,9 @@ static void configure_leds(const Config *config, const MsxMachine *msx) {
     for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
         const char *owner =
             config_cartridge_slot_owner(config, slot);
-        LedCartridgeType type =
-            owner && strcmp(owner, "Sunrise IDE") == 0
-            ? LED_CARTRIDGE_IDE : LED_CARTRIDGE_STANDARD;
 
         leds_set_cartridge(
-            slot, type,
+            slot, LED_CARTRIDGE_STANDARD,
             owner != NULL || msx_get_cartridge(msx, slot)->loaded);
     }
     leds_set_enabled(LED_CAPS, true);

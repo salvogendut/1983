@@ -20,7 +20,6 @@ typedef enum {
 
 typedef enum {
     LED_CARTRIDGE_STANDARD = 0,
-    LED_CARTRIDGE_IDE,
     LED_CARTRIDGE_NETWORK
 } LedCartridgeType;
 
