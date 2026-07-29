@@ -105,7 +105,7 @@ These notes were cross-checked against the openMSX 21.0 machine definitions
 and CPU/input implementations. The primary-slot, complete international
 keyboard matrix, PPI register, VDP-port, and PSG-register surfaces above are
 now present. The NMS 8250 secondary slots, internal mapper registers, MSX2
-RTC, V9938 bitmap modes, and synchronous command engine are also present;
+RTC, V9938 bitmap modes, and beam-timed command handshakes are also present;
 V9938 VR/HR status follows the emulated beam and the VDP IRQ is level
 sensitive. V9938 sprite mode 2 is rendered in SCREEN 4 through SCREEN 8.
 Alternate national keyboard matrices, joystick/mouse PSG inputs, and
@@ -190,6 +190,32 @@ The match position is converted from the V9938's 1368 ticks per scanline to
 the current CPU-frame budget, so normal PAL/NTSC execution does not assume
 one CPU cycle per VDP tick. This is functional interrupt timing; VRAM access
 slot contention and mid-scanline renderer changes remain later timing work.
+
+## V9938 command timing
+
+The complete V9938 bitmap-command set retains its functional renderer and now
+runs an independent command clock from the emulated beam. Autonomous
+operations leave S#2 CE asserted for an operation-dependent interval derived
+from the measured V9938 command spacings: POINT/PSET and SRCH/LINE use their
+read/write costs, logical moves account for pixel read-modify-write work, and
+high-speed moves account for packed-byte transfers and row overhead.
+
+LMMC and HMMC clear TR after accepting R#44, then raise it again when the
+next transfer interval expires. A write made while TR is low remains pending
+and is consumed at that ready event, preserving the Sub-ROM's preloaded-color
+ordering. LMCM similarly clears TR after an S#7 read and exposes the next
+pixel only after its VRAM-read interval. CE remains active through the final
+transfer interval. Starting another R#46 command cancels the old scheduled
+completion.
+
+Command time is stored in V9938 ticks and advanced with fixed-point conversion
+from the current PAL/NTSC CPU-frame budget, including commands which span a
+frame boundary. For this first timing pass, the command's VRAM result is still
+calculated at issue time; progressive per-access mutation and contention with
+display, sprite, and CPU VRAM slots remain future work. The operation spacings
+and that later contention pass follow openMSX's measured
+[V9938 VRAM timings](https://openmsx.org/vdp-vram-timing/vdp-timing.html)
+and [part II](https://openmsx.org/vdp-vram-timing/vdp-timing-2.html).
 
 ## PSG audio
 

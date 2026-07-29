@@ -1321,6 +1321,145 @@ static void test_v9938_command_transfers(void) {
     assert(!(vdp.status2 & 0x81));
 }
 
+static void test_v9938_command_timing(void) {
+    enum {
+        TICKS_PER_LINE = 1368,
+        PAL_LINES = 313,
+        PAL_FRAME_TICKS = TICKS_PER_LINE * PAL_LINES,
+    };
+    MsxVdp vdp;
+
+    setup_v9938_bitmap(&vdp, 0x06); /* SCREEN 5 */
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+
+    /*
+     * PSET's functional result is available immediately, but CE remains
+     * active for its beam-scheduled read/modify/write interval.
+     */
+    write_command_word(&vdp, 36, 1);
+    write_command_word(&vdp, 38, 0);
+    write_control_register(&vdp, 44, 6);
+    write_control_register(&vdp, 46, 0x50);
+    assert(vdp.vram[0] == 0x06);
+    assert(vdp.status2 & 0x01);
+    assert(vdp.registers[46] == 0x50);
+    vdp_advance(&vdp, 47);
+    assert(vdp.status2 & 0x01);
+    vdp_advance(&vdp, 1);
+    assert(!(vdp.status2 & 0x01));
+    assert(vdp.registers[46] == 0);
+
+    /* A new R#46 command aborts the old command's completion event. */
+    write_control_register(&vdp, 46, 0x50);
+    assert(vdp.command_ticks_remaining == 48);
+    write_command_word(&vdp, 32, 1);
+    write_command_word(&vdp, 34, 0);
+    write_control_register(&vdp, 46, 0x40);
+    assert(vdp.command_ticks_remaining == 32);
+    vdp_advance(&vdp, 31);
+    assert(vdp.status2 & 0x01);
+    vdp_advance(&vdp, 1);
+    assert(!(vdp.status2 & 0x01));
+
+    /*
+     * HMMC drops TR after accepting a byte. A byte written while busy is
+     * retained and consumed when the next transfer slot becomes ready.
+     */
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    write_command_word(&vdp, 36, 0);
+    write_command_word(&vdp, 38, 2);
+    write_command_word(&vdp, 40, 4);
+    write_command_word(&vdp, 42, 1);
+    write_control_register(&vdp, 45, 0);
+    write_control_register(&vdp, 46, 0xf0);
+    assert((vdp.status2 & 0x81) == 0x81);
+    write_control_register(&vdp, 44, 0x12);
+    assert((vdp.status2 & 0x81) == 0x01);
+    assert(vdp.vram[2 * 128] == 0x12);
+    write_control_register(&vdp, 44, 0x34);
+    assert(vdp.command_transfer_pending);
+    assert(vdp.vram[2 * 128 + 1] == 0);
+    vdp_advance(&vdp, 47);
+    assert(vdp.command_transfer_pending);
+    vdp_advance(&vdp, 1);
+    assert(!vdp.command_transfer_pending);
+    assert((vdp.status2 & 0x81) == 0x01);
+    assert(vdp.vram[2 * 128 + 1] == 0x34);
+    vdp_advance(&vdp, 47);
+    assert(vdp.status2 & 0x01);
+    vdp_advance(&vdp, 1);
+    assert(!(vdp.status2 & 0x81));
+
+    /* LMCM likewise paces successive S#7 reads with its VRAM-read delay. */
+    vdp.vram[2] = 0x56;
+    write_command_word(&vdp, 32, 4);
+    write_command_word(&vdp, 34, 0);
+    write_command_word(&vdp, 40, 2);
+    write_command_word(&vdp, 42, 1);
+    write_control_register(&vdp, 46, 0xa0);
+    assert((vdp.status2 & 0x81) == 0x81);
+    write_control_register(&vdp, 15, 7);
+    assert(vdp_read_status(&vdp) == 5);
+    assert((vdp.status2 & 0x81) == 0x01);
+    assert(vdp_read_status(&vdp) == 5);
+    vdp_advance(&vdp, 63);
+    assert((vdp.status2 & 0x81) == 0x01);
+    vdp_advance(&vdp, 1);
+    assert((vdp.status2 & 0x81) == 0x81);
+    assert(vdp_read_status(&vdp) == 6);
+    assert((vdp.status2 & 0x81) == 0x01);
+    vdp_advance(&vdp, 64);
+    assert(!(vdp.status2 & 0x81));
+
+    /* The command clock also scales to the machine's CPU-frame budget. */
+    {
+        const unsigned cpu_frame_cycles = 71590;
+        u64 ticks_per_cycle =
+            ((u64)PAL_FRAME_TICKS << 32) / cpu_frame_cycles;
+        unsigned completion_cycles =
+            (unsigned)((((u64)48 << 32) +
+                        ticks_per_cycle - 1) /
+                       ticks_per_cycle);
+
+        setup_v9938_bitmap(&vdp, 0x06);
+        vdp_begin_frame(&vdp, cpu_frame_cycles, PAL_LINES);
+        write_command_word(&vdp, 36, 0);
+        write_command_word(&vdp, 38, 0);
+        write_control_register(&vdp, 44, 2);
+        write_control_register(&vdp, 46, 0x50);
+        vdp_advance(&vdp, completion_cycles - 1);
+        assert(vdp.status2 & 0x01);
+        vdp_advance(&vdp, 1);
+        assert(!(vdp.status2 & 0x01));
+    }
+
+    /* Long commands retain CE and their remaining time across frames. */
+    {
+        const u64 duration = (u64)256 * 20 * 96 + 19 * 64;
+
+        setup_v9938_bitmap(&vdp, 0x06);
+        vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+        write_command_word(&vdp, 36, 0);
+        write_command_word(&vdp, 38, 0);
+        write_command_word(&vdp, 40, 256);
+        write_command_word(&vdp, 42, 20);
+        write_control_register(&vdp, 44, 3);
+        write_control_register(&vdp, 46, 0x80);
+        assert(vdp.command_ticks_remaining == duration);
+        vdp_advance(&vdp, PAL_FRAME_TICKS);
+        assert(vdp.status2 & 0x01);
+        assert(vdp.command_ticks_remaining ==
+               duration - PAL_FRAME_TICKS);
+        vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+        vdp_advance(
+            &vdp, (unsigned)vdp.command_ticks_remaining - 1);
+        assert(vdp.status2 & 0x01);
+        vdp_advance(&vdp, 1);
+        assert(!(vdp.status2 & 0x01));
+    }
+}
+
 int main(void) {
     test_basic_position_wrap_and_terminator();
     test_priority_transparency_and_collision();
@@ -1345,5 +1484,6 @@ int main(void) {
     test_v9938_pixel_commands();
     test_v9938_block_commands();
     test_v9938_command_transfers();
+    test_v9938_command_timing();
     return 0;
 }

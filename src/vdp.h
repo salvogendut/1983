@@ -45,7 +45,10 @@ typedef struct {
     u8 command_code;
     u8 command_mode;
     u8 command_argument;
+    u8 command_event;
     bool command_transfer_pending;
+    u64 command_ticks_remaining;
+    u64 command_tick_fraction;
     unsigned timing_cycle;
     unsigned timing_frame_cycles;
     unsigned timing_scanlines;

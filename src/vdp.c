@@ -48,12 +48,19 @@ enum {
     V9938_LEFT_BORDER_TICKS = 202,
 };
 
+enum {
+    V9938_COMMAND_EVENT_NONE = 0,
+    V9938_COMMAND_EVENT_COMPLETE,
+    V9938_COMMAND_EVENT_TRANSFER_READY,
+};
+
 static unsigned bitmap_address(u8 mode, unsigned x, unsigned y);
 static u8 bitmap_pixel(const MsxVdp *vdp, u8 mode,
                        unsigned x, unsigned y);
 static void execute_vdp_command(MsxVdp *vdp);
 static void command_transfer_write(MsxVdp *vdp);
 static u8 command_read_colour(MsxVdp *vdp);
+static void command_engine_advance(MsxVdp *vdp, u64 ticks);
 
 static unsigned vram_size(const MsxVdp *vdp) {
     return vdp->type == MSX_VDP_V9938
@@ -594,7 +601,10 @@ void vdp_reset(MsxVdp *vdp) {
     vdp->command_code = 0;
     vdp->command_mode = 0;
     vdp->command_argument = 0;
+    vdp->command_event = V9938_COMMAND_EVENT_NONE;
     vdp->command_transfer_pending = false;
+    vdp->command_ticks_remaining = 0;
+    vdp->command_tick_fraction = 0;
     vdp->timing_cycle = 0;
     vdp->timing_frame_cycles = 0;
     vdp->timing_scanlines = 0;
@@ -865,6 +875,18 @@ void vdp_advance(MsxVdp *vdp, unsigned cycles) {
 
     if (!vdp || !vdp->timing_frame_cycles)
         return;
+    if (vdp->type == MSX_VDP_V9938 &&
+        vdp->command_event != V9938_COMMAND_EVENT_NONE) {
+        u64 frame_ticks =
+            (u64)vdp->timing_scanlines * V9938_TICKS_PER_LINE;
+        u64 ticks_per_cycle =
+            (frame_ticks << 32) / vdp->timing_frame_cycles;
+        u64 elapsed =
+            vdp->command_tick_fraction + (u64)cycles * ticks_per_cycle;
+
+        vdp->command_tick_fraction = elapsed & 0xffffffffu;
+        command_engine_advance(vdp, elapsed >> 32);
+    }
     if (vdp->type == MSX_VDP_V9938 &&
         (vdp->registers[0] & 0x10) &&
         v9938_hscan_tick(vdp, &match_tick)) {
@@ -1222,6 +1244,40 @@ static void command_complete(MsxVdp *vdp) {
     vdp->status2 &= (u8)~(V9938_STATUS2_TR | V9938_STATUS2_CE);
     vdp->registers[46] = 0;
     vdp->command_code = 0;
+    vdp->command_event = V9938_COMMAND_EVENT_NONE;
+    vdp->command_ticks_remaining = 0;
+    vdp->command_tick_fraction = 0;
+}
+
+static bool command_has_clock(const MsxVdp *vdp) {
+    return vdp->timing_frame_cycles && vdp->timing_scanlines;
+}
+
+static void command_schedule_event(MsxVdp *vdp, u8 event, u64 ticks) {
+    vdp->command_event = event;
+    vdp->command_ticks_remaining = ticks ? ticks : 1;
+    vdp->command_tick_fraction = 0;
+}
+
+static void command_finish_after(MsxVdp *vdp, u64 ticks) {
+    if (command_has_clock(vdp))
+        command_schedule_event(
+            vdp, V9938_COMMAND_EVENT_COMPLETE, ticks);
+    else
+        command_complete(vdp);
+}
+
+static u64 command_transfer_ticks(const MsxVdp *vdp) {
+    switch (vdp->command_code) {
+        case 0x0a: /* LMCM: one VRAM read. */
+            return 64;
+        case 0x0b: /* LMMC: read-modify-write. */
+            return 96;
+        case 0x0f: /* HMMC: one packed-byte write. */
+            return 48;
+        default:
+            return 1;
+    }
 }
 
 static bool command_advance_transfer(MsxVdp *vdp,
@@ -1237,7 +1293,6 @@ static bool command_advance_transfer(MsxVdp *vdp,
         return true;
     }
     if (!--vdp->command_remaining_y) {
-        command_complete(vdp);
         return false;
     }
     vdp->command_x = vdp->command_origin_x;
@@ -1255,21 +1310,65 @@ static void command_load_colour(MsxVdp *vdp) {
     vdp->registers[44] = vdp->status7;
 }
 
+static void command_engine_advance(MsxVdp *vdp, u64 ticks) {
+    while (ticks &&
+           vdp->command_event != V9938_COMMAND_EVENT_NONE) {
+        u8 event;
+
+        if (ticks < vdp->command_ticks_remaining) {
+            vdp->command_ticks_remaining -= ticks;
+            return;
+        }
+        ticks -= vdp->command_ticks_remaining;
+        event = vdp->command_event;
+        vdp->command_event = V9938_COMMAND_EVENT_NONE;
+        vdp->command_ticks_remaining = 0;
+        vdp->command_tick_fraction = 0;
+
+        if (event == V9938_COMMAND_EVENT_COMPLETE) {
+            command_complete(vdp);
+        } else if (event == V9938_COMMAND_EVENT_TRANSFER_READY &&
+                   (vdp->status2 & V9938_STATUS2_CE)) {
+            if (vdp->command_code == 0x0a)
+                command_load_colour(vdp);
+            vdp->status2 |= V9938_STATUS2_TR;
+            if (vdp->command_transfer_pending &&
+                (vdp->command_code == 0x0b ||
+                 vdp->command_code == 0x0f))
+                command_transfer_write(vdp);
+        }
+    }
+}
+
 static u8 command_read_colour(MsxVdp *vdp) {
     u8 value = vdp->status7;
 
     if (vdp->command_code == 0x0a &&
-        (vdp->status2 & V9938_STATUS2_CE)) {
+        (vdp->status2 & V9938_STATUS2_CE) &&
+        (vdp->status2 & V9938_STATUS2_TR)) {
         unsigned width = 0;
         unsigned colour_mask = 0;
         unsigned pixels_per_byte = 1;
+        bool more;
 
         command_mode_info(vdp->command_mode, &width, &colour_mask,
                           &pixels_per_byte);
         (void)width;
         (void)colour_mask;
-        if (command_advance_transfer(vdp, pixels_per_byte))
-            command_load_colour(vdp);
+        more = command_advance_transfer(vdp, pixels_per_byte);
+        if (!command_has_clock(vdp)) {
+            if (more)
+                command_load_colour(vdp);
+            else
+                command_complete(vdp);
+        } else {
+            vdp->status2 &= (u8)~V9938_STATUS2_TR;
+            command_schedule_event(
+                vdp, more
+                   ? V9938_COMMAND_EVENT_TRANSFER_READY
+                   : V9938_COMMAND_EVENT_COMPLETE,
+                command_transfer_ticks(vdp));
+        }
     } else if (!(vdp->status2 & V9938_STATUS2_CE)) {
         vdp->status2 &= (u8)~V9938_STATUS2_TR;
     }
@@ -1292,6 +1391,8 @@ static void command_transfer_write(MsxVdp *vdp) {
     (void)width;
     (void)colour_mask;
     vdp->command_transfer_pending = false;
+    if (command_has_clock(vdp))
+        vdp->status2 &= (u8)~V9938_STATUS2_TR;
     if (!(vdp->command_argument & 0x20)) {
         if (vdp->command_code == 0x0b) {
             command_write_pixel(
@@ -1303,7 +1404,21 @@ static void command_transfer_write(MsxVdp *vdp) {
             vdp->vram[address] = vdp->registers[44];
         }
     }
-    command_advance_transfer(vdp, pixels_per_byte);
+    if (command_advance_transfer(vdp, pixels_per_byte)) {
+        if (command_has_clock(vdp)) {
+            command_schedule_event(
+                vdp, V9938_COMMAND_EVENT_TRANSFER_READY,
+                command_transfer_ticks(vdp));
+        } else {
+            vdp->status2 |= V9938_STATUS2_TR;
+        }
+    } else if (command_has_clock(vdp)) {
+        command_schedule_event(
+            vdp, V9938_COMMAND_EVENT_COMPLETE,
+            command_transfer_ticks(vdp));
+    } else {
+        command_complete(vdp);
+    }
 }
 
 static void command_setup_transfer(MsxVdp *vdp, u8 code, u8 mode,
@@ -1343,6 +1458,13 @@ static void execute_vdp_command(MsxVdp *vdp) {
     int tx = reverse_x ? -1 : 1;
     int ty = reverse_y ? -1 : 1;
 
+    /*
+     * A write to R#46 replaces any command already in progress. Its
+     * scheduled CE/TR transition therefore belongs to the old command.
+     */
+    vdp->command_event = V9938_COMMAND_EVENT_NONE;
+    vdp->command_ticks_remaining = 0;
+    vdp->command_tick_fraction = 0;
     vdp->status2 &= (u8)~V9938_STATUS2_TR;
     if (code < 4 ||
         !command_mode_info(mode, &width, &colour_mask,
@@ -1360,7 +1482,7 @@ static void execute_vdp_command(MsxVdp *vdp) {
             vdp->status7 = source_external
                          ? 0xff : bitmap_pixel(vdp, mode, sx, sy);
             vdp->registers[44] = vdp->status7;
-            command_complete(vdp);
+            command_finish_after(vdp, 32);
             break;
 
         case 0x05: /* PSET */
@@ -1368,7 +1490,7 @@ static void execute_vdp_command(MsxVdp *vdp) {
                 command_write_pixel(vdp, mode, dx, dy,
                                     vdp->registers[44],
                                     command & 0x0f);
-            command_complete(vdp);
+            command_finish_after(vdp, 48);
             break;
 
         case 0x06: { /* SRCH */
@@ -1376,11 +1498,13 @@ static void execute_vdp_command(MsxVdp *vdp) {
             u8 colour = vdp->registers[44] & (u8)colour_mask;
             bool find_unequal = (argument & 0x02) != 0;
             bool outside_at_start = sx >= width;
+            unsigned inspected = 0;
 
             for (;;) {
                 u8 found = source_external
                          ? 0xff
                          : bitmap_pixel(vdp, mode, (unsigned)x, sy);
+                ++inspected;
                 if ((found == colour) != find_unequal) {
                     vdp->status2 |= V9938_STATUS2_BD;
                     break;
@@ -1391,7 +1515,7 @@ static void execute_vdp_command(MsxVdp *vdp) {
                     break;
             }
             vdp->command_border_x = (u16)x;
-            command_complete(vdp);
+            command_finish_after(vdp, (u64)inspected * 88);
             break;
         }
 
@@ -1401,8 +1525,10 @@ static void execute_vdp_command(MsxVdp *vdp) {
             unsigned error = major ? (major - 1) >> 1 : 0;
             int x = (int)dx;
             int y = (int)dy;
+            unsigned drawn = 0;
 
             for (unsigned step = 0; step <= major; ++step) {
+                ++drawn;
                 if (!destination_external && y >= 0)
                     command_write_pixel(
                         vdp, mode, (unsigned)x, (unsigned)y,
@@ -1426,7 +1552,7 @@ static void execute_vdp_command(MsxVdp *vdp) {
                 if (x < 0 || x >= (int)width || y < 0)
                     break;
             }
-            command_complete(vdp);
+            command_finish_after(vdp, (u64)drawn * 88);
             break;
         }
 
@@ -1447,7 +1573,9 @@ static void execute_vdp_command(MsxVdp *vdp) {
                 }
                 y = (unsigned)((int)y + ty);
             }
-            command_complete(vdp);
+            command_finish_after(
+                vdp, (u64)columns * rows * 96 +
+                     (rows > 1 ? (u64)(rows - 1) * 64 : 0));
             break;
         }
 
@@ -1478,7 +1606,9 @@ static void execute_vdp_command(MsxVdp *vdp) {
                 destination_y =
                     (unsigned)((int)destination_y + ty);
             }
-            command_complete(vdp);
+            command_finish_after(
+                vdp, (u64)columns * rows * 120 +
+                     (rows > 1 ? (u64)(rows - 1) * 64 : 0));
             break;
         }
 
@@ -1526,7 +1656,9 @@ static void execute_vdp_command(MsxVdp *vdp) {
                 }
                 y = (unsigned)((int)y + ty);
             }
-            command_complete(vdp);
+            command_finish_after(
+                vdp, (u64)columns * rows * 48 +
+                     (rows > 1 ? (u64)(rows - 1) * 56 : 0));
             break;
         }
 
@@ -1563,7 +1695,9 @@ static void execute_vdp_command(MsxVdp *vdp) {
                 destination_y =
                     (unsigned)((int)destination_y + ty);
             }
-            command_complete(vdp);
+            command_finish_after(
+                vdp, (u64)columns * rows * 88 +
+                     (rows > 1 ? (u64)(rows - 1) * 64 : 0));
             break;
         }
 
@@ -1593,7 +1727,8 @@ static void execute_vdp_command(MsxVdp *vdp) {
                 destination_y =
                     (unsigned)((int)destination_y + ty);
             }
-            command_complete(vdp);
+            command_finish_after(
+                vdp, (u64)columns * rows * 64);
             break;
         }
 
