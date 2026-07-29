@@ -46,7 +46,6 @@ typedef struct {
     u16 command_line_major;
     u16 command_line_minor;
     u16 command_line_error;
-    u16 vram_slot_phase;
     u16 sprite_collision_x;
     u16 sprite_collision_y;
     u8 command_code;
@@ -61,11 +60,14 @@ typedef struct {
     u64 command_ticks_remaining;
     u64 cpu_vram_ticks_remaining;
     u64 vram_tick_fraction;
+    u32 vram_frame_tick;
     unsigned timing_cycle;
     unsigned timing_frame_cycles;
     unsigned timing_scanlines;
     unsigned render_width;
     unsigned render_height;
+    unsigned render_line_zero;
+    unsigned rendered_lines;
     u32 pixels[MSX2_VIDEO_W * MSX2_VIDEO_H];
 } MsxVdp;
 

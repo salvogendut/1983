@@ -1,6 +1,7 @@
 #include "vdp.h"
 
 #include <assert.h>
+#include <stddef.h>
 
 #define SPRITE_ATTRIBUTE_BASE 0x1b00u
 #define SPRITE_PATTERN_BASE   0x3000u
@@ -23,6 +24,17 @@
 
 static u32 pixel(const MsxVdp *vdp, int x, int y) {
     return vdp->pixels[y * vdp->render_width + x];
+}
+
+static u64 framebuffer_hash(const MsxVdp *vdp) {
+    u64 hash = 1469598103934665603ull;
+
+    for (size_t i = 0;
+         i < vdp->render_width * vdp->render_height; ++i) {
+        hash ^= vdp->pixels[i];
+        hash *= 1099511628211ull;
+    }
+    return hash;
 }
 
 static void write_control_register(MsxVdp *vdp, unsigned reg, u8 value) {
@@ -1145,6 +1157,182 @@ static void test_v9938_bitmap_rendering(void) {
     assert(pixel(&vdp, 2, 0) == 0x0000ff);
 }
 
+static void test_v9938_mid_frame_rendering(void) {
+    enum {
+        TICKS_PER_LINE = 1368,
+        PAL_LINES = 313,
+        PAL_FRAME_TICKS = TICKS_PER_LINE * PAL_LINES,
+        DEFAULT_LINE_ZERO = 16 + 36 + 10 + 7,
+        DEFAULT_RIGHT_BORDER = 1282,
+    };
+    MsxVdp vdp;
+    unsigned split_tick =
+        (DEFAULT_LINE_ZERO + 10) * TICKS_PER_LINE +
+        DEFAULT_RIGHT_BORDER;
+
+    /*
+     * Palette writes commit completed scanlines before changing the colour
+     * lookup used by the remainder of the frame.
+     */
+    setup_v9938_bitmap(&vdp, 0x06);
+    for (unsigned i = 0; i < 192 * 128; ++i)
+        vdp.vram[i] = 0x22;
+    vdp.registers[16] = 2;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, split_tick);
+    assert(vdp.rendered_lines == 11);
+    vdp_write_palette(&vdp, 0x77);
+    vdp_write_palette(&vdp, 0x07);
+    assert(vdp.rendered_lines == 11);
+    vdp_end_frame(&vdp);
+    assert(pixel(&vdp, 0, 10) == V9938_GREEN);
+    assert(pixel(&vdp, 0, 11) == COLOUR_WHITE);
+
+    /* A backdrop change likewise affects only uncommitted rows. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp.registers[1] = 0;
+    vdp.registers[7] = 2;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, split_tick);
+    write_control_register(&vdp, 7, 4);
+    assert(vdp.rendered_lines == 11);
+    vdp_end_frame(&vdp);
+    assert(pixel(&vdp, 0, 10) == V9938_GREEN);
+    assert(pixel(&vdp, 0, 11) == 0x2424ff);
+
+    /* Switching the display off leaves completed graphics intact. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    for (unsigned i = 0; i < 192 * 128; ++i)
+        vdp.vram[i] = 0x22;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, split_tick);
+    write_control_register(&vdp, 1, 0);
+    vdp_end_frame(&vdp);
+    assert(pixel(&vdp, 0, 10) == V9938_GREEN);
+    assert(pixel(&vdp, 0, 11) == COLOUR_BACKDROP);
+
+    /* Display-page selection is sampled separately for later scanlines. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    for (unsigned i = 0; i < 0x8000; ++i) {
+        vdp.vram[i] = 0x22;
+        vdp.vram[0x8000 + i] = 0x44;
+    }
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, split_tick);
+    write_control_register(&vdp, 2, 0x3f);
+    vdp_end_frame(&vdp);
+    assert(pixel(&vdp, 0, 10) == V9938_GREEN);
+    assert(pixel(&vdp, 0, 11) == 0x2424ff);
+
+    /* R#23 vertical scrolling does not reinterpret committed rows. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    for (unsigned y = 0; y < 256; ++y)
+        for (unsigned x = 0; x < 128; ++x)
+            vdp.vram[y * 128 + x] = y < 20 ? 0x22 : 0x44;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, split_tick);
+    write_control_register(&vdp, 23, 20);
+    vdp_end_frame(&vdp);
+    assert(pixel(&vdp, 0, 10) == V9938_GREEN);
+    assert(pixel(&vdp, 0, 11) == 0x2424ff);
+
+    /*
+     * A deferred CPU VRAM write is committed at its reserved access slot.
+     * Pattern row zero has already been fetched for display row 8, while
+     * the next character row observes the new byte at display row 16.
+     */
+    vdp_init(&vdp);
+    vdp_set_type(&vdp, MSX_VDP_V9938);
+    vdp_reset(&vdp);
+    vdp.registers[1] = 0x40;
+    vdp.registers[2] = 0x06; /* name table: 0x1800 */
+    vdp.registers[3] = 0x20; /* colour table: 0x0800 */
+    vdp.registers[4] = 0x02; /* pattern table: 0x1000 */
+    vdp.registers[8] = 0x02; /* disable sprites */
+    vdp.vram[0x0800] = 0x21;
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(
+        &vdp,
+        (DEFAULT_LINE_ZERO + 8) * TICKS_PER_LINE +
+        DEFAULT_RIGHT_BORDER);
+    set_vram_address(&vdp, 0x1000, true);
+    vdp_write_data(&vdp, 0xff);
+    assert(vdp.cpu_vram_pending);
+    vdp_advance(&vdp, (unsigned)vdp.cpu_vram_ticks_remaining);
+    assert(!vdp.cpu_vram_pending);
+    assert(vdp.rendered_lines == 9);
+    vdp_end_frame(&vdp);
+    assert(pixel(&vdp, 0, 8) == 0x000000);
+    assert(pixel(&vdp, 0, 16) == V9938_GREEN);
+
+    /* With no state changes, progressive and full-frame output are equal. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    for (unsigned i = 0; i < 192 * 128; ++i)
+        vdp.vram[i] = (u8)i;
+    vdp_render(&vdp);
+    {
+        u64 expected_hash = framebuffer_hash(&vdp);
+
+        vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+        vdp_advance(&vdp, PAL_FRAME_TICKS);
+        assert(vdp.rendered_lines == 192);
+        vdp_end_frame(&vdp);
+        assert(framebuffer_hash(&vdp) == expected_hash);
+    }
+}
+
+static void test_v9938_progressive_sprite_status(void) {
+    enum {
+        TICKS_PER_LINE = 1368,
+        PAL_LINES = 313,
+        PAL_FRAME_TICKS = TICKS_PER_LINE * PAL_LINES,
+        DEFAULT_LINE_ZERO = 16 + 36 + 10 + 7,
+        DEFAULT_RIGHT_BORDER = 1282,
+    };
+    const u8 mode = 0x0c; /* SCREEN 5 */
+    MsxVdp vdp;
+    unsigned sprite_tick =
+        (DEFAULT_LINE_ZERO + 10) * TICKS_PER_LINE +
+        DEFAULT_RIGHT_BORDER;
+
+    /*
+     * Collision state from a committed row survives later partial renders,
+     * including a register change which disables future sprite evaluation.
+     */
+    setup_v9938_sprite2(&vdp, mode);
+    set_pattern2(&vdp, mode, 0, 0, 0x80);
+    set_sprite2(&vdp, mode, 0, 9, 40, 0);
+    set_sprite2(&vdp, mode, 1, 9, 40, 0);
+    set_sprite2_colour(&vdp, mode, 0, 0, 2);
+    set_sprite2_colour(&vdp, mode, 1, 0, 3);
+    terminate_sprites2(&vdp, mode, 2);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, sprite_tick);
+    assert(vdp.rendered_lines == 11);
+    assert(pixel(&vdp, 40, 10) == V9938_GREEN);
+    assert(vdp.status & 0x20);
+    assert(vdp.sprite_collision_x == 52);
+    assert(vdp.sprite_collision_y == 18);
+    write_control_register(&vdp, 8, 0x02);
+    vdp_end_frame(&vdp);
+    assert(vdp.status & 0x20);
+    assert(pixel(&vdp, 40, 10) == V9938_GREEN);
+
+    /* The first mode-2 overflow and ninth-sprite index latch the same way. */
+    setup_v9938_sprite2(&vdp, mode);
+    set_pattern2(&vdp, mode, 0, 0, 0x80);
+    for (unsigned i = 0; i < 9; ++i) {
+        set_sprite2(&vdp, mode, i, 9, (u8)(i * 16), 0);
+        set_sprite2_colour(&vdp, mode, i, 0, 2);
+    }
+    terminate_sprites2(&vdp, mode, 9);
+    vdp_begin_frame(&vdp, PAL_FRAME_TICKS, PAL_LINES);
+    vdp_advance(&vdp, sprite_tick);
+    assert((vdp.status & 0x5f) == 0x48);
+    vdp_end_frame(&vdp);
+    assert((vdp.status & 0x5f) == 0x48);
+}
+
 static void test_v9938_pixel_commands(void) {
     MsxVdp vdp;
 
@@ -1698,6 +1886,8 @@ int main(void) {
     test_v9938_palette_and_indirect_register_port();
     test_v9938_banked_and_planar_vram();
     test_v9938_bitmap_rendering();
+    test_v9938_mid_frame_rendering();
+    test_v9938_progressive_sprite_status();
     test_v9938_pixel_commands();
     test_v9938_block_commands();
     test_v9938_command_transfers();

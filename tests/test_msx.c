@@ -442,6 +442,53 @@ static void test_cbios_checkpoint_if_available(void) {
     free(msx);
 }
 
+static void test_msx_diag_bios_checkpoint_if_available(void) {
+    const char *diagnostic_path = getenv("MSX_DIAG_BIOS_ROM");
+    MsxMachine *msx;
+    size_t nonzero_vram = 0;
+
+    if (!diagnostic_path || !diagnostic_path[0])
+        return;
+
+    msx = malloc(sizeof(*msx));
+    assert(msx);
+    msx_init(msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(msx_load_bios(msx, diagnostic_path) == 0);
+    for (int frame = 0; frame < 300; ++frame)
+        msx_run_frame(msx);
+    for (size_t i = 0; i < sizeof(msx->vdp.vram); ++i)
+        if (msx->vdp.vram[i])
+            ++nonzero_vram;
+
+    fprintf(stderr,
+            "MSX-DIAG BIOS checkpoint: frame=%llu PC=%04X SP=%04X "
+            "slot=%02X cycles=%llu instructions=%llu VRAM=%zu "
+            "R0=%02X R1=%02X R2=%02X R4=%02X R7=%02X\n",
+            (unsigned long long)msx->frame, msx->cpu.pc, msx->cpu.sp,
+            msx->primary_slot, (unsigned long long)msx->cycles,
+            (unsigned long long)msx->instructions, nonzero_vram,
+            msx->vdp.registers[0], msx->vdp.registers[1],
+            msx->vdp.registers[2], msx->vdp.registers[4],
+            msx->vdp.registers[7]);
+    assert(msx->frame == 300);
+    assert(msx->bios_loaded);
+    assert(msx->instructions > 1000000);
+    assert(msx->cpu.pc >= 0x00cb && msx->cpu.pc <= 0x010a);
+    assert(msx->primary_slot == 0xc0);
+    assert(msx->vdp.type == MSX_VDP_TMS9918);
+    assert(msx->vdp.registers[0] == 0x00);
+    assert(msx->vdp.registers[1] == 0xd0);
+    assert(msx->vdp.registers[2] == 0x02);
+    assert(msx->vdp.registers[4] == 0x00);
+    assert(msx->vdp.registers[7] == 0xf1);
+    assert(nonzero_vram == 667);
+    assert(memcmp(&msx->vdp.vram[0x080c],
+                  "=== MSX DIAG ===", 16) == 0);
+    assert(memcmp(&msx->vdp.vram[0x0851],
+                  "[0] Monitor", 11) == 0);
+    free(msx);
+}
+
 static void test_nms8250_checkpoint_if_available(void) {
     const char *directory = getenv("MSX_NMS8250_DIR");
     const char *diagnostic_path = getenv("MSX_DIAG_ROM");
@@ -568,6 +615,7 @@ int main(void) {
     test_keyboard_matrix_and_ppi();
     test_psg_ports_and_cycle_timed_audio();
     test_cbios_checkpoint_if_available();
+    test_msx_diag_bios_checkpoint_if_available();
     test_nms8250_checkpoint_if_available();
     return 0;
 }

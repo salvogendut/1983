@@ -22,7 +22,7 @@ hardware specification.
 | `src/rtc.*` | Host-independent RP-5C01 register banks, CMOS, control ports, and emulated-time calendar |
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
 | `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, sprite-mode-2, and command engine |
-| `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/NMS 8250/diagnostic boot checks |
+| `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/diagnostic boot checks |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
 | `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
 | `tests/test_rtc.c` | RP-5C01 banks, masks, reset behavior, calendar rollover, and clock advancement |
@@ -108,8 +108,10 @@ now present. The NMS 8250 secondary slots, internal mapper registers, MSX2
 RTC, V9938 bitmap modes, and beam-timed command handshakes are also present;
 V9938 VR/HR status follows the emulated beam and the VDP IRQ is level
 sensitive. V9938 sprite mode 2 is rendered in SCREEN 4 through SCREEN 8.
-Alternate national keyboard matrices, joystick/mouse PSG inputs, and
-scanline-accurate rendering of mid-frame changes are not.
+Completed V9938 display rows are committed progressively before timed VRAM
+mutations and relevant register or palette writes. Alternate national
+keyboard matrices, joystick/mouse PSG inputs, and within-scanline pixel timing
+are not implemented.
 
 ## Keyboard input
 
@@ -136,9 +138,9 @@ clock, 8x8/16x16 patterns, magnification, the one-line Y offset, 8-bit vertical
 wrap, and the `0xD0` list terminator. Pattern dots with color zero remain
 collision-active on the MSX1 VDP even though they do not draw.
 
-This is scanline-aware evaluation of the VRAM state at the frame boundary.
-Cycle-level changes to sprite attributes, patterns, display enable, or VDP
-registers during an active scanline are not timed yet.
+The TMS9918-family path evaluates this state at the frame boundary. Its
+cycle-level changes to sprite attributes, patterns, display enable, or VDP
+registers during an active frame are not timed yet.
 
 ## V9938 sprite mode 2
 
@@ -159,9 +161,9 @@ colors.
 Transparent color zero, R#8 TP/SPD, 8x8/16x16 size, magnification, early clock,
 vertical scrolling, the `0xD8` terminator, and 192/212-line display heights are
 implemented. Collision coordinates latch in S#3-S#6 with their hardware
-offsets and reset when S#5 is read. Sprite VRAM reads are still evaluated from
-the frame-boundary state rather than at their measured per-scanline access
-slots.
+offsets and reset when S#5 is read. On the V9938, sprites are evaluated with
+the VRAM and register state visible when each completed scanline is committed.
+Individual sprite fetch positions within that scanline are not timed yet.
 
 The functional model is cross-checked against the
 [Yamaha V9938 Technical Data Book](https://map.grauw.nl/resources/video/yamaha_v9938.pdf)
@@ -188,8 +190,8 @@ only the horizontal match.
 
 The match position is converted from the V9938's 1368 ticks per scanline to
 the current CPU-frame budget, so normal PAL/NTSC execution does not assume
-one CPU cycle per VDP tick. Mid-scanline renderer changes remain later timing
-work.
+one CPU cycle per VDP tick. The renderer uses the same beam position to commit
+completed rows; horizontal changes within one row remain later timing work.
 
 ## V9938 VRAM and command timing
 
@@ -232,8 +234,11 @@ completion.
 Command time is stored in V9938 ticks and advanced with fixed-point conversion
 from the current PAL/NTSC CPU-frame budget, including commands which span a
 frame boundary. Logical read-modify-write operations currently remain one
-atomic command step. Exposing mid-scanline VRAM changes through the renderer
-remains later timing work. The access schedules and operation spacings follow
+atomic command step. CPU and command VRAM writes flush display rows whose
+right border the beam has reached, so later rows observe the new VRAM without
+redrawing committed output. Register and palette writes use the same
+boundary. Pixel-level changes within the active row remain later timing work.
+The access schedules and operation spacings follow
 openMSX's measured
 [V9938 VRAM timings](https://openmsx.org/vdp-vram-timing/vdp-timing.html)
 and [part II](https://openmsx.org/vdp-vram-timing/vdp-timing-2.html).
@@ -273,8 +278,8 @@ is:
 2. Reach a deterministic BASIC prompt with a user-supplied BIOS/BASIC set.
 3. Add joystick input, cassette loading, alternate national keyboard layouts,
    and a small redistributable MSX1 compatibility corpus.
-4. Refine VDP timing so mid-frame register and VRAM changes take effect on
-   the correct scanline.
+4. Refine the progressive VDP renderer from completed-scanline state changes
+   to within-scanline fetch timing where software depends on raster effects.
 5. Add deterministic snapshot and audio-capture surfaces for compatibility
    investigations.
 

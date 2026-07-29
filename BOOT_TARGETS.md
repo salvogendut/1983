@@ -102,7 +102,13 @@ Development tests advance through explicit checkpoints:
 1. **Reached:** execute C-BIOS 0.29 reset code and reach a stable cartridge
    startup path. At 180 NTSC frames the current fixture reaches `PC=1A65`,
    `SP=F300`, primary-slot register `F0`, and 5,692 non-zero VRAM bytes. The
-   same test then verifies C-BIOS launching a synthetic plain cartridge.
+   same test then verifies C-BIOS launching a synthetic plain cartridge. An
+   independent optional fixture boots the GPL-3.0 `msxdiag.rom` built by
+   `../msx-diag` directly as an MSX1 replacement BIOS. At 300 PAL frames it
+   has completed its VRAM and RAM checks, reaches the menu key scanner with
+   667 non-zero VRAM bytes, and exposes the expected menu strings in Text
+   mode. Set `MSX_DIAG_BIOS_ROM` to enable that checkpoint; neither its source
+   nor generated ROM is copied into 1983.
 2. Execute a supplied MSX1 BIOS and reach the BASIC prompt.
 3. **Reached:** the supplied NMS 8250 BIOS, MSX2 sub-ROM, and disk ROM load
    into the expanded-slot layout, the internal mapper is accessible, and the
