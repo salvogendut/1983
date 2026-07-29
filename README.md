@@ -1,144 +1,49 @@
 # 1983 - MSX / MSX2 emulator
 
-1983 is a compatibility-focused emulator for MSX and MSX2 computers. Rather
-than reproducing one particular manufacturer's machine, it aims to provide a
-generic, configurable implementation of the MSX architecture capable of
-running most software written for the first two generations of the standard.
+1983 is a compatibility-focused MSX and MSX2 emulator written in C with
+SDL3. It aims to run software for the first two generations of the MSX
+standard without being tied to one manufacturer's machine.
 
-It is a sibling project of [1984](https://github.com/salvogendut/1984), the
-Amstrad CPC emulator, and [1985](https://github.com/salvogendut/1985), the
-Amstrad PCW emulator. The name marks 1983, the year in which the MSX standard
-was introduced.
+It is the sibling project of
+[1984](https://github.com/salvogendut/1984), the Amstrad CPC emulator, and
+[1985](https://github.com/salvogendut/1985), the Amstrad PCW emulator. It
+shares their window, overlay, keyboard shortcut, notification, LED, and
+configuration conventions, and is intended to remain as multiplatform as
+SDL3 allows.
 
-Like its siblings, 1983 is written in C using SDL3. It follows their window,
-overlay, shortcut, notification, LED, and configuration conventions so that
-the three emulators look and behave as members of the same family. Portable
-code and minimal platform-specific dependencies are intended to keep it
-available on as many SDL3-supported systems as practical.
+> **Status:** MSX1 and MSX2 firmware and cartridge software are running.
+> The emulator includes TMS9918-family and V9938 video, AY/YM PSG audio,
+> the international keyboard matrix, dual cartridge slots with common
+> mappers, MSX2 expanded slots, memory mapper, and RTC. Cassette, floppy,
+> Sunrise IDE, Nextor boot storage, SCC audio, and other extensions remain
+> in development.
 
-> **Project status:** the first executable MSX1 slice is in place. It runs the
-> sibling Z80 core against a primary-slot bus, boots C-BIOS, accepts linear
-> and commonly mapped ROM cartridges, and renders the character/pattern modes
-> needed by the initial
-> firmware checkpoint. The standard international MSX keyboard matrix is
-> connected to SDL input, and the TMS9918-family sprite engine is implemented.
-> Its built-in AY/YM PSG now produces cycle-timed SDL3 audio. The first MSX2
-> machine slice loads separate BIOS, Sub-ROM, and disk-ROM images and models
-> the NMS 8250 expanded slot and internal mapper layout. Its V9938 foundation
-> implements the CPU-visible registers, status selection, programmable
-> palette, indirect-register port, 128 KB VRAM interface, SCREEN 5 through
-> SCREEN 8 bitmap rendering, V9938 drawing commands, beam-positioned retrace
-> status, and level-sensitive VDP interrupts. A real MSX2 BIOS and Sub-ROM now
-> complete their SCREEN 6 startup and launch the diagnostic cartridge. The
-> MSX2 RP-5C01 RTC ports and banked CMOS are also connected. V9938 sprite
-> mode 2 is implemented across SCREEN 4 through SCREEN 8. Dual cartridge
-> slots now support Linear, ASCII8, ASCII16, Konami, and Konami SCC mapping;
-> storage devices are still to come.
+## Highlights
 
-## Current implementation
+- MSX, MSX2, and Philips NMS 8250 machine layouts.
+- Editable `1983-models.conf` machine and firmware catalogue.
+- Linear, ASCII8, ASCII16, Konami, and Konami SCC cartridges.
+- MSX1 screen and sprite modes plus V9938 SCREEN 5 through SCREEN 8,
+  sprite mode 2, drawing commands, interrupts, and timed VRAM access.
+- Cycle-timed AY-3-8910/YM2149 audio through SDL3.
+- Complete international MSX keyboard matrix.
+- Familiar F9 overlay, function-key controls, status LEDs, notifications,
+  screenshots, fullscreen, and integer scaling.
+- Headless execution and deterministic component and firmware tests.
 
-- Autotools-based C11 and SDL3 build, following the sibling projects.
-- Desktop/AppStream integration with the project artwork in standard hicolor
-  sizes and a multi-resolution Windows executable icon.
-- Resizable 640x480 guest display with a footer, LED bar, fullscreen and
-  integer window scaling.
-- F9 options overlay with General, Media, Audio, Extensions, and Advanced
-  sections.
-- Persistent machine selection from an editable `1983-models.conf`
-  catalogue, plus PAL/NTSC, RAM, cartridge media/mapper, display, extension,
-  and notification settings.
-- Power, Caps, Kana, drive, and cassette LEDs with hover descriptions.
-- Cycle-budgeted Z80 execution and maskable interrupts, adapted from the
-  sibling projects behind machine-owned memory and I/O callbacks. The VDP
-  interrupt is propagated as a level, including immediate cancellation when
-  firmware acknowledges S#0 before reenabling interrupts.
-- Four 16 KB pages selected between four primary slots through PPI port
-  `0xA8`: firmware and C-BIOS logo ROMs in slot 0, independent cartridge
-  devices in slots 1 and 2, and RAM or the MSX2 expanded devices in slot 3.
-- Linear, ASCII8, ASCII16, Konami, and Konami SCC cartridge mapping, with
-  resettable bank registers, safe bank wrapping, conservative automatic
-  detection, and explicit per-slot overrides. The SCC register window is
-  mapped; SCC sound generation remains future work.
-- NMS 8250-style expanded primary slot 3, including its inverted secondary
-  slot register at `0xFFFF`, a mirrored Sub-ROM in secondary slot 0, internal
-  mapper RAM in slot 2, and the disk ROM in slot 3/page 1.
-- MSX2 internal memory-mapper segment registers at ports `0xFC` through
-  `0xFF`, currently backed by up to 128 KB.
-- RP-5C01-compatible MSX2 RTC latch/data ports at `0xB4`/`0xB5`, four
-  register banks with hardware masks and reset-persistent CMOS, control/reset
-  registers, host-time initialization, and emulated-time calendar advancement.
-- TMS9918/TMS9929 VRAM data/control ports, register and status behaviour,
-  vertical interrupts, and MSX1 Text, Graphics I, Graphics II, and Multicolour
-  rendering.
-- V9938 control registers and masks, status-register selection, default and
-  programmable palettes, direct and indirect register writes, and a 128 KB
-  VRAM data path with R14 paging, extended-mode carry, and Graphics 6/7
-  planar CPU addressing. CPU reads, writes, and read-ahead requests wait for
-  measured screen-off, bitmap, character, or text access slots; the shared
-  data latch and overly fast request replacement follow V9938 behaviour.
-  S#2 VR and HR follow PAL/NTSC beam position, 192/212-line selection,
-  text/graphics blanking, and R18 adjustment.
-- V9938 SCREEN 5 through SCREEN 8 rendering, including 256/512-dot widths,
-  192/212-line output, display-page selection, vertical scrolling, packed and
-  planar VRAM layouts, palette transparency, and SCREEN 8 fixed colours.
-- Progressive V9938 frame rendering at completed-scanline granularity. Timed
-  CPU/command VRAM writes and mid-frame palette, backdrop, page, scroll, and
-  display-enable changes preserve rows already fetched by the beam and affect
-  only the remaining display rows.
-- V9938 POINT, PSET, SRCH, LINE, LMMV, LMMM, LMCM, LMMC, HMMV, HMMM, YMMM,
-  and HMMC commands, including logical operations and beam-driven S#2 CE/TR,
-  S#7, and R#44 CPU-transfer handshakes. Preloaded LMMC/HMMC colours and
-  writes queued while TR is low are supported. Autonomous commands update
-  VRAM progressively at measured bitmap-mode access slots, with separate
-  schedules for screen-off, sprites-disabled, and sprites-enabled operation.
-  CPU data-port traffic takes priority when both engines request one slot.
-- TMS9918/TMS9929 sprite-mode-1 rendering with 8x8 and 16x16 patterns,
-  magnification, early clock, priority, transparency, Y wrapping, the
-  four-sprites-per-line limit, fifth-sprite index, and collision status.
-- V9938 sprite-mode-2 rendering in SCREEN 4 through SCREEN 8, with
-  per-scanline color attributes, EC/CC/IC behavior, lower-index priority,
-  eight-sprites-per-line limiting, ninth-sprite status, 192/212-line output,
-  vertical scrolling, planar SCREEN 7/8 table access, SCREEN 6 two-pixel
-  colors, SCREEN 8 fixed sprite colors, and S#3-S#6 collision coordinates.
-- Complete 11-row international MSX keyboard matrix through PPI ports
-  `0xA9`/`0xAA`, including modifiers, function and editing keys, the numeric
-  keypad, simultaneous-key rollover, host-key aliases, and focus-loss cleanup.
-- AY-3-8910 and YM2149 PSG variants with tone, noise, all envelope shapes,
-  mixer and volume-register DAC behaviour, driven at MSX bus timing and
-  rendered as filtered 44.1 kHz mono audio through SDL3.
-- Standard PSG port directions, international-layout and empty-cassette input
-  defaults, and Kana LED output. Joystick and mouse signals are not connected
-  yet.
-- Catalogue-backed firmware loading plus explicit `--bios`, `--logo`,
-  `--subrom`, `--disk-rom`, `--cart1`, and `--cart2` overrides, with
-  per-slot mapper controls and backwards-compatible `--cart`/`--mapper`
-  aliases. The tests include deterministic C-BIOS,
-  standalone MSX-DIAG BIOS, NMS 8250 firmware, synthetic mapped-cartridge,
-  and optional MSX2 diagnostic-cartridge checkpoints below SDL.
-- Reserved Nextor-kernel, Sunrise IDE, and raw hard-disk surfaces, clearly
-  identified as unimplemented device and loader stubs.
-- On-screen and console notifications, screenshots, pause, reset, and
-  placeholders for capture and monitor tools.
-- MSX, MSX2, and Philips NMS 8250 catalogue entries backed by validated
-  hardware layouts that establish the VDP, slots, memory mapper, RTC, RAM,
-  and VRAM boundaries.
-- Component tests, an optional C-BIOS boot fixture, headless execution, and a
-  machine-state dump for smoke testing.
-
-The two cartridge rows in the Media overlay are functional. Other media rows
-and extension switches remain clearly labelled as stubs until their devices
-exist.
+The detailed implementation and remaining limitations are recorded in
+[`TECHNICAL.md`](TECHNICAL.md).
 
 ## Building
 
-A C11 compiler, GNU Autotools, `pkg-config`, SDL3 development files, and
-`libm` are required. On Fedora, for example:
+1983 requires a C11 compiler, GNU Autotools, `pkg-config`, SDL3 development
+files, and `libm`. On Fedora:
 
 ```sh
 sudo dnf install gcc make autoconf automake pkgconf-pkg-config SDL3-devel
 ```
 
-Then build and test:
+Build, test, and run:
 
 ```sh
 autoreconf -iv
@@ -148,83 +53,39 @@ make check
 ./1983
 ```
 
-Useful development invocations include:
+Useful options:
 
 ```sh
-./1983 --model msx2 --region ntsc
+./1983 --model msx2 --region pal
+./1983 --cart ROMS/game.rom
 ./1983 --models ./my-models.conf --model my-msx
 ./1983 --config ./test.conf
 ./1983 --headless --unthrottled --exit-after 10
 ./1983 --help
 ```
 
-### Machine catalogue
+## Firmware and machines
 
-[`1983-models.conf`](1983-models.conf) is the editable machine catalogue used
-by the command line and by **General > Machine** in the F9 overlay. The
-shipped catalogue defines `msx1`, `msx2`, and `nms8250`, displayed as MSX,
-MSX2, and Philips NMS 8250. It contains paths only; no firmware image is
-tracked or distributed.
+1983 does not bundle copyrighted MSX system ROMs. Place firmware and
+cartridges you are entitled to use in the Git-ignored `ROMS/` directory, or
+point the machine catalogue at another private location.
 
-Each section has this form:
+[`1983-models.conf`](1983-models.conf) initially defines:
 
-```ini
-[model my-msx2]
-name = My MSX2
-hardware = msx2
-bios = ROMS/my-bios.rom
-logo =
-subrom = ROMS/my-subrom.rom
-disk_rom =
-```
+- `msx1` — MSX with a 32 KiB BIOS;
+- `msx2` — MSX2 with a BIOS and Sub-ROM;
+- `nms8250` — Philips NMS 8250 with BIOS, Sub-ROM, and disk ROM.
 
-`hardware` selects an emulated layout currently understood by 1983:
-`msx1`, `msx2`, or `nms8250`. New catalogue entries can reuse one of those
-layouts with a different name and firmware set without recompiling the
-emulator. Firmware paths may be absolute or relative to the catalogue file.
-Blank required paths open the SDL file picker when the model is selected;
-valid complete mappings load directly and atomically.
+Open the F9 overlay and select **General > Machine**. Complete catalogue
+mappings load directly; missing required components open file pickers. The
+whole firmware set is validated before replacing the running machine.
 
-1983 searches for the catalogue in the current directory, the user's
-configuration directory, and the installed application-data directory, in
-that order. `--models PATH` selects another file explicitly. Adding new
-hardware layouts—not just another firmware/model mapping—still requires
-emulator code and tests. For a per-user catalogue, copy the shipped file to
-`~/.config/1983/1983-models.conf` and adjust its firmware paths.
+To add another model using an implemented hardware layout, copy a catalogue
+section, give it a unique ID and name, and change its firmware paths. Paths
+may be absolute or relative to the catalogue file. A graphical
+**Advanced > Machine model editor** is planned as a follow-up.
 
-A later **Advanced > Machine model editor** will provide the same
-add/change/delete workflow in the overlay. It will remain behind
-**General > Tinker** and will write this documented format rather than
-introducing a second model database.
-
-### Keyboard
-
-SDL scancodes map positionally onto the standard international MSX keyboard.
-Left or right Shift produces MSX Shift, left Ctrl produces CTRL, left Alt
-produces GRAPH, right Alt produces CODE, and right Ctrl produces the
-ACC/dead-key position. The editing keys, arrows, and numeric keypad map to
-their corresponding MSX matrix positions; keypad Enter follows the common
-MSX keypad-comma convention.
-
-Unmodified function keys remain available to the shared emulator interface.
-Use Shift+F1 through Shift+F5 for the MSX function keys, Shift+F7 for SELECT,
-and Shift+F8 for STOP. The host Shift used for these chords is suppressed
-from the guest matrix, so the MSX receives the intended key by itself. Opening
-the overlay or moving focus away from the window releases every guest key.
-
-### Booting C-BIOS
-
-1983 does not currently bundle firmware. Download C-BIOS 0.29 from the
-[C-BIOS project](https://cbios.sourceforge.net/), then start the generic
-60 Hz MSX1 machine with its main and logo ROMs:
-
-```sh
-./1983 --region ntsc \
-  --bios /path/to/cbios_main_msx1.rom \
-  --logo /path/to/cbios_logo_msx1.rom
-```
-
-Add a cartridge to primary slot 1 with:
+C-BIOS can be started explicitly:
 
 ```sh
 ./1983 --region ntsc \
@@ -233,278 +94,74 @@ Add a cartridge to primary slot 1 with:
   --cart /path/to/game.rom
 ```
 
-The legacy `--cart` option is an alias for `--cart1`. Mapper detection defaults
-to `auto`; ambiguous software can be forced explicitly, and a second
-cartridge can be mounted independently:
-
-```sh
-./1983 --bios /path/to/bios.rom \
-  --cart1 /path/to/game.rom --mapper1 konami-scc \
-  --cart2 /path/to/utility.rom --mapper2 ascii8
-```
-
-Accepted mapper names are `auto`, `linear`, `ascii8`, `ascii16`, `konami`,
-and `konami-scc`. Automatic selection keeps ROMs smaller than 64 KB linear
-and uses mapper-register write signatures for larger ROMs. Use an explicit
-override if a title is misidentified. C-BIOS itself runs cartridge software
-but does not provide MSX BASIC, cassette, or disk services. Use a legitimately
-obtained vendor BIOS/BASIC image for those services.
-
-The local `ROMS/` directory is ignored by Git and is available as a convenient
-place for user-supplied firmware, cartridges, and diagnostic images. Its
-contents must never be added to the repository.
-
-The local `DOS/` directory is the staging area for guest DOS files. Only the
-unmodified `DOS/NEXTOR.SYS` supplied for the project is tracked; every other
-file placed there, including `COMMAND2.COM`, is ignored by Git.
-
-Match the video standard to the software when possible. European MSX software
-normally expects PAL at 50 Hz, while Japanese software normally expects NTSC
-at 60 Hz. Select it with `--region pal|ntsc` or with **Video standard** in the
-F9 overlay. A title run at the wrong rate can have correctly pitched PSG audio
-but visibly slower or faster movement.
-
-### Trying the MSX2 firmware layout
-
-The user-supplied Philips NMS 8250 firmware set can exercise its expanded
-slot and mapper layout. With the default catalogue paths in place, launch it
-without repeating the three firmware options:
+With the default local mappings and user-supplied ROMs, start the NMS 8250
+with:
 
 ```sh
 ./1983 --model nms8250 --region pal
 ```
 
-The `nms8250` catalogue entry reproduces the firmware placement of the real
-machine. With the
-RTC present, the firmware progresses through its Sub-ROM initialization,
-programs the V9938 for PAL, and draws the MSX2 startup mark in a 512x192
-SCREEN 6 display. Beam-timed retrace status, the preloaded R44 command
-transfer, and level-sensitive interrupt acknowledgement let firmware leave
-the Sub-ROM and continue to BASIC or a cartridge. The WD2793 controller
-behind the disk ROM is still absent, so this is not yet a disk boot.
+See [`BOOT_TARGETS.md`](BOOT_TARGETS.md) for firmware setup, diagnostic
+checkpoints, the GeoBench/Nextor target, and licensing boundaries.
 
-For example, the local diagnostic cartridge can be booted with:
-
-```sh
-./1983 --model msx2 --region pal --cart ROMS/diag.rom
-```
-
-The verified path reaches its blue MSX Diagnostics menu and reports the
-machine as MSX2, matching the same cartridge's startup under openMSX.
-The corresponding optional firmware checkpoint is:
-
-```sh
-MSX_NMS8250_DIR=ROMS make check
-```
-
-If the diagnostic ROM is also available, include its explicit path to run
-the 1,500-frame cartridge handoff and menu regression:
-
-```sh
-MSX_NMS8250_DIR=ROMS MSX_DIAG_ROM=ROMS/diag.rom make check
-```
-
-The separate `msxdiag.rom` built by the sibling `../msx-diag` source tree is
-a replacement MSX1 BIOS, not a cartridge. Build and boot it with:
-
-```sh
-make -C ../msx-diag
-./1983 --model msx1 --region pal --bios ../msx-diag/msxdiag.rom
-```
-
-Its optional 300-frame self-test and menu checkpoint can be included without
-copying the GPL-3.0 diagnostic source or generated ROM into this repository:
-
-```sh
-MSX_DIAG_BIOS_ROM=../msx-diag/msxdiag.rom make check
-```
-
-The machine catalogue can point directly into the user's existing openMSX
-ROM pool or another private firmware directory. Future catalogue tooling can
-add recursive checksum-based discovery; filenames are currently explicit.
-Vendor system ROMs remain user-provided and are never copied into this
-repository. This follows the practical and legal separation described by the
-[openMSX system-ROM guide](https://openmsx.org/manual/setup.html#systemroms).
-
-The reproducible headless firmware checkpoint is:
-
-```sh
-./1983 --config /dev/null --headless --unthrottled --region ntsc \
-  --bios /path/to/cbios_main_msx1.rom \
-  --logo /path/to/cbios_logo_msx1.rom \
-  --exit-after 179 --dump-state
-```
-
-With the C-BIOS 0.29 images used by openMSX 21.0, this reaches frame 180 at
-`PC=1A65`, `SP=F300`, and primary-slot register `F0`, with 5,692 non-zero
-VRAM bytes. The optional fixture test exercises both that no-cartridge state
-and C-BIOS launching a small synthetic cartridge:
-
-```sh
-MSX_CBIOS_DIR=/path/to/cbios make check
-```
-
-## Keyboard controls
+## Controls
 
 | Key | Action |
 |-----|--------|
 | F4 | Save a PPM screenshot |
-| F5 | Reset the selected machine profile |
+| F5 | Reset |
 | F6 | Animated capture placeholder |
 | F8 | Monitor/disassembler placeholder |
 | F9 | Open or save and close the options overlay |
 | F11 | Toggle fullscreen |
 | F12 | Quit |
 | Pause | Pause or resume |
-| Ctrl++ / Ctrl+- | Increase or decrease window scale |
+| Ctrl++ / Ctrl+- | Change window scale |
+| Shift+F1…F5 | Send MSX F1…F5 |
+| Shift+F7 / Shift+F8 | Send MSX SELECT / STOP |
 
 Inside the overlay, Left and Right change section, Up and Down select a row,
-Enter changes the selected setting, F9 applies and saves, and Escape offers to
-save or discard modified settings. The Advanced section appears after enabling
-General > Tinker. The Audio section controls PSG volume in ten-percent steps;
-zero mutes the output. In Media, Enter on Cartridge 1 or Cartridge 2 opens an
-SDL file picker, Enter on the adjacent mapper row cycles its override, and
-Delete ejects the selected cartridge. Mounted paths and overrides are saved;
-the command line takes precedence when supplied.
+Enter activates it, F9 saves, and Escape closes or offers to discard changes.
+The Advanced section appears after enabling **General > Tinker**.
 
-In General, Enter on Machine opens the catalogue chooser. Selecting a model
-uses its mapped firmware and prompts only for required components whose paths
-are blank or unavailable. The BIOS, optional C-BIOS logo, Sub-ROM, and disk
-ROM are validated and committed as one set, so a cancelled picker or bad-size
-image leaves the running machine unchanged. Delete unloads the current
-firmware set.
+SDL scancodes map positionally to the international MSX keyboard. Left Ctrl
+is CTRL, left Alt is GRAPH, right Alt is CODE, and right Ctrl is the ACC/dead
+key. Both Shift keys, editing keys, arrows, and the numeric keypad are
+supported.
 
-Configuration is saved to `~/.config/1983/1983.conf` on Unix-like systems and
-under the user's application-data directory on Windows. Pass `--config PATH`
-to use an isolated file. See [`1983.conf.example`](1983.conf.example) for the
-currently supported settings. Firmware paths saved there are per-user
-overrides; clear them to inherit the selected entry from
-`1983-models.conf` again. Its `hardware` line records the resolved layout so
-settings can be normalized correctly even for a user-defined model ID.
+## Configuration
 
-## Goals
+User settings are stored in `~/.config/1983/1983.conf` on Unix-like systems
+and in the application-data directory on Windows. Use `--config PATH` for an
+isolated configuration; [`1983.conf.example`](1983.conf.example) documents
+the available settings.
 
-- Run the broadest practical range of MSX and MSX2 games, demos, applications,
-  and system software without being tied to a single vendor's model.
-- Model the standard hardware accurately enough for software that depends on
-  video, interrupt, slot, memory, and I/O timing.
-- Represent real machine differences through selectable profiles and
-  configuration instead of title-specific compatibility hacks.
-- Make cartridge, cassette, and disk software straightforward to load, with
-  sensible automatic detection and explicit overrides when detection is
-  ambiguous.
-- Reuse the familiar overlays, shortcuts, media workflows, display controls,
-  capture tools, and development automation of 1984 and 1985.
-- Remain multiplatform through portable C and SDL3, sharing improvements across
-  the sibling projects wherever possible.
+1983 searches for `1983-models.conf` in the current directory, the user
+configuration directory, and the installed application-data directory.
+`--models PATH` selects a different catalogue.
 
-## Planned baseline
+The local `DOS/` directory is reserved for guest DOS files. Only the
+unmodified `DOS/NEXTOR.SYS` is tracked; other DOS files are ignored.
 
-| Area | Intended support |
-|------|------------------|
-| CPU | Z80 instruction set, interrupts, and cycle-aware execution (initial core integrated) |
-| Machine architecture | Primary slots and linear ROM/RAM devices implemented; NMS 8250 secondary slots and internal 128 KB mapper implemented |
-| MSX video | TMS9918-family pattern modes, sprite mode 1, status flags, limits, collisions, and interrupts implemented; cycle-level timing refinement planned |
-| MSX2 video | V9938 registers, beam-timed VR/HR status, R#19/S#1 scanline interrupts, progressively timed drawing commands, contended CPU VRAM access, scanline-progressive output, palette, 128 KB VRAM, SCREEN 5-8 bitmap rendering, and sprite mode 2 implemented; advanced scrolling and within-scanline pixel timing planned |
-| Audio | AY-3-8910/YM2149 PSG tone, noise, envelopes, DAC output, and SDL3 playback implemented; SCC and MSX-MUSIC planned as compatibility extensions |
-| Cartridges | Dual primary-slot devices with linear, ASCII8/16, Konami, and Konami SCC mapping and persistent auto/manual controls implemented; SCC audio planned |
-| Cassette | CAS images and the standard BIOS cassette path |
-| Disk | DSK images, common MSX disk-ROM behaviour, Sunrise ATA-IDE, Nextor-compatible block storage, guest writes, and multiple drives |
-| Input | International MSX keyboard matrix implemented; joysticks, mouse, alternate national layouts, and host clipboard paste planned |
-| MSX2 hardware | Internal RAM mapper and RP-5C01 RTC implemented; editable model/firmware catalogue implemented; persistent CMOS files and additional mapper devices planned |
-| Tools | Debugger and disassembler, screenshots, snapshots, headless execution, and deterministic automation |
+## Documentation
 
-The first compatibility target is standard MSX1 software. The first
-mass-storage boot target matches GeoBench's openMSX setup: a PAL Philips
-NMS 8250 with its internal 128 KB mapper, a separate 512 KB mapper
-extension, and Nextor 2.1.1 through an emulated Sunrise ATA-IDE cartridge.
-MSX2+ and MSX turbo R are not part of the initial scope, although the design
-should leave room for later machine generations.
-
-## Compatibility approach
-
-MSX is a standard implemented by many machines rather than one fixed hardware
-configuration. 1983 therefore separates the shared architecture from
-machine-specific choices such as region, video frequency, BIOS set, slot
-layout, RAM, VRAM, and built-in extensions.
-
-Cartridge mapper detection uses conservative heuristics while retaining a
-manual override. Compatibility work will be backed by repeatable boot,
-framebuffer, audio, and timing tests so that support for one machine profile
-does not silently break another.
-
-## Roadmap
-
-1. **Frontend scaffold:** portable build, SDL3 window and display, persistent
-   configuration, overlays, notifications, LEDs, machine profiles, and smoke
-   testing. This initial step is in place.
-2. **Executable MSX1 slice:** integrate the sibling Z80 core, primary-slot
-   bus, PPI slot control, firmware/plain-cartridge loading, and the initial
-   TMS9918/TMS9929 video path. C-BIOS now reaches a deterministic boot
-   checkpoint and launches a test cartridge.
-3. Refine TMS9918/TMS9929 timing, broaden the cartridge compatibility corpus,
-   add cassette support, joysticks, alternate national keyboard layouts, a
-   supplied BIOS/BASIC checkpoint, and an MSX1 compatibility suite. Common
-   linear, ASCII, and Konami cartridge mapper families are now implemented.
-4. Complete the V9938 display engine, multiple memory mappers, and the Philips
-   NMS 8250 reference profile. The V9938 CPU interface, SCREEN 5-8 renderer,
-   sprite-mode-2 engine, synchronous command engine, MSX2 secondary slots,
-   internal mapper, and RTC are in place, and vendor firmware launches a plain
-   cartridge, with mid-frame changes committed progressively by scanline.
-   Then boot its
-   user-supplied Nextor 2.1.1 Sunrise IDE ROM and the same raw hard-disk image
-   used by `../geobench/tools/run_msx.sh`.
-5. Add commonly required sound and cartridge extensions, improve timing
-   accuracy, and expand regression coverage.
-6. Package tested releases for the host platforms supported by 1984 and 1985.
-
-## Shared interface and multiplatform design
-
-Being a sibling project is part of 1983's design, not just its name. It reuses
-the interface language of 1984 and 1985: the fixed guest canvas, status footer,
-LED strip, F9 overlay, function-key workflow, notifications, display controls,
-headless execution, and automation-friendly command line.
-
-The MSX emulation remains behind a narrow machine boundary so the slot
-architecture, VDPs, firmware profiles, and peripherals can be modelled on
-their own terms. SDL3 supplies the portable window, renderer, input, and
-event layer. See [`DEVELOPMENT.md`](DEVELOPMENT.md) for the initial source
-layout and hardware assumptions.
-
-The local openMSX 21.0 source and machine definitions were used as an
-implementation reference to cross-check MSX ports, slot behaviour, and
-representative MSX1/MSX2 configurations. openMSX remains an independent
-project; 1983 is not intended to reproduce its architecture.
-
-## Firmware and software
-
-1983 will support both C-BIOS and user-supplied MSX firmware. C-BIOS provides
-a redistributable cartridge-oriented default, but it does not provide BASIC,
-cassette, or disk support. A supplied BIOS/BASIC set therefore remains
-necessary for representative BASIC and peripheral compatibility.
-
-[Nextor](https://github.com/Konamiman/Nextor) is the first disk operating
-system target for configurations with supported storage hardware. It is a
-guest OS rather than an MSX BIOS replacement: reaching its command prompt
-requires a matching kernel ROM, a storage-controller implementation, and a
-boot volume containing `NEXTOR.SYS` and `COMMAND2.COM`.
-
-MSX BIOS, BASIC, disk ROMs, cartridge images, and other software may be
-copyrighted. The project will only distribute firmware or test software when
-its licence permits redistribution. Users are responsible for supplying any
-other required images from hardware or media they are entitled to use. See
-[`BOOT_TARGETS.md`](BOOT_TARGETS.md) for the selected boot lanes, first
-Nextor configuration, checkpoints, and distribution boundaries.
+- [`TECHNICAL.md`](TECHNICAL.md) — implemented hardware, timing, media, and
+  frontend behavior.
+- [`DEVELOPMENT.md`](DEVELOPMENT.md) — source layout, design boundaries,
+  hardware notes, and verification.
+- [`ROADMAP.md`](ROADMAP.md) — project goals, support matrix, and planned
+  work.
+- [`BOOT_TARGETS.md`](BOOT_TARGETS.md) — firmware lanes, reproducible
+  checkpoints, Nextor target, and licensing.
 
 ## Contributing
 
-Hardware documentation, small redistributable test programs, timing traces,
-and well-described compatibility cases are especially useful. Please use the
-[issue tracker](https://github.com/salvogendut/1983/issues) to discuss a
-machine profile, device, or implementation change before starting substantial
-work.
+Hardware documentation, redistributable test programs, timing traces, and
+well-described compatibility cases are welcome. Please use the
+[issue tracker](https://github.com/salvogendut/1983/issues) before starting a
+substantial machine, device, or architecture change.
 
 ## License
 
-1983 is free software released under the GNU General Public License,
-version 2.0 only (`GPL-2.0-only`). See [`LICENSE`](LICENSE).
+1983 is released under the GNU General Public License version 2.0 only
+(`GPL-2.0-only`). See [`LICENSE`](LICENSE).

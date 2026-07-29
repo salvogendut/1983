@@ -1,8 +1,8 @@
 # 1983 development notes
 
-This document records the boundaries and hardware assumptions established by
-the initial scaffold. It is intentionally narrower than a complete MSX
-hardware specification.
+This document records source ownership, implementation boundaries, hardware
+assumptions, and verification workflows. It is intentionally narrower than a
+complete MSX hardware specification.
 
 ## Source layout
 
@@ -97,8 +97,8 @@ implemented; the WD2793 controller is not. The GeoBench
 configuration will then add
 independent SunriseIDE/Nextor and 512 KB memory-mapper extensions. These are
 two mapper devices, not one combined RAM allocation. Firmware discovery will
-reuse the recursive `~/.openMSX/share/systemroms` pool and match the pinned
-hashes documented in `BOOT_TARGETS.md`; no machine ROM belongs in the
+build on the explicit `1983-models.conf` paths and eventually match the
+pinned hashes documented in `BOOT_TARGETS.md`; no machine ROM belongs in the
 repository.
 
 ## Bus and port assumptions
@@ -284,40 +284,6 @@ PSG port A currently reports inactive joystick inputs, the international
 keyboard-layout signal, and an empty-cassette comparator. Port B drives the
 active-low Kana LED. Joystick, mouse, and real cassette signals remain future
 peripheral work.
-
-## Near-term implementation order
-
-The first five implementation steps—sibling Z80 integration, primary slots,
-PPI slot selection, external firmware loading, and a repeatable C-BIOS/VDP
-checkpoint—are now represented in code and focused tests. The next sequence
-is:
-
-1. Reach a deterministic BASIC prompt with a user-supplied BIOS/BASIC set.
-2. Add joystick input, cassette loading, alternate national keyboard layouts,
-   and a small redistributable MSX1 compatibility corpus.
-3. Refine the progressive VDP renderer from completed-scanline state changes
-   to within-scanline fetch timing where software depends on raster effects.
-4. Add deterministic snapshot and audio-capture surfaces for compatibility
-   investigations.
-
-The preceding cartridge target is complete: both external primary slots have
-Linear, ASCII8, ASCII16, Konami, and Konami SCC mapping, auto/manual selection,
-saved media paths, command-line overrides, and functional F9 Media rows. SCC
-register mapping is present; SCC audio is intentionally a separate target.
-
-The firmware decision is to support both C-BIOS and user-supplied BIOS/BASIC
-sets with clearly different capabilities. C-BIOS is the redistributable
-cartridge-oriented default; supplied firmware is the full BASIC and peripheral
-compatibility path.
-
-The first mass-storage boot milestone matches the GeoBench setup: Nextor
-2.1.1 on a PAL Philips NMS 8250 with its internal 128 KB mapper, an external
-512 KB mapper, and a Sunrise ATA-IDE cartridge. The Sunrise wrapper should be
-implemented independently from the ATA task-file backend. The compact ATA
-backend in the 1984 sibling can be adapted and tested in isolation, while the
-Sunrise memory map and bank-control behaviour are cross-checked against
-openMSX. See [`BOOT_TARGETS.md`](BOOT_TARGETS.md) for the pinned ROM hashes,
-boot matrix, and licensing boundaries.
 
 ## Verification
 

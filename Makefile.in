@@ -780,7 +780,9 @@ dist_icon512_DATA = icons/512x512/apps/io.github.salvogendut.Emulator1983.png
 EXTRA_DIST = \
 	LICENSE \
 	README.md \
+	TECHNICAL.md \
 	DEVELOPMENT.md \
+	ROADMAP.md \
 	BOOT_TARGETS.md \
 	1983.conf.example \
 	tests/test-cli.sh \
