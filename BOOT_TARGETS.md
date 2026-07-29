@@ -21,27 +21,28 @@ operating system, supplied as a kernel ROM plus files on a guest volume.
 ## Running current firmware
 
 The local `ROMS/` directory is ignored by Git and is available for
-user-supplied firmware, cartridges, and diagnostics. Nothing placed there is
-included in commits or release archives.
+user-supplied firmware, cartridges, and diagnostics. These local files are
+ignored; the only committed exceptions are the redistributable C-BIOS MSX1
+main and logo ROMs and their upstream license.
 
 ### C-BIOS
 
-Download C-BIOS from the
-[C-BIOS project](https://cbios.sourceforge.net/) and start the generic
-60 Hz MSX machine with:
+1983 includes C-BIOS 0.29 from the
+[C-BIOS project](https://cbios.sourceforge.net/). Select **C-BIOS MSX** in
+the Machine menu, or start the generic 60 Hz MSX machine explicitly with:
 
 ```sh
 ./1983 --region ntsc \
-  --bios /path/to/cbios_main_msx1.rom \
-  --logo /path/to/cbios_logo_msx1.rom
+  --bios ROMS/cbios_main_msx1.rom \
+  --logo ROMS/cbios_logo_msx1.rom
 ```
 
 Add a cartridge with `--cart`, or mount it through the Media overlay:
 
 ```sh
 ./1983 --region ntsc \
-  --bios /path/to/cbios_main_msx1.rom \
-  --logo /path/to/cbios_logo_msx1.rom \
+  --bios ROMS/cbios_main_msx1.rom \
+  --logo ROMS/cbios_logo_msx1.rom \
   --cart /path/to/game.rom
 ```
 
@@ -139,7 +140,7 @@ For a headless inspection run:
 ### Optional firmware tests
 
 ```sh
-MSX_CBIOS_DIR=/path/to/cbios make check
+MSX_CBIOS_DIR=ROMS make check
 MSX_DIAG_BIOS_ROM=../msx-diag/msxdiag.rom make check
 MSX_NMS8250_DIR=ROMS make check
 MSX_NMS8250_DIR=ROMS MSX_DIAG_ROM=ROMS/diag.rom make check
@@ -230,10 +231,10 @@ expected checksums and must never silently substitute an incompatible image.
 
 Neither the Philips ROMs nor the Nextor kernel ROM are committed to this
 repository. The GeoBench hard-disk image and machine-specific DOS files remain
-external test inputs. The project does track the unmodified guest-side
-`DOS/NEXTOR.SYS`; all other files under `DOS/` are ignored. A newer Nextor
-kernel can be added as a separate compatibility fixture; it must not silently
-change this reproducible reference profile.
+external test inputs. All guest-side files under `DOS/`, including
+`NEXTOR.SYS`, are local and ignored. A newer Nextor kernel can be added as a
+separate compatibility fixture; it must not silently change this reproducible
+reference profile.
 
 ## Boot checkpoints
 
@@ -352,9 +353,8 @@ Nextor is developed separately from 1983. It is based on MSX-DOS 2.31 and has
 its own license: unmodified distribution is permitted under its terms, while
 commercial use and derivative forks require permission from its copyright
 holders. Nextor code or ROM data must not be copied into or relicensed as part
-of the GPL emulator. The tracked `DOS/NEXTOR.SYS` is kept as an unmodified,
-separately licensed guest file. The machine's Nextor kernel ROM remains an
-external, user-supplied official release.
+of the GPL emulator. `DOS/NEXTOR.SYS` and the machine's Nextor kernel ROM
+remain external, user-supplied official-release files.
 
 The authoritative sources are:
 

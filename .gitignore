@@ -23,10 +23,12 @@
 /configure~
 /autom4te.cache/
 /.local/
-/ROMS/
+/ROMS/*
+!/ROMS/README.C-BIOS
+!/ROMS/cbios_logo_msx1.rom
+!/ROMS/cbios_main_msx1.rom
 /rtc/
 /DOS/*
-!/DOS/NEXTOR.SYS
 /src/.deps/
 /tests/.deps/
 /src/.dirstamp

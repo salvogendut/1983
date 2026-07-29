@@ -133,6 +133,12 @@ dist_metainfo_DATA = io.github.salvogendut.Emulator1983.metainfo.xml
 
 dist_pkgdata_DATA = 1983-models.conf
 
+cbiosdir = $(pkgdatadir)/ROMS
+dist_cbios_DATA = \
+	ROMS/README.C-BIOS \
+	ROMS/cbios_logo_msx1.rom \
+	ROMS/cbios_main_msx1.rom
+
 icon16dir        = $(datadir)/icons/hicolor/16x16/apps
 dist_icon16_DATA = icons/16x16/apps/io.github.salvogendut.Emulator1983.png
 icon32dir        = $(datadir)/icons/hicolor/32x32/apps
@@ -158,7 +164,6 @@ EXTRA_DIST = \
 	BOOT_TARGETS.md \
 	1983.conf.example \
 	tests/test-cli.sh \
-	DOS/NEXTOR.SYS \
 	icons/1983.png \
 	icons/README.md \
 	icons/1983.rc \
