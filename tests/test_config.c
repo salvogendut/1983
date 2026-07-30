@@ -12,7 +12,7 @@ int main(void) {
     char flash_path[PATH_MAX];
 
     config_defaults(&config);
-    assert(strcmp(config.machine_id, "msx1") == 0);
+    assert(strcmp(config.machine_id, "cbios") == 0);
     assert(!config.bios_path[0]);
     assert(!config.logo_path[0]);
     assert(!config.subrom_path[0]);

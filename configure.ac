@@ -1,4 +1,5 @@
-AC_INIT([1983], [0.1.0], [], [1983])
+AC_INIT([1983], [0.2.0], [https://github.com/salvogendut/1983/issues], [1983],
+        [https://github.com/salvogendut/1983])
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CANONICAL_HOST
@@ -17,12 +18,15 @@ case $host_os in
   mingw*|cygwin*|msys*)
     AC_CHECK_TOOL([WINDRES], [windres], [windres])
     WIN_RC_OBJ="icons/1983-rc.o"
+    WIN_STACK_LDFLAGS="-Wl,--stack,16777216"
     ;;
   *)
     WIN_RC_OBJ=""
+    WIN_STACK_LDFLAGS=""
     ;;
 esac
 AC_SUBST([WIN_RC_OBJ])
+AC_SUBST([WIN_STACK_LDFLAGS])
 AC_SUBST([WINDRES])
 
 PROG_GIT_COMMIT=`git -C "$srcdir" rev-parse --short HEAD 2>/dev/null || echo unknown`

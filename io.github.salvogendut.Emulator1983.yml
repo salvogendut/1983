@@ -1,0 +1,27 @@
+app-id: io.github.salvogendut.Emulator1983
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk//25.08
+# Quoted so YAML treats the numeric program name as a string.
+command: '1983'
+
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --device=dri
+  - --socket=pulseaudio
+  - --device=all
+  - --filesystem=home
+
+modules:
+  - name: emulator-1983
+    buildsystem: simple
+    build-commands:
+      - autoreconf -iv
+      - ./configure --prefix=/app
+      - make -j$(nproc)
+      - make install
+    sources:
+      - type: dir
+        path: .

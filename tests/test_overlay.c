@@ -324,8 +324,13 @@ int main(void) {
     snprintf(config.cartridge_path[1],
              sizeof(config.cartridge_path[1]),
              "test-cartridge-2.rom");
+#ifdef __APPLE__
+    SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "dummy",
+                            SDL_HINT_OVERRIDE);
+#else
     SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen",
                             SDL_HINT_OVERRIDE);
+#endif
     assert(display_init(&display, &config, &msx, "Test MSX") == 0);
     test_cartridge_led_rendering(display.renderer);
     leds_init();
@@ -358,9 +363,11 @@ int main(void) {
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.machine_row == 3);
     send_key(&overlay, SDLK_DOWN);
+    assert(overlay.machine_row == 4);
+    send_key(&overlay, SDLK_DOWN);
     assert(overlay.machine_row == 0);
     send_key(&overlay, SDLK_UP);
-    assert(overlay.machine_row == 3);
+    assert(overlay.machine_row == 4);
     send_key(&overlay, SDLK_ESCAPE);
     assert(overlay.state == OVERLAY_STATE_MENU);
     assert(config.model == MSX_MODEL_GENERIC_MSX1);
@@ -629,7 +636,7 @@ int main(void) {
     render_overlay(&display, &msx, &overlay);
     send_key(&overlay, SDLK_F2);
     assert(overlay.state == OVERLAY_STATE_MODEL_LIST);
-    assert(models.count == 5);
+    assert(models.count == 6);
     assert(model_catalog_find(&models, "new-model"));
 
     send_key(&overlay, SDLK_D);
@@ -639,14 +646,14 @@ int main(void) {
                   "new-model-copy") == 0);
     send_key(&overlay, SDLK_F2);
     assert(overlay.state == OVERLAY_STATE_MODEL_LIST);
-    assert(models.count == 6);
+    assert(models.count == 7);
 
     send_key(&overlay, SDLK_DELETE);
     assert(overlay.state == OVERLAY_STATE_MODEL_DELETE);
     render_overlay(&display, &msx, &overlay);
     send_key(&overlay, SDLK_RETURN);
     assert(overlay.state == OVERLAY_STATE_MODEL_LIST);
-    assert(models.count == 5);
+    assert(models.count == 6);
     assert(!model_catalog_find(&models, "new-model-copy"));
 
     send_key(&overlay, SDLK_RETURN);

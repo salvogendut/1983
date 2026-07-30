@@ -141,7 +141,7 @@ static void ensure_parent(const char *path) {
 void config_defaults(Config *config) {
     memset(config, 0, sizeof(*config));
     config->model = MSX_MODEL_GENERIC_MSX1;
-    snprintf(config->machine_id, sizeof(config->machine_id), "msx1");
+    snprintf(config->machine_id, sizeof(config->machine_id), "cbios");
     config->region = MSX_REGION_PAL;
     config->memory_kb = msx_default_ram_kb(config->model);
     config->scale = 1;

@@ -16,10 +16,9 @@
       shortcut, notification, LED, and configuration conventions.
     </p>
     <p>
-      The first executable MSX1 slice includes Z80 execution, a primary-slot
-      memory bus, firmware and plain-cartridge loading, PPI slot control, and
-      an initial TMS9918/TMS9929 display path. C-BIOS reaches a deterministic
-      boot and cartridge-startup checkpoint.
+      It runs MSX1 and MSX2 firmware, cartridges, cassettes, raw floppy
+      images, Sunrise IDE disks, and SD Mapper media. A redistributable
+      C-BIOS MSX1 machine is included as the ready-to-run default.
     </p>
   </description>
   <launchable type="desktop-id">io.github.salvogendut.Emulator1983.desktop</launchable>
@@ -27,6 +26,15 @@
   <url type="bugtracker">https://github.com/salvogendut/1983/issues</url>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.2.0" date="2026-07-30">
+      <description>
+        <p>
+          First packaged release with bundled C-BIOS defaults, MSX1/MSX2
+          emulation, cartridge and mass-storage extensions, RPM and Flatpak
+          definitions, and automated Linux, Windows, and macOS builds.
+        </p>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-07-28">
       <description>
         <p>Initial frontend and executable MSX1 scaffold with C-BIOS boot validation.</p>

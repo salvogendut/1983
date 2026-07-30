@@ -749,7 +749,7 @@ am__DIST_COMMON = $(srcdir)/Makefile.in \
 	$(top_srcdir)/build-aux/depcomp \
 	$(top_srcdir)/build-aux/install-sh \
 	$(top_srcdir)/build-aux/missing \
-	$(top_srcdir)/build-aux/test-driver README.md \
+	$(top_srcdir)/build-aux/test-driver INSTALL.md README.md \
 	build-aux/compile build-aux/config.guess build-aux/config.sub \
 	build-aux/depcomp build-aux/install-sh build-aux/missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -827,6 +827,7 @@ STRIP = @STRIP@
 VERSION = @VERSION@
 WINDRES = @WINDRES@
 WIN_RC_OBJ = @WIN_RC_OBJ@
+WIN_STACK_LDFLAGS = @WIN_STACK_LDFLAGS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -880,6 +881,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+AM_LDFLAGS = $(WIN_STACK_LDFLAGS)
 1983_SOURCES = \
 	src/config.c \
 	src/cartridge.c \
@@ -973,7 +975,7 @@ test_megaflash_CPPFLAGS = -I$(top_srcdir)/src
 test_megaflash_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_config_CPPFLAGS = -I$(top_srcdir)/src
-test_config_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_config_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_models_CPPFLAGS = -I$(top_srcdir)/src
 test_models_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
@@ -1037,7 +1039,12 @@ EXTRA_DIST = \
 	DEVELOPMENT.md \
 	ROADMAP.md \
 	BOOT_TARGETS.md \
+	INSTALL.md \
 	1983.conf.example \
+	1983.spec \
+	io.github.salvogendut.Emulator1983.yml \
+	.github/workflows/build.yml \
+	packaging/macos/package.sh \
 	tests/test-cli.sh \
 	icons/1983.png \
 	icons/README.md \

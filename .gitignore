@@ -37,6 +37,12 @@
 /tests/.deps/
 /src/.dirstamp
 /tests/.dirstamp
+/dist/
+/.flatpak-builder/
+/flatpak_app/
+/flatpak-repo/
+/rpm-out/
+/*.flatpak
 /test-*.log
 /test-*.trs
 /test-suite.log

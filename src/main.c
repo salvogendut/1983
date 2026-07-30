@@ -22,6 +22,10 @@
 #define PROG_GIT_COMMIT "unknown"
 #endif
 
+#ifndef PACKAGE_VERSION
+#define PACKAGE_VERSION "unknown"
+#endif
+
 typedef struct {
     const char *config_path;
     const char *models_path;
@@ -87,7 +91,7 @@ static const char *usage =
     "                      konami, or konami-scc\n"
     "  --mapper2 NAME      slot 2 mapper (same names as --mapper1)\n"
     "  --scale N           initial window scale (1 through 4)\n"
-    "  --headless          use SDL's offscreen video backend\n"
+    "  --headless          use SDL's headless video backend\n"
     "  --exit-after N      exit after N host frames (for smoke tests)\n"
     "  --unthrottled       disable 50/60 Hz frame pacing\n"
     "  --dump-state        print CPU/bus/VDP state on exit\n"
@@ -191,7 +195,8 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             return 1;
         }
         if (strcmp(argument, "--version") == 0) {
-            printf("1983 0.1.0 (git %s)\n", PROG_GIT_COMMIT);
+            printf("1983 %s (git %s)\n",
+                   PACKAGE_VERSION, PROG_GIT_COMMIT);
             return 1;
         }
         if (strcmp(argument, "--headless") == 0) {
@@ -612,8 +617,13 @@ int main(int argc, char **argv) {
     config_normalize(&config);
 
     if (cli.headless) {
+#ifdef __APPLE__
+        SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "dummy",
+                                SDL_HINT_OVERRIDE);
+#else
         SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen",
                                 SDL_HINT_OVERRIDE);
+#endif
         SDL_SetHintWithPriority(SDL_HINT_AUDIO_DRIVER, "dummy",
                                 SDL_HINT_OVERRIDE);
     }

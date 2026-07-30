@@ -12,6 +12,10 @@
 #define PROG_GIT_COMMIT "unknown"
 #endif
 
+#ifndef PACKAGE_VERSION
+#define PACKAGE_VERSION "unknown"
+#endif
+
 #define OVERLAY_LINE_H 18
 #define OVERLAY_LABEL_X 28
 #define OVERLAY_VALUE_X 188
@@ -782,8 +786,8 @@ static void item_text(const Overlay *overlay, int row,
                     break;
                 case ADVANCED_VERSION:
                     snprintf(label, label_size, "Version");
-                    snprintf(value, value_size, "0.1.0 (git %s)",
-                             PROG_GIT_COMMIT);
+                    snprintf(value, value_size, "%s (git %s)",
+                             PACKAGE_VERSION, PROG_GIT_COMMIT);
                     break;
             }
             break;
