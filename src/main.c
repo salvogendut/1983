@@ -617,8 +617,13 @@ int main(int argc, char **argv) {
     config_normalize(&config);
 
     if (cli.headless) {
+#ifdef __APPLE__
         SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "dummy",
                                 SDL_HINT_OVERRIDE);
+#else
+        SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen",
+                                SDL_HINT_OVERRIDE);
+#endif
         SDL_SetHintWithPriority(SDL_HINT_AUDIO_DRIVER, "dummy",
                                 SDL_HINT_OVERRIDE);
     }

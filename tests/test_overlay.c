@@ -324,8 +324,13 @@ int main(void) {
     snprintf(config.cartridge_path[1],
              sizeof(config.cartridge_path[1]),
              "test-cartridge-2.rom");
+#ifdef __APPLE__
     SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "dummy",
                             SDL_HINT_OVERRIDE);
+#else
+    SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen",
+                            SDL_HINT_OVERRIDE);
+#endif
     assert(display_init(&display, &config, &msx, "Test MSX") == 0);
     test_cartridge_led_rendering(display.renderer);
     leds_init();
