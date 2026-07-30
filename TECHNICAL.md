@@ -451,6 +451,11 @@ The SDL3 frontend follows the shared 1984/1985 interface:
 - screenshots, pause, reset, notifications, and headless execution;
 - Power, Caps, Kana, drive, cassette, and IDE status surfaces.
 
+Notification mode `off` suppresses both on-screen pop-ups and routine startup
+information on standard output. Warnings and errors remain on standard error;
+explicit command output such as `--help`, `--version`, and `--dump-state`
+remains visible.
+
 The emulator is kept behind a narrow machine boundary: core hardware does
 not depend on SDL and can run in component tests, headless tools, and future
 frontends.
