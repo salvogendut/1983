@@ -654,7 +654,7 @@ static void item_text(const Overlay *overlay, int row,
                     break;
                 case 2:
                     snprintf(label, label_size,
-                             "MegaFlashROM SCC+ SD");
+                             "MegaFlashROM SCC+SD");
                     megaflash_extension_text(
                         overlay, value, value_size);
                     break;
