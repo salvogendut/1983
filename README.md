@@ -81,6 +81,10 @@ make check
 ./1983
 ```
 
+Fresh configurations select the bundled `cbios` model, a basic generic MSX1
+machine using the included C-BIOS main and logo ROMs. The resulting
+per-user `1983.conf` records that complete firmware choice automatically.
+
 Useful options:
 
 ```sh
@@ -100,6 +104,12 @@ Useful options:
 ./1983 --headless --unthrottled --exit-after 10
 ./1983 --help
 ```
+
+Tagged releases publish a portable Linux x86_64 bundle, a Fedora/RHEL-family
+RPM, a Windows x86_64 ZIP, macOS application bundles for Apple Silicon and
+Intel, and an x86_64 Flatpak bundle on the
+[GitHub Releases page](https://github.com/salvogendut/1983/releases).
+See [`INSTALL.md`](INSTALL.md) for installation and package-building details.
 
 ## Firmware and machines
 
@@ -303,6 +313,8 @@ including `NEXTOR.SYS`, are ignored and are not distributed with 1983.
   work.
 - [`BOOT_TARGETS.md`](BOOT_TARGETS.md) — firmware lanes, reproducible
   checkpoints, Nextor target, and licensing.
+- [`INSTALL.md`](INSTALL.md) — release assets, source installation, RPM,
+  Flatpak, Windows, and macOS notes.
 
 ## Contributing
 

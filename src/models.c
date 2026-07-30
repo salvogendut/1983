@@ -1,3 +1,7 @@
+#ifndef _WIN32
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include "models.h"
 
 #include <ctype.h>
@@ -19,6 +23,10 @@
 #include <unistd.h>
 #define GETCWD(buffer, size) getcwd((buffer), (size))
 #define MKDIR(path) mkdir((path), 0755)
+#endif
+
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
 #endif
 
 #ifndef PKGDATADIR
@@ -169,15 +177,84 @@ static void add_default(ModelCatalog *catalog, const char *id,
 }
 
 void model_catalog_defaults(ModelCatalog *catalog) {
+    ModelDefinition *cbios;
+
     if (!catalog)
         return;
     memset(catalog, 0, sizeof(*catalog));
     model_catalog_user_path(catalog->edit_path,
                             sizeof(catalog->edit_path));
+    add_default(catalog, "cbios", "C-BIOS MSX",
+                MSX_MODEL_GENERIC_MSX1);
+    cbios = &catalog->entries[catalog->count - 1];
+    if (PKGDATADIR[0]) {
+        snprintf(cbios->bios_path, sizeof(cbios->bios_path),
+                 "%s/ROMS/cbios_main_msx1.rom", PKGDATADIR);
+        snprintf(cbios->logo_path, sizeof(cbios->logo_path),
+                 "%s/ROMS/cbios_logo_msx1.rom", PKGDATADIR);
+    } else {
+        snprintf(cbios->bios_path, sizeof(cbios->bios_path),
+                 "ROMS/cbios_main_msx1.rom");
+        snprintf(cbios->logo_path, sizeof(cbios->logo_path),
+                 "ROMS/cbios_logo_msx1.rom");
+    }
     add_default(catalog, "msx1", "MSX", MSX_MODEL_GENERIC_MSX1);
     add_default(catalog, "msx2", "MSX2", MSX_MODEL_GENERIC_MSX2);
     add_default(catalog, "nms8250", "Philips NMS 8250",
                 MSX_MODEL_PHILIPS_NMS8250);
+}
+
+static bool executable_directory(char *directory, size_t directory_size) {
+    char executable[PATH_MAX];
+
+#ifdef _WIN32
+    DWORD length = GetModuleFileNameA(
+        NULL, executable, (DWORD)sizeof(executable));
+
+    if (!length || length >= (DWORD)sizeof(executable))
+        return false;
+    executable[length] = '\0';
+#elif defined(__APPLE__)
+    uint32_t size = (uint32_t)sizeof(executable);
+
+    if (_NSGetExecutablePath(executable, &size) != 0)
+        return false;
+#elif defined(__linux__)
+    ssize_t length =
+        readlink("/proc/self/exe", executable, sizeof(executable) - 1);
+
+    if (length < 0 || (size_t)length >= sizeof(executable))
+        return false;
+    executable[length] = '\0';
+#else
+    (void)directory;
+    (void)directory_size;
+    return false;
+#endif
+    path_dirname(directory, directory_size, executable);
+    return directory[0] != '\0';
+}
+
+static bool installed_path(char *path, size_t path_size) {
+    char directory[PATH_MAX];
+    static const char *relative_paths[] = {
+        "1983-models.conf",
+        "../share/1983/1983-models.conf",
+        "../Resources/1983-models.conf",
+    };
+
+    if (!executable_directory(directory, sizeof(directory)))
+        return false;
+    for (size_t i = 0;
+         i < sizeof(relative_paths) / sizeof(relative_paths[0]); ++i) {
+        if (snprintf(path, path_size, "%s/%s", directory,
+                     relative_paths[i]) >= (int)path_size)
+            continue;
+        if (file_exists(path))
+            return true;
+    }
+    path[0] = '\0';
+    return false;
 }
 
 static void default_path(char *path, size_t path_size) {
@@ -192,6 +269,8 @@ static void default_path(char *path, size_t path_size) {
         snprintf(path, path_size, "1983-models.conf");
         return;
     }
+    if (installed_path(path, path_size))
+        return;
     if (PKGDATADIR[0]) {
         snprintf(path, path_size, "%s/1983-models.conf", PKGDATADIR);
         if (file_exists(path))

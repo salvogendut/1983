@@ -110,8 +110,9 @@ profiles. A `[model id]` entry supplies `name`, `hardware`, `bios`, `logo`,
 `subrom`, and `disk_rom`. Paths are resolved relative to that file. A user
 can add any number of named models which reuse an implemented hardware layout
 without recompiling 1983. The parser caps the catalogue at 64 valid entries,
-ignores unknown hardware layouts and duplicate IDs, and falls back to the
-three built-in entries when no valid file is available.
+ignores unknown hardware layouts and duplicate IDs, and falls back to four
+built-in entries, including the ready-to-run C-BIOS machine, when no valid
+file is available.
 
 **Advanced > Machine model editor**, behind the existing Tinker gate, writes
 the same format through `model_catalog_save()`. It edits a copy, validates

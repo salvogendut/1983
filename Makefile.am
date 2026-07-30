@@ -186,7 +186,12 @@ EXTRA_DIST = \
 	DEVELOPMENT.md \
 	ROADMAP.md \
 	BOOT_TARGETS.md \
+	INSTALL.md \
 	1983.conf.example \
+	1983.spec \
+	io.github.salvogendut.Emulator1983.yml \
+	.github/workflows/build.yml \
+	packaging/macos/package.sh \
 	tests/test-cli.sh \
 	icons/1983.png \
 	icons/README.md \

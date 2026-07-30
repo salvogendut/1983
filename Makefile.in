@@ -749,7 +749,7 @@ am__DIST_COMMON = $(srcdir)/Makefile.in \
 	$(top_srcdir)/build-aux/depcomp \
 	$(top_srcdir)/build-aux/install-sh \
 	$(top_srcdir)/build-aux/missing \
-	$(top_srcdir)/build-aux/test-driver README.md \
+	$(top_srcdir)/build-aux/test-driver INSTALL.md README.md \
 	build-aux/compile build-aux/config.guess build-aux/config.sub \
 	build-aux/depcomp build-aux/install-sh build-aux/missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -1037,7 +1037,12 @@ EXTRA_DIST = \
 	DEVELOPMENT.md \
 	ROADMAP.md \
 	BOOT_TARGETS.md \
+	INSTALL.md \
 	1983.conf.example \
+	1983.spec \
+	io.github.salvogendut.Emulator1983.yml \
+	.github/workflows/build.yml \
+	packaging/macos/package.sh \
 	tests/test-cli.sh \
 	icons/1983.png \
 	icons/README.md \

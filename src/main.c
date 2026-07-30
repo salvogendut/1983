@@ -22,6 +22,10 @@
 #define PROG_GIT_COMMIT "unknown"
 #endif
 
+#ifndef PACKAGE_VERSION
+#define PACKAGE_VERSION "unknown"
+#endif
+
 typedef struct {
     const char *config_path;
     const char *models_path;
@@ -191,7 +195,8 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             return 1;
         }
         if (strcmp(argument, "--version") == 0) {
-            printf("1983 0.1.0 (git %s)\n", PROG_GIT_COMMIT);
+            printf("1983 %s (git %s)\n",
+                   PACKAGE_VERSION, PROG_GIT_COMMIT);
             return 1;
         }
         if (strcmp(argument, "--headless") == 0) {

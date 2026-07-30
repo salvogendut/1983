@@ -16,10 +16,15 @@ int main(void) {
     FILE *file;
 
     model_catalog_defaults(&catalog);
-    assert(catalog.count == 3);
+    assert(catalog.count == 4);
     assert(catalog.edit_path[0]);
-    assert(strcmp(catalog.entries[0].id, "msx1") == 0);
-    assert(catalog.entries[2].hardware ==
+    assert(strcmp(catalog.entries[0].id, "cbios") == 0);
+    assert(strstr(catalog.entries[0].bios_path,
+                  "ROMS/cbios_main_msx1.rom"));
+    assert(strstr(catalog.entries[0].logo_path,
+                  "ROMS/cbios_logo_msx1.rom"));
+    assert(strcmp(catalog.entries[1].id, "msx1") == 0);
+    assert(catalog.entries[3].hardware ==
            MSX_MODEL_PHILIPS_NMS8250);
 
     file = fopen(path, "w");

@@ -8,7 +8,19 @@ sdrom=tests/test-cli-sdmapper.tmp
 sdimage=tests/test-cli-sdcard.tmp
 megaflash=tests/test-cli-megaflash.tmp
 cassette=tests/test-cli-cassette.tmp
-trap 'rm -f "$log" "$config" "$sunrise" "$sdrom" "$sdimage" "$megaflash" "$cassette"' EXIT HUP INT TERM
+first_run=tests/test-cli-first-run.tmp
+source_root=${srcdir:-.}
+trap 'rm -f "$log" "$config" "$sunrise" "$sdrom" "$sdimage" "$megaflash" "$cassette" "$first_run"' EXIT HUP INT TERM
+
+rm -f "$first_run"
+./1983 --config "$first_run" \
+    --models "$source_root/1983-models.conf" \
+    --headless --unthrottled --exit-after 0 \
+    >"$log" 2>&1
+grep -q '^model = cbios$' "$first_run"
+grep -q 'cbios_main_msx1\.rom$' "$first_run"
+grep -q 'cbios_logo_msx1\.rom$' "$first_run"
+grep -q 'BIOS loaded, logo ROM loaded' "$log"
 
 if ./1983 --mapper definitely-not-a-mapper >"$log" 2>&1; then
     echo "invalid mapper was accepted" >&2
@@ -158,5 +170,8 @@ grep -q -- "--ide PATH" "$log"
 grep -q -- "--ide-mode MODE" "$log"
 grep -q -- "--cassette PATH" "$log"
 grep -q -- "--screenshot PATH" "$log"
+
+./1983 --version >"$log"
+grep -q '^1983 0\.2\.0 (git ' "$log"
 
 echo "command-line media and mapper tests passed"

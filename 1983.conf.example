@@ -1,16 +1,16 @@
 # 1983 - generic MSX / MSX2 emulator
-# This is the initial frontend-scaffold configuration.
+# Fresh installations create equivalent settings automatically.
 
 [machine]
-model = msx1
+model = cbios
 hardware = msx1
 region = pal
 # Supported selections extend through 4096 KiB.
 memory_kb = 64
 
 [firmware]
-bios =
-logo =
+bios = ROMS/cbios_main_msx1.rom
+logo = ROMS/cbios_logo_msx1.rom
 subrom =
 disk_rom =
 
