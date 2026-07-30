@@ -100,7 +100,10 @@ jobs:
           autoreconf -iv
           ./configure
           make -j$(nproc)
-          make check
+          make check || {
+            find . -maxdepth 2 -type f -name '*.log' -print -exec cat {} \;
+            exit 1
+          }
       - name: Stage portable Windows bundle
         run: |
           set -eu
@@ -146,7 +149,10 @@ jobs:
           autoreconf -iv
           ./configure
           make -j$(sysctl -n hw.logicalcpu)
-          make check
+          make check || {
+            find . -maxdepth 2 -type f -name '*.log' -print -exec cat {} \;
+            exit 1
+          }
       - name: Package and smoke-test application bundle
         run: |
           version="$(sed -n 's/^PACKAGE_VERSION = //p' Makefile)"
