@@ -18,6 +18,7 @@ complete MSX hardware specification.
 | `src/display.*` | SDL window and renderer, fixed logical canvas, framebuffer presentation, footer, and screenshots |
 | `src/gamepad.*` | Primary SDL3 gamepad discovery, hotplug lifetime, polling, dead zone, and MSX joystick mapping |
 | `src/kbd.*` | SDL scancode translation and shared frontend/guest function-key routing |
+| `src/paste.*` | Host-independent clipboard-text queue and international MSX matrix injection |
 | `src/overlay.*` | F9 options workflow and live application of frontend and machine-profile settings |
 | `src/leds.*` | Shared bottom status strip and MSX-specific indicator definitions |
 | `src/megaflash.*` | MegaFlashROM SCC+ SD expanded subslots, flash/persistence, mappers, MegaSD, SCC-I, and cartridge PSG |
@@ -46,6 +47,7 @@ complete MSX hardware specification.
 | `tests/test_models.c` | Machine-catalogue parsing, hardware mapping, relative paths, and invalid-entry filtering |
 | `tests/test_overlay.c` | Overlay navigation, fixed 1.5× presentation scale, cassette transport, guided Sunrise setup, dynamic hardware rows, cartridge-slot LEDs, and model editing |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
+| `tests/test_paste.c` | Paste timing, international punctuation, line-ending, replacement, and cancellation checks |
 | `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
 | `tests/test_rtc.c` | RP-5C01 banks, masks, 12/24-hour and test modes, calendar boundaries, offline continuity, corruption rejection, and safe persistence |
 | `tests/test_sdcard.c` | SPI initialization, identification, capacity, read/write, multiple transfers, addressing, image safety, and error handling |
@@ -344,6 +346,15 @@ for those chords. Focus loss, overlay entry, and machine reset clear both host
 tracking and the guest matrix to prevent stuck keys. The generic machine
 currently provides idealized simultaneous-key rollover rather than
 model-specific electrical ghosting.
+
+Ctrl+V obtains UTF-8 clipboard text from SDL, releases the physical shortcut,
+and hands a private copy to `src/paste.c`. Printable ASCII, Tab, Backspace,
+and newline are translated using the international openMSX Unicode map;
+carriage returns and unsupported UTF-8 bytes are skipped. Paste does not add
+a trailing Return. A queued character is held for two complete frames with a
+one-frame gap, after an initial three-frame shortcut-release delay. Pausing
+also pauses the queue; reset, overlay entry, or focus loss cancels it and
+releases any synthetic key.
 
 ## TMS9918-family sprites
 

@@ -172,6 +172,7 @@ checkpoints, the GeoBench/Nextor target, and licensing boundaries.
 | F12 | Quit |
 | Pause | Pause or resume |
 | Ctrl++ / Ctrl+- | Change window scale |
+| Ctrl+V | Paste host clipboard text into the MSX |
 | Shift+F1…F5 | Send MSX F1…F5 |
 | Shift+F7 / Shift+F8 | Send MSX SELECT / STOP |
 | Click in window | Capture the mouse when the selected port is Mouse |
@@ -189,6 +190,11 @@ connected or removed while 1983 is running. When the selected Main Input
 connector is set to Mouse, click the emulator window to capture relative host
 movement. The left and right host buttons become MSX buttons A and B.
 Ctrl+Enter, F9, reset, or losing window focus releases capture.
+
+Ctrl+V types the host clipboard into the emulated international MSX keyboard
+matrix. Letters, digits, common punctuation, tabs, and line breaks are sent
+one key at a time; clipboard text is reproduced verbatim without appending an
+extra Return.
 
 **General > Extra Hardware** reveals Extensions; **General > Tinker**
 reveals Advanced.
