@@ -2,6 +2,7 @@
 /1983-*.tar.gz
 /test-msx
 /test-kbd
+/test-paste
 /test-vdp
 /test-psg
 /test-rtc

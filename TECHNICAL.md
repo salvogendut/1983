@@ -431,6 +431,13 @@ Shift+F1 through Shift+F5 send the guest function keys, Shift+F7 sends
 SELECT, and Shift+F8 sends STOP. Alternate national matrices and
 model-specific electrical ghosting are not implemented.
 
+Ctrl+V copies host clipboard text into a host-independent paste queue. ASCII
+characters are translated with the international MSX Unicode mapping and
+injected through the reference-counted matrix over successive frames. A
+three-frame initial delay lets the physical Ctrl+V chord clear, every key is
+held for two frames, and no implicit Return is appended. Pause suspends the
+queue; reset, overlay entry, and focus loss cancel it safely.
+
 The SDL3 controller adapter applies a 16,000-unit analogue dead zone and
 normalizes opposing directions to neutral before passing a six-bit state to
 the machine core. Relative SDL mouse input is captured by clicking the window

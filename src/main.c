@@ -16,6 +16,7 @@
 #include "msx.h"
 #include "notify.h"
 #include "overlay.h"
+#include "paste.h"
 #include "ui.h"
 
 #ifndef PROG_GIT_COMMIT
@@ -448,6 +449,7 @@ int main(int argc, char **argv) {
     const ModelDefinition *definition;
     MsxMachine msx;
     KbdHost keyboard;
+    Paste paste;
     static Display display;
     AudioOutput audio;
     GamepadInput gamepad;
@@ -639,6 +641,7 @@ int main(int argc, char **argv) {
     }
     sync_mouse_ports(&msx, &config);
     kbd_init(&keyboard);
+    paste_init(&paste);
     if (config.bios_path[0] &&
         msx_load_firmware_set(
             &msx, config.bios_path, config.logo_path,
@@ -931,6 +934,8 @@ int main(int argc, char **argv) {
     startup_info(config.notifications,
                  "Shift+F1..F5 = MSX F1..F5, Shift+F7 = SELECT, "
                  "Shift+F8 = STOP\n");
+    startup_info(config.notifications,
+                 "Ctrl+V = paste host clipboard text\n");
     startup_info(config.notifications, "Gamepad: %s\n",
                  gamepad_input_name(&gamepad));
     if (msx_can_boot(&msx))
@@ -1056,6 +1061,7 @@ int main(int argc, char **argv) {
             if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST &&
                 event.window.windowID == window_id) {
                 kbd_release_all(&keyboard, &msx);
+                paste_cancel(&paste, &msx);
                 set_mouse_capture(&display, &msx, false);
             }
             if (display.mouse_captured &&
@@ -1073,8 +1079,10 @@ int main(int argc, char **argv) {
                     (overlay.visible ||
                      !mouse_input_enabled(&config)))
                     set_mouse_capture(&display, &msx, false);
-                if (!overlay_was_visible && overlay.visible)
+                if (!overlay_was_visible && overlay.visible) {
                     kbd_release_all(&keyboard, &msx);
+                    paste_cancel(&paste, &msx);
+                }
                 if (overlay.visible)
                     leds_set_mouse_position(0.0f, 0.0f, false);
                 continue;
@@ -1138,6 +1146,31 @@ int main(int argc, char **argv) {
             if (kbd_handle_guest_function(&keyboard, &msx, &event.key))
                 continue;
 
+            if (event.key.scancode == SDL_SCANCODE_V &&
+                (event.key.mod & SDL_KMOD_CTRL)) {
+                char *text;
+
+                /*
+                 * Drop the physical Ctrl+V chord before the synthetic
+                 * matrix input starts. Its later key-up events are harmless
+                 * because KbdHost no longer considers the keys held.
+                 */
+                kbd_release_all(&keyboard, &msx);
+                text = SDL_GetClipboardText();
+                if (!text) {
+                    notify_post("Cannot read host clipboard: %s",
+                                SDL_GetError());
+                } else if (!text[0]) {
+                    notify_post("Host clipboard is empty");
+                } else if (!paste_start(&paste, &msx, text)) {
+                    notify_post("Cannot paste clipboard: out of memory");
+                } else {
+                    notify_post("Pasting host clipboard");
+                }
+                SDL_free(text);
+                continue;
+            }
+
             if ((event.key.mod & SDL_KMOD_CTRL) && !display.fullscreen) {
                 bool increase =
                     event.key.scancode == SDL_SCANCODE_EQUALS ||
@@ -1169,6 +1202,7 @@ int main(int argc, char **argv) {
                     break;
                 }
                 case SDLK_F5:
+                    paste_cancel(&paste, &msx);
                     kbd_release_all(&keyboard, &msx);
                     set_mouse_capture(&display, &msx, false);
                     msx_reset(&msx);
@@ -1213,6 +1247,8 @@ int main(int argc, char **argv) {
                 msx_joystick_set_pressed(
                     &msx, port, gamepad_input_poll(&gamepad));
         }
+        if (!msx.paused && !overlay.visible)
+            paste_tick(&paste, &msx);
         msx_run_frame(&msx);
         audio_output_submit(&audio, msx.audio_samples,
                             msx.audio_sample_count);
@@ -1356,6 +1392,7 @@ int main(int argc, char **argv) {
     }
     audio_output_quit(&audio);
     gamepad_input_destroy(&gamepad);
+    paste_cancel(&paste, &msx);
     set_mouse_capture(&display, &msx, false);
     display_quit(&display);
     msx_destroy(&msx);

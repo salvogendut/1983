@@ -109,7 +109,8 @@ jobs:
             test-floppy.exe test-wd2793.exe test-sunrise.exe
             test-sdcard.exe test-sd-mapper.exe test-megaflash.exe
             test-config.exe test-models.exe test-msx.exe
-            test-gamepad.exe test-kbd.exe test-vdp.exe test-psg.exe
+            test-gamepad.exe test-kbd.exe test-paste.exe
+            test-vdp.exe test-psg.exe
             test-scc.exe test-rtc.exe
           ' || {
             find . -maxdepth 2 -type f -name 'test*.log' \
