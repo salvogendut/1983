@@ -85,4 +85,6 @@ rtc_persistence = true
 cassette_audible_monitor = false
 cassette_visual_monitor = false
 debug = false
+# Off suppresses both pop-ups and routine console startup information.
+# Warnings, errors, --help, --version, and --dump-state remain visible.
 notifications = screen
