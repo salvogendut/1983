@@ -729,7 +729,7 @@ static void item_text(const Overlay *overlay, int row,
                     break;
                 case ADVANCED_SD_MAPPER_RAM:
                     snprintf(label, label_size,
-                             "SD Mapper 512 KB RAM");
+                             "SD Mapper 512KB RAM");
                     snprintf(value, value_size, "%s",
                              toggle_name(config->sd_mapper_ram));
                     break;
