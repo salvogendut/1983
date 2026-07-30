@@ -324,7 +324,7 @@ int main(void) {
     snprintf(config.cartridge_path[1],
              sizeof(config.cartridge_path[1]),
              "test-cartridge-2.rom");
-    SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen",
+    SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "dummy",
                             SDL_HINT_OVERRIDE);
     assert(display_init(&display, &config, &msx, "Test MSX") == 0);
     test_cartridge_led_rendering(display.renderer);

@@ -1,5 +1,7 @@
 bin_PROGRAMS = 1983
 
+AM_LDFLAGS = $(WIN_STACK_LDFLAGS)
+
 1983_SOURCES = \
 	src/config.c \
 	src/cartridge.c \

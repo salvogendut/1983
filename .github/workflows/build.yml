@@ -101,7 +101,8 @@ jobs:
           ./configure
           make -j$(nproc)
           make check || {
-            find . -maxdepth 2 -type f -name '*.log' -print -exec cat {} \;
+            find . -maxdepth 2 -type f -name 'test*.log' \
+              -print -exec cat {} \;
             exit 1
           }
       - name: Stage portable Windows bundle
@@ -150,7 +151,8 @@ jobs:
           ./configure
           make -j$(sysctl -n hw.logicalcpu)
           make check || {
-            find . -maxdepth 2 -type f -name '*.log' -print -exec cat {} \;
+            find . -maxdepth 2 -type f -name 'test*.log' \
+              -print -exec cat {} \;
             exit 1
           }
       - name: Package and smoke-test application bundle

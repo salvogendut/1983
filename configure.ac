@@ -18,12 +18,15 @@ case $host_os in
   mingw*|cygwin*|msys*)
     AC_CHECK_TOOL([WINDRES], [windres], [windres])
     WIN_RC_OBJ="icons/1983-rc.o"
+    WIN_STACK_LDFLAGS="-Wl,--stack,16777216"
     ;;
   *)
     WIN_RC_OBJ=""
+    WIN_STACK_LDFLAGS=""
     ;;
 esac
 AC_SUBST([WIN_RC_OBJ])
+AC_SUBST([WIN_STACK_LDFLAGS])
 AC_SUBST([WINDRES])
 
 PROG_GIT_COMMIT=`git -C "$srcdir" rev-parse --short HEAD 2>/dev/null || echo unknown`
