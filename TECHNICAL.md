@@ -456,6 +456,11 @@ debug-font scale. Resizing the guest image therefore does not enlarge the
 menu text or row spacing; undersized windows reduce the scale only as far as
 needed to keep the complete 640×480 menu layout available.
 
+Notification mode `off` suppresses both on-screen pop-ups and routine startup
+information on standard output. Warnings and errors remain on standard error;
+explicit command output such as `--help`, `--version`, and `--dump-state`
+remains visible.
+
 The emulator is kept behind a narrow machine boundary: core hardware does
 not depend on SDL and can run in component tests, headless tools, and future
 frontends.

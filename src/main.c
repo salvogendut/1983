@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 
 #include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,6 +93,16 @@ static const char *usage =
     "  --dump-state        print CPU/bus/VDP state on exit\n"
     "  -h, --help          show this help\n"
     "  --version           show version information\n";
+
+static void startup_info(NotifyMode mode, const char *format, ...) {
+    va_list args;
+
+    if (mode == NOTIFY_MODE_OFF)
+        return;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+}
 
 static int parse_integer(const char *text, int minimum, int maximum,
                          const char *option) {
@@ -892,98 +903,118 @@ int main(int argc, char **argv) {
         notify_post("Gamepad connected: %s",
                     gamepad_input_name(&gamepad));
 
-    printf("1983 - MSX / MSX2 emulator (git %s)\n",
-           PROG_GIT_COMMIT);
-    printf("Machine catalogue: %s\n",
-           models.path[0] ? models.path : "built-in defaults");
-    printf("%s, %s, %d KB RAM, %d KB VRAM, %s, %s PSG\n",
-           definition ? definition->name : msx.profile->name,
-           msx_region_name(msx.region),
-           msx.ram_kb, msx.profile->vram_kb, msx_vdp_name(&msx),
-           msx.profile->psg_variant == PSG_VARIANT_YM2149
-           ? "YM2149" : "AY-3-8910");
-    printf("F4 screenshot, F5 reset, F9 options, F11 fullscreen, F12 quit\n");
-    printf("Shift+F1..F5 = MSX F1..F5, Shift+F7 = SELECT, "
-           "Shift+F8 = STOP\n");
-    printf("Gamepad: %s\n", gamepad_input_name(&gamepad));
+    startup_info(config.notifications,
+                 "1983 - MSX / MSX2 emulator (git %s)\n",
+                 PROG_GIT_COMMIT);
+    startup_info(config.notifications, "Machine catalogue: %s\n",
+                 models.path[0] ? models.path : "built-in defaults");
+    startup_info(config.notifications,
+                 "%s, %s, %d KB RAM, %d KB VRAM, %s, %s PSG\n",
+                 definition ? definition->name : msx.profile->name,
+                 msx_region_name(msx.region),
+                 msx.ram_kb, msx.profile->vram_kb, msx_vdp_name(&msx),
+                 msx.profile->psg_variant == PSG_VARIANT_YM2149
+                 ? "YM2149" : "AY-3-8910");
+    startup_info(config.notifications,
+                 "F4 screenshot, F5 reset, F9 options, "
+                 "F11 fullscreen, F12 quit\n");
+    startup_info(config.notifications,
+                 "Shift+F1..F5 = MSX F1..F5, Shift+F7 = SELECT, "
+                 "Shift+F8 = STOP\n");
+    startup_info(config.notifications, "Gamepad: %s\n",
+                 gamepad_input_name(&gamepad));
     if (msx_can_boot(&msx))
-        printf("BIOS loaded%s%s%s%s%s\n",
-               msx.logo_loaded ? ", logo ROM loaded" : "",
-               msx.subrom_loaded ? ", Sub-ROM loaded" : "",
-               msx.disk_rom_loaded ? ", disk ROM loaded" : "",
-               msx_get_cartridge(&msx, 0)->loaded
-               ? ", cartridge 1 loaded" : "",
-               msx_get_cartridge(&msx, 1)->loaded
-               ? ", cartridge 2 loaded" : "");
+        startup_info(config.notifications,
+                     "BIOS loaded%s%s%s%s%s\n",
+                     msx.logo_loaded ? ", logo ROM loaded" : "",
+                     msx.subrom_loaded ? ", Sub-ROM loaded" : "",
+                     msx.disk_rom_loaded ? ", disk ROM loaded" : "",
+                     msx_get_cartridge(&msx, 0)->loaded
+                     ? ", cartridge 1 loaded" : "",
+                     msx_get_cartridge(&msx, 1)->loaded
+                     ? ", cartridge 2 loaded" : "");
     else
-        printf("No BIOS loaded; use --bios PATH (and --logo PATH for C-BIOS)\n");
+        startup_info(config.notifications,
+                     "No BIOS loaded; use --bios PATH "
+                     "(and --logo PATH for C-BIOS)\n");
     if (msx_sunrise_connected(&msx))
-        printf("Sunrise IDE loaded in cartridge slot %d%s\n",
-               msx_sunrise_slot(&msx) + 1,
-               msx_sunrise_disk_mounted(&msx)
-               ? (msx_sunrise_disk_writable(&msx)
-                  ? ", raw disk mounted read/write"
-                  : ", raw disk mounted read-only")
-               : ", no disk mounted");
+        startup_info(config.notifications,
+                     "Sunrise IDE loaded in cartridge slot %d%s\n",
+                     msx_sunrise_slot(&msx) + 1,
+                     msx_sunrise_disk_mounted(&msx)
+                     ? (msx_sunrise_disk_writable(&msx)
+                        ? ", raw disk mounted read/write"
+                        : ", raw disk mounted read-only")
+                     : ", no disk mounted");
     if (msx_sd_mapper_connected(&msx)) {
-        printf("SD Mapper V2 loaded in cartridge slot %d "
-               "(%s512 KB mapper)\n",
-               msx_sd_mapper_slot(&msx) + 1,
-               config.sd_mapper_ram ? "" : "no ");
+        startup_info(config.notifications,
+                     "SD Mapper V2 loaded in cartridge slot %d "
+                     "(%s512 KB mapper)\n",
+                     msx_sd_mapper_slot(&msx) + 1,
+                     config.sd_mapper_ram ? "" : "no ");
         for (unsigned card = 0;
              card < MSX_SD_MAPPER_CARDS; ++card) {
-            printf("  SD %c: %s%s\n", 'A' + (int)card,
-                   msx_sd_card_mounted(&msx, card)
-                   ? config.sd_card_path[card] : "empty",
-                   msx_sd_card_mounted(&msx, card)
-                   ? (msx_sd_card_writable(&msx, card)
-                      ? " (read/write)" : " (read-only)")
-                   : "");
+            startup_info(config.notifications,
+                         "  SD %c: %s%s\n", 'A' + (int)card,
+                         msx_sd_card_mounted(&msx, card)
+                         ? config.sd_card_path[card] : "empty",
+                         msx_sd_card_mounted(&msx, card)
+                         ? (msx_sd_card_writable(&msx, card)
+                            ? " (read/write)" : " (read-only)")
+                         : "");
         }
     }
     if (msx_megaflash_connected(&msx)) {
-        printf("MegaFlashROM SCC+ SD loaded in cartridge slot %d "
-               "(8 MiB flash, SCC-I, PSG, 512 KB mapper)\n",
-               msx_megaflash_slot(&msx) + 1);
+        startup_info(config.notifications,
+                     "MegaFlashROM SCC+ SD loaded in cartridge slot %d "
+                     "(8 MiB flash, SCC-I, PSG, 512 KB mapper)\n",
+                     msx_megaflash_slot(&msx) + 1);
         for (unsigned card = 0;
              card < MSX_MEGAFLASH_CARDS; ++card) {
-            printf("  MegaFlash SD %c: %s%s\n", 'A' + (int)card,
-                   msx_megaflash_card_mounted(&msx, card)
-                   ? config.megaflash_card_path[card] : "empty",
-                   msx_megaflash_card_mounted(&msx, card)
-                   ? (msx_megaflash_card_writable(&msx, card)
-                      ? " (read/write)" : " (read-only)")
-                   : "");
+            startup_info(config.notifications,
+                         "  MegaFlash SD %c: %s%s\n",
+                         'A' + (int)card,
+                         msx_megaflash_card_mounted(&msx, card)
+                         ? config.megaflash_card_path[card] : "empty",
+                         msx_megaflash_card_mounted(&msx, card)
+                         ? (msx_megaflash_card_writable(&msx, card)
+                            ? " (read/write)" : " (read-only)")
+                         : "");
         }
     }
     if (msx_drive_a_mounted(&msx))
-        printf("Floppy A: %s (%s, %u tracks, %u sides, %u sectors)\n",
-               config.drive_a_path,
-               msx_drive_a_writable(&msx)
-               ? "read/write" : "read-only",
-               msx.fdc.drive_a.tracks,
-               msx.fdc.drive_a.sides,
-               msx.fdc.drive_a.sectors_per_track);
+        startup_info(config.notifications,
+                     "Floppy A: %s "
+                     "(%s, %u tracks, %u sides, %u sectors)\n",
+                     config.drive_a_path,
+                     msx_drive_a_writable(&msx)
+                     ? "read/write" : "read-only",
+                     msx.fdc.drive_a.tracks,
+                     msx.fdc.drive_a.sides,
+                     msx.fdc.drive_a.sectors_per_track);
     if (msx_drive_b_mounted(&msx))
-        printf("Floppy B: %s (%s, %u tracks, %u sides, %u sectors)\n",
-               config.drive_b_path,
-               msx_drive_b_writable(&msx)
-               ? "read/write" : "read-only",
-               msx.fdc.drive_b.tracks,
-               msx.fdc.drive_b.sides,
-               msx.fdc.drive_b.sectors_per_track);
+        startup_info(config.notifications,
+                     "Floppy B: %s "
+                     "(%s, %u tracks, %u sides, %u sectors)\n",
+                     config.drive_b_path,
+                     msx_drive_b_writable(&msx)
+                     ? "read/write" : "read-only",
+                     msx.fdc.drive_b.tracks,
+                     msx.fdc.drive_b.sides,
+                     msx.fdc.drive_b.sectors_per_track);
     if (msx_rtc_persistence_active(&msx))
-        printf("RTC CMOS: %s%s\n",
-               msx_rtc_persistence_path(&msx),
-               msx_rtc_persistence_has_error(&msx)
-               ? " (load warning; will recover atomically)" : "");
+        startup_info(config.notifications, "RTC CMOS: %s%s\n",
+                     msx_rtc_persistence_path(&msx),
+                     msx_rtc_persistence_has_error(&msx)
+                     ? " (load warning; will recover atomically)" : "");
     if (msx_cassette_mounted(&msx)) {
         CassetteFileType type = msx_cassette_file_type(&msx);
 
-        printf("Cassette inserted: %s (%s; %s)\n",
-               config.cassette_path,
-               cassette_file_type_name(type),
-               cassette_load_command(type));
+        startup_info(config.notifications,
+                     "Cassette inserted: %s (%s; %s)\n",
+                     config.cassette_path,
+                     cassette_file_type_name(type),
+                     cassette_load_command(type));
     }
 
     next_frame_ns = SDL_GetTicksNS();

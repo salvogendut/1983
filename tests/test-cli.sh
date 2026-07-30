@@ -16,6 +16,25 @@ if ./1983 --mapper definitely-not-a-mapper >"$log" 2>&1; then
 fi
 grep -q "expected auto, linear, ascii8, ascii16, konami" "$log"
 
+printf '%s\n' \
+    '[advanced]' \
+    'notifications = off' >"$config"
+./1983 --config "$config" --headless --unthrottled --exit-after 0 \
+    >"$log" 2>&1
+if grep -q "1983 - MSX / MSX2 emulator" "$log" ||
+        grep -q "Machine catalogue:" "$log" ||
+        grep -q "No BIOS loaded" "$log" ||
+        grep -q "RTC CMOS:" "$log"; then
+    echo "notifications off did not suppress startup information" >&2
+    exit 1
+fi
+if ./1983 --config "$config" --bios missing-bios.rom \
+        >"$log" 2>&1; then
+    echo "missing BIOS was accepted while notifications were off" >&2
+    exit 1
+fi
+grep -q "cannot load firmware set" "$log"
+
 if ./1983 --config /dev/null --model definitely-not-a-model \
         >"$log" 2>&1; then
     echo "unknown catalogue model was accepted" >&2
