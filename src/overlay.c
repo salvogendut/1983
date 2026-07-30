@@ -16,6 +16,7 @@
 #define OVERLAY_LABEL_X 28
 #define OVERLAY_VALUE_X 188
 #define OVERLAY_FIRST_Y 48
+#define OVERLAY_RENDER_SCALE 1.5f
 #define MODEL_EDITOR_FIELDS 7
 #define MODEL_EDITOR_VISIBLE_ROWS 15
 
@@ -4466,24 +4467,22 @@ void overlay_render_cassette_scope(const Overlay *overlay) {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 }
 
-void overlay_render(const Overlay *overlay) {
+static void overlay_render_content(const Overlay *overlay,
+                                   float view_w, float view_h) {
     SDL_Renderer *renderer;
     int rows;
     int panel_h;
     int tab_x = 20;
 
-    if (!overlay->visible)
-        return;
     renderer = overlay->display->renderer;
     rows = section_rows(overlay, overlay->section);
     panel_h = OVERLAY_FIRST_Y + rows * OVERLAY_LINE_H + 54;
 
-    ui_fill_rect(renderer, 0.0f, 0.0f,
-                 (float)DISPLAY_LOGICAL_W, (float)DISPLAY_LOGICAL_H,
+    ui_fill_rect(renderer, 0.0f, 0.0f, view_w, view_h,
                  0, 0, 0, 110);
-    ui_fill_rect(renderer, 8.0f, 8.0f, 624.0f, (float)panel_h,
+    ui_fill_rect(renderer, 8.0f, 8.0f, view_w - 16.0f, (float)panel_h,
                  8, 10, 24, 235);
-    ui_draw_rect(renderer, 8.0f, 8.0f, 624.0f, (float)panel_h,
+    ui_draw_rect(renderer, 8.0f, 8.0f, view_w - 16.0f, (float)panel_h,
                  70, 90, 180);
 
     for (int section = 0; section < OVERLAY_SECTION_COUNT; ++section) {
@@ -4562,7 +4561,7 @@ void overlay_render(const Overlay *overlay) {
         int last_model;
         float box_w = 500.0f;
         float box_h;
-        float box_x = ((float)DISPLAY_LOGICAL_W - box_w) * 0.5f;
+        float box_x = (view_w - box_w) * 0.5f;
         float box_y;
 
         if (first_model < 0)
@@ -4575,10 +4574,9 @@ void overlay_render(const Overlay *overlay) {
         if (last_model > (int)overlay->models->count)
             last_model = (int)overlay->models->count;
         box_h = 74.0f + (last_model - first_model) * 18.0f;
-        box_y = ((float)DISPLAY_LOGICAL_H - box_h) * 0.5f;
+        box_y = (view_h - box_h) * 0.5f;
 
-        ui_fill_rect(renderer, 0.0f, 0.0f,
-                     (float)DISPLAY_LOGICAL_W, (float)DISPLAY_LOGICAL_H,
+        ui_fill_rect(renderer, 0.0f, 0.0f, view_w, view_h,
                      0, 0, 0, 130);
         ui_fill_rect(renderer, box_x, box_y, box_w, box_h,
                      20, 22, 52, 255);
@@ -4631,10 +4629,9 @@ void overlay_render(const Overlay *overlay) {
         const char *line2 = "Enter/Y = Save     Esc/N = Discard";
         float box_w = 320.0f;
         float box_h = 62.0f;
-        float box_x = ((float)DISPLAY_LOGICAL_W - box_w) * 0.5f;
-        float box_y = ((float)DISPLAY_LOGICAL_H - box_h) * 0.5f;
-        ui_fill_rect(renderer, 0.0f, 0.0f,
-                     (float)DISPLAY_LOGICAL_W, (float)DISPLAY_LOGICAL_H,
+        float box_x = (view_w - box_w) * 0.5f;
+        float box_y = (view_h - box_h) * 0.5f;
+        ui_fill_rect(renderer, 0.0f, 0.0f, view_w, view_h,
                      0, 0, 0, 130);
         ui_fill_rect(renderer, box_x, box_y, box_w, box_h,
                      20, 22, 52, 255);
@@ -4647,4 +4644,42 @@ void overlay_render(const Overlay *overlay) {
                      box_x + (box_w - (float)strlen(line2) * 8.0f) * 0.5f,
                      box_y + 36.0f, line2, 220, 220, 120);
     }
+}
+
+void overlay_render(const Overlay *overlay) {
+    DisplayLayout layout;
+    SDL_Rect viewport;
+    SDL_Renderer *renderer;
+    float scale = OVERLAY_RENDER_SCALE;
+    float fit_scale;
+    float view_w;
+    float view_h;
+    int output_w;
+    int output_h;
+
+    if (!overlay || !overlay->visible || !overlay->display)
+        return;
+    renderer = overlay->display->renderer;
+    if (!SDL_GetRenderOutputSize(renderer, &output_w, &output_h))
+        SDL_GetWindowSize(overlay->display->window, &output_w, &output_h);
+    display_calculate_layout(output_w, output_h, &layout);
+    fit_scale = (float)layout.screen_w / (float)DISPLAY_LOGICAL_W;
+    if ((float)layout.screen_h / (float)DISPLAY_LOGICAL_H < fit_scale)
+        fit_scale =
+            (float)layout.screen_h / (float)DISPLAY_LOGICAL_H;
+    if (scale > fit_scale)
+        scale = fit_scale;
+    if (scale <= 0.0f)
+        return;
+    view_w = (float)layout.screen_w / scale;
+    view_h = (float)layout.screen_h / scale;
+    viewport = (SDL_Rect) {
+        layout.screen_x, layout.screen_y,
+        layout.screen_w, layout.screen_h
+    };
+    SDL_SetRenderViewport(renderer, &viewport);
+    SDL_SetRenderScale(renderer, scale, scale);
+    overlay_render_content(overlay, view_w, view_h);
+    SDL_SetRenderViewport(renderer, NULL);
+    SDL_SetRenderScale(renderer, 1.0f, 1.0f);
 }

@@ -42,8 +42,9 @@ static void send_text(Overlay *overlay, const char *text) {
 static void render_overlay(Display *display, MsxMachine *msx,
                            Overlay *overlay) {
     display_draw(display, msx);
+    display_present_begin(display);
     overlay_render(overlay);
-    display_present(display, msx);
+    display_present_end(display, msx);
 }
 
 static void assert_pixel(SDL_Surface *surface, int x, int y,
@@ -58,6 +59,37 @@ static void assert_pixel(SDL_Surface *surface, int x, int y,
     assert(red == expected_red);
     assert(green == expected_green);
     assert(blue == expected_blue);
+}
+
+static void test_fixed_overlay_scale(Display *display, MsxMachine *msx,
+                                     Overlay *overlay) {
+    DisplayLayout layout;
+    SDL_Surface *pixels;
+    int output_w;
+    int output_h;
+
+    display_draw(display, msx);
+    display_present_begin(display);
+    overlay_render(overlay);
+    assert(SDL_GetRenderOutputSize(
+        display->renderer, &output_w, &output_h));
+    display_calculate_layout(output_w, output_h, &layout);
+    assert(layout.screen_w >= 960);
+    assert(layout.screen_h >= 720);
+    pixels = SDL_RenderReadPixels(display->renderer, NULL);
+    assert(pixels);
+
+    /*
+     * The panel's eight-unit inset lands at 12 output pixels because the
+     * presentation overlay uses 1984's fixed 1.5x scale. Rendering it into
+     * the 2x guest canvas would instead place this border at 16 pixels.
+     */
+    assert_pixel(pixels,
+                 layout.screen_x + 12,
+                 layout.screen_y + 12,
+                 70, 90, 180);
+    SDL_DestroySurface(pixels);
+    display_present_end(display, msx);
 }
 
 static void test_cartridge_led_rendering(SDL_Renderer *renderer) {
@@ -228,6 +260,7 @@ int main(void) {
     assert(layout.footer_y == 860);
 
     config_defaults(&config);
+    config.scale = 2;
     config.tinker = true;
     memset(sunrise_rom, 0xff, sizeof(sunrise_rom));
     fixture = fopen(sunrise_rom_path, "wb");
@@ -312,6 +345,7 @@ int main(void) {
 
     send_key(&overlay, SDLK_F9);
     assert(overlay.visible);
+    test_fixed_overlay_scale(&display, &msx, &overlay);
     assert(overlay.section == OVERLAY_GENERAL);
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_RETURN);

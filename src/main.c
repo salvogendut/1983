@@ -1197,9 +1197,10 @@ int main(int argc, char **argv) {
         draw_debug(&config, &msx, &display);
         draw_paused(&msx, &display);
         overlay_render_cassette_scope(&overlay);
-        overlay_render(&overlay);
         notify_render(display.renderer, DISPLAY_SCREEN_H);
-        display_present(&display, &msx);
+        display_present_begin(&display);
+        overlay_render(&overlay);
+        display_present_end(&display, &msx);
 
         if (cli.exit_after >= 0 && host_frame >= cli.exit_after)
             running = false;

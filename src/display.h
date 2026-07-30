@@ -44,6 +44,8 @@ int  display_init(Display *display, const Config *config,
 void display_quit(Display *display);
 void display_prepare_scaffold(Display *display, const MsxMachine *msx);
 void display_draw(Display *display, const MsxMachine *msx);
+void display_present_begin(Display *display);
+void display_present_end(Display *display, const MsxMachine *msx);
 void display_present(Display *display, const MsxMachine *msx);
 void display_compose_vdp(u32 *destination, const MsxVdp *vdp);
 void display_calculate_layout(int output_w, int output_h,

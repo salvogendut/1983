@@ -451,6 +451,11 @@ The SDL3 frontend follows the shared 1984/1985 interface:
 - screenshots, pause, reset, notifications, and headless execution;
 - Power, Caps, Kana, drive, cassette, and IDE status surfaces.
 
+Like 1984, the F9 overlay is drawn after the emulated canvas at a fixed 1.5×
+debug-font scale. Resizing the guest image therefore does not enlarge the
+menu text or row spacing; undersized windows reduce the scale only as far as
+needed to keep the complete 640×480 menu layout available.
+
 The emulator is kept behind a narrow machine boundary: core hardware does
 not depend on SDL and can run in component tests, headless tools, and future
 frontends.
