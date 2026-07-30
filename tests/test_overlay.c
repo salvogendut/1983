@@ -564,9 +564,9 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
     assert(overlay.row == 0);
-    for (int row = 0; row < 4; ++row)
+    for (int row = 0; row < 3; ++row)
         send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 4);
+    assert(overlay.row == 3);
     send_key(&overlay, SDLK_RETURN);
     assert(config.ide_image_mode == ATA_IMAGE_READ_WRITE);
     assert(msx_sunrise_disk_writable(&msx));
@@ -601,7 +601,7 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
     assert(overlay.row == 0);
-    for (int row = 0; row < 11; ++row)
+    for (int row = 0; row < 10; ++row)
         send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.cassette_audible_monitor);
@@ -609,7 +609,7 @@ int main(void) {
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.cassette_visual_monitor);
-    for (int row = 0; row < 12; ++row)
+    for (int row = 0; row < 11; ++row)
         send_key(&overlay, SDLK_UP);
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_RETURN);
@@ -676,10 +676,11 @@ int main(void) {
     assert(!msx_cassette_mounted(&msx));
     assert(!config.cassette_path[0]);
 
-    /* The Advanced switch conditionally adds Floppy B to Media. */
+    /* The Extensions switch conditionally adds Floppy B to Media. */
     config_defaults(&config);
     config.model = MSX_MODEL_PHILIPS_NMS8250;
     snprintf(config.machine_id, sizeof(config.machine_id), "nms8250");
+    config.extra_hardware = true;
     config.tinker = true;
     msx_configure(&msx, config.model, config.region, 128);
     overlay_init(&overlay, &config, &models, &display, &msx);
@@ -687,14 +688,10 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_MEDIA);
     send_key(&overlay, SDLK_RIGHT);
-    assert(overlay.section == OVERLAY_ADVANCED);
-    send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 1);
-    assert(config.rtc_persistence);
-    send_key(&overlay, SDLK_RETURN);
-    assert(!config.rtc_persistence);
-    send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 2);
+    assert(overlay.section == OVERLAY_EXTENSIONS);
+    for (int row = 0; row < 5; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 5);
     send_key(&overlay, SDLK_RETURN);
     assert(config.second_drive);
     send_key(&overlay, SDLK_LEFT);
@@ -702,14 +699,22 @@ int main(void) {
     send_key(&overlay, SDLK_UP);
     assert(overlay.row == 6);
     send_key(&overlay, SDLK_RIGHT);
-    assert(overlay.section == OVERLAY_ADVANCED);
-    send_key(&overlay, SDLK_DOWN);
-    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.section == OVERLAY_EXTENSIONS);
+    for (int row = 0; row < 5; ++row)
+        send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(!config.second_drive);
     send_key(&overlay, SDLK_LEFT);
     send_key(&overlay, SDLK_UP);
     assert(overlay.row == 5);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_ADVANCED);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 1);
+    assert(config.rtc_persistence);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.rtc_persistence);
 
     /* SD Mapper setup keeps controller firmware separate from card media. */
     config_defaults(&config);
@@ -778,9 +783,9 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
-    for (int row = 0; row < 5; ++row)
+    for (int row = 0; row < 4; ++row)
         send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 5);
+    assert(overlay.row == 4);
     send_key(&overlay, SDLK_RETURN);
     assert(config.sd_image_mode == SD_IMAGE_READ_WRITE);
     assert(msx_sd_card_writable(&msx, 0));

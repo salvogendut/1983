@@ -490,6 +490,8 @@ int config_save(const Config *config) {
     fprintf(file, "[extensions]\n");
     fprintf(file, "extra_hardware = %s\n",
             bool_name(config->extra_hardware));
+    fprintf(file, "second_drive = %s\n",
+            bool_name(config->second_drive));
     fprintf(file, "sunrise_ide = %s\n", bool_name(config->sunrise_ide));
     fprintf(file, "sunrise_rom = %s\n", config->sunrise_rom_path);
     fprintf(file, "sd_mapper = %s\n", bool_name(config->sd_mapper));
@@ -507,8 +509,6 @@ int config_save(const Config *config) {
     fprintf(file, "msx_music = %s\n", bool_name(config->msx_music));
     fprintf(file, "kanji_rom = %s\n\n", bool_name(config->kanji_rom));
     fprintf(file, "[advanced]\n");
-    fprintf(file, "second_drive = %s\n",
-            bool_name(config->second_drive));
     fprintf(file, "tinker = %s\n", bool_name(config->tinker));
     fprintf(file, "rtc_persistence = %s\n",
             bool_name(config->rtc_persistence));

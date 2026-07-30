@@ -68,8 +68,9 @@ conventional raw DSK images through Floppy A:
   --disk-a /path/to/software.dsk --floppy-mode read-only
 ```
 
-Enable Tinker and use **Advanced > Second floppy** to add Floppy B to Media.
-Both drives support explicit read-only/read/write policy and safe ejection.
+Enable Extra Hardware and use **Extensions > Second floppy** to add Floppy B
+to Media. Both drives support explicit read-only/read/write policy and safe
+ejection.
 
 ### Graphical floppy workflow
 
@@ -78,9 +79,9 @@ Both drives support explicit read-only/read/write policy and safe ejection.
 2. Open **Media > Floppy A** and select a conventional raw `.dsk` image.
 3. Press F5 to reset. The internal disk ROM will boot the inserted image when
    it is bootable; the Floppy A LED reports sector activity.
-4. For a second drive, enable **General > Tinker**, then
-   **Advanced > Second floppy**. **Media > Floppy B** appears immediately and
-   has its own selector and activity LED.
+4. For a second drive, enable **General > Extra Hardware**, then
+   **Extensions > Second floppy**. **Media > Floppy B** appears immediately
+   and has its own selector and activity LED.
 5. Read-only is the safe default for both drives. To permit guest writes,
    select **Advanced > Floppy access mode > Read/write**. Delete on a Media
    row safely ejects that image.

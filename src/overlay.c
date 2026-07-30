@@ -43,9 +43,18 @@ enum {
 };
 
 enum {
+    EXTENSION_SUNRISE_IDE = 0,
+    EXTENSION_SD_MAPPER,
+    EXTENSION_MEGAFLASH,
+    EXTENSION_KONAMI_SCC,
+    EXTENSION_MSX_MUSIC,
+    EXTENSION_SECOND_FLOPPY,
+    EXTENSION_ROWS
+};
+
+enum {
     ADVANCED_MODEL_EDITOR = 0,
     ADVANCED_RTC_PERSISTENCE,
-    ADVANCED_SECOND_FLOPPY,
     ADVANCED_FLOPPY_IMAGE_ACCESS,
     ADVANCED_IDE_IMAGE_ACCESS,
     ADVANCED_SD_IMAGE_ACCESS,
@@ -119,7 +128,7 @@ static int section_rows(const Overlay *overlay,
                    (overlay->config->sunrise_ide ? 1 : 0) +
                    (overlay->config->sd_mapper ? 2 : 0) +
                    (overlay->config->megaflash ? 2 : 0);
-        case OVERLAY_EXTENSIONS: return 5;
+        case OVERLAY_EXTENSIONS: return EXTENSION_ROWS;
         case OVERLAY_ADVANCED:   return ADVANCED_ROWS;
         case OVERLAY_SECTION_COUNT: break;
     }
@@ -642,33 +651,38 @@ static void item_text(const Overlay *overlay, int row,
             break;
         case OVERLAY_EXTENSIONS:
             switch (row) {
-                case 0:
+                case EXTENSION_SUNRISE_IDE:
                     snprintf(label, label_size, "Sunrise IDE");
                     sunrise_extension_text(
                         overlay, value, value_size);
                     break;
-                case 1:
+                case EXTENSION_SD_MAPPER:
                     snprintf(label, label_size, "SD Mapper V2");
                     sd_mapper_extension_text(
                         overlay, value, value_size);
                     break;
-                case 2:
+                case EXTENSION_MEGAFLASH:
                     snprintf(label, label_size,
                              "MegaFlashROM SCC+SD");
                     megaflash_extension_text(
                         overlay, value, value_size);
                     break;
-                case 3:
+                case EXTENSION_KONAMI_SCC:
                     snprintf(label, label_size, "Konami SCC");
                     cartridge_extension_text(
                         config, "Konami SCC", config->scc,
                         value, value_size);
                     break;
-                case 4:
+                case EXTENSION_MSX_MUSIC:
                     snprintf(label, label_size, "MSX-MUSIC");
                     cartridge_extension_text(
                         config, "MSX-MUSIC", config->msx_music,
                         value, value_size);
+                    break;
+                case EXTENSION_SECOND_FLOPPY:
+                    snprintf(label, label_size, "Second floppy");
+                    snprintf(value, value_size, "%s",
+                             toggle_name(config->second_drive));
                     break;
             }
             break;
@@ -693,12 +707,6 @@ static void item_text(const Overlay *overlay, int row,
                         snprintf(value, value_size, "%s",
                                  toggle_name(config->rtc_persistence));
                     }
-                    break;
-                case ADVANCED_SECOND_FLOPPY:
-                    snprintf(label, label_size,
-                             "Second floppy");
-                    snprintf(value, value_size, "%s",
-                             toggle_name(config->second_drive));
                     break;
                 case ADVANCED_FLOPPY_IMAGE_ACCESS:
                     snprintf(label, label_size,
@@ -2735,7 +2743,7 @@ static void activate_item(Overlay *overlay) {
         }
         case OVERLAY_EXTENSIONS:
             switch (overlay->row) {
-                case 0:
+                case EXTENSION_SUNRISE_IDE:
                     if (config->sunrise_ide) {
                         if (!disconnect_sunrise(overlay))
                             return;
@@ -2756,7 +2764,7 @@ static void activate_item(Overlay *overlay) {
                         return;
                     }
                     break;
-                case 1:
+                case EXTENSION_SD_MAPPER:
                     if (config->sd_mapper) {
                         if (!disconnect_sd_mapper(overlay))
                             return;
@@ -2782,7 +2790,7 @@ static void activate_item(Overlay *overlay) {
                         return;
                     }
                     break;
-                case 2:
+                case EXTENSION_MEGAFLASH:
                     if (config->megaflash) {
                         if (!disconnect_megaflash(overlay))
                             return;
@@ -2808,16 +2816,20 @@ static void activate_item(Overlay *overlay) {
                         return;
                     }
                     break;
-                case 3:
+                case EXTENSION_KONAMI_SCC:
                     if (!toggle_cartridge_extension(
                             overlay, &config->scc,
                             "Konami SCC"))
                         return;
                     break;
-                case 4:
+                case EXTENSION_MSX_MUSIC:
                     if (!toggle_cartridge_extension(
                             overlay, &config->msx_music,
                             "MSX-MUSIC"))
+                        return;
+                    break;
+                case EXTENSION_SECOND_FLOPPY:
+                    if (!toggle_second_floppy(overlay))
                         return;
                     break;
             }
@@ -2845,10 +2857,6 @@ static void activate_item(Overlay *overlay) {
                                 ? "enabled" : "disabled");
                     break;
                 }
-                case ADVANCED_SECOND_FLOPPY:
-                    if (!toggle_second_floppy(overlay))
-                        return;
-                    break;
                 case ADVANCED_FLOPPY_IMAGE_ACCESS:
                     if (!set_floppy_image_mode(
                             overlay,
@@ -3451,7 +3459,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                         'A' + (int)card);
                 }
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
-                       overlay->row == 0 &&
+                       overlay->row == EXTENSION_SUNRISE_IDE &&
                        overlay->config->sunrise_rom_path[0]) {
                 if (overlay->config->sunrise_ide &&
                     !disconnect_sunrise(overlay))
@@ -3461,7 +3469,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 apply_config(overlay);
                 notify_post("Sunrise IDE firmware forgotten");
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
-                       overlay->row == 1 &&
+                       overlay->row == EXTENSION_SD_MAPPER &&
                        overlay->config->sd_mapper_rom_path[0]) {
                 if (overlay->config->sd_mapper &&
                     !disconnect_sd_mapper(overlay))
@@ -3471,7 +3479,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 apply_config(overlay);
                 notify_post("SD Mapper V2 firmware forgotten");
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
-                       overlay->row == 2 &&
+                       overlay->row == EXTENSION_MEGAFLASH &&
                        overlay->config->megaflash_rom_path[0]) {
                 if (overlay->config->megaflash &&
                     !disconnect_megaflash(overlay))

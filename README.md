@@ -193,7 +193,7 @@ visible warning before a later atomic save repairs them.
 On a Philips NMS 8250, **Media > Floppy A** inserts a conventional raw
 `.dsk` image. Delete safely ejects it. With Tinker enabled,
 **Advanced > Floppy access mode** explicitly selects read-only or read/write;
-read-only is the default. **Advanced > Second floppy** adds an independently
+read-only is the default. **Extensions > Second floppy** adds an independently
 selectable **Floppy B** row to Media and enables its activity LED. Completed
 sector writes are flushed on replacement, ejection, and shutdown. Reset
 discards only an incomplete sector transfer and preserves mounted media.
