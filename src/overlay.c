@@ -16,6 +16,7 @@
 #define OVERLAY_LABEL_X 28
 #define OVERLAY_VALUE_X 188
 #define OVERLAY_FIRST_Y 48
+#define OVERLAY_RENDER_SCALE 1.5f
 #define MODEL_EDITOR_FIELDS 7
 #define MODEL_EDITOR_VISIBLE_ROWS 15
 
@@ -42,9 +43,18 @@ enum {
 };
 
 enum {
+    EXTENSION_SUNRISE_IDE = 0,
+    EXTENSION_SD_MAPPER,
+    EXTENSION_MEGAFLASH,
+    EXTENSION_KONAMI_SCC,
+    EXTENSION_MSX_MUSIC,
+    EXTENSION_SECOND_FLOPPY,
+    EXTENSION_ROWS
+};
+
+enum {
     ADVANCED_MODEL_EDITOR = 0,
     ADVANCED_RTC_PERSISTENCE,
-    ADVANCED_SECOND_FLOPPY,
     ADVANCED_FLOPPY_IMAGE_ACCESS,
     ADVANCED_IDE_IMAGE_ACCESS,
     ADVANCED_SD_IMAGE_ACCESS,
@@ -118,7 +128,7 @@ static int section_rows(const Overlay *overlay,
                    (overlay->config->sunrise_ide ? 1 : 0) +
                    (overlay->config->sd_mapper ? 2 : 0) +
                    (overlay->config->megaflash ? 2 : 0);
-        case OVERLAY_EXTENSIONS: return 5;
+        case OVERLAY_EXTENSIONS: return EXTENSION_ROWS;
         case OVERLAY_ADVANCED:   return ADVANCED_ROWS;
         case OVERLAY_SECTION_COUNT: break;
     }
@@ -641,33 +651,38 @@ static void item_text(const Overlay *overlay, int row,
             break;
         case OVERLAY_EXTENSIONS:
             switch (row) {
-                case 0:
+                case EXTENSION_SUNRISE_IDE:
                     snprintf(label, label_size, "Sunrise IDE");
                     sunrise_extension_text(
                         overlay, value, value_size);
                     break;
-                case 1:
+                case EXTENSION_SD_MAPPER:
                     snprintf(label, label_size, "SD Mapper V2");
                     sd_mapper_extension_text(
                         overlay, value, value_size);
                     break;
-                case 2:
+                case EXTENSION_MEGAFLASH:
                     snprintf(label, label_size,
-                             "MegaFlashROM SCC+ SD");
+                             "MegaFlashROM SCC+SD");
                     megaflash_extension_text(
                         overlay, value, value_size);
                     break;
-                case 3:
+                case EXTENSION_KONAMI_SCC:
                     snprintf(label, label_size, "Konami SCC");
                     cartridge_extension_text(
                         config, "Konami SCC", config->scc,
                         value, value_size);
                     break;
-                case 4:
+                case EXTENSION_MSX_MUSIC:
                     snprintf(label, label_size, "MSX-MUSIC");
                     cartridge_extension_text(
                         config, "MSX-MUSIC", config->msx_music,
                         value, value_size);
+                    break;
+                case EXTENSION_SECOND_FLOPPY:
+                    snprintf(label, label_size, "Second floppy");
+                    snprintf(value, value_size, "%s",
+                             toggle_name(config->second_drive));
                     break;
             }
             break;
@@ -693,12 +708,6 @@ static void item_text(const Overlay *overlay, int row,
                                  toggle_name(config->rtc_persistence));
                     }
                     break;
-                case ADVANCED_SECOND_FLOPPY:
-                    snprintf(label, label_size,
-                             "Second floppy");
-                    snprintf(value, value_size, "%s",
-                             toggle_name(config->second_drive));
-                    break;
                 case ADVANCED_FLOPPY_IMAGE_ACCESS:
                     snprintf(label, label_size,
                              "Floppy access mode");
@@ -720,7 +729,7 @@ static void item_text(const Overlay *overlay, int row,
                     break;
                 case ADVANCED_SD_MAPPER_RAM:
                     snprintf(label, label_size,
-                             "SD Mapper 512 KB RAM");
+                             "SD Mapper 512KB RAM");
                     snprintf(value, value_size, "%s",
                              toggle_name(config->sd_mapper_ram));
                     break;
@@ -2734,7 +2743,7 @@ static void activate_item(Overlay *overlay) {
         }
         case OVERLAY_EXTENSIONS:
             switch (overlay->row) {
-                case 0:
+                case EXTENSION_SUNRISE_IDE:
                     if (config->sunrise_ide) {
                         if (!disconnect_sunrise(overlay))
                             return;
@@ -2755,7 +2764,7 @@ static void activate_item(Overlay *overlay) {
                         return;
                     }
                     break;
-                case 1:
+                case EXTENSION_SD_MAPPER:
                     if (config->sd_mapper) {
                         if (!disconnect_sd_mapper(overlay))
                             return;
@@ -2781,7 +2790,7 @@ static void activate_item(Overlay *overlay) {
                         return;
                     }
                     break;
-                case 2:
+                case EXTENSION_MEGAFLASH:
                     if (config->megaflash) {
                         if (!disconnect_megaflash(overlay))
                             return;
@@ -2807,16 +2816,20 @@ static void activate_item(Overlay *overlay) {
                         return;
                     }
                     break;
-                case 3:
+                case EXTENSION_KONAMI_SCC:
                     if (!toggle_cartridge_extension(
                             overlay, &config->scc,
                             "Konami SCC"))
                         return;
                     break;
-                case 4:
+                case EXTENSION_MSX_MUSIC:
                     if (!toggle_cartridge_extension(
                             overlay, &config->msx_music,
                             "MSX-MUSIC"))
+                        return;
+                    break;
+                case EXTENSION_SECOND_FLOPPY:
+                    if (!toggle_second_floppy(overlay))
                         return;
                     break;
             }
@@ -2844,10 +2857,6 @@ static void activate_item(Overlay *overlay) {
                                 ? "enabled" : "disabled");
                     break;
                 }
-                case ADVANCED_SECOND_FLOPPY:
-                    if (!toggle_second_floppy(overlay))
-                        return;
-                    break;
                 case ADVANCED_FLOPPY_IMAGE_ACCESS:
                     if (!set_floppy_image_mode(
                             overlay,
@@ -3450,7 +3459,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                         'A' + (int)card);
                 }
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
-                       overlay->row == 0 &&
+                       overlay->row == EXTENSION_SUNRISE_IDE &&
                        overlay->config->sunrise_rom_path[0]) {
                 if (overlay->config->sunrise_ide &&
                     !disconnect_sunrise(overlay))
@@ -3460,7 +3469,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 apply_config(overlay);
                 notify_post("Sunrise IDE firmware forgotten");
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
-                       overlay->row == 1 &&
+                       overlay->row == EXTENSION_SD_MAPPER &&
                        overlay->config->sd_mapper_rom_path[0]) {
                 if (overlay->config->sd_mapper &&
                     !disconnect_sd_mapper(overlay))
@@ -3470,7 +3479,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 apply_config(overlay);
                 notify_post("SD Mapper V2 firmware forgotten");
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
-                       overlay->row == 2 &&
+                       overlay->row == EXTENSION_MEGAFLASH &&
                        overlay->config->megaflash_rom_path[0]) {
                 if (overlay->config->megaflash &&
                     !disconnect_megaflash(overlay))
@@ -4466,24 +4475,22 @@ void overlay_render_cassette_scope(const Overlay *overlay) {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 }
 
-void overlay_render(const Overlay *overlay) {
+static void overlay_render_content(const Overlay *overlay,
+                                   float view_w, float view_h) {
     SDL_Renderer *renderer;
     int rows;
     int panel_h;
     int tab_x = 20;
 
-    if (!overlay->visible)
-        return;
     renderer = overlay->display->renderer;
     rows = section_rows(overlay, overlay->section);
     panel_h = OVERLAY_FIRST_Y + rows * OVERLAY_LINE_H + 54;
 
-    ui_fill_rect(renderer, 0.0f, 0.0f,
-                 (float)DISPLAY_LOGICAL_W, (float)DISPLAY_LOGICAL_H,
+    ui_fill_rect(renderer, 0.0f, 0.0f, view_w, view_h,
                  0, 0, 0, 110);
-    ui_fill_rect(renderer, 8.0f, 8.0f, 624.0f, (float)panel_h,
+    ui_fill_rect(renderer, 8.0f, 8.0f, view_w - 16.0f, (float)panel_h,
                  8, 10, 24, 235);
-    ui_draw_rect(renderer, 8.0f, 8.0f, 624.0f, (float)panel_h,
+    ui_draw_rect(renderer, 8.0f, 8.0f, view_w - 16.0f, (float)panel_h,
                  70, 90, 180);
 
     for (int section = 0; section < OVERLAY_SECTION_COUNT; ++section) {
@@ -4562,7 +4569,7 @@ void overlay_render(const Overlay *overlay) {
         int last_model;
         float box_w = 500.0f;
         float box_h;
-        float box_x = ((float)DISPLAY_LOGICAL_W - box_w) * 0.5f;
+        float box_x = (view_w - box_w) * 0.5f;
         float box_y;
 
         if (first_model < 0)
@@ -4575,10 +4582,9 @@ void overlay_render(const Overlay *overlay) {
         if (last_model > (int)overlay->models->count)
             last_model = (int)overlay->models->count;
         box_h = 74.0f + (last_model - first_model) * 18.0f;
-        box_y = ((float)DISPLAY_LOGICAL_H - box_h) * 0.5f;
+        box_y = (view_h - box_h) * 0.5f;
 
-        ui_fill_rect(renderer, 0.0f, 0.0f,
-                     (float)DISPLAY_LOGICAL_W, (float)DISPLAY_LOGICAL_H,
+        ui_fill_rect(renderer, 0.0f, 0.0f, view_w, view_h,
                      0, 0, 0, 130);
         ui_fill_rect(renderer, box_x, box_y, box_w, box_h,
                      20, 22, 52, 255);
@@ -4631,10 +4637,9 @@ void overlay_render(const Overlay *overlay) {
         const char *line2 = "Enter/Y = Save     Esc/N = Discard";
         float box_w = 320.0f;
         float box_h = 62.0f;
-        float box_x = ((float)DISPLAY_LOGICAL_W - box_w) * 0.5f;
-        float box_y = ((float)DISPLAY_LOGICAL_H - box_h) * 0.5f;
-        ui_fill_rect(renderer, 0.0f, 0.0f,
-                     (float)DISPLAY_LOGICAL_W, (float)DISPLAY_LOGICAL_H,
+        float box_x = (view_w - box_w) * 0.5f;
+        float box_y = (view_h - box_h) * 0.5f;
+        ui_fill_rect(renderer, 0.0f, 0.0f, view_w, view_h,
                      0, 0, 0, 130);
         ui_fill_rect(renderer, box_x, box_y, box_w, box_h,
                      20, 22, 52, 255);
@@ -4647,4 +4652,42 @@ void overlay_render(const Overlay *overlay) {
                      box_x + (box_w - (float)strlen(line2) * 8.0f) * 0.5f,
                      box_y + 36.0f, line2, 220, 220, 120);
     }
+}
+
+void overlay_render(const Overlay *overlay) {
+    DisplayLayout layout;
+    SDL_Rect viewport;
+    SDL_Renderer *renderer;
+    float scale = OVERLAY_RENDER_SCALE;
+    float fit_scale;
+    float view_w;
+    float view_h;
+    int output_w;
+    int output_h;
+
+    if (!overlay || !overlay->visible || !overlay->display)
+        return;
+    renderer = overlay->display->renderer;
+    if (!SDL_GetRenderOutputSize(renderer, &output_w, &output_h))
+        SDL_GetWindowSize(overlay->display->window, &output_w, &output_h);
+    display_calculate_layout(output_w, output_h, &layout);
+    fit_scale = (float)layout.screen_w / (float)DISPLAY_LOGICAL_W;
+    if ((float)layout.screen_h / (float)DISPLAY_LOGICAL_H < fit_scale)
+        fit_scale =
+            (float)layout.screen_h / (float)DISPLAY_LOGICAL_H;
+    if (scale > fit_scale)
+        scale = fit_scale;
+    if (scale <= 0.0f)
+        return;
+    view_w = (float)layout.screen_w / scale;
+    view_h = (float)layout.screen_h / scale;
+    viewport = (SDL_Rect) {
+        layout.screen_x, layout.screen_y,
+        layout.screen_w, layout.screen_h
+    };
+    SDL_SetRenderViewport(renderer, &viewport);
+    SDL_SetRenderScale(renderer, scale, scale);
+    overlay_render_content(overlay, view_w, view_h);
+    SDL_SetRenderViewport(renderer, NULL);
+    SDL_SetRenderScale(renderer, 1.0f, 1.0f);
 }

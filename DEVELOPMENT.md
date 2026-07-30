@@ -44,7 +44,7 @@ complete MSX hardware specification.
 | `tests/test_config.c` | Persistent cartridge, cassette, mapper, extension, and Joy Port settings |
 | `tests/test_gamepad.c` | SDL-independent direction, trigger, dead-zone, and opposing-input mapping |
 | `tests/test_models.c` | Machine-catalogue parsing, hardware mapping, relative paths, and invalid-entry filtering |
-| `tests/test_overlay.c` | Overlay navigation, cassette transport, guided Sunrise setup, dynamic hardware rows, cartridge-slot LEDs, and model editing |
+| `tests/test_overlay.c` | Overlay navigation, fixed 1.5× presentation scale, cassette transport, guided Sunrise setup, dynamic hardware rows, cartridge-slot LEDs, and model editing |
 | `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
 | `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
 | `tests/test_rtc.c` | RP-5C01 banks, masks, 12/24-hour and test modes, calendar boundaries, offline continuity, corruption rejection, and safe persistence |
@@ -76,6 +76,12 @@ then presents the finished canvas. This matches openMSX's default horizontal
 aperture: a 512-dot active image occupies 586 central canvas pixels rather
 than being stretched edge to edge. The active image is vertically centred,
 and V9938 R#18 moves it within the raster.
+
+The options overlay is composed after the guest canvas at the fixed 1.5× SDL
+debug-font scale used by 1984. It therefore remains crisp and keeps the same
+text and row size as the window grows; only windows too small for the complete
+640×480 layout use a reduced fit scale. The footer remains a separate
+native-pixel presentation layer.
 
 ## Hardware profiles and machine catalogue
 

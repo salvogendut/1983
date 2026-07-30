@@ -57,6 +57,8 @@ last_media_dir =
 
 [extensions]
 extra_hardware = false
+# Adds Floppy B to Media on Philips NMS 8250 machines.
+second_drive = false
 sunrise_ide = false
 # Exact 128 KiB Sunrise IDE/Nextor kernel ROM.
 sunrise_rom =
@@ -76,8 +78,6 @@ msx_music = false
 kanji_rom = false
 
 [advanced]
-# Adds Floppy B to Media on Philips NMS 8250 machines.
-second_drive = false
 tinker = false
 # Battery-backed per-machine MSX2 RTC state.
 rtc_persistence = true

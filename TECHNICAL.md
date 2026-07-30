@@ -181,8 +181,8 @@ Replacement and ejection flush completed sectors; a host flush error leaves
 the dirty image attached and visible instead of claiming a successful
 ejection.
 
-Media always exposes Floppy A for the NMS 8250. With Tinker enabled,
-Advanced > Second floppy adds Floppy B and its independent image selector.
+Media always exposes Floppy A for the NMS 8250. With Extra Hardware enabled,
+Extensions > Second floppy adds Floppy B and its independent image selector.
 The Philips drive register chooses between the two devices. Advanced >
 Floppy access mode applies the explicit read-only/read-write policy to
 inserted floppies. Paths, second-drive state, and access mode persist in
@@ -450,6 +450,11 @@ The SDL3 frontend follows the shared 1984/1985 interface:
 - fullscreen and integer window scaling;
 - screenshots, pause, reset, notifications, and headless execution;
 - Power, Caps, Kana, drive, cassette, and IDE status surfaces.
+
+Like 1984, the F9 overlay is drawn after the emulated canvas at a fixed 1.5×
+debug-font scale. Resizing the guest image therefore does not enlarge the
+menu text or row spacing; undersized windows reduce the scale only as far as
+needed to keep the complete 640×480 menu layout available.
 
 Notification mode `off` suppresses both on-screen pop-ups and routine startup
 information on standard output. Warnings and errors remain on standard error;

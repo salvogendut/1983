@@ -363,7 +363,7 @@ void display_draw(Display *display, const MsxMachine *msx) {
         draw_scaffold_text(display, msx);
 }
 
-void display_present(Display *display, const MsxMachine *msx) {
+void display_present_begin(Display *display) {
     DisplayLayout layout;
     SDL_FRect destination;
     int output_w;
@@ -386,9 +386,25 @@ void display_present(Display *display, const MsxMachine *msx) {
     SDL_RenderClear(display->renderer);
     SDL_RenderTexture(display->renderer, display->canvas, NULL,
                       &destination);
+}
+
+void display_present_end(Display *display, const MsxMachine *msx) {
+    int output_w;
+    int output_h;
+
+    SDL_SetRenderViewport(display->renderer, NULL);
+    SDL_SetRenderScale(display->renderer, 1.0f, 1.0f);
+    if (!SDL_GetRenderOutputSize(display->renderer, &output_w, &output_h)) {
+        SDL_GetWindowSize(display->window, &output_w, &output_h);
+    }
     draw_footer(display, msx, output_w, output_h);
     leds_render_hover(display->renderer);
     SDL_RenderPresent(display->renderer);
+}
+
+void display_present(Display *display, const MsxMachine *msx) {
+    display_present_begin(display);
+    display_present_end(display, msx);
 }
 
 void display_set_scale(Display *display, int scale) {

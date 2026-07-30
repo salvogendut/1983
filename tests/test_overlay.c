@@ -42,8 +42,9 @@ static void send_text(Overlay *overlay, const char *text) {
 static void render_overlay(Display *display, MsxMachine *msx,
                            Overlay *overlay) {
     display_draw(display, msx);
+    display_present_begin(display);
     overlay_render(overlay);
-    display_present(display, msx);
+    display_present_end(display, msx);
 }
 
 static void assert_pixel(SDL_Surface *surface, int x, int y,
@@ -58,6 +59,37 @@ static void assert_pixel(SDL_Surface *surface, int x, int y,
     assert(red == expected_red);
     assert(green == expected_green);
     assert(blue == expected_blue);
+}
+
+static void test_fixed_overlay_scale(Display *display, MsxMachine *msx,
+                                     Overlay *overlay) {
+    DisplayLayout layout;
+    SDL_Surface *pixels;
+    int output_w;
+    int output_h;
+
+    display_draw(display, msx);
+    display_present_begin(display);
+    overlay_render(overlay);
+    assert(SDL_GetRenderOutputSize(
+        display->renderer, &output_w, &output_h));
+    display_calculate_layout(output_w, output_h, &layout);
+    assert(layout.screen_w >= 960);
+    assert(layout.screen_h >= 720);
+    pixels = SDL_RenderReadPixels(display->renderer, NULL);
+    assert(pixels);
+
+    /*
+     * The panel's eight-unit inset lands at 12 output pixels because the
+     * presentation overlay uses 1984's fixed 1.5x scale. Rendering it into
+     * the 2x guest canvas would instead place this border at 16 pixels.
+     */
+    assert_pixel(pixels,
+                 layout.screen_x + 12,
+                 layout.screen_y + 12,
+                 70, 90, 180);
+    SDL_DestroySurface(pixels);
+    display_present_end(display, msx);
 }
 
 static void test_cartridge_led_rendering(SDL_Renderer *renderer) {
@@ -228,6 +260,7 @@ int main(void) {
     assert(layout.footer_y == 860);
 
     config_defaults(&config);
+    config.scale = 2;
     config.tinker = true;
     memset(sunrise_rom, 0xff, sizeof(sunrise_rom));
     fixture = fopen(sunrise_rom_path, "wb");
@@ -312,6 +345,7 @@ int main(void) {
 
     send_key(&overlay, SDLK_F9);
     assert(overlay.visible);
+    test_fixed_overlay_scale(&display, &msx, &overlay);
     assert(overlay.section == OVERLAY_GENERAL);
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_RETURN);
@@ -530,9 +564,9 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
     assert(overlay.row == 0);
-    for (int row = 0; row < 4; ++row)
+    for (int row = 0; row < 3; ++row)
         send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 4);
+    assert(overlay.row == 3);
     send_key(&overlay, SDLK_RETURN);
     assert(config.ide_image_mode == ATA_IMAGE_READ_WRITE);
     assert(msx_sunrise_disk_writable(&msx));
@@ -567,7 +601,7 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
     assert(overlay.row == 0);
-    for (int row = 0; row < 11; ++row)
+    for (int row = 0; row < 10; ++row)
         send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.cassette_audible_monitor);
@@ -575,7 +609,7 @@ int main(void) {
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(config.cassette_visual_monitor);
-    for (int row = 0; row < 12; ++row)
+    for (int row = 0; row < 11; ++row)
         send_key(&overlay, SDLK_UP);
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_RETURN);
@@ -642,10 +676,11 @@ int main(void) {
     assert(!msx_cassette_mounted(&msx));
     assert(!config.cassette_path[0]);
 
-    /* The Advanced switch conditionally adds Floppy B to Media. */
+    /* The Extensions switch conditionally adds Floppy B to Media. */
     config_defaults(&config);
     config.model = MSX_MODEL_PHILIPS_NMS8250;
     snprintf(config.machine_id, sizeof(config.machine_id), "nms8250");
+    config.extra_hardware = true;
     config.tinker = true;
     msx_configure(&msx, config.model, config.region, 128);
     overlay_init(&overlay, &config, &models, &display, &msx);
@@ -653,14 +688,10 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_MEDIA);
     send_key(&overlay, SDLK_RIGHT);
-    assert(overlay.section == OVERLAY_ADVANCED);
-    send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 1);
-    assert(config.rtc_persistence);
-    send_key(&overlay, SDLK_RETURN);
-    assert(!config.rtc_persistence);
-    send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 2);
+    assert(overlay.section == OVERLAY_EXTENSIONS);
+    for (int row = 0; row < 5; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 5);
     send_key(&overlay, SDLK_RETURN);
     assert(config.second_drive);
     send_key(&overlay, SDLK_LEFT);
@@ -668,14 +699,22 @@ int main(void) {
     send_key(&overlay, SDLK_UP);
     assert(overlay.row == 6);
     send_key(&overlay, SDLK_RIGHT);
-    assert(overlay.section == OVERLAY_ADVANCED);
-    send_key(&overlay, SDLK_DOWN);
-    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.section == OVERLAY_EXTENSIONS);
+    for (int row = 0; row < 5; ++row)
+        send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(!config.second_drive);
     send_key(&overlay, SDLK_LEFT);
     send_key(&overlay, SDLK_UP);
     assert(overlay.row == 5);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_ADVANCED);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 1);
+    assert(config.rtc_persistence);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.rtc_persistence);
 
     /* SD Mapper setup keeps controller firmware separate from card media. */
     config_defaults(&config);
@@ -744,9 +783,9 @@ int main(void) {
     send_key(&overlay, SDLK_RIGHT);
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_ADVANCED);
-    for (int row = 0; row < 5; ++row)
+    for (int row = 0; row < 4; ++row)
         send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 5);
+    assert(overlay.row == 4);
     send_key(&overlay, SDLK_RETURN);
     assert(config.sd_image_mode == SD_IMAGE_READ_WRITE);
     assert(msx_sd_card_writable(&msx, 0));
