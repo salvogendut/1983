@@ -531,12 +531,14 @@ Run a short frontend smoke test without a desktop:
 
 Script a paste into the guest for headless verification. `--paste-at` waits
 for boot, `--paste-repeat` re-invokes the trigger like an OS auto-repeat
-storm, and `--screenshot` captures the final frame:
+storm, `--screenshot` captures the final frame, and `--dump-ram` prints guest
+memory on exit for inspecting what the guest actually received:
 
 ```sh
 ./1983 --headless --unthrottled --exit-after 1200 \
   --cart /path/to/rom --paste-at 300 --paste-repeat 30 \
-  --paste-text $'10 PRINT "HI"\nLIST\n' --screenshot /tmp/paste.ppm
+  --paste-text $'10 PRINT "HI"\nLIST\n' --screenshot /tmp/paste.ppm \
+  --dump-ram 0x8000:64
 ```
 
 Run the pinned C-BIOS checkpoint against the bundled C-BIOS 0.29 files:
