@@ -57,6 +57,7 @@ typedef struct {
     const char *paste_text;
     int paste_at;
     int paste_repeat;
+    const char *dump_ram_spec;
     bool headless;
     bool unthrottled;
     bool dump_state;
@@ -100,6 +101,7 @@ static const char *usage =
     "  --paste-text TEXT   queue TEXT for the paste queue (for smoke tests)\n"
     "  --paste-at N        start --paste-text at host frame N (default 60)\n"
     "  --paste-repeat N    requeue --paste-text every N frames (default 0)\n"
+    "  --dump-ram A:N      print N guest RAM bytes from address A on exit\n"
     "  --unthrottled       disable 50/60 Hz frame pacing\n"
     "  --dump-state        print CPU/bus/VDP state on exit\n"
     "  -h, --help          show this help\n"
@@ -245,6 +247,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--paste-text") == 0 ||
              strcmp(argument, "--paste-at") == 0 ||
              strcmp(argument, "--paste-repeat") == 0 ||
+             strcmp(argument, "--dump-ram") == 0 ||
              strcmp(argument, "--cart") == 0 ||
              strcmp(argument, "--cart1") == 0 ||
              strcmp(argument, "--cart2") == 0 ||
@@ -316,6 +319,8 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
                 parse_integer(argv[++i], 0, 1000000, "--paste-repeat");
             if (cli->paste_repeat < 0)
                 return -1;
+        } else if (strcmp(argument, "--dump-ram") == 0) {
+            cli->dump_ram_spec = argv[++i];
         } else if (strcmp(argument, "--cart") == 0 ||
                    strcmp(argument, "--cart1") == 0) {
             cli->cartridge_path[0] = argv[++i];
@@ -1358,6 +1363,25 @@ int main(int argc, char **argv) {
     config.fullscreen = display.fullscreen;
     config.scale = display.scale;
     config_save(&config);
+    if (cli.dump_ram_spec) {
+        char *end = NULL;
+        long start = strtol(cli.dump_ram_spec, &end, 0);
+        long length = end && *end == ':' ? strtol(end + 1, &end, 0) : -1;
+
+        if (!end || *end || start < 0 || length <= 0 ||
+            start + length > 0x10000) {
+            fprintf(stderr, "--dump-ram: expected ADDR:LEN, e.g. 0x8000:64\n");
+        } else {
+            for (long i = 0; i < length; ++i) {
+                if (i % 16 == 0)
+                    printf("%04lX:", (unsigned long)start + i);
+                printf(" %02X",
+                       msx_memory_read(&msx, (u16)(start + i)));
+                if (i % 16 == 15 || i + 1 == length)
+                    putchar('\n');
+            }
+        }
+    }
     if (cli.dump_state) {
         size_t nonzero_vram = 0;
         for (size_t i = 0; i < sizeof(msx.vdp.vram); ++i)
