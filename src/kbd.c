@@ -226,6 +226,15 @@ bool kbd_handle(KbdHost *host, MsxMachine *msx,
     if (position.row < 0)
         return false;
 
+    /*
+     * Ignore key auto-repeat: host->down already tracks the physical hold.
+     * After kbd_release_all (e.g. the released Ctrl+V chord), a repeated
+     * key-down would otherwise be mistaken for a fresh press and leak the
+     * still-held key back into the guest matrix while a paste is typing.
+     */
+    if (event->repeat)
+        return true;
+
     if (host->down[scancode] == event->down)
         return true;
     host->down[scancode] = event->down;

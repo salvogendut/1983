@@ -92,6 +92,19 @@ static bool send_key(KbdHost *host, MsxMachine *msx,
     return kbd_handle(host, msx, &event);
 }
 
+static bool send_repeat_key_down(KbdHost *host, MsxMachine *msx,
+                                 SDL_Scancode scancode, SDL_Keymod mod) {
+    SDL_KeyboardEvent event;
+
+    memset(&event, 0, sizeof(event));
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.down = true;
+    event.repeat = true;
+    event.scancode = scancode;
+    event.mod = mod;
+    return kbd_handle(host, msx, &event);
+}
+
 static void test_all_matrix_positions(void) {
     MsxMachine msx;
     KbdHost host;
@@ -226,10 +239,53 @@ static void test_focus_cleanup_and_ppi_reads(void) {
         assert(msx_keyboard_read_row(&msx, row) == 0xff);
 }
 
+static void test_auto_repeat_is_ignored(void) {
+    MsxMachine msx;
+    KbdHost host;
+
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    kbd_init(&host);
+
+    /* Repeats of a held key are harmless no-ops. */
+    assert(send_key(&host, &msx, SDL_SCANCODE_A, true, SDL_KMOD_NONE));
+    assert(msx_keyboard_read_row(&msx, 2) == 0xbf);
+    assert(send_repeat_key_down(&host, &msx, SDL_SCANCODE_A,
+                                SDL_KMOD_NONE));
+    assert(send_repeat_key_down(&host, &msx, SDL_SCANCODE_A,
+                                SDL_KMOD_NONE));
+    assert(msx_keyboard_read_row(&msx, 2) == 0xbf);
+    assert(send_key(&host, &msx, SDL_SCANCODE_A, false, SDL_KMOD_NONE));
+    assert(msx_keyboard_read_row(&msx, 2) == 0xff);
+
+    /*
+     * The Ctrl+V paste shortcut releases the whole chord through
+     * kbd_release_all. Repeats of the still-held physical keys must not
+     * leak back into the guest matrix while the paste queue is typing.
+     */
+    assert(send_key(&host, &msx, SDL_SCANCODE_LCTRL, true, SDL_KMOD_CTRL));
+    assert(send_key(&host, &msx, SDL_SCANCODE_V, true, SDL_KMOD_CTRL));
+    assert(msx_keyboard_read_row(&msx, 6) == 0xfd);
+    assert(msx_keyboard_read_row(&msx, 5) == 0xf7);
+    kbd_release_all(&host, &msx);
+    assert(send_repeat_key_down(&host, &msx, SDL_SCANCODE_LCTRL,
+                                SDL_KMOD_CTRL));
+    assert(send_repeat_key_down(&host, &msx, SDL_SCANCODE_V,
+                                SDL_KMOD_CTRL));
+    assert(msx_keyboard_read_row(&msx, 6) == 0xff);
+    assert(msx_keyboard_read_row(&msx, 5) == 0xff);
+    assert(send_key(&host, &msx, SDL_SCANCODE_V, false, SDL_KMOD_CTRL));
+    assert(send_key(&host, &msx, SDL_SCANCODE_LCTRL, false,
+                    SDL_KMOD_NONE));
+    assert(msx_keyboard_read_row(&msx, 6) == 0xff);
+    assert(msx_keyboard_read_row(&msx, 5) == 0xff);
+    msx_destroy(&msx);
+}
+
 int main(void) {
     test_all_matrix_positions();
     test_rollover_and_aliases();
     test_shifted_guest_functions();
     test_focus_cleanup_and_ppi_reads();
+    test_auto_repeat_is_ignored();
     return 0;
 }

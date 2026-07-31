@@ -436,7 +436,10 @@ characters are translated with the international MSX Unicode mapping and
 injected through the reference-counted matrix over successive frames. A
 three-frame initial delay lets the physical Ctrl+V chord clear, every key is
 held for two frames, and no implicit Return is appended. Pause suspends the
-queue; reset, overlay entry, and focus loss cancel it safely.
+queue; reset, overlay entry, and focus loss cancel it safely. Chord
+auto-repeat is filtered so holding Ctrl+V cannot restart the queue, and
+repeated key-down events are ignored by the keyboard adapter so a held chord
+cannot re-enter the guest matrix mid-paste.
 
 The SDL3 controller adapter applies a 16,000-unit analogue dead zone and
 normalizes opposing directions to neutral before passing a six-bit state to

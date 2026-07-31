@@ -354,7 +354,9 @@ carriage returns and unsupported UTF-8 bytes are skipped. Paste does not add
 a trailing Return. A queued character is held for two complete frames with a
 one-frame gap, after an initial three-frame shortcut-release delay. Pausing
 also pauses the queue; reset, overlay entry, or focus loss cancels it and
-releases any synthetic key.
+releases any synthetic key. OS key auto-repeat never restarts the queue, and
+the keyboard adapter ignores repeated key-down events so a chord held while
+the queue is typing cannot leak back into the guest matrix.
 
 ## TMS9918-family sprites
 
@@ -525,6 +527,16 @@ Run a short frontend smoke test without a desktop:
 ```sh
 ./1983 --headless --unthrottled --exit-after 10 \
   --config /tmp/1983-smoke.conf
+```
+
+Script a paste into the guest for headless verification. `--paste-at` waits
+for boot, `--paste-repeat` re-invokes the trigger like an OS auto-repeat
+storm, and `--screenshot` captures the final frame:
+
+```sh
+./1983 --headless --unthrottled --exit-after 1200 \
+  --cart /path/to/rom --paste-at 300 --paste-repeat 30 \
+  --paste-text $'10 PRINT "HI"\nLIST\n' --screenshot /tmp/paste.ppm
 ```
 
 Run the pinned C-BIOS checkpoint against the bundled C-BIOS 0.29 files:
