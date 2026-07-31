@@ -54,6 +54,9 @@ typedef struct {
     int sd_image_mode;
     int scale;
     int exit_after;
+    const char *paste_text;
+    int paste_at;
+    int paste_repeat;
     bool headless;
     bool unthrottled;
     bool dump_state;
@@ -94,6 +97,9 @@ static const char *usage =
     "  --scale N           initial window scale (1 through 4)\n"
     "  --headless          use SDL's headless video backend\n"
     "  --exit-after N      exit after N host frames (for smoke tests)\n"
+    "  --paste-text TEXT   queue TEXT for the paste queue (for smoke tests)\n"
+    "  --paste-at N        start --paste-text at host frame N (default 60)\n"
+    "  --paste-repeat N    requeue --paste-text every N frames (default 0)\n"
     "  --unthrottled       disable 50/60 Hz frame pacing\n"
     "  --dump-state        print CPU/bus/VDP state on exit\n"
     "  -h, --help          show this help\n"
@@ -187,6 +193,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
     cli->sd_image_mode = -1;
     cli->scale = -1;
     cli->exit_after = -1;
+    cli->paste_at = 60;
 
     for (int i = 1; i < argc; ++i) {
         const char *argument = argv[i];
@@ -235,6 +242,9 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--ide-mode") == 0 ||
              strcmp(argument, "--cassette") == 0 ||
              strcmp(argument, "--screenshot") == 0 ||
+             strcmp(argument, "--paste-text") == 0 ||
+             strcmp(argument, "--paste-at") == 0 ||
+             strcmp(argument, "--paste-repeat") == 0 ||
              strcmp(argument, "--cart") == 0 ||
              strcmp(argument, "--cart1") == 0 ||
              strcmp(argument, "--cart2") == 0 ||
@@ -295,6 +305,17 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->cassette_path = argv[++i];
         } else if (strcmp(argument, "--screenshot") == 0) {
             cli->screenshot_path = argv[++i];
+        } else if (strcmp(argument, "--paste-text") == 0) {
+            cli->paste_text = argv[++i];
+        } else if (strcmp(argument, "--paste-at") == 0) {
+            cli->paste_at = parse_integer(argv[++i], 0, 1000000, "--paste-at");
+            if (cli->paste_at < 0)
+                return -1;
+        } else if (strcmp(argument, "--paste-repeat") == 0) {
+            cli->paste_repeat =
+                parse_integer(argv[++i], 0, 1000000, "--paste-repeat");
+            if (cli->paste_repeat < 0)
+                return -1;
         } else if (strcmp(argument, "--cart") == 0 ||
                    strcmp(argument, "--cart1") == 0) {
             cli->cartridge_path[0] = argv[++i];
@@ -1146,7 +1167,12 @@ int main(int argc, char **argv) {
             if (kbd_handle_guest_function(&keyboard, &msx, &event.key))
                 continue;
 
+            /*
+             * Ignore chord auto-repeat: holding Ctrl+V must not restart
+             * the queue and duplicate the text already typed.
+             */
             if (event.key.scancode == SDL_SCANCODE_V &&
+                !event.key.repeat &&
                 (event.key.mod & SDL_KMOD_CTRL)) {
                 char *text;
 
@@ -1246,6 +1272,19 @@ int main(int argc, char **argv) {
             if (config.joy_port_device[port] == JOY_PORT_JOYSTICK)
                 msx_joystick_set_pressed(
                     &msx, port, gamepad_input_poll(&gamepad));
+        }
+        /*
+         * Scripted paste for headless smoke tests. --paste-repeat models an
+         * OS auto-repeat storm re-invoking the paste trigger: every requeue
+         * restarts the queue exactly like a repeated Ctrl+V key-down does.
+         */
+        if (cli.paste_text && host_frame >= cli.paste_at) {
+            bool due = host_frame == cli.paste_at ||
+                       (cli.paste_repeat > 0 &&
+                        (host_frame - cli.paste_at) % cli.paste_repeat == 0);
+
+            if (due && !paste_start(&paste, &msx, cli.paste_text))
+                fprintf(stderr, "--paste-text: out of memory\n");
         }
         if (!msx.paused && !overlay.visible)
             paste_tick(&paste, &msx);
