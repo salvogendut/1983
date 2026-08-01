@@ -213,7 +213,9 @@ panel which distinguishes the required 128 KiB controller ROM from its
 optional raw disk image. Nothing is connected or reserved until Connect is
 chosen and both selected files have been validated. The firmware path is
 then retained so later activations are simple disconnect/reconnect toggles;
-Delete on the extension forgets it and re-enables setup for replacement.
+Space reopens the prepopulated settings. Active edits prepare replacement
+firmware and media, flush writable state, and swap atomically. Delete safely
+disconnects the extension and clears its saved controller and disk settings.
 Media > IDE hard disk owns subsequent mounting and ejection while the
 controller is connected. Advanced > IDE access mode owns the explicit
 read-only/read-write switch. Both paths and the access mode persist in
@@ -262,6 +264,8 @@ owns read-only/read-write access and the two cartridge switches. Configuration
 and command-line startup preserve the same separation through
 `sd_mapper_rom`, `sd_card_a`, `sd_card_b`, and `sd_image_mode`, or
 `--sd-mapper-rom`, `--sd-a`, `--sd-b`, and `--sd-mode`.
+Space reopens the setup without toggling the extension; active changes are
+prepared and swapped only after current writable cards flush successfully.
 
 The reference `SDXC110.ROM` from MSX SD Mapper V2 release 1.1.0 with Nextor
 2.1.2 boots a FAT16 card to its command prompt on the generic MSX1 profile.
@@ -291,7 +295,13 @@ private flash-state file; shorter images, including the official
 8,208,384-byte preflash, are padded with erased `0xFF` bytes. Guest changes
 are written and synchronized to a same-directory
 temporary file before atomic replacement; corruption is rejected, the source
-dump remains untouched, and a failed flush blocks disconnection.
+dump remains untouched, and a failed flush blocks disconnection. Replacing the
+configured initial image stages a private reseed that is atomically promoted
+when overlay settings are saved; discarding the overlay leaves the prior state
+untouched. Pending filenames include the selected source identity, allowing
+startup to finish a promotion interrupted after configuration save without
+attaching an unsaved reseed to the old configuration. Card-only edits preserve
+the existing guest-programmed flash.
 
 The MegaSD subslot uses an ASCII8 window into the final flash megabyte. Banks
 `0x40` through `0x7F` expose the active-low card-select transfer window and

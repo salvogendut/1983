@@ -87,6 +87,8 @@ int  config_save(const Config *config);
 int  config_rtc_path(const Config *config, char *path, size_t path_size);
 int  config_megaflash_state_path(const Config *config,
                                  char *path, size_t path_size);
+int  config_megaflash_pending_state_path(const Config *config,
+                                         char *path, size_t path_size);
 unsigned config_cartridge_extension_count(const Config *config);
 const char *config_cartridge_slot_owner(const Config *config,
                                         unsigned slot);

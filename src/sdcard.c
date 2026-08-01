@@ -469,6 +469,8 @@ int sd_card_flush(SdCard *card) {
 }
 
 int sd_card_eject(SdCard *card) {
+    int result = 0;
+
     if (!card)
         return -1;
     if (!card->image)
@@ -478,7 +480,7 @@ int sd_card_eject(SdCard *card) {
     if (fclose(card->image) != 0) {
         sd_host_error(card, true, "SD image close failed: %s",
                       sd_system_error());
-        return -1;
+        result = -1;
     }
     card->image = NULL;
     card->sector_count = 0;
@@ -486,7 +488,7 @@ int sd_card_eject(SdCard *card) {
     card->activity = false;
     card->media_changed = true;
     sd_card_reset(card);
-    return 0;
+    return result;
 }
 
 bool sd_card_mounted(const SdCard *card) {

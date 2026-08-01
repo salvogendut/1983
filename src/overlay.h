@@ -67,9 +67,12 @@ typedef struct {
     char dialog_path[PATH_MAX];
     bool dialog_ready;
     bool dialog_failed;
+    bool dialog_discard;
     char dialog_error[256];
 
     int machine_row;
+    bool extension_setup_editing;
+    char extension_setup_media_dir[PATH_MAX];
 
     int sunrise_setup_row;
     char pending_sunrise_rom_path[PATH_MAX];
@@ -84,6 +87,9 @@ typedef struct {
     int megaflash_setup_row;
     char pending_megaflash_rom_path[PATH_MAX];
     char pending_megaflash_card_path[MSX_MEGAFLASH_CARDS][PATH_MAX];
+    bool megaflash_state_pending;
+    char megaflash_pending_state_path[PATH_MAX];
+    char megaflash_final_state_path[PATH_MAX];
 
     int model_editor_row;
     int model_edit_index;

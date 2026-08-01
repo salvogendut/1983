@@ -627,6 +627,38 @@ int config_megaflash_state_path(const Config *config,
     return 0;
 }
 
+int config_megaflash_pending_state_path(const Config *config,
+                                        char *path, size_t path_size) {
+    Config state_config;
+    char state_path[PATH_MAX];
+    unsigned long long hash = 14695981039346656037ull;
+
+    if (!config || !path || !path_size)
+        return -1;
+    path[0] = '\0';
+    if (!config->megaflash_rom_path[0])
+        return 0;
+    state_config = *config;
+    state_config.megaflash = true;
+    if (config_megaflash_state_path(
+            &state_config, state_path, sizeof(state_path)) != 0)
+        return -1;
+    if (!state_path[0])
+        return 0;
+    for (const unsigned char *cursor =
+             (const unsigned char *)config->megaflash_rom_path;
+         *cursor; ++cursor) {
+        hash ^= *cursor;
+        hash *= 1099511628211ull;
+    }
+    if (snprintf(path, path_size, "%s.pending-%016llx",
+                 state_path, hash) >= (int)path_size) {
+        path[0] = '\0';
+        return -1;
+    }
+    return 0;
+}
+
 unsigned config_cartridge_extension_count(const Config *config) {
     if (!config)
         return 0;

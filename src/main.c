@@ -468,6 +468,29 @@ static void draw_paused(const MsxMachine *msx, Display *display) {
                  255, 255, 255);
 }
 
+static void recover_pending_megaflash_state(const Config *config) {
+    Config state_config = *config;
+    char state_path[PATH_MAX];
+    char pending_path[PATH_MAX];
+    FILE *pending;
+
+    state_config.megaflash = true;
+    if (config_megaflash_state_path(
+            &state_config, state_path, sizeof(state_path)) != 0 ||
+        config_megaflash_pending_state_path(
+            config, pending_path, sizeof(pending_path)) != 0 ||
+        !state_path[0] || !pending_path[0])
+        return;
+    pending = fopen(pending_path, "rb");
+    if (!pending)
+        return;
+    if (fclose(pending) != 0 ||
+        msx_commit_megaflash_state(
+            NULL, pending_path, state_path) != 0)
+        fprintf(stderr,
+                "warning: cannot recover pending MegaFlash state\n");
+}
+
 int main(int argc, char **argv) {
     Cli cli;
     Config config;
@@ -494,6 +517,7 @@ int main(int argc, char **argv) {
         return cli_result > 0 ? 0 : 1;
 
     config_load(&config, cli.config_path);
+    recover_pending_megaflash_state(&config);
     if (model_catalog_load(&models, cli.models_path) != 0) {
         if (cli.models_path) {
             fprintf(stderr, "cannot load machine catalogue: %s\n",

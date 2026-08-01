@@ -183,6 +183,8 @@ checkpoints, the GeoBench/Nextor target, and licensing boundaries.
 
 Inside the overlay, Left and Right change section, Up and Down select a row,
 Enter activates it, F9 saves, and Escape closes or offers to discard changes.
+In Extensions, Enter enables or disables a device, Space edits configurable
+device settings, and Delete clears those saved settings.
 PSG volume now lives in General, whose RAM control cycles through supported
 sizes up to 4096 KiB. Main Input selects Joy Port A or B, and the two port
 entries select Joystick or Mouse for each connector. These selections are
@@ -246,9 +248,11 @@ slot 1. Reserved cartridge and mapper controls remain visible but cannot be
 used. The first activation of **Extensions > Sunrise IDE** opens a small
 setup panel: select the required 128 KiB Sunrise/Nextor controller ROM,
 optionally select a raw IDE image, then Connect. New images start read-only.
-Later activations
-simply disconnect or reconnect the configured controller; Delete forgets its
-stored firmware when a replacement is needed. The IDE hard-disk row appears
+Later Enter presses disconnect or reconnect the configured controller. Space
+reopens its prepopulated setup panel; applying changes to a live controller
+reconnects it only after the replacement firmware and media are ready. Delete
+disconnects it safely and clears its stored controller and disk settings. The
+IDE hard-disk row appears
 in Media only while Sunrise IDE is connected and owns subsequent image
 changes and safe ejection. With Tinker enabled, **Advanced > IDE access
 mode** explicitly switches the attached image between read-only and
@@ -270,6 +274,8 @@ provides **SD access mode**, **SD Mapper 512K RAM**, and the primary/alternate
 driver switch. Two green SD A/B LEDs report card traffic. Command-line
 equivalents are `--sd-mapper-rom`, `--sd-a`, `--sd-b`, and `--sd-mode`.
 Controller ROMs and card contents are user-supplied and are never bundled.
+Space on the extension reopens all of these settings without toggling it;
+Delete safely disconnects it and clears the saved ROM, cards, and switches.
 
 **Extensions > MegaFlashROM** configures the composite MegaFlashROM SCC+ SD
 cartridge. Its setup keeps three different things distinct: an initial flash
@@ -284,6 +290,9 @@ as SD Mapper V2. The SD A/B LEDs report traffic, while the owning cartridge
 LED remains orange. Command-line equivalents are `--megaflash-rom`,
 `--megaflash-sd-a`, `--megaflash-sd-b`, and `--sd-mode`. The required initial
 dump, flashed software, and SD contents are user-supplied and never bundled.
+Space reopens the prepopulated setup, while Delete safely disconnects the
+extension and clears its saved initial-image and card settings. Selecting a
+different initial image reseeds the private flash state atomically.
 The official [`mfrsd.rom` preflash](https://www.msxcartridgeshop.com/bin/mfrsd.zip)
 is accepted at its native 8,208,384-byte length and its remaining erased
 flash area is padded automatically.
