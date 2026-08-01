@@ -1266,6 +1266,50 @@ int msx_load_sunrise_ide(MsxMachine *msx, unsigned slot,
     return result;
 }
 
+int msx_replace_sunrise_ide(MsxMachine *msx, const char *rom_path,
+                            const char *disk_path,
+                            AtaImageMode mode) {
+    MsxSunriseIde *candidate;
+    MsxSunriseIde *previous;
+    u8 *data = NULL;
+    size_t size;
+    int result = -1;
+
+    if (!msx_sunrise_connected(msx) || !rom_path || !rom_path[0])
+        return -1;
+    candidate = malloc(sizeof(*candidate));
+    previous = malloc(sizeof(*previous));
+    if (!candidate || !previous)
+        goto done;
+    sunrise_init(candidate);
+    if (read_rom_file(
+            rom_path, MSX_SUNRISE_ROM_SIZE, &data, &size) != 0 ||
+        sunrise_install_rom(candidate, data, size) != 0)
+        goto destroy_candidate;
+    if (sunrise_flush_disk(&msx->sunrise) != 0)
+        goto destroy_candidate;
+    if (disk_path && disk_path[0] &&
+        sunrise_mount_disk_mode(candidate, disk_path, mode) != 0)
+        goto destroy_candidate;
+
+    *previous = msx->sunrise;
+    msx->sunrise = *candidate;
+    free(candidate);
+    candidate = NULL;
+    sunrise_destroy(previous);
+    msx_reset(msx);
+    result = 0;
+
+destroy_candidate:
+    if (candidate)
+        sunrise_destroy(candidate);
+done:
+    free(data);
+    free(candidate);
+    free(previous);
+    return result;
+}
+
 int msx_eject_sunrise_ide(MsxMachine *msx) {
     if (!msx)
         return -1;
@@ -1357,6 +1401,61 @@ int msx_load_sd_mapper(MsxMachine *msx, unsigned slot,
         return -1;
     result = msx_install_sd_mapper(msx, slot, data, size);
     free(data);
+    return result;
+}
+
+int msx_replace_sd_mapper(
+    MsxMachine *msx, const char *rom_path,
+    const char *card_a_path, const char *card_b_path,
+    SdImageMode mode, bool mapper_enabled, bool alternate_driver) {
+    const char *cards[MSX_SD_MAPPER_CARDS] = {
+        card_a_path ? card_a_path : "",
+        card_b_path ? card_b_path : ""
+    };
+    MsxSdMapper *candidate;
+    MsxSdMapper *previous;
+    u8 *data = NULL;
+    size_t size;
+    int result = -1;
+
+    if (!msx_sd_mapper_connected(msx) || !rom_path || !rom_path[0])
+        return -1;
+    candidate = malloc(sizeof(*candidate));
+    previous = malloc(sizeof(*previous));
+    if (!candidate || !previous)
+        goto done;
+    sd_mapper_init(candidate);
+    if (read_rom_file(
+            rom_path, MSX_SD_MAPPER_ROM_SIZE, &data, &size) != 0 ||
+        sd_mapper_install_rom(candidate, data, size) != 0)
+        goto destroy_candidate;
+    sd_mapper_set_mapper_enabled(candidate, mapper_enabled);
+    sd_mapper_set_alternate_driver(candidate, alternate_driver);
+    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card)
+        if (sd_mapper_flush_card(&msx->sd_mapper, card) != 0)
+            goto destroy_candidate;
+    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card) {
+        if (cards[card][0] &&
+            sd_mapper_mount_card(
+                candidate, card, cards[card], mode) != 0)
+            goto destroy_candidate;
+    }
+
+    *previous = msx->sd_mapper;
+    msx->sd_mapper = *candidate;
+    free(candidate);
+    candidate = NULL;
+    sd_mapper_destroy(previous);
+    msx_reset(msx);
+    result = 0;
+
+destroy_candidate:
+    if (candidate)
+        sd_mapper_destroy(candidate);
+done:
+    free(data);
+    free(candidate);
+    free(previous);
     return result;
 }
 
@@ -1468,7 +1567,7 @@ int msx_load_megaflash(MsxMachine *msx, unsigned slot,
 }
 
 int msx_load_megaflash_persistent(MsxMachine *msx, unsigned slot,
-                                  const char *initial_path,
+                                   const char *initial_path,
                                   const char *state_path) {
     if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
         megaflash_load_persistent(
@@ -1478,6 +1577,104 @@ int msx_load_megaflash_persistent(MsxMachine *msx, unsigned slot,
     msx->megaflash_slot = (int)slot;
     msx_reset(msx);
     return 0;
+}
+
+int msx_replace_megaflash(
+    MsxMachine *msx, const char *initial_path,
+    const char *state_path, bool reseed_flash,
+    const char *card_a_path, const char *card_b_path,
+    SdImageMode mode) {
+    const char *cards[MSX_MEGAFLASH_CARDS] = {
+        card_a_path ? card_a_path : "",
+        card_b_path ? card_b_path : ""
+    };
+    MsxMegaFlashRom *candidate;
+    MsxMegaFlashRom *previous;
+    u8 *data = NULL;
+    size_t size;
+    int result = -1;
+
+    if (!msx_megaflash_connected(msx) ||
+        !initial_path || !initial_path[0])
+        return -1;
+    candidate = malloc(sizeof(*candidate));
+    previous = malloc(sizeof(*previous));
+    if (!candidate || !previous)
+        goto done;
+    megaflash_init(candidate);
+    if (read_rom_file(
+            initial_path, MSX_MEGAFLASH_FLASH_SIZE,
+            &data, &size) != 0 ||
+        megaflash_install(candidate, data, size) != 0)
+        goto destroy_candidate;
+    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
+        if (cards[card][0] &&
+            megaflash_mount_card(
+                candidate, card, cards[card], mode) != 0)
+            goto destroy_candidate;
+    }
+    if (megaflash_flush_flash(&msx->megaflash) != 0)
+        goto destroy_candidate;
+    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card)
+        if (megaflash_flush_card(&msx->megaflash, card) != 0)
+            goto destroy_candidate;
+    if (state_path && state_path[0]) {
+        if ((reseed_flash
+             ? megaflash_store_persistent(candidate, state_path)
+             : megaflash_load_persistent(
+                   candidate, initial_path, state_path)) != 0)
+            goto destroy_candidate;
+    }
+
+    *previous = msx->megaflash;
+    msx->megaflash = *candidate;
+    free(candidate);
+    candidate = NULL;
+    megaflash_destroy(previous);
+    msx_reset(msx);
+    result = 0;
+
+destroy_candidate:
+    if (candidate)
+        megaflash_destroy(candidate);
+done:
+    free(data);
+    free(candidate);
+    free(previous);
+    return result;
+}
+
+int msx_prepare_megaflash_state(const char *initial_path,
+                                const char *state_path) {
+    MsxMegaFlashRom *candidate;
+    u8 *data = NULL;
+    size_t size;
+    int result = -1;
+
+    if (!initial_path || !initial_path[0] ||
+        !state_path || !state_path[0])
+        return -1;
+    candidate = malloc(sizeof(*candidate));
+    if (!candidate)
+        return -1;
+    megaflash_init(candidate);
+    if (read_rom_file(
+            initial_path, MSX_MEGAFLASH_FLASH_SIZE,
+            &data, &size) == 0 &&
+        megaflash_install(candidate, data, size) == 0 &&
+        megaflash_store_persistent(candidate, state_path) == 0)
+        result = 0;
+    free(data);
+    megaflash_destroy(candidate);
+    free(candidate);
+    return result;
+}
+
+int msx_commit_megaflash_state(MsxMachine *msx,
+                               const char *pending_path,
+                               const char *state_path) {
+    return megaflash_promote_persistent(
+        msx ? &msx->megaflash : NULL, pending_path, state_path);
 }
 
 int msx_flush_megaflash(MsxMachine *msx) {
@@ -1516,6 +1713,36 @@ bool msx_megaflash_connected(const MsxMachine *msx) {
 int msx_megaflash_slot(const MsxMachine *msx) {
     return msx_megaflash_connected(msx)
          ? msx->megaflash_slot : -1;
+}
+
+void msx_reassign_extension_slots(MsxMachine *msx,
+                                  int sunrise_slot,
+                                  int sd_mapper_slot,
+                                  int megaflash_slot) {
+    bool changed = false;
+
+    if (!msx)
+        return;
+    if (msx_sunrise_connected(msx) && sunrise_slot >= 0 &&
+        sunrise_slot < (int)MSX_CARTRIDGE_SLOTS &&
+        msx->sunrise_slot != sunrise_slot) {
+        msx->sunrise_slot = sunrise_slot;
+        changed = true;
+    }
+    if (msx_sd_mapper_connected(msx) && sd_mapper_slot >= 0 &&
+        sd_mapper_slot < (int)MSX_CARTRIDGE_SLOTS &&
+        msx->sd_mapper_slot != sd_mapper_slot) {
+        msx->sd_mapper_slot = sd_mapper_slot;
+        changed = true;
+    }
+    if (msx_megaflash_connected(msx) && megaflash_slot >= 0 &&
+        megaflash_slot < (int)MSX_CARTRIDGE_SLOTS &&
+        msx->megaflash_slot != megaflash_slot) {
+        msx->megaflash_slot = megaflash_slot;
+        changed = true;
+    }
+    if (changed)
+        msx_reset(msx);
 }
 
 int msx_mount_megaflash_card(MsxMachine *msx, unsigned card,

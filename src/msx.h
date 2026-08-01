@@ -220,6 +220,9 @@ int msx_install_sunrise_ide(MsxMachine *msx, unsigned slot,
                             const u8 *data, size_t size);
 int msx_load_sunrise_ide(MsxMachine *msx, unsigned slot,
                          const char *path);
+int msx_replace_sunrise_ide(MsxMachine *msx, const char *rom_path,
+                            const char *disk_path,
+                            AtaImageMode mode);
 int msx_eject_sunrise_ide(MsxMachine *msx);
 bool msx_sunrise_connected(const MsxMachine *msx);
 int msx_sunrise_slot(const MsxMachine *msx);
@@ -238,6 +241,10 @@ int msx_install_sd_mapper(MsxMachine *msx, unsigned slot,
                           const u8 *data, size_t size);
 int msx_load_sd_mapper(MsxMachine *msx, unsigned slot,
                        const char *path);
+int msx_replace_sd_mapper(
+    MsxMachine *msx, const char *rom_path,
+    const char *card_a_path, const char *card_b_path,
+    SdImageMode mode, bool mapper_enabled, bool alternate_driver);
 int msx_eject_sd_mapper(MsxMachine *msx);
 bool msx_sd_mapper_connected(const MsxMachine *msx);
 int msx_sd_mapper_slot(const MsxMachine *msx);
@@ -258,8 +265,18 @@ int msx_install_megaflash(MsxMachine *msx, unsigned slot,
 int msx_load_megaflash(MsxMachine *msx, unsigned slot,
                        const char *path);
 int msx_load_megaflash_persistent(MsxMachine *msx, unsigned slot,
-                                  const char *initial_path,
-                                  const char *state_path);
+                                   const char *initial_path,
+                                   const char *state_path);
+int msx_replace_megaflash(
+    MsxMachine *msx, const char *initial_path,
+    const char *state_path, bool reseed_flash,
+    const char *card_a_path, const char *card_b_path,
+    SdImageMode mode);
+int msx_prepare_megaflash_state(const char *initial_path,
+                                const char *state_path);
+int msx_commit_megaflash_state(MsxMachine *msx,
+                               const char *pending_path,
+                               const char *state_path);
 int msx_flush_megaflash(MsxMachine *msx);
 bool msx_megaflash_flash_dirty(const MsxMachine *msx);
 bool msx_megaflash_flash_has_error(const MsxMachine *msx);
@@ -267,6 +284,10 @@ const char *msx_megaflash_flash_error(const MsxMachine *msx);
 int msx_eject_megaflash(MsxMachine *msx);
 bool msx_megaflash_connected(const MsxMachine *msx);
 int msx_megaflash_slot(const MsxMachine *msx);
+void msx_reassign_extension_slots(MsxMachine *msx,
+                                  int sunrise_slot,
+                                  int sd_mapper_slot,
+                                  int megaflash_slot);
 int msx_mount_megaflash_card(MsxMachine *msx, unsigned card,
                              const char *path, SdImageMode mode);
 int msx_flush_megaflash_card(MsxMachine *msx, unsigned card);

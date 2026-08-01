@@ -5,6 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <direct.h>
+#define TEST_RMDIR _rmdir
+#else
+#include <unistd.h>
+#define TEST_RMDIR rmdir
+#endif
+
 #include "leds.h"
 
 static void send_key(Overlay *overlay, SDL_Keycode key) {
@@ -27,6 +35,14 @@ static void send_key_mod(Overlay *overlay, SDL_Keycode key,
     event.key.key = key;
     event.key.mod = modifiers;
     assert(overlay_handle_event(overlay, &event));
+}
+
+static bool send_quit(Overlay *overlay) {
+    SDL_Event event;
+
+    memset(&event, 0, sizeof(event));
+    event.type = SDL_EVENT_QUIT;
+    return overlay_handle_event(overlay, &event);
 }
 
 static void send_text(Overlay *overlay, const char *text) {
@@ -228,6 +244,9 @@ int main(void) {
     const char *sd_mapper_rom_path = "tests/test-sd-mapper-rom.tmp";
     const char *sd_image_path = "tests/test-sd-card.tmp";
     const char *megaflash_rom_path = "tests/test-megaflash-rom.tmp";
+    const char *megaflash_rom_path_2 = "tests/test-megaflash-rom-2.tmp";
+    const char *megaflash_config_path =
+        "tests/test-overlay-state/config.ini";
     const char *cassette_path = "tests/test-cassette.tmp";
     Config config;
     ModelCatalog models;
@@ -305,6 +324,16 @@ int main(void) {
     fixture = fopen(megaflash_rom_path, "wb");
     assert(fixture);
     memset(sunrise_rom, 0xff, sizeof(sunrise_rom));
+    for (size_t chunk = 0;
+         chunk < MSX_MEGAFLASH_FLASH_SIZE / sizeof(sunrise_rom);
+         ++chunk)
+        assert(fwrite(
+                   sunrise_rom, 1, sizeof(sunrise_rom), fixture) ==
+                sizeof(sunrise_rom));
+    assert(fclose(fixture) == 0);
+    fixture = fopen(megaflash_rom_path_2, "wb");
+    assert(fixture);
+    memset(sunrise_rom, 0x44, sizeof(sunrise_rom));
     for (size_t chunk = 0;
          chunk < MSX_MEGAFLASH_FLASH_SIZE / sizeof(sunrise_rom);
          ++chunk)
@@ -443,21 +472,14 @@ int main(void) {
     assert(overlay.row == 0);
     render_overlay(&display, &msx, &overlay);
 
-    send_key(&overlay, SDLK_RETURN);
+    send_key(&overlay, SDLK_SPACE);
     assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);
+    assert(overlay.extension_setup_editing);
+    assert(overlay.sunrise_setup_row == 0);
     assert(!config.sunrise_ide);
     assert(msx_get_cartridge(&msx, 1)->loaded);
     assert(config.cartridge_path[1][0]);
     render_overlay(&display, &msx, &overlay);
-    send_key(&overlay, SDLK_ESCAPE);
-    assert(overlay.state == OVERLAY_STATE_MENU);
-    assert(!config.sunrise_ide);
-    assert(!config.sunrise_rom_path[0]);
-    assert(msx_get_cartridge(&msx, 1)->loaded);
-
-    send_key(&overlay, SDLK_RETURN);
-    assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);
-    assert(overlay.sunrise_setup_row == 0);
     overlay.dialog_target = OVERLAY_DIALOG_SUNRISE_ROM;
     snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
              "%s", sunrise_rom_path);
@@ -473,12 +495,16 @@ int main(void) {
     assert(overlay.sunrise_setup_row == 2);
     send_key(&overlay, SDLK_RETURN);
     assert(overlay.state == OVERLAY_STATE_MENU);
+    assert(!config.sunrise_ide);
+    assert(!msx_sunrise_connected(&msx));
+    assert(strcmp(config.sunrise_rom_path,
+                   sunrise_rom_path) == 0);
+    assert(!config.ide_image_path[0]);
+
+    send_key(&overlay, SDLK_RETURN);
     assert(config.sunrise_ide);
     assert(msx_sunrise_connected(&msx));
     assert(!msx_sunrise_disk_mounted(&msx));
-    assert(strcmp(config.sunrise_rom_path,
-                  sunrise_rom_path) == 0);
-    assert(!config.ide_image_path[0]);
     assert(msx_sunrise_slot(&msx) == 1);
     assert(strcmp(config_cartridge_slot_owner(&config, 1),
                   "Sunrise IDE") == 0);
@@ -489,21 +515,55 @@ int main(void) {
     assert(leds_get_cartridge_state(1).present);
     assert(!leds_get_cartridge_state(1).activity);
 
+    snprintf(config.last_media_dir, sizeof(config.last_media_dir),
+             "before-extension-edit");
+    send_key(&overlay, SDLK_SPACE);
+    overlay.dialog_target = OVERLAY_DIALOG_SUNRISE_ROM;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", sunrise_rom_path_2);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(strcmp(config.last_media_dir, "tests") == 0);
+    send_key(&overlay, SDLK_ESCAPE);
+    assert(strcmp(config.last_media_dir,
+                  "before-extension-edit") == 0);
+    assert(config.sunrise_ide);
+    assert(msx_sunrise_connected(&msx));
+
+    send_key(&overlay, SDLK_SPACE);
+    overlay.dialog_target = OVERLAY_DIALOG_IDE_IMAGE;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", ide_image_path);
+    overlay.dialog_ready = true;
+    send_key(&overlay, SDLK_ESCAPE);
+    overlay_tick(&overlay);
+    assert(overlay.dialog_target == OVERLAY_DIALOG_NONE);
+    assert(!config.ide_image_path[0]);
+    assert(!msx_sunrise_disk_mounted(&msx));
+    assert(strcmp(config.last_media_dir,
+                  "before-extension-edit") == 0);
+
+    send_key(&overlay, SDLK_SPACE);
+    assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);
+    assert(overlay.extension_setup_editing);
+    assert(strcmp(overlay.pending_sunrise_rom_path,
+                  sunrise_rom_path) == 0);
+    snprintf(overlay.pending_sunrise_rom_path,
+             sizeof(overlay.pending_sunrise_rom_path),
+             "tests/missing-sunrise.rom");
+    overlay.sunrise_setup_row = 2;
     send_key(&overlay, SDLK_RETURN);
-    assert(!config.sunrise_ide);
-    assert(!msx_sunrise_connected(&msx));
+    assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);
+    assert(config.sunrise_ide);
+    assert(msx_sunrise_connected(&msx));
     assert(strcmp(config.sunrise_rom_path,
                   sunrise_rom_path) == 0);
-    send_key(&overlay, SDLK_RETURN);
+    send_key(&overlay, SDLK_ESCAPE);
     assert(overlay.state == OVERLAY_STATE_MENU);
     assert(config.sunrise_ide);
     assert(msx_sunrise_connected(&msx));
-    send_key(&overlay, SDLK_DELETE);
-    assert(!config.sunrise_ide);
-    assert(!msx_sunrise_connected(&msx));
-    assert(!config.sunrise_rom_path[0]);
 
-    send_key(&overlay, SDLK_RETURN);
+    send_key(&overlay, SDLK_SPACE);
     assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);
     overlay.dialog_target = OVERLAY_DIALOG_SUNRISE_ROM;
     snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
@@ -524,17 +584,57 @@ int main(void) {
     send_key(&overlay, SDLK_RETURN);
     assert(overlay.state == OVERLAY_STATE_MENU);
     assert(config.sunrise_ide);
+    assert(msx_sunrise_connected(&msx));
+    assert(msx_sunrise_slot(&msx) == 1);
     assert(strcmp(config.sunrise_rom_path,
-                  sunrise_rom_path_2) == 0);
+                   sunrise_rom_path_2) == 0);
     assert(strcmp(config.ide_image_path,
                   ide_image_path) == 0);
     assert(msx_sunrise_disk_mounted(&msx));
     assert(!msx_sunrise_disk_writable(&msx));
     assert(config.ide_image_mode == ATA_IMAGE_READ_ONLY);
 
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.sunrise_ide);
+    assert(!msx_sunrise_connected(&msx));
+    assert(strcmp(config.sunrise_rom_path,
+                  sunrise_rom_path_2) == 0);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.sunrise_ide);
+    assert(msx_sunrise_connected(&msx));
+    send_key(&overlay, SDLK_DELETE);
+    assert(!config.sunrise_ide);
+    assert(!msx_sunrise_connected(&msx));
+    assert(!config.sunrise_rom_path[0]);
+    assert(!config.ide_image_path[0]);
+
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);
+    assert(!overlay.extension_setup_editing);
+    overlay.dialog_target = OVERLAY_DIALOG_SUNRISE_ROM;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", sunrise_rom_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    overlay.dialog_target = OVERLAY_DIALOG_IDE_IMAGE;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", ide_image_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.sunrise_ide);
+    assert(strcmp(config.sunrise_rom_path,
+                  sunrise_rom_path) == 0);
+    assert(strcmp(config.ide_image_path,
+                  ide_image_path) == 0);
+    assert(msx_sunrise_disk_mounted(&msx));
+
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_SPACE);
+    assert(overlay.state == OVERLAY_STATE_MENU);
+    assert(!config.scc);
     send_key(&overlay, SDLK_RETURN);
     assert(config.scc);
     assert(strcmp(config_cartridge_slot_owner(&config, 0),
@@ -802,6 +902,54 @@ int main(void) {
                   sd_image_path) == 0);
     assert(leds_get_cartridge_state(1).present);
 
+    send_key(&overlay, SDLK_SPACE);
+    assert(overlay.state == OVERLAY_STATE_SD_MAPPER_SETUP);
+    assert(overlay.extension_setup_editing);
+    assert(strcmp(overlay.pending_sd_mapper_rom_path,
+                  sd_mapper_rom_path) == 0);
+    assert(strcmp(overlay.pending_sd_card_path[0],
+                  sd_image_path) == 0);
+    assert(!overlay.pending_sd_mapper_ram);
+    assert(overlay.pending_sd_mapper_alternate_driver);
+    send_key(&overlay, SDLK_ESCAPE);
+    assert(overlay.state == OVERLAY_STATE_MENU);
+    assert(config.sd_mapper);
+    assert(msx_sd_mapper_connected(&msx));
+
+    send_key(&overlay, SDLK_SPACE);
+    for (int row = 0; row < 3; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.pending_sd_mapper_ram);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!overlay.pending_sd_mapper_alternate_driver);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_MENU);
+    assert(config.sd_mapper);
+    assert(config.sd_mapper_ram);
+    assert(!config.sd_mapper_alternate_driver);
+    assert(msx_sd_mapper_connected(&msx));
+    assert(msx_sd_mapper_slot(&msx) == 1);
+    assert(msx_sd_card_mounted(&msx, 0));
+
+    snprintf(config.sunrise_rom_path,
+             sizeof(config.sunrise_rom_path), "%s", sunrise_rom_path);
+    send_key(&overlay, SDLK_UP);
+    assert(overlay.row == 0);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.sunrise_ide);
+    assert(msx_sunrise_slot(&msx) == 1);
+    assert(msx_sd_mapper_slot(&msx) == 0);
+    assert(msx_sd_card_mounted(&msx, 0));
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.sunrise_ide);
+    assert(msx_sd_mapper_slot(&msx) == 1);
+    assert(msx_sd_card_mounted(&msx, 0));
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 1);
+
     send_key(&overlay, SDLK_LEFT);
     assert(overlay.section == OVERLAY_MEDIA);
     send_key(&overlay, SDLK_UP);
@@ -833,15 +981,54 @@ int main(void) {
     assert(!config.sd_mapper);
     assert(!msx_sd_mapper_connected(&msx));
     assert(config.sd_mapper_rom_path[0]);
+    send_key(&overlay, SDLK_SPACE);
+    assert(overlay.state == OVERLAY_STATE_SD_MAPPER_SETUP);
+    assert(overlay.extension_setup_editing);
+    assert(strcmp(overlay.pending_sd_mapper_rom_path,
+                  config.sd_mapper_rom_path) == 0);
+    send_key(&overlay, SDLK_ESCAPE);
     send_key(&overlay, SDLK_DELETE);
     assert(!config.sd_mapper_rom_path[0]);
+    assert(!config.sd_card_path[0][0]);
+    assert(!config.sd_card_path[1][0]);
+    assert(config.sd_mapper_ram);
+    assert(!config.sd_mapper_alternate_driver);
     send_key(&overlay, SDLK_F9);
     assert(!overlay.visible);
 
     /* MegaFlash setup owns one slot but exposes two removable SD cards. */
     config_defaults(&config);
+    snprintf(config.path, sizeof(config.path), "%s",
+             megaflash_config_path);
     config.extra_hardware = true;
     config.tinker = true;
+    char megaflash_state_path[PATH_MAX];
+    char megaflash_pending_path[PATH_MAX];
+    char megaflash_pending_path_2[PATH_MAX];
+    {
+        Config state_config = config;
+
+        state_config.megaflash = true;
+        snprintf(state_config.megaflash_rom_path,
+                 sizeof(state_config.megaflash_rom_path), "%s",
+                 megaflash_rom_path);
+        assert(config_megaflash_state_path(
+                   &state_config, megaflash_state_path,
+                   sizeof(megaflash_state_path)) == 0);
+        assert(config_megaflash_pending_state_path(
+                   &state_config, megaflash_pending_path,
+                   sizeof(megaflash_pending_path)) == 0);
+        snprintf(state_config.megaflash_rom_path,
+                 sizeof(state_config.megaflash_rom_path), "%s",
+                 megaflash_rom_path_2);
+        assert(config_megaflash_pending_state_path(
+                   &state_config, megaflash_pending_path_2,
+                   sizeof(megaflash_pending_path_2)) == 0);
+        (void)remove(megaflash_config_path);
+        (void)remove(megaflash_state_path);
+        (void)remove(megaflash_pending_path);
+        (void)remove(megaflash_pending_path_2);
+    }
     msx_configure(&msx, config.model, config.region,
                   config.memory_kb);
     overlay_init(&overlay, &config, &models, &display, &msx);
@@ -877,6 +1064,83 @@ int main(void) {
                   megaflash_rom_path) == 0);
     assert(strcmp(config.megaflash_card_path[0],
                   sd_image_path) == 0);
+    assert(overlay.megaflash_state_pending);
+    fixture = fopen(megaflash_pending_path, "rb");
+    assert(fixture);
+    assert(fclose(fixture) == 0);
+    assert(!fopen(megaflash_state_path, "rb"));
+
+    assert(!send_quit(&overlay));
+    assert(!overlay.visible);
+    assert(!overlay.megaflash_state_pending);
+    fixture = fopen(megaflash_state_path, "rb");
+    assert(fixture);
+    assert(fgetc(fixture) == 0xff);
+    assert(fclose(fixture) == 0);
+    assert(!fopen(megaflash_pending_path, "rb"));
+
+    send_key(&overlay, SDLK_F9);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_SPACE);
+    snprintf(overlay.pending_megaflash_rom_path,
+             sizeof(overlay.pending_megaflash_rom_path), "%s",
+             megaflash_rom_path_2);
+    overlay.megaflash_setup_row = 3;
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_MENU);
+    assert(overlay.megaflash_state_pending);
+    assert(strcmp(overlay.megaflash_pending_state_path,
+                  megaflash_pending_path_2) == 0);
+    assert(msx.megaflash.flash[0] == 0x44);
+    fixture = fopen(megaflash_state_path, "rb");
+    assert(fixture);
+    assert(fgetc(fixture) == 0xff);
+    assert(fclose(fixture) == 0);
+    send_key(&overlay, SDLK_ESCAPE);
+    assert(overlay.state == OVERLAY_STATE_CONFIRM);
+    send_key(&overlay, SDLK_N);
+    assert(!overlay.visible);
+    assert(!overlay.megaflash_state_pending);
+    assert(strcmp(config.megaflash_rom_path,
+                  megaflash_rom_path) == 0);
+    assert(msx.megaflash.flash[0] == 0xff);
+    assert(!fopen(megaflash_pending_path, "rb"));
+    assert(!fopen(megaflash_pending_path_2, "rb"));
+
+    send_key(&overlay, SDLK_F9);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_DOWN);
+
+    send_key(&overlay, SDLK_SPACE);
+    assert(overlay.state == OVERLAY_STATE_MEGAFLASH_SETUP);
+    assert(overlay.extension_setup_editing);
+    assert(strcmp(overlay.pending_megaflash_rom_path,
+                  megaflash_rom_path) == 0);
+    assert(strcmp(overlay.pending_megaflash_card_path[0],
+                  sd_image_path) == 0);
+    send_key(&overlay, SDLK_ESCAPE);
+    assert(config.megaflash);
+    assert(msx_megaflash_connected(&msx));
+
+    send_key(&overlay, SDLK_SPACE);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_DELETE);
+    assert(!overlay.pending_megaflash_card_path[0][0]);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_MENU);
+    assert(config.megaflash);
+    assert(msx_megaflash_connected(&msx));
+    assert(msx_megaflash_slot(&msx) == 1);
+    assert(!msx_megaflash_card_mounted(&msx, 0));
+    assert(!config.megaflash_card_path[0][0]);
+
     send_key(&overlay, SDLK_LEFT);
     send_key(&overlay, SDLK_UP);
     send_key(&overlay, SDLK_UP);
@@ -890,8 +1154,16 @@ int main(void) {
     send_key(&overlay, SDLK_RETURN);
     assert(!config.megaflash);
     assert(!msx_megaflash_connected(&msx));
+    send_key(&overlay, SDLK_SPACE);
+    assert(overlay.state == OVERLAY_STATE_MEGAFLASH_SETUP);
+    assert(overlay.extension_setup_editing);
+    assert(strcmp(overlay.pending_megaflash_rom_path,
+                  config.megaflash_rom_path) == 0);
+    send_key(&overlay, SDLK_ESCAPE);
     send_key(&overlay, SDLK_DELETE);
     assert(!config.megaflash_rom_path[0]);
+    assert(!config.megaflash_card_path[0][0]);
+    assert(!config.megaflash_card_path[1][0]);
     send_key(&overlay, SDLK_F9);
     assert(!overlay.visible);
 
@@ -1014,6 +1286,11 @@ int main(void) {
     assert(remove(sd_mapper_rom_path) == 0);
     assert(remove(sd_image_path) == 0);
     assert(remove(megaflash_rom_path) == 0);
+    assert(remove(megaflash_rom_path_2) == 0);
+    assert(remove(megaflash_config_path) == 0);
+    assert(remove(megaflash_state_path) == 0);
+    assert(TEST_RMDIR("tests/test-overlay-state/flash") == 0);
+    assert(TEST_RMDIR("tests/test-overlay-state") == 0);
     assert(remove(cassette_path) == 0);
 
     display_quit(&display);

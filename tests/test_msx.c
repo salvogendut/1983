@@ -146,6 +146,7 @@ static void test_dual_cartridge_slots_and_mapper_reset(void) {
 }
 
 static void test_sunrise_cartridge_slot_bus(void) {
+    const char *replacement_path = "tests/test-sunrise-replace.tmp";
     MsxMachine msx;
     u8 rom[MSX_SUNRISE_ROM_SIZE];
 
@@ -172,14 +173,30 @@ static void test_sunrise_cartridge_slot_bus(void) {
     msx_io_write(&msx, 0xa8, 0x08);
     assert(msx_memory_read(&msx, 0x4000) == 0x81);
 
+    memset(rom, 0x42, sizeof(rom));
+    write_fixture(replacement_path, rom, sizeof(rom));
+    assert(msx_replace_sunrise_ide(
+               &msx, replacement_path, "tests/missing-ide.img",
+               ATA_IMAGE_READ_ONLY) != 0);
+    assert(msx_sunrise_connected(&msx));
+    assert(msx_sunrise_slot(&msx) == 1);
+    assert(msx_memory_read(&msx, 0x4000) == 0x81);
+    assert(msx_replace_sunrise_ide(
+               &msx, replacement_path, "",
+               ATA_IMAGE_READ_ONLY) == 0);
+    msx_io_write(&msx, 0xa8, 0x08);
+    assert(msx_memory_read(&msx, 0x4000) == 0x42);
+
     msx_eject_sunrise_ide(&msx);
     assert(!msx_sunrise_connected(&msx));
     assert(msx_sunrise_slot(&msx) == -1);
     assert(msx_memory_read(&msx, 0x4000) == 0xff);
     msx_destroy(&msx);
+    assert(remove(replacement_path) == 0);
 }
 
 static void test_sd_mapper_expanded_cartridge_bus(void) {
+    const char *replacement_path = "tests/test-sd-mapper-replace.tmp";
     MsxMachine msx;
     u8 *rom = malloc(MSX_SD_MAPPER_ROM_SIZE);
 
@@ -221,13 +238,35 @@ static void test_sd_mapper_expanded_cartridge_bus(void) {
     msx_io_write(&msx, 0xa8, 0x55);
     assert(msx_memory_read(&msx, 0xffff) == 0xff);
     assert(msx_io_read(&msx, 0xfc) == 0xe3);
+
+    memset(rom, 0x69, MSX_SD_MAPPER_ROM_SIZE);
+    write_fixture(replacement_path, rom, MSX_SD_MAPPER_ROM_SIZE);
+    assert(msx_replace_sd_mapper(
+               &msx, replacement_path, "tests/missing-sd.img", "",
+               SD_IMAGE_READ_ONLY, true, false) != 0);
+    assert(msx_sd_mapper_connected(&msx));
+    assert(msx_sd_mapper_slot(&msx) == 0);
+    msx_io_write(&msx, 0xa8, 0x55);
+    assert(msx_memory_read(&msx, 0x4000) == 0x40);
+    assert(msx_replace_sd_mapper(
+               &msx, replacement_path, "", "",
+               SD_IMAGE_READ_ONLY, false, true) == 0);
+    assert(msx_sd_mapper_slot(&msx) == 0);
+    msx_io_write(&msx, 0xa8, 0x55);
+    assert(msx_memory_read(&msx, 0x4000) == 0x69);
+    assert(!msx.sd_mapper.mapper_enabled);
+    assert(msx.sd_mapper.alternate_driver);
     assert(msx_eject_sd_mapper(&msx) == 0);
     assert(!msx_sd_mapper_connected(&msx));
     msx_destroy(&msx);
     free(rom);
+    assert(remove(replacement_path) == 0);
 }
 
 static void test_megaflash_expanded_cartridge_bus(void) {
+    const char *replacement_path = "tests/test-megaflash-replace.tmp";
+    const char *state_path = "tests/test-megaflash-state.tmp";
+    const char *pending_path = "tests/test-megaflash-state.pending.tmp";
     MsxMachine msx;
     u8 *flash = malloc(MSX_MEGAFLASH_FLASH_SIZE);
 
@@ -252,10 +291,60 @@ static void test_megaflash_expanded_cartridge_bus(void) {
     msx_io_write(&msx, 0x10, 8);
     msx_io_write(&msx, 0x11, 15);
     assert(msx.megaflash.psg.registers[8] == 15);
+
+    (void)remove(state_path);
+    (void)remove(pending_path);
+    memset(flash, 0x6c, MSX_MEGAFLASH_FLASH_SIZE);
+    write_fixture(replacement_path, flash, MSX_MEGAFLASH_FLASH_SIZE);
+    assert(msx_replace_megaflash(
+               &msx, replacement_path, pending_path, true,
+               "tests/missing-megaflash-sd.img", "",
+               SD_IMAGE_READ_ONLY) != 0);
+    assert(msx_megaflash_connected(&msx));
+    assert(msx_megaflash_slot(&msx) == 0);
+    assert(msx.megaflash.flash[0] == 0);
+    assert(msx_replace_megaflash(
+               &msx, replacement_path, pending_path, true, "", "",
+               SD_IMAGE_READ_ONLY) == 0);
+    assert(msx_megaflash_slot(&msx) == 0);
+    assert(msx.megaflash.flash[0] == 0x6c);
+    {
+        FILE *state = fopen(state_path, "rb");
+        FILE *pending = fopen(pending_path, "rb");
+
+        assert(!state);
+        assert(pending);
+        assert(fclose(pending) == 0);
+    }
+    assert(msx_commit_megaflash_state(
+               &msx, pending_path, state_path) == 0);
+    assert(strcmp(msx.megaflash.persistence_path, state_path) == 0);
+    {
+        const u8 truncated = 0;
+        FILE *state;
+
+        write_fixture(pending_path, &truncated, sizeof(truncated));
+        assert(msx_commit_megaflash_state(
+                   &msx, pending_path, state_path) != 0);
+        state = fopen(state_path, "rb");
+        assert(state);
+        assert(fgetc(state) == 0x6c);
+        assert(fclose(state) == 0);
+        assert(remove(pending_path) == 0);
+    }
+
+    memset(flash, 0x7d, MSX_MEGAFLASH_FLASH_SIZE);
+    write_fixture(replacement_path, flash, MSX_MEGAFLASH_FLASH_SIZE);
+    assert(msx_replace_megaflash(
+               &msx, replacement_path, state_path, false, "", "",
+               SD_IMAGE_READ_ONLY) == 0);
+    assert(msx.megaflash.flash[0] == 0x6c);
     assert(msx_eject_megaflash(&msx) == 0);
     assert(!msx_megaflash_connected(&msx));
     msx_destroy(&msx);
     free(flash);
+    assert(remove(replacement_path) == 0);
+    assert(remove(state_path) == 0);
 }
 
 static void test_ascii8_cpu_boot_checkpoint(void) {

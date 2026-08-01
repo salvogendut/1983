@@ -215,6 +215,15 @@ static int cartridge_extension_slot(const Config *config,
     return -1;
 }
 
+static void reconcile_extension_slots(Overlay *overlay) {
+    msx_reassign_extension_slots(
+        overlay->msx,
+        cartridge_extension_slot(overlay->config, "Sunrise IDE"),
+        cartridge_extension_slot(overlay->config, "SD Mapper V2"),
+        cartridge_extension_slot(
+            overlay->config, "MegaFlashROM SCC+ SD"));
+}
+
 static void cartridge_extension_text(const Config *config,
                                      const char *name, bool enabled,
                                      char *value, size_t value_size) {
@@ -1056,6 +1065,71 @@ static bool restore_sd_mapper(Overlay *overlay) {
     return true;
 }
 
+static bool megaflash_transaction_paths(
+    Overlay *overlay, const char *initial_path,
+    char *state_path, size_t state_path_size,
+    char *pending_path, size_t pending_path_size) {
+    Config state_config = *overlay->config;
+
+    state_config.megaflash = true;
+    snprintf(state_config.megaflash_rom_path,
+             sizeof(state_config.megaflash_rom_path), "%s",
+             initial_path);
+    if (config_megaflash_state_path(
+            &state_config, state_path, state_path_size) != 0) {
+        notify_post("MegaFlash persistent state path is too long");
+        return false;
+    }
+    if (config_megaflash_pending_state_path(
+            &state_config, pending_path, pending_path_size) != 0) {
+        notify_post("MegaFlash pending state path is too long");
+        return false;
+    }
+    return true;
+}
+
+static void discard_pending_megaflash_state(Overlay *overlay) {
+    if (overlay->megaflash_state_pending &&
+        overlay->megaflash_pending_state_path[0])
+        (void)remove(overlay->megaflash_pending_state_path);
+    overlay->megaflash_state_pending = false;
+    overlay->megaflash_pending_state_path[0] = '\0';
+    overlay->megaflash_final_state_path[0] = '\0';
+}
+
+static void remember_pending_megaflash_state(
+    Overlay *overlay, const char *pending_path,
+    const char *state_path) {
+    if (overlay->megaflash_state_pending &&
+        strcmp(overlay->megaflash_pending_state_path,
+               pending_path) != 0)
+        (void)remove(overlay->megaflash_pending_state_path);
+    overlay->megaflash_state_pending = true;
+    snprintf(overlay->megaflash_pending_state_path,
+             sizeof(overlay->megaflash_pending_state_path), "%s",
+             pending_path);
+    snprintf(overlay->megaflash_final_state_path,
+             sizeof(overlay->megaflash_final_state_path), "%s",
+             state_path);
+}
+
+static bool prepare_pending_megaflash_state(
+    Overlay *overlay, const char *initial_path,
+    const char *pending_path, const char *state_path) {
+    if (!pending_path[0]) {
+        discard_pending_megaflash_state(overlay);
+        return true;
+    }
+    if (msx_prepare_megaflash_state(
+            initial_path, pending_path) != 0) {
+        notify_post("Could not prepare MegaFlash persistent state");
+        return false;
+    }
+    remember_pending_megaflash_state(
+        overlay, pending_path, state_path);
+    return true;
+}
+
 static bool restore_megaflash(Overlay *overlay) {
     const Config *current = overlay->config;
     const Config *saved = &overlay->saved;
@@ -1181,14 +1255,44 @@ static void close_overlay(Overlay *overlay, bool save) {
     if (save) {
         apply_config(overlay);
         if (overlay->dirty) {
-            if (config_save(overlay->config) == 0)
-                notify_post("Settings saved");
-            else
+            if (overlay->megaflash_state_pending &&
+                msx_megaflash_connected(overlay->msx) &&
+                msx_flush_megaflash(overlay->msx) != 0) {
+                notify_post("Could not stage MegaFlash state: %s",
+                            msx_megaflash_flash_error(overlay->msx));
+                return;
+            }
+            if (config_save(overlay->config) != 0) {
                 notify_post("Could not save settings");
+                if (overlay->megaflash_state_pending)
+                    return;
+            } else if (overlay->megaflash_state_pending) {
+                if (msx_commit_megaflash_state(
+                        overlay->msx,
+                        overlay->megaflash_pending_state_path,
+                        overlay->megaflash_final_state_path) != 0) {
+                    if (config_save(&overlay->saved) != 0)
+                        notify_post(
+                            "Could not restore settings after "
+                            "MegaFlash state commit failed");
+                    else
+                        notify_post(
+                            "Could not commit MegaFlash state; "
+                            "settings were not saved");
+                    return;
+                }
+                overlay->megaflash_state_pending = false;
+                overlay->megaflash_pending_state_path[0] = '\0';
+                overlay->megaflash_final_state_path[0] = '\0';
+                notify_post("Settings saved");
+            } else {
+                notify_post("Settings saved");
+            }
         }
     } else {
         if (!restore_megaflash(overlay))
             return;
+        discard_pending_megaflash_state(overlay);
         if (!restore_sd_mapper(overlay))
             return;
         if (!restore_sunrise(overlay))
@@ -2050,6 +2154,7 @@ static bool toggle_cartridge_extension(Overlay *overlay,
 
     if (*enabled) {
         *enabled = false;
+        reconcile_extension_slots(overlay);
         notify_post("%s disconnected", name);
         return true;
     }
@@ -2080,10 +2185,28 @@ static bool toggle_cartridge_extension(Overlay *overlay,
                         new_owner, slot + 1);
         }
     }
+    reconcile_extension_slots(overlay);
     return true;
 }
 
-static void begin_sunrise_setup(Overlay *overlay) {
+static void begin_extension_setup(Overlay *overlay, bool editing) {
+    overlay->extension_setup_editing = editing;
+    snprintf(overlay->extension_setup_media_dir,
+             sizeof(overlay->extension_setup_media_dir), "%s",
+             overlay->config->last_media_dir);
+}
+
+static void cancel_extension_setup(Overlay *overlay) {
+    snprintf(overlay->config->last_media_dir,
+             sizeof(overlay->config->last_media_dir), "%s",
+             overlay->extension_setup_media_dir);
+    if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
+        overlay->dialog_discard = true;
+    overlay->state = OVERLAY_STATE_MENU;
+}
+
+static void begin_sunrise_setup(Overlay *overlay, bool editing) {
+    begin_extension_setup(overlay, editing);
     overlay->sunrise_setup_row = SUNRISE_SETUP_FIRMWARE;
     snprintf(overlay->pending_sunrise_rom_path,
              sizeof(overlay->pending_sunrise_rom_path), "%s",
@@ -2092,6 +2215,29 @@ static void begin_sunrise_setup(Overlay *overlay) {
              sizeof(overlay->pending_ide_image_path), "%s",
              overlay->config->ide_image_path);
     overlay->state = OVERLAY_STATE_SUNRISE_SETUP;
+}
+
+static bool validate_sunrise_settings(const char *rom_path,
+                                      const char *image_path) {
+    if (!firmware_file_has_size(rom_path, MSX_SUNRISE_ROM_SIZE)) {
+        notify_post("Sunrise IDE needs an exact 128 KB ROM");
+        return false;
+    }
+    if (image_path && image_path[0] &&
+        !ide_image_file_is_valid(image_path)) {
+        notify_post("Sunrise IDE needs a raw 512-byte-sector disk image");
+        return false;
+    }
+    return true;
+}
+
+static void store_sunrise_settings(Config *config,
+                                   const char *rom_path,
+                                   const char *image_path) {
+    snprintf(config->sunrise_rom_path,
+             sizeof(config->sunrise_rom_path), "%s", rom_path);
+    snprintf(config->ide_image_path,
+             sizeof(config->ide_image_path), "%s", image_path);
 }
 
 static bool connect_sunrise(Overlay *overlay, const char *rom_path,
@@ -2106,16 +2252,8 @@ static bool connect_sunrise(Overlay *overlay, const char *rom_path,
              rom_path ? rom_path : "");
     snprintf(selected_image, sizeof(selected_image), "%s",
              image_path ? image_path : "");
-    if (!firmware_file_has_size(
-            selected_rom, MSX_SUNRISE_ROM_SIZE)) {
-        notify_post("Sunrise IDE needs an exact 128 KB ROM");
+    if (!validate_sunrise_settings(selected_rom, selected_image))
         return false;
-    }
-    if (selected_image[0] &&
-        !ide_image_file_is_valid(selected_image)) {
-        notify_post("Sunrise IDE needs a raw 512-byte-sector disk image");
-        return false;
-    }
     if (!toggle_cartridge_extension(
             overlay, &config->sunrise_ide, "Sunrise IDE"))
         return false;
@@ -2123,6 +2261,7 @@ static bool connect_sunrise(Overlay *overlay, const char *rom_path,
     if (slot < 0 || msx_load_sunrise_ide(
             overlay->msx, (unsigned)slot, selected_rom) != 0) {
         config->sunrise_ide = false;
+        reconcile_extension_slots(overlay);
         notify_post("Could not load Sunrise IDE ROM: %s",
                     path_basename(selected_rom));
         return false;
@@ -2136,15 +2275,13 @@ static bool connect_sunrise(Overlay *overlay, const char *rom_path,
                  msx_sunrise_disk_error(overlay->msx));
         (void)msx_eject_sunrise_ide(overlay->msx);
         config->sunrise_ide = false;
+        reconcile_extension_slots(overlay);
         notify_post("Could not mount IDE image: %s",
                     mount_error[0] ? mount_error :
                     path_basename(selected_image));
         return false;
     }
-    snprintf(config->sunrise_rom_path,
-             sizeof(config->sunrise_rom_path), "%s", selected_rom);
-    snprintf(config->ide_image_path,
-             sizeof(config->ide_image_path), "%s", selected_image);
+    store_sunrise_settings(config, selected_rom, selected_image);
     config->ide_image_mode = image_mode;
     if (selected_image[0])
         notify_post("Sunrise IDE connected with %s disk: %s",
@@ -2157,10 +2294,36 @@ static bool connect_sunrise(Overlay *overlay, const char *rom_path,
 }
 
 static void finish_sunrise_setup(Overlay *overlay) {
+    Config *config = overlay->config;
+    const char *rom_path = overlay->pending_sunrise_rom_path;
+    const char *image_path = overlay->pending_ide_image_path;
+
+    if (overlay->extension_setup_editing) {
+        bool changed =
+            strcmp(config->sunrise_rom_path, rom_path) != 0 ||
+            strcmp(config->ide_image_path, image_path) != 0;
+
+        if (!validate_sunrise_settings(rom_path, image_path))
+            return;
+        if (changed && config->sunrise_ide &&
+            msx_replace_sunrise_ide(
+                overlay->msx, rom_path, image_path,
+                config->ide_image_mode) != 0) {
+            notify_post("Could not apply Sunrise IDE settings");
+            return;
+        }
+        if (changed) {
+            store_sunrise_settings(config, rom_path, image_path);
+            overlay->dirty = true;
+            apply_config(overlay);
+            notify_post("Sunrise IDE settings updated%s",
+                        config->sunrise_ide ? " and reconnected" : "");
+        }
+        overlay->state = OVERLAY_STATE_MENU;
+        return;
+    }
     if (!connect_sunrise(
-            overlay, overlay->pending_sunrise_rom_path,
-            overlay->pending_ide_image_path,
-            overlay->config->ide_image_mode))
+            overlay, rom_path, image_path, config->ide_image_mode))
         return;
     overlay->dirty = true;
     overlay->state = OVERLAY_STATE_MENU;
@@ -2178,9 +2341,10 @@ static bool disconnect_sunrise(Overlay *overlay) {
     return true;
 }
 
-static void begin_sd_mapper_setup(Overlay *overlay) {
+static void begin_sd_mapper_setup(Overlay *overlay, bool editing) {
     Config *config = overlay->config;
 
+    begin_extension_setup(overlay, editing);
     overlay->sd_mapper_setup_row = SD_MAPPER_SETUP_FIRMWARE;
     snprintf(overlay->pending_sd_mapper_rom_path,
              sizeof(overlay->pending_sd_mapper_rom_path), "%s",
@@ -2194,6 +2358,46 @@ static void begin_sd_mapper_setup(Overlay *overlay) {
     overlay->pending_sd_mapper_alternate_driver =
         config->sd_mapper_alternate_driver;
     overlay->state = OVERLAY_STATE_SD_MAPPER_SETUP;
+}
+
+static bool validate_sd_mapper_settings(
+    const char *rom_path, const char *card_a_path,
+    const char *card_b_path) {
+    const char *cards[MSX_SD_MAPPER_CARDS] = {
+        card_a_path ? card_a_path : "",
+        card_b_path ? card_b_path : ""
+    };
+
+    if (!sd_mapper_rom_file_is_valid(rom_path)) {
+        notify_post("SD Mapper V2 needs an exact 128 or 256 KB ROM");
+        return false;
+    }
+    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card) {
+        if (cards[card][0] && !sd_image_file_is_valid(cards[card])) {
+            notify_post("SD Card %c must use complete 512-byte sectors",
+                        'A' + (int)card);
+            return false;
+        }
+    }
+    return true;
+}
+
+static void store_sd_mapper_settings(
+    Config *config, const char *rom_path,
+    const char *card_a_path, const char *card_b_path,
+    bool mapper_ram, bool alternate_driver) {
+    const char *cards[MSX_SD_MAPPER_CARDS] = {
+        card_a_path ? card_a_path : "",
+        card_b_path ? card_b_path : ""
+    };
+
+    snprintf(config->sd_mapper_rom_path,
+             sizeof(config->sd_mapper_rom_path), "%s", rom_path);
+    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card)
+        snprintf(config->sd_card_path[card],
+                 sizeof(config->sd_card_path[card]), "%s", cards[card]);
+    config->sd_mapper_ram = mapper_ram;
+    config->sd_mapper_alternate_driver = alternate_driver;
 }
 
 static bool connect_sd_mapper(
@@ -2211,20 +2415,9 @@ static bool connect_sd_mapper(
 
     snprintf(selected_rom, sizeof(selected_rom), "%s",
              rom_path ? rom_path : "");
-    if (!sd_mapper_rom_file_is_valid(selected_rom)) {
-        notify_post(
-            "SD Mapper V2 needs an exact 128 or 256 KB ROM");
+    if (!validate_sd_mapper_settings(
+            selected_rom, cards[0], cards[1]))
         return false;
-    }
-    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card) {
-        if (cards[card][0] &&
-            !sd_image_file_is_valid(cards[card])) {
-            notify_post(
-                "SD Card %c must use complete 512-byte sectors",
-                'A' + (int)card);
-            return false;
-        }
-    }
     if (!toggle_cartridge_extension(
             overlay, &config->sd_mapper, "SD Mapper V2"))
         return false;
@@ -2232,6 +2425,7 @@ static bool connect_sd_mapper(
     if (slot < 0 || msx_load_sd_mapper(
             overlay->msx, (unsigned)slot, selected_rom) != 0) {
         config->sd_mapper = false;
+        reconcile_extension_slots(overlay);
         notify_post("Could not load SD Mapper V2 ROM: %s",
                     path_basename(selected_rom));
         return false;
@@ -2252,6 +2446,7 @@ static bool connect_sd_mapper(
                      msx_sd_card_error(overlay->msx, card));
             (void)msx_eject_sd_mapper(overlay->msx);
             config->sd_mapper = false;
+            reconcile_extension_slots(overlay);
             notify_post("Could not mount SD Card %c: %s",
                         'A' + (int)card,
                         error[0] ? error :
@@ -2259,28 +2454,58 @@ static bool connect_sd_mapper(
             return false;
         }
     }
-    snprintf(config->sd_mapper_rom_path,
-             sizeof(config->sd_mapper_rom_path), "%s",
-             selected_rom);
-    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card) {
-        snprintf(config->sd_card_path[card],
-                 sizeof(config->sd_card_path[card]), "%s",
-                 cards[card]);
-    }
+    store_sd_mapper_settings(
+        config, selected_rom, cards[0], cards[1],
+        mapper_ram, alternate_driver);
     config->sd_image_mode = image_mode;
-    config->sd_mapper_ram = mapper_ram;
-    config->sd_mapper_alternate_driver = alternate_driver;
     notify_post("SD Mapper V2 connected in cartridge slot %d",
                 slot + 1);
     return true;
 }
 
 static void finish_sd_mapper_setup(Overlay *overlay) {
+    Config *config = overlay->config;
+    const char *rom_path = overlay->pending_sd_mapper_rom_path;
+    const char *card_a_path = overlay->pending_sd_card_path[0];
+    const char *card_b_path = overlay->pending_sd_card_path[1];
+
+    if (overlay->extension_setup_editing) {
+        bool changed =
+            strcmp(config->sd_mapper_rom_path, rom_path) != 0 ||
+            strcmp(config->sd_card_path[0], card_a_path) != 0 ||
+            strcmp(config->sd_card_path[1], card_b_path) != 0 ||
+            config->sd_mapper_ram != overlay->pending_sd_mapper_ram ||
+            config->sd_mapper_alternate_driver !=
+                overlay->pending_sd_mapper_alternate_driver;
+
+        if (!validate_sd_mapper_settings(
+                rom_path, card_a_path, card_b_path))
+            return;
+        if (changed && config->sd_mapper &&
+            msx_replace_sd_mapper(
+                overlay->msx, rom_path, card_a_path, card_b_path,
+                config->sd_image_mode,
+                overlay->pending_sd_mapper_ram,
+                overlay->pending_sd_mapper_alternate_driver) != 0) {
+            notify_post("Could not apply SD Mapper V2 settings");
+            return;
+        }
+        if (changed) {
+            store_sd_mapper_settings(
+                config, rom_path, card_a_path, card_b_path,
+                overlay->pending_sd_mapper_ram,
+                overlay->pending_sd_mapper_alternate_driver);
+            overlay->dirty = true;
+            apply_config(overlay);
+            notify_post("SD Mapper V2 settings updated%s",
+                        config->sd_mapper ? " and reconnected" : "");
+        }
+        overlay->state = OVERLAY_STATE_MENU;
+        return;
+    }
     if (!connect_sd_mapper(
-            overlay, overlay->pending_sd_mapper_rom_path,
-            overlay->pending_sd_card_path[0],
-            overlay->pending_sd_card_path[1],
-            overlay->config->sd_image_mode,
+            overlay, rom_path, card_a_path, card_b_path,
+            config->sd_image_mode,
             overlay->pending_sd_mapper_ram,
             overlay->pending_sd_mapper_alternate_driver))
         return;
@@ -2305,9 +2530,10 @@ static bool disconnect_sd_mapper(Overlay *overlay) {
     return true;
 }
 
-static void begin_megaflash_setup(Overlay *overlay) {
+static void begin_megaflash_setup(Overlay *overlay, bool editing) {
     Config *config = overlay->config;
 
+    begin_extension_setup(overlay, editing);
     overlay->megaflash_setup_row = MEGAFLASH_SETUP_FIRMWARE;
     snprintf(overlay->pending_megaflash_rom_path,
              sizeof(overlay->pending_megaflash_rom_path), "%s",
@@ -2320,6 +2546,44 @@ static void begin_megaflash_setup(Overlay *overlay) {
     overlay->state = OVERLAY_STATE_MEGAFLASH_SETUP;
 }
 
+static bool validate_megaflash_settings(
+    const char *rom_path, const char *card_a_path,
+    const char *card_b_path) {
+    const char *cards[MSX_MEGAFLASH_CARDS] = {
+        card_a_path ? card_a_path : "",
+        card_b_path ? card_b_path : ""
+    };
+
+    if (!megaflash_rom_file_is_valid(rom_path)) {
+        notify_post("MegaFlashROM SCC+ SD needs an image up to 8 MiB");
+        return false;
+    }
+    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
+        if (cards[card][0] && !sd_image_file_is_valid(cards[card])) {
+            notify_post("MegaFlash SD %c must use complete 512-byte sectors",
+                        'A' + (int)card);
+            return false;
+        }
+    }
+    return true;
+}
+
+static void store_megaflash_settings(
+    Config *config, const char *rom_path,
+    const char *card_a_path, const char *card_b_path) {
+    const char *cards[MSX_MEGAFLASH_CARDS] = {
+        card_a_path ? card_a_path : "",
+        card_b_path ? card_b_path : ""
+    };
+
+    snprintf(config->megaflash_rom_path,
+             sizeof(config->megaflash_rom_path), "%s", rom_path);
+    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card)
+        snprintf(config->megaflash_card_path[card],
+                 sizeof(config->megaflash_card_path[card]),
+                 "%s", cards[card]);
+}
+
 static bool connect_megaflash(
     Overlay *overlay, const char *rom_path,
     const char *card_a_path, const char *card_b_path,
@@ -2330,22 +2594,12 @@ static bool connect_megaflash(
         card_b_path ? card_b_path : ""
     };
     char state_path[PATH_MAX];
+    const char *load_state_path;
     int slot;
 
-    if (!megaflash_rom_file_is_valid(rom_path)) {
-        notify_post(
-            "MegaFlashROM SCC+ SD needs an image up to 8 MiB");
+    if (!validate_megaflash_settings(
+            rom_path, cards[0], cards[1]))
         return false;
-    }
-    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
-        if (cards[card][0] &&
-            !sd_image_file_is_valid(cards[card])) {
-            notify_post(
-                "MegaFlash SD %c must use complete 512-byte sectors",
-                'A' + (int)card);
-            return false;
-        }
-    }
     if (!toggle_cartridge_extension(
             overlay, &config->megaflash,
             "MegaFlashROM SCC+ SD"))
@@ -2355,18 +2609,22 @@ static bool connect_megaflash(
     if (config_megaflash_state_path(
             config, state_path, sizeof(state_path)) != 0) {
         config->megaflash = false;
+        reconcile_extension_slots(overlay);
         notify_post("MegaFlash persistent state path is too long");
         return false;
     }
+    load_state_path = overlay->megaflash_state_pending
+        ? overlay->megaflash_pending_state_path : state_path;
     if (slot < 0 ||
-        (state_path[0]
+        (load_state_path[0]
          ? msx_load_megaflash_persistent(
                overlay->msx, (unsigned)slot,
-               rom_path, state_path)
+               rom_path, load_state_path)
          : msx_load_megaflash(
                overlay->msx, (unsigned)slot,
                rom_path)) != 0) {
         config->megaflash = false;
+        reconcile_extension_slots(overlay);
         notify_post("Could not load MegaFlashROM image: %s",
                     msx_megaflash_flash_error(overlay->msx));
         return false;
@@ -2385,6 +2643,7 @@ static bool connect_megaflash(
                          overlay->msx, card));
             (void)msx_eject_megaflash(overlay->msx);
             config->megaflash = false;
+            reconcile_extension_slots(overlay);
             notify_post("Could not mount MegaFlash SD %c: %s",
                         'A' + (int)card,
                         error[0] ? error :
@@ -2392,13 +2651,8 @@ static bool connect_megaflash(
             return false;
         }
     }
-    snprintf(config->megaflash_rom_path,
-             sizeof(config->megaflash_rom_path), "%s", rom_path);
-    for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
-        snprintf(config->megaflash_card_path[card],
-                 sizeof(config->megaflash_card_path[card]),
-                 "%s", cards[card]);
-    }
+    store_megaflash_settings(
+        config, rom_path, cards[0], cards[1]);
     config->sd_image_mode = image_mode;
     notify_post(
         "MegaFlashROM SCC+ SD connected in cartridge slot %d",
@@ -2407,12 +2661,94 @@ static bool connect_megaflash(
 }
 
 static void finish_megaflash_setup(Overlay *overlay) {
-    if (!connect_megaflash(
-            overlay, overlay->pending_megaflash_rom_path,
-            overlay->pending_megaflash_card_path[0],
-            overlay->pending_megaflash_card_path[1],
-            overlay->config->sd_image_mode))
+    Config *config = overlay->config;
+    const char *rom_path = overlay->pending_megaflash_rom_path;
+    const char *card_a_path = overlay->pending_megaflash_card_path[0];
+    const char *card_b_path = overlay->pending_megaflash_card_path[1];
+    bool setup_reseed_prepared = false;
+
+    if (overlay->extension_setup_editing) {
+        bool image_changed =
+            strcmp(config->megaflash_rom_path, rom_path) != 0;
+        bool reseed_pending =
+            strcmp(overlay->saved.megaflash_rom_path, rom_path) != 0;
+        bool changed =
+            image_changed ||
+            strcmp(config->megaflash_card_path[0], card_a_path) != 0 ||
+            strcmp(config->megaflash_card_path[1], card_b_path) != 0;
+        char state_path[PATH_MAX];
+        char pending_state_path[PATH_MAX];
+        const char *replacement_state_path;
+
+        if (!validate_megaflash_settings(
+                rom_path, card_a_path, card_b_path))
+            return;
+        if (!megaflash_transaction_paths(
+                overlay, rom_path, state_path, sizeof(state_path),
+                pending_state_path, sizeof(pending_state_path)))
+            return;
+        replacement_state_path = reseed_pending && pending_state_path[0]
+            ? pending_state_path : state_path;
+        if (changed && config->megaflash) {
+            if (msx_replace_megaflash(
+                    overlay->msx, rom_path, replacement_state_path,
+                    image_changed && reseed_pending,
+                    card_a_path, card_b_path,
+                    config->sd_image_mode) != 0) {
+                notify_post("Could not apply MegaFlashROM settings");
+                return;
+            }
+        } else if (changed && image_changed && reseed_pending &&
+                   !prepare_pending_megaflash_state(
+                       overlay, rom_path, pending_state_path,
+                       state_path)) {
+            return;
+        }
+        if (changed) {
+            if (reseed_pending && pending_state_path[0]) {
+                remember_pending_megaflash_state(
+                    overlay, pending_state_path, state_path);
+            } else {
+                discard_pending_megaflash_state(overlay);
+            }
+        }
+        if (changed) {
+            store_megaflash_settings(
+                config, rom_path, card_a_path, card_b_path);
+            overlay->dirty = true;
+            apply_config(overlay);
+            notify_post("MegaFlashROM settings updated%s",
+                        config->megaflash ? " and reconnected" : "");
+        }
+        overlay->state = OVERLAY_STATE_MENU;
         return;
+    }
+    {
+        char state_path[PATH_MAX];
+        char pending_state_path[PATH_MAX];
+        bool reseed_pending =
+            strcmp(overlay->saved.megaflash_rom_path, rom_path) != 0;
+
+        if (!megaflash_transaction_paths(
+                overlay, rom_path, state_path, sizeof(state_path),
+                pending_state_path, sizeof(pending_state_path)))
+            return;
+        if (reseed_pending &&
+            !prepare_pending_megaflash_state(
+                overlay, rom_path, pending_state_path, state_path))
+            return;
+        setup_reseed_prepared =
+            reseed_pending && pending_state_path[0];
+        if (!reseed_pending)
+            discard_pending_megaflash_state(overlay);
+    }
+    if (!connect_megaflash(
+            overlay, rom_path, card_a_path, card_b_path,
+            config->sd_image_mode)) {
+        if (setup_reseed_prepared)
+            discard_pending_megaflash_state(overlay);
+        return;
+    }
     overlay->dirty = true;
     overlay->state = OVERLAY_STATE_MENU;
     apply_config(overlay);
@@ -2586,6 +2922,24 @@ static bool toggle_second_floppy(Overlay *overlay) {
     return true;
 }
 
+static void edit_extension_settings(Overlay *overlay) {
+    if (overlay->section != OVERLAY_EXTENSIONS)
+        return;
+    switch (overlay->row) {
+        case EXTENSION_SUNRISE_IDE:
+            begin_sunrise_setup(overlay, true);
+            break;
+        case EXTENSION_SD_MAPPER:
+            begin_sd_mapper_setup(overlay, true);
+            break;
+        case EXTENSION_MEGAFLASH:
+            begin_megaflash_setup(overlay, true);
+            break;
+        default:
+            break;
+    }
+}
+
 static void activate_item(Overlay *overlay) {
     Config *config = overlay->config;
 
@@ -2711,7 +3065,7 @@ static void activate_item(Overlay *overlay) {
                                 config->ide_image_mode))
                             return;
                     } else {
-                        begin_sunrise_setup(overlay);
+                        begin_sunrise_setup(overlay, false);
                         return;
                     }
                     break;
@@ -2737,7 +3091,7 @@ static void activate_item(Overlay *overlay) {
                                 config->sd_mapper_alternate_driver))
                             return;
                     } else {
-                        begin_sd_mapper_setup(overlay);
+                        begin_sd_mapper_setup(overlay, false);
                         return;
                     }
                     break;
@@ -2763,7 +3117,7 @@ static void activate_item(Overlay *overlay) {
                                 config->sd_image_mode))
                             return;
                     } else {
-                        begin_megaflash_setup(overlay);
+                        begin_megaflash_setup(overlay, false);
                         return;
                     }
                     break;
@@ -2918,12 +3272,21 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
             overlay->row = 0;
             overlay->saved = *overlay->config;
         } else {
+            if (overlay->state == OVERLAY_STATE_SUNRISE_SETUP ||
+                overlay->state == OVERLAY_STATE_SD_MAPPER_SETUP ||
+                overlay->state == OVERLAY_STATE_MEGAFLASH_SETUP)
+                cancel_extension_setup(overlay);
             close_overlay(overlay, true);
         }
         return true;
     }
     if (!overlay->visible)
         return false;
+    if (event->type == SDL_EVENT_QUIT &&
+        overlay->megaflash_state_pending) {
+        close_overlay(overlay, true);
+        return overlay->visible;
+    }
     if (event->type == SDL_EVENT_QUIT)
         return false;
     if (overlay->state == OVERLAY_STATE_MODEL_TEXT) {
@@ -3020,7 +3383,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                      SUNRISE_SETUP_DISK)
                 overlay->pending_ide_image_path[0] = '\0';
         } else if (key == SDLK_ESCAPE) {
-            overlay->state = OVERLAY_STATE_MENU;
+            cancel_extension_setup(overlay);
         }
         return true;
     }
@@ -3071,7 +3434,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                      SD_MAPPER_SETUP_CARD_B)
                 overlay->pending_sd_card_path[1][0] = '\0';
         } else if (key == SDLK_ESCAPE) {
-            overlay->state = OVERLAY_STATE_MENU;
+            cancel_extension_setup(overlay);
         }
         return true;
     }
@@ -3113,7 +3476,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                      MEGAFLASH_SETUP_CARD_B)
                 overlay->pending_megaflash_card_path[1][0] = '\0';
         } else if (key == SDLK_ESCAPE) {
-            overlay->state = OVERLAY_STATE_MENU;
+            cancel_extension_setup(overlay);
         }
         return true;
     }
@@ -3290,6 +3653,9 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 notify_post("Cassette rewound");
             }
             break;
+        case SDLK_SPACE:
+            edit_extension_settings(overlay);
+            break;
         case SDLK_DELETE:
             if (overlay->section == OVERLAY_GENERAL &&
                 overlay->row == GENERAL_MACHINE) {
@@ -3404,36 +3770,64 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                         'A' + (int)card);
                 }
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
-                       overlay->row == EXTENSION_SUNRISE_IDE &&
-                       overlay->config->sunrise_rom_path[0]) {
+                       overlay->row == EXTENSION_SUNRISE_IDE) {
+                bool configured = overlay->config->sunrise_ide ||
+                    overlay->config->sunrise_rom_path[0] ||
+                    overlay->config->ide_image_path[0];
+
+                if (!configured)
+                    break;
                 if (overlay->config->sunrise_ide &&
                     !disconnect_sunrise(overlay))
                     break;
                 overlay->config->sunrise_rom_path[0] = '\0';
+                overlay->config->ide_image_path[0] = '\0';
                 overlay->dirty = true;
                 apply_config(overlay);
-                notify_post("Sunrise IDE firmware forgotten");
+                notify_post("Sunrise IDE settings cleared");
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
-                       overlay->row == EXTENSION_SD_MAPPER &&
-                       overlay->config->sd_mapper_rom_path[0]) {
+                       overlay->row == EXTENSION_SD_MAPPER) {
+                bool configured = overlay->config->sd_mapper ||
+                    overlay->config->sd_mapper_rom_path[0] ||
+                    overlay->config->sd_card_path[0][0] ||
+                    overlay->config->sd_card_path[1][0] ||
+                    !overlay->config->sd_mapper_ram ||
+                    overlay->config->sd_mapper_alternate_driver;
+
+                if (!configured)
+                    break;
                 if (overlay->config->sd_mapper &&
                     !disconnect_sd_mapper(overlay))
                     break;
                 overlay->config->sd_mapper_rom_path[0] = '\0';
+                for (unsigned card = 0;
+                     card < MSX_SD_MAPPER_CARDS; ++card)
+                    overlay->config->sd_card_path[card][0] = '\0';
+                overlay->config->sd_mapper_ram = true;
+                overlay->config->sd_mapper_alternate_driver = false;
                 overlay->dirty = true;
                 apply_config(overlay);
-                notify_post("SD Mapper V2 firmware forgotten");
+                notify_post("SD Mapper V2 settings cleared");
             } else if (overlay->section == OVERLAY_EXTENSIONS &&
-                       overlay->row == EXTENSION_MEGAFLASH &&
-                       overlay->config->megaflash_rom_path[0]) {
+                       overlay->row == EXTENSION_MEGAFLASH) {
+                bool configured = overlay->config->megaflash ||
+                    overlay->config->megaflash_rom_path[0] ||
+                    overlay->config->megaflash_card_path[0][0] ||
+                    overlay->config->megaflash_card_path[1][0];
+
+                if (!configured)
+                    break;
                 if (overlay->config->megaflash &&
                     !disconnect_megaflash(overlay))
                     break;
                 overlay->config->megaflash_rom_path[0] = '\0';
+                for (unsigned card = 0;
+                     card < MSX_MEGAFLASH_CARDS; ++card)
+                    overlay->config->megaflash_card_path[card][0] = '\0';
+                discard_pending_megaflash_state(overlay);
                 overlay->dirty = true;
                 apply_config(overlay);
-                notify_post(
-                    "MegaFlashROM initial image forgotten");
+                notify_post("MegaFlashROM settings cleared");
             }
             break;
         case SDLK_ESCAPE:
@@ -3455,7 +3849,7 @@ static const char *section_hint(OverlaySection section) {
         case OVERLAY_MEDIA:
             return "Enter loads; R rewinds tape; Delete safely ejects.";
         case OVERLAY_EXTENSIONS:
-            return "Enter toggles/setup; Delete forgets controller ROMs.";
+            return "Enter enables/disables; Space edits; Delete clears.";
         case OVERLAY_ADVANCED:
             return "Machine models, RTC/media safety, and diagnostics.";
         case OVERLAY_SECTION_COUNT:
@@ -3469,9 +3863,14 @@ void overlay_tick(Overlay *overlay) {
     int slot;
 
     if (overlay->dialog_failed) {
+        bool discard = overlay->dialog_discard;
+
         SDL_MemoryBarrierAcquire();
         overlay->dialog_failed = false;
+        overlay->dialog_discard = false;
         overlay->dialog_target = OVERLAY_DIALOG_NONE;
+        if (discard)
+            return;
         notify_post("File picker unavailable: %s",
                     overlay->dialog_error[0]
                     ? overlay->dialog_error : "unknown SDL error");
@@ -3483,6 +3882,10 @@ void overlay_tick(Overlay *overlay) {
     overlay->dialog_ready = false;
     target = overlay->dialog_target;
     overlay->dialog_target = OVERLAY_DIALOG_NONE;
+    if (overlay->dialog_discard) {
+        overlay->dialog_discard = false;
+        return;
+    }
     if (!overlay->visible || target == OVERLAY_DIALOG_NONE)
         return;
     if (!overlay->dialog_path[0]) {
@@ -4096,7 +4499,7 @@ static void render_model_delete(const Overlay *overlay,
 static void render_sunrise_setup(const Overlay *overlay,
                                  SDL_Renderer *renderer) {
     static const char *labels[SUNRISE_SETUP_ROWS] = {
-        "Firmware ROM", "IDE hard disk", "Connect"
+        "Firmware ROM", "IDE hard disk", "Action"
     };
     char firmware[52];
     char disk[52];
@@ -4122,7 +4525,10 @@ static void render_sunrise_setup(const Overlay *overlay,
         snprintf(disk, sizeof(disk), "[optional - no disk]");
     values[SUNRISE_SETUP_FIRMWARE] = firmware;
     values[SUNRISE_SETUP_DISK] = disk;
-    values[SUNRISE_SETUP_CONNECT] = "Connect Sunrise IDE";
+    values[SUNRISE_SETUP_CONNECT] =
+        !overlay->extension_setup_editing ? "Connect Sunrise IDE" :
+        overlay->config->sunrise_ide ? "Apply and reconnect" :
+        "Save settings";
 
     ui_fill_rect(renderer, 0.0f, 0.0f,
                  (float)DISPLAY_LOGICAL_W, (float)DISPLAY_LOGICAL_H,
@@ -4165,7 +4571,7 @@ static void render_sd_mapper_setup(const Overlay *overlay,
                                    SDL_Renderer *renderer) {
     static const char *labels[SD_MAPPER_SETUP_ROWS] = {
         "Firmware ROM", "SD Card A", "SD Card B",
-        "512 KB mapper", "Driver bank", "Connect"
+        "512 KB mapper", "Driver bank", "Action"
     };
     char firmware[52];
     char card_a[52];
@@ -4204,7 +4610,10 @@ static void render_sd_mapper_setup(const Overlay *overlay,
     values[SD_MAPPER_SETUP_DRIVER] =
         overlay->pending_sd_mapper_alternate_driver
         ? "Alternate (SW1 on)" : "Primary (SW1 off)";
-    values[SD_MAPPER_SETUP_CONNECT] = "Connect SD Mapper V2";
+    values[SD_MAPPER_SETUP_CONNECT] =
+        !overlay->extension_setup_editing ? "Connect SD Mapper V2" :
+        overlay->config->sd_mapper ? "Apply and reconnect" :
+        "Save settings";
 
     ui_fill_rect(renderer, 0.0f, 0.0f,
                  (float)DISPLAY_LOGICAL_W,
@@ -4249,7 +4658,7 @@ static void render_sd_mapper_setup(const Overlay *overlay,
 static void render_megaflash_setup(const Overlay *overlay,
                                    SDL_Renderer *renderer) {
     static const char *labels[MEGAFLASH_SETUP_ROWS] = {
-        "Initial flash", "SD Card A", "SD Card B", "Connect"
+        "Initial flash", "SD Card A", "SD Card B", "Action"
     };
     char firmware[52];
     char card_a[52];
@@ -4284,7 +4693,9 @@ static void render_megaflash_setup(const Overlay *overlay,
     values[MEGAFLASH_SETUP_CARD_A] = card_a;
     values[MEGAFLASH_SETUP_CARD_B] = card_b;
     values[MEGAFLASH_SETUP_CONNECT] =
-        "Connect MegaFlashROM";
+        !overlay->extension_setup_editing ? "Connect MegaFlashROM" :
+        overlay->config->megaflash ? "Apply and reconnect" :
+        "Save settings";
 
     ui_fill_rect(renderer, 0.0f, 0.0f,
                  (float)DISPLAY_LOGICAL_W,

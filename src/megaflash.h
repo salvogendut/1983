@@ -62,6 +62,11 @@ int megaflash_install(MsxMegaFlashRom *mega,
 int megaflash_load_persistent(MsxMegaFlashRom *mega,
                               const char *initial_path,
                               const char *state_path);
+int megaflash_store_persistent(MsxMegaFlashRom *mega,
+                               const char *state_path);
+int megaflash_promote_persistent(MsxMegaFlashRom *mega,
+                                 const char *pending_path,
+                                 const char *state_path);
 int megaflash_flush_flash(MsxMegaFlashRom *mega);
 int megaflash_eject(MsxMegaFlashRom *mega);
 bool megaflash_flash_dirty(const MsxMegaFlashRom *mega);

@@ -741,6 +741,88 @@ int megaflash_load_persistent(MsxMegaFlashRom *mega,
     return 0;
 }
 
+int megaflash_store_persistent(MsxMegaFlashRom *mega,
+                               const char *state_path) {
+    if (!mega || !mega->loaded || !state_path || !state_path[0] ||
+        strlen(state_path) >= sizeof(mega->persistence_path)) {
+        if (mega)
+            snprintf(mega->persistence_error,
+                     sizeof(mega->persistence_error),
+                     "No valid persistent flash state path");
+        return -1;
+    }
+    snprintf(mega->persistence_path,
+             sizeof(mega->persistence_path), "%s", state_path);
+    mega->flash_dirty = true;
+    return megaflash_flush_flash(mega);
+}
+
+int megaflash_promote_persistent(MsxMegaFlashRom *mega,
+                                 const char *pending_path,
+                                 const char *state_path) {
+    bool active;
+    bool valid = true;
+    FILE *pending;
+    long pending_size;
+
+    if (!pending_path || !pending_path[0] ||
+        !state_path || !state_path[0] ||
+        strlen(state_path) >= MSX_MEGAFLASH_PATH_MAX) {
+        if (mega)
+            snprintf(mega->persistence_error,
+                     sizeof(mega->persistence_error),
+                     "No valid persistent flash state path");
+        return -1;
+    }
+    active = mega && mega->loaded &&
+             strcmp(mega->persistence_path, pending_path) == 0;
+    if (active && megaflash_flush_flash(mega) != 0)
+        return -1;
+    pending = fopen(pending_path, "rb");
+    if (!pending) {
+        valid = false;
+    } else {
+        if (fseek(pending, 0, SEEK_END) != 0 ||
+            (pending_size = ftell(pending)) !=
+                (long)MSX_MEGAFLASH_FLASH_SIZE)
+            valid = false;
+        if (fclose(pending) != 0)
+            valid = false;
+    }
+    if (!valid) {
+        if (mega)
+            snprintf(mega->persistence_error,
+                     sizeof(mega->persistence_error),
+                     "Pending flash state is not a valid 8 MiB image");
+        return -1;
+    }
+#ifdef _WIN32
+    if (!MoveFileExA(pending_path, state_path,
+                     MOVEFILE_REPLACE_EXISTING |
+                     MOVEFILE_WRITE_THROUGH)) {
+        if (mega)
+            snprintf(mega->persistence_error,
+                     sizeof(mega->persistence_error),
+                     "Cannot commit persistent flash state");
+        return -1;
+    }
+#else
+    if (rename(pending_path, state_path) != 0) {
+        if (mega)
+            snprintf(mega->persistence_error,
+                     sizeof(mega->persistence_error),
+                     "Cannot commit flash state: %s", strerror(errno));
+        return -1;
+    }
+#endif
+    if (active) {
+        snprintf(mega->persistence_path,
+                 sizeof(mega->persistence_path), "%s", state_path);
+        mega->persistence_error[0] = '\0';
+    }
+    return 0;
+}
+
 int megaflash_flush_flash(MsxMegaFlashRom *mega) {
     char temporary[MSX_MEGAFLASH_PATH_MAX];
     FILE *file;

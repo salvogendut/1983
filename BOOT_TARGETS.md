@@ -113,8 +113,9 @@ Enable **General > Extra Hardware** and choose **Extensions > Sunrise IDE**.
 On first activation, its setup panel asks for the required 128 KiB official
 Sunrise Nextor controller ROM and an optional IDE disk image. Choose Connect
 after making the selections. Later activations simply disconnect or reconnect
-that configuration; Delete forgets the stored controller firmware and opens
-the setup path again next time. **Media > IDE hard disk** handles later disk
+that configuration. Space reopens its settings without toggling it; Delete
+safely disconnects and clears the saved controller and disk configuration.
+**Media > IDE hard disk** handles later disk
 changes while the controller is connected. Images must be non-empty multiples
 of 512 bytes and default to read-only; Advanced > IDE access mode can
 explicitly switch them to read/write.
@@ -154,6 +155,8 @@ Connect reserves one physical cartridge slot. Later card changes and safe
 ejection live under Media. With Tinker enabled, Advanced owns the shared SD
 read-only/read-write policy and both hardware switches. Images must be
 non-empty multiples of 512 bytes and default to read-only.
+Space reopens the complete setup, while Delete safely disconnects and clears
+the saved controller, card, mapper, and driver settings.
 
 Release 1.1.0 with Nextor 2.1.2 provides `SDXC110.ROM`. Its official
 firmware and guest files remain local; 1983 does not redistribute them. A
@@ -180,13 +183,15 @@ Enable **General > Extra Hardware**, then choose
 cartridge flash image up to 8 MiB and optional raw images for SD Card A and SD
 Card B. Connect reserves one physical cartridge slot; later card changes and
 safe ejection live under Media. The shared Advanced > SD access mode controls
-the two removable cards.
+the two removable cards. Space reopens the setup; Delete safely disconnects
+and clears the saved initial-image and card settings.
 
 The initial dump is read-only seed material. 1983 creates a private writable
 flash state under the active configuration directory and loads that state on
 later runs, so flashing software cannot alter the dump. A corrupt state is
-rejected and a host flush failure blocks unsafe disconnection. The initial
-dump, its flashed software, and SD images are not distributed by 1983.
+rejected and a host flush failure blocks unsafe disconnection. Selecting a
+different initial image atomically reseeds the private state. The initial dump,
+its flashed software, and SD images are not distributed by 1983.
 The current official preflash is available from
 [MSX Cartridge Shop](https://www.msxcartridgeshop.com/bin/mfrsd.zip);
 its `mfrsd.rom` has SHA-1
@@ -423,6 +428,8 @@ also provides:
 
 Each cartridge selector opens the shared SDL3 file-dialog workflow and has an
 adjacent `auto`/manual mapper selector. Delete ejects the selected cartridge.
+In Extensions, Enter enables or disables, Space edits configurable settings,
+and Delete safely disconnects and clears those settings.
 General > Machine enumerates `1983-models.conf`, loads complete mappings
 directly and never opens firmware file dialogs. Definitions are composed in
 Advanced > Machine model editor, then validated and applied atomically by the
