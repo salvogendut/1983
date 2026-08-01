@@ -44,10 +44,6 @@ typedef enum {
     OVERLAY_DIALOG_MEGAFLASH_ROM,
     OVERLAY_DIALOG_MEGAFLASH_SD_A,
     OVERLAY_DIALOG_MEGAFLASH_SD_B,
-    OVERLAY_DIALOG_BIOS,
-    OVERLAY_DIALOG_LOGO,
-    OVERLAY_DIALOG_SUBROM,
-    OVERLAY_DIALOG_DISK_ROM,
     OVERLAY_DIALOG_MODEL_BIOS,
     OVERLAY_DIALOG_MODEL_LOGO,
     OVERLAY_DIALOG_MODEL_SUBROM,
@@ -74,13 +70,6 @@ typedef struct {
     char dialog_error[256];
 
     int machine_row;
-    size_t pending_model_index;
-    MsxModel pending_model;
-    char pending_bios_path[PATH_MAX];
-    char pending_logo_path[PATH_MAX];
-    char pending_subrom_path[PATH_MAX];
-    char pending_disk_rom_path[PATH_MAX];
-    char pending_firmware_dir[PATH_MAX];
 
     int sunrise_setup_row;
     char pending_sunrise_rom_path[PATH_MAX];

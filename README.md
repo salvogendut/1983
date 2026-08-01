@@ -127,18 +127,21 @@ private location.
 - `nms8250` — Philips NMS 8250 with BIOS, Sub-ROM, and disk ROM.
 
 Open the F9 overlay and select **General > Machine**. Complete catalogue
-mappings load directly; missing required components open file pickers. The
-whole firmware set is validated before replacing the running machine.
+mappings load directly and exactly as defined, without opening firmware file
+pickers. The whole firmware set is validated before replacing the running
+machine; missing or invalid required firmware leaves it unchanged.
 
 To add another model using an implemented hardware layout, copy a catalogue
 section, give it a unique ID and name, and change its firmware paths. Paths
-may be absolute or relative to the catalogue file.
+may be absolute or relative to the catalogue file. Blank optional firmware
+fields leave those components disconnected.
 
 For graphical editing, enable **General > Tinker**, then open
 **Advanced > Machine model editor**. It can add, edit, duplicate, and delete
 models; choose firmware files; validate IDs and ROM sizes; and atomically
 save the complete catalogue to the user configuration directory. Select the
-edited model under **General > Machine** to apply it.
+edited model under **General > Machine** to apply it. Machine composition is
+performed only in this editor.
 
 C-BIOS can also be started explicitly:
 

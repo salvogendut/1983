@@ -540,7 +540,7 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
     }
     fputs("# 1983 machine catalogue\n"
           "# Managed by Advanced > Machine model editor.\n"
-          "# Empty firmware fields are selected when the model is used.\n\n",
+          "# Blank optional firmware fields leave components disconnected.\n\n",
           file);
     for (size_t i = 0; i < catalog->count; ++i) {
         const ModelDefinition *definition = &catalog->entries[i];

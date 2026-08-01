@@ -43,7 +43,6 @@ static const MsxProfile profiles[MSX_MODEL_COUNT] = {
         .rtc = true,
         .psg_variant = PSG_VARIANT_YM2149,
         .requires_subrom = true,
-        .requires_disk_rom = true,
     },
 };
 

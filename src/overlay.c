@@ -1525,43 +1525,6 @@ static void open_ide_image_dialog(Overlay *overlay) {
                            filters, 2, location, false);
 }
 
-static void open_firmware_dialog(Overlay *overlay,
-                                 OverlayDialogTarget target) {
-    static const SDL_DialogFileFilter bios_filters[] = {
-        { "32 KB MSX BIOS ROM", "rom;ROM" },
-        { "All files", "*" },
-    };
-    static const SDL_DialogFileFilter extension_filters[] = {
-        { "16 KB MSX firmware ROM", "rom;ROM" },
-        { "All files", "*" },
-    };
-    const SDL_DialogFileFilter *filters =
-        target == OVERLAY_DIALOG_BIOS
-        ? bios_filters : extension_filters;
-    const char *location =
-        overlay->pending_firmware_dir[0]
-        ? overlay->pending_firmware_dir : NULL;
-    const char *component =
-        target == OVERLAY_DIALOG_BIOS ? "main BIOS" :
-        target == OVERLAY_DIALOG_LOGO ? "C-BIOS logo ROM" :
-        target == OVERLAY_DIALOG_SUBROM ? "Sub-ROM" : "disk ROM";
-    const ModelDefinition *definition =
-        &overlay->models->entries[overlay->pending_model_index];
-
-    if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
-        return;
-    overlay->dialog_target = target;
-    overlay->dialog_ready = false;
-    overlay->dialog_failed = false;
-    overlay->dialog_error[0] = '\0';
-    notify_post("Select the %s for %s", component,
-                definition->name);
-    SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
-                           overlay->display
-                           ? overlay->display->window : NULL,
-                           filters, 2, location, false);
-}
-
 static char *model_firmware_field(Overlay *overlay,
                                   OverlayDialogTarget target) {
     switch (target) {
@@ -1675,108 +1638,92 @@ static bool ide_image_file_is_valid(const char *path) {
     return valid;
 }
 
-static void continue_firmware_selection(Overlay *overlay);
-
-static void begin_firmware_selection(Overlay *overlay) {
-    const ModelDefinition *definition;
-
-    overlay->pending_model_index = (size_t)overlay->machine_row;
-    definition = &overlay->models->entries[overlay->pending_model_index];
-    overlay->pending_model = definition->hardware;
-    snprintf(overlay->pending_bios_path,
-             sizeof(overlay->pending_bios_path), "%s",
-             definition->bios_path);
-    snprintf(overlay->pending_logo_path,
-             sizeof(overlay->pending_logo_path), "%s",
-             definition->logo_path);
-    snprintf(overlay->pending_subrom_path,
-             sizeof(overlay->pending_subrom_path), "%s",
-             definition->subrom_path);
-    snprintf(overlay->pending_disk_rom_path,
-             sizeof(overlay->pending_disk_rom_path), "%s",
-             definition->disk_rom_path);
-    snprintf(overlay->pending_firmware_dir,
-             sizeof(overlay->pending_firmware_dir), "%s",
-             overlay->config->last_media_dir);
-    if (definition->bios_path[0])
-        copy_dirname(overlay->pending_firmware_dir,
-                     sizeof(overlay->pending_firmware_dir),
-                     definition->bios_path);
-    overlay->state = OVERLAY_STATE_MENU;
-    continue_firmware_selection(overlay);
-}
-
-static void finish_firmware_selection(Overlay *overlay) {
+static void select_machine(Overlay *overlay) {
     const ModelDefinition *definition =
-        &overlay->models->entries[overlay->pending_model_index];
+        &overlay->models->entries[overlay->machine_row];
+    const MsxProfile *profile = msx_profile(definition->hardware);
     Config *config = overlay->config;
+    Config target_config = *config;
+    char target_rtc_path[PATH_MAX];
+    int target_ram = msx_default_ram_kb(definition->hardware);
+    bool rtc_changed;
 
+    target_config.model = definition->hardware;
+    snprintf(target_config.machine_id, sizeof(target_config.machine_id),
+             "%s", definition->id);
+    target_config.memory_kb = target_ram;
+    if (config_rtc_path(
+            &target_config, target_rtc_path,
+            sizeof(target_rtc_path)) != 0) {
+        notify_post("RTC persistence path is too long for %s",
+                    definition->name);
+        return;
+    }
+    rtc_changed = strcmp(
+        msx_rtc_persistence_path(overlay->msx), target_rtc_path) != 0;
+
+    if (!firmware_file_has_size(definition->bios_path, MSX_BIOS_SIZE)) {
+        notify_post("Invalid BIOS for %s; edit the machine model",
+                    definition->name);
+        return;
+    }
+    if (definition->logo_path[0] &&
+        !firmware_file_has_size(definition->logo_path, MSX_LOGO_SIZE)) {
+        notify_post("Invalid logo ROM for %s; edit the machine model",
+                    definition->name);
+        return;
+    }
+    if ((profile->requires_subrom || definition->subrom_path[0]) &&
+        !firmware_file_has_size(
+            definition->subrom_path, MSX_SUBROM_SIZE)) {
+        notify_post("Invalid Sub-ROM for %s; edit the machine model",
+                    definition->name);
+        return;
+    }
+    if (definition->disk_rom_path[0] &&
+        !firmware_file_has_size(
+            definition->disk_rom_path, MSX_DISK_ROM_SIZE)) {
+        notify_post("Invalid disk ROM for %s; edit the machine model",
+                    definition->name);
+        return;
+    }
+    if (rtc_changed && msx_set_rtc_persistence(
+            overlay->msx, "", rtc_host_seconds()) != 0) {
+        notify_post("Could not save RTC CMOS: %s",
+                    msx_rtc_persistence_error(overlay->msx));
+        return;
+    }
     if (msx_load_firmware_set(
-            overlay->msx, overlay->pending_bios_path,
-            overlay->pending_logo_path,
-            overlay->pending_subrom_path,
-            overlay->pending_disk_rom_path) != 0) {
+            overlay->msx, definition->bios_path,
+            definition->logo_path, definition->subrom_path,
+            definition->disk_rom_path) != 0) {
+        if (rtc_changed)
+            (void)sync_rtc_persistence(overlay);
         notify_post("Could not load %s firmware; check ROM sizes",
                     definition->name);
         return;
     }
 
-    config->model = overlay->pending_model;
+    config->model = definition->hardware;
     snprintf(config->machine_id, sizeof(config->machine_id),
-             "%s", definition->id);
-    config->memory_kb = msx_default_ram_kb(config->model);
+              "%s", definition->id);
+    config->memory_kb = target_ram;
     snprintf(config->bios_path, sizeof(config->bios_path), "%s",
-             overlay->pending_bios_path);
+             definition->bios_path);
     snprintf(config->logo_path, sizeof(config->logo_path), "%s",
-             overlay->pending_logo_path);
+             definition->logo_path);
     snprintf(config->subrom_path, sizeof(config->subrom_path), "%s",
-             overlay->pending_subrom_path);
+             definition->subrom_path);
     snprintf(config->disk_rom_path, sizeof(config->disk_rom_path), "%s",
-             overlay->pending_disk_rom_path);
-    snprintf(config->last_media_dir, sizeof(config->last_media_dir), "%s",
-             overlay->pending_firmware_dir);
+             definition->disk_rom_path);
     overlay->dirty = true;
+    overlay->state = OVERLAY_STATE_MENU;
     apply_config(overlay);
     display_prepare_scaffold(overlay->display, overlay->msx);
     display_set_title(overlay->display, overlay->msx,
                       definition->name);
     notify_post("%s firmware loaded: %s", definition->name,
-                path_basename(config->bios_path));
-}
-
-static void continue_firmware_selection(Overlay *overlay) {
-    const MsxProfile *profile = msx_profile(overlay->pending_model);
-
-    if (!firmware_file_has_size(
-            overlay->pending_bios_path, MSX_BIOS_SIZE)) {
-        overlay->pending_bios_path[0] = '\0';
-        open_firmware_dialog(overlay, OVERLAY_DIALOG_BIOS);
-        return;
-    }
-    if (overlay->pending_logo_path[0] &&
-        !firmware_file_has_size(
-            overlay->pending_logo_path, MSX_LOGO_SIZE)) {
-        overlay->pending_logo_path[0] = '\0';
-        open_firmware_dialog(overlay, OVERLAY_DIALOG_LOGO);
-        return;
-    }
-    if ((profile->requires_subrom ||
-         overlay->pending_subrom_path[0]) &&
-        !firmware_file_has_size(
-            overlay->pending_subrom_path, MSX_SUBROM_SIZE)) {
-        overlay->pending_subrom_path[0] = '\0';
-        open_firmware_dialog(overlay, OVERLAY_DIALOG_SUBROM);
-        return;
-    }
-    if ((profile->requires_disk_rom ||
-         overlay->pending_disk_rom_path[0]) &&
-        !firmware_file_has_size(
-            overlay->pending_disk_rom_path, MSX_DISK_ROM_SIZE)) {
-        overlay->pending_disk_rom_path[0] = '\0';
-        open_firmware_dialog(overlay, OVERLAY_DIALOG_DISK_ROM);
-        return;
-    }
-    finish_firmware_selection(overlay);
+                 path_basename(config->bios_path));
 }
 
 static void change_cartridge_mapper(Overlay *overlay, unsigned slot) {
@@ -3035,7 +2982,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
             if (overlay->machine_row >= (int)overlay->models->count)
                 overlay->machine_row = 0;
         } else if (key == SDLK_RETURN || key == SDLK_KP_ENTER) {
-            begin_firmware_selection(overlay);
+            select_machine(overlay);
         } else if (key == SDLK_ESCAPE) {
             overlay->state = OVERLAY_STATE_MENU;
         }
@@ -3346,14 +3293,8 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
         case SDLK_DELETE:
             if (overlay->section == OVERLAY_GENERAL &&
                 overlay->row == GENERAL_MACHINE) {
-                msx_eject_firmware(overlay->msx);
-                overlay->config->bios_path[0] = '\0';
-                overlay->config->logo_path[0] = '\0';
-                overlay->config->subrom_path[0] = '\0';
-                overlay->config->disk_rom_path[0] = '\0';
-                overlay->dirty = true;
-                notify_post("%s firmware unloaded",
-                            msx_model_name(overlay->config->model));
+                notify_post(
+                    "Change firmware in Advanced > Machine model editor");
             } else if (overlay->section == OVERLAY_MEDIA &&
                        (overlay->row == 0 || overlay->row == 2)) {
                 unsigned slot = overlay->row == 0 ? 0 : 1;
@@ -3545,15 +3486,10 @@ void overlay_tick(Overlay *overlay) {
     if (!overlay->visible || target == OVERLAY_DIALOG_NONE)
         return;
     if (!overlay->dialog_path[0]) {
-        if (target == OVERLAY_DIALOG_BIOS ||
-            target == OVERLAY_DIALOG_LOGO ||
-            target == OVERLAY_DIALOG_SUBROM ||
-            target == OVERLAY_DIALOG_DISK_ROM)
-            notify_post("Machine firmware selection cancelled");
-        else if (target == OVERLAY_DIALOG_MODEL_BIOS ||
-                 target == OVERLAY_DIALOG_MODEL_LOGO ||
-                 target == OVERLAY_DIALOG_MODEL_SUBROM ||
-                 target == OVERLAY_DIALOG_MODEL_DISK_ROM)
+        if (target == OVERLAY_DIALOG_MODEL_BIOS ||
+            target == OVERLAY_DIALOG_MODEL_LOGO ||
+            target == OVERLAY_DIALOG_MODEL_SUBROM ||
+            target == OVERLAY_DIALOG_MODEL_DISK_ROM)
             notify_post("Model firmware selection cancelled");
         else if (target == OVERLAY_DIALOG_SUNRISE_ROM)
             notify_post("Sunrise IDE ROM selection cancelled");
@@ -3872,27 +3808,6 @@ void overlay_tick(Overlay *overlay) {
         return;
     }
 
-    if (target == OVERLAY_DIALOG_BIOS ||
-        target == OVERLAY_DIALOG_LOGO ||
-        target == OVERLAY_DIALOG_SUBROM ||
-        target == OVERLAY_DIALOG_DISK_ROM) {
-        char *destination =
-            target == OVERLAY_DIALOG_BIOS
-            ? overlay->pending_bios_path :
-            target == OVERLAY_DIALOG_LOGO
-            ? overlay->pending_logo_path :
-            target == OVERLAY_DIALOG_SUBROM
-            ? overlay->pending_subrom_path
-            : overlay->pending_disk_rom_path;
-
-        snprintf(destination, PATH_MAX, "%s", overlay->dialog_path);
-        copy_dirname(overlay->pending_firmware_dir,
-                     sizeof(overlay->pending_firmware_dir),
-                     overlay->dialog_path);
-        continue_firmware_selection(overlay);
-        return;
-    }
-
     slot = target == OVERLAY_DIALOG_CARTRIDGE_1 ? 0 :
            target == OVERLAY_DIALOG_CARTRIDGE_2 ? 1 : -1;
     if (slot < 0)
@@ -3936,7 +3851,7 @@ static void editor_shorten(char *destination, size_t destination_size,
 
     if (!text || !text[0]) {
         snprintf(destination, destination_size,
-                 "[choose when selected]");
+                 "[not configured]");
     } else if (length <= maximum) {
         snprintf(destination, destination_size, "%s", text);
     } else if (maximum > 3) {
@@ -4118,7 +4033,7 @@ static void render_model_edit(const Overlay *overlay,
                  "Left/Right changes hardware   F2 saves   Esc cancels",
                  150, 170, 205);
     ui_draw_text(renderer, 22.0f, 382.0f,
-                 "Blank ROM fields invoke a picker when the model is selected.",
+                 "Blank optional ROM fields leave that component disconnected.",
                  120, 190, 150);
     if (overlay->model_editor_error[0])
         ui_draw_text(renderer, 22.0f, 404.0f,
@@ -4531,7 +4446,7 @@ static void overlay_render_content(const Overlay *overlay,
 
     ui_draw_text(renderer, 20.0f,
                  (float)(OVERLAY_FIRST_Y + rows * OVERLAY_LINE_H + 8),
-                 "Left/Right tabs  Up/Down row  Enter select  Delete unload",
+                 "Left/Right tabs  Up/Down row  Enter select  Esc cancel",
                  150, 160, 190);
     ui_draw_text(renderer, 20.0f,
                  (float)(OVERLAY_FIRST_Y + rows * OVERLAY_LINE_H + 25),
@@ -4567,7 +4482,7 @@ static void overlay_render_content(const Overlay *overlay,
     }
     if (overlay->state == OVERLAY_STATE_MACHINE) {
         const char *title = "Choose machine profile";
-        const char *hint = "Up/Down choose   Enter continue   Esc cancel";
+        const char *hint = "Up/Down choose   Enter select   Esc cancel";
         const int visible_rows = 10;
         int first_model = overlay->machine_row - visible_rows / 2;
         int last_model;
@@ -4600,16 +4515,10 @@ static void overlay_render_content(const Overlay *overlay,
         for (int model = first_model; model < last_model; ++model) {
             const ModelDefinition *definition =
                 &overlay->models->entries[model];
-            const MsxProfile *profile =
-                msx_profile(definition->hardware);
             char line[160];
             bool selected = model == overlay->machine_row;
-            bool has_subrom =
-                profile->requires_subrom ||
-                definition->subrom_path[0];
-            bool has_disk_rom =
-                profile->requires_disk_rom ||
-                definition->disk_rom_path[0];
+            bool has_subrom = definition->subrom_path[0];
+            bool has_disk_rom = definition->disk_rom_path[0];
 
             snprintf(line, sizeof(line), "%s%s",
                      definition->name,
