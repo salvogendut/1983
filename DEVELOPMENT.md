@@ -100,7 +100,7 @@ hardware layouts are:
 | Expanded slots | No | Yes | Yes |
 | RAM mapper | With RAM above 64 KB | Yes | Yes |
 | RTC | No | Yes | Yes |
-| Required firmware | BIOS | BIOS + Sub-ROM | BIOS + Sub-ROM + disk ROM |
+| Required firmware | BIOS | BIOS + Sub-ROM | BIOS + Sub-ROM; disk ROM optional |
 
 The MSX1 executable layout follows the C-BIOS machine definition: slot 0
 contains a 32 KB main ROM and optional 16 KB logo ROM, primary slots 1 and 2

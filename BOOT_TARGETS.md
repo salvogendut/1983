@@ -424,10 +424,11 @@ also provides:
 Each cartridge selector opens the shared SDL3 file-dialog workflow and has an
 adjacent `auto`/manual mapper selector. Delete ejects the selected cartridge.
 General > Machine enumerates `1983-models.conf`, loads complete mappings
-directly, and opens sequential file dialogs for missing required components.
-The firmware set is applied atomically. Sunrise setup validates its controller
-ROM and optional disk before reserving a cartridge slot; canceling it leaves
-the live machine unchanged. Sunrise ROM and disk paths persist in `1983.conf`;
+directly and never opens firmware file dialogs. Definitions are composed in
+Advanced > Machine model editor, then validated and applied atomically by the
+selector. Sunrise setup validates its controller ROM and optional disk before
+reserving a cartridge slot; canceling it leaves the live machine unchanged.
+Sunrise ROM and disk paths persist in `1983.conf`;
 mounting is conservative and a failed replacement leaves the previous image
 active. Cassette mounts are also conservative, persist in `1983.conf`, and
 expose rewind and eject controls. Floppy mounts follow the same conservative

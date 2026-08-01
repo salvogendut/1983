@@ -37,7 +37,7 @@ The current hardware layouts are:
 | Expanded slots | No | Yes | Yes |
 | Memory mapper | With RAM above 64 KiB | Yes | Yes |
 | RTC | No | Yes | Yes |
-| Firmware | BIOS | BIOS + Sub-ROM | BIOS + Sub-ROM + disk ROM |
+| Firmware | BIOS | BIOS + Sub-ROM | BIOS + Sub-ROM; disk ROM optional |
 
 ## Machine catalogue
 
@@ -61,17 +61,17 @@ directory, and built-in entries remain available if no valid catalogue can
 be loaded.
 
 General > Machine enumerates the catalogue rather than a compiled model
-count. Complete mappings load immediately. Blank, unavailable, or
-wrong-sized required components invoke sequential SDL3 file pickers. BIOS,
-optional logo, Sub-ROM, and disk ROM are loaded atomically, so cancellation
-or validation failure preserves the previous firmware.
+count. It validates and atomically loads the selected definition exactly as
+saved, without opening firmware file pickers. Blank optional fields remain
+disconnected; missing or invalid required firmware preserves the previous
+machine and reports that the definition must be fixed in the model editor.
 
 With Tinker enabled, Advanced > Machine model editor provides catalogue
 list, add, edit, duplicate, and delete workflows. IDs are restricted to
 portable INI-safe characters and must be unique. Non-empty firmware paths
 selected or changed in the editor are checked for their required 32 KiB or
-16 KiB size. Empty fields remain valid and invoke the normal picker when the
-model is selected.
+16 KiB size. Empty optional fields remain valid and leave those components
+disconnected when the model is selected.
 
 Editor changes are written through a same-directory temporary file and
 atomically renamed to the per-user `1983-models.conf`. The saved file is

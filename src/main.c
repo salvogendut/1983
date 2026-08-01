@@ -937,7 +937,8 @@ int main(int argc, char **argv) {
     if (msx_can_boot(&msx))
         notify_post("Firmware running - F9 opens options");
     else
-        notify_post("Select a BIOS ROM to boot - F9 opens options");
+        notify_post(
+            "Enable Tinker, then define firmware in F9 > Advanced model editor");
     if (gamepad_input_connected(&gamepad))
         notify_post("Gamepad connected: %s",
                     gamepad_input_name(&gamepad));

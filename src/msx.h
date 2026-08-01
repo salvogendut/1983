@@ -75,7 +75,6 @@ typedef struct {
     bool       rtc;
     PsgVariant psg_variant;
     bool       requires_subrom;
-    bool       requires_disk_rom;
 } MsxProfile;
 
 typedef struct {

@@ -1444,7 +1444,6 @@ int main(void) {
                       "nms8250") == 0);
         assert(msx_model_is_msx2(detected));
         assert(msx_profile(detected)->requires_subrom);
-        assert(msx_profile(detected)->requires_disk_rom);
     }
 
     msx_configure(&msx, MSX_MODEL_GENERIC_MSX1,

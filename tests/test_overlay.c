@@ -220,6 +220,8 @@ int main(void) {
         0xea, 0xea, 0xea, 0xea, 0xea, 0x1a
     };
     const char *editor_path = "tests/test-model-editor.tmp";
+    const char *machine_bios_path = "tests/test-machine-bios.tmp";
+    const char *machine_subrom_path = "tests/test-machine-subrom.tmp";
     const char *sunrise_rom_path = "tests/test-sunrise-rom.tmp";
     const char *sunrise_rom_path_2 = "tests/test-sunrise-rom-2.tmp";
     const char *ide_image_path = "tests/test-sunrise-disk.tmp";
@@ -273,6 +275,16 @@ int main(void) {
     assert(fwrite(sunrise_rom, 1, sizeof(sunrise_rom), fixture) ==
            sizeof(sunrise_rom));
     assert(fclose(fixture) == 0);
+    fixture = fopen(machine_bios_path, "wb");
+    assert(fixture);
+    assert(fwrite(sunrise_rom, 1, MSX_BIOS_SIZE, fixture) ==
+           MSX_BIOS_SIZE);
+    assert(fclose(fixture) == 0);
+    fixture = fopen(machine_subrom_path, "wb");
+    assert(fixture);
+    assert(fwrite(sunrise_rom, 1, MSX_SUBROM_SIZE, fixture) ==
+           MSX_SUBROM_SIZE);
+    assert(fclose(fixture) == 0);
     fixture = fopen(ide_image_path, "wb");
     assert(fixture);
     memset(sunrise_rom, 0x83, ATA_SECTOR_SIZE);
@@ -306,11 +318,29 @@ int main(void) {
            sizeof(cassette_image));
     assert(fclose(fixture) == 0);
     model_catalog_defaults(&models);
+    {
+        size_t nms8250_index = model_catalog_index(&models, "nms8250");
+
+        assert(nms8250_index < models.count);
+        snprintf(models.entries[nms8250_index].bios_path,
+                 sizeof(models.entries[nms8250_index].bios_path), "%s",
+                 machine_bios_path);
+        snprintf(models.entries[nms8250_index].subrom_path,
+                 sizeof(models.entries[nms8250_index].subrom_path), "%s",
+                 machine_subrom_path);
+    }
     snprintf(models.entries[models.count].id,
-             sizeof(models.entries[models.count].id), "custom-msx2");
+             sizeof(models.entries[models.count].id), "custom-nms8250");
     snprintf(models.entries[models.count].name,
-             sizeof(models.entries[models.count].name), "Custom MSX2");
-    models.entries[models.count].hardware = MSX_MODEL_GENERIC_MSX2;
+             sizeof(models.entries[models.count].name), "Custom NMS 8250");
+    models.entries[models.count].hardware =
+        MSX_MODEL_PHILIPS_NMS8250;
+    snprintf(models.entries[models.count].bios_path,
+             sizeof(models.entries[models.count].bios_path), "%s",
+             machine_bios_path);
+    snprintf(models.entries[models.count].subrom_path,
+             sizeof(models.entries[models.count].subrom_path), "%s",
+             machine_subrom_path);
     ++models.count;
     snprintf(models.edit_path, sizeof(models.edit_path),
              "%s", editor_path);
@@ -865,7 +895,119 @@ int main(void) {
     send_key(&overlay, SDLK_F9);
     assert(!overlay.visible);
 
+    /* General applies an editor-defined firmware set without file pickers. */
+    {
+        size_t model_index = model_catalog_index(
+            &models, "custom-nms8250");
+        size_t cbios_index = model_catalog_index(&models, "cbios");
+        size_t nms8250_index = model_catalog_index(&models, "nms8250");
+        char custom_bios_path[PATH_MAX];
+        char loaded_bios_path[PATH_MAX];
+        char blocked_rtc_path[PATH_MAX];
+        u8 active_bios[MSX_BIOS_SIZE];
+        bool active_dirty;
+
+        assert(model_index < models.count);
+        assert(cbios_index < models.count);
+        assert(nms8250_index < models.count);
+        config_defaults(&config);
+        config.tinker = true;
+        msx_configure(&msx, config.model, config.region,
+                      config.memory_kb);
+        overlay_init(&overlay, &config, &models, &display, &msx);
+        send_key(&overlay, SDLK_F9);
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MACHINE);
+        overlay.machine_row = (int)model_index;
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MENU);
+        assert(overlay.dialog_target == OVERLAY_DIALOG_NONE);
+        assert(config.model == MSX_MODEL_PHILIPS_NMS8250);
+        assert(strcmp(config.machine_id, "custom-nms8250") == 0);
+        assert(config.memory_kb == 128);
+        assert(msx.bios_loaded);
+        assert(msx.subrom_loaded);
+        assert(!msx.disk_rom_loaded);
+        assert(!config.disk_rom_path[0]);
+
+        snprintf(loaded_bios_path, sizeof(loaded_bios_path), "%s",
+                 config.bios_path);
+        snprintf(custom_bios_path, sizeof(custom_bios_path), "%s",
+                 config.bios_path);
+        send_key(&overlay, SDLK_DELETE);
+        assert(strcmp(config.bios_path, loaded_bios_path) == 0);
+        assert(msx.bios_loaded);
+
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MACHINE);
+        overlay.machine_row = (int)cbios_index;
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MENU);
+        assert(config.model == MSX_MODEL_GENERIC_MSX1);
+        assert(strcmp(config.machine_id, "cbios") == 0);
+        assert(config.memory_kb == 64);
+        assert(msx.profile->model == MSX_MODEL_GENERIC_MSX1);
+        assert(msx.bios_loaded);
+        assert(!msx.subrom_loaded);
+        assert(!msx.disk_rom_loaded);
+
+        snprintf(loaded_bios_path, sizeof(loaded_bios_path), "%s",
+                 config.bios_path);
+        memcpy(active_bios, msx.bios, sizeof(active_bios));
+        active_dirty = overlay.dirty;
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MACHINE);
+        overlay.machine_row = (int)model_index;
+        snprintf(models.entries[model_index].bios_path,
+                 sizeof(models.entries[model_index].bios_path),
+                 "tests/missing-machine-bios.rom");
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MACHINE);
+        assert(overlay.dialog_target == OVERLAY_DIALOG_NONE);
+        assert(config.model == MSX_MODEL_GENERIC_MSX1);
+        assert(strcmp(config.machine_id, "cbios") == 0);
+        assert(config.memory_kb == 64);
+        assert(strcmp(config.bios_path, loaded_bios_path) == 0);
+        assert(msx.profile->model == MSX_MODEL_GENERIC_MSX1);
+        assert(msx.bios_loaded);
+        assert(!msx.subrom_loaded);
+        assert(!msx.disk_rom_loaded);
+        assert(memcmp(active_bios, msx.bios, sizeof(active_bios)) == 0);
+        assert(overlay.dirty == active_dirty);
+
+        snprintf(models.entries[model_index].bios_path,
+                 sizeof(models.entries[model_index].bios_path), "%s",
+                 custom_bios_path);
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MENU);
+        assert(config.model == MSX_MODEL_PHILIPS_NMS8250);
+        assert(strcmp(config.machine_id, "custom-nms8250") == 0);
+        memcpy(active_bios, msx.bios, sizeof(active_bios));
+        snprintf(blocked_rtc_path, sizeof(blocked_rtc_path), "%s/rtc",
+                 machine_bios_path);
+        assert(msx_set_rtc_persistence(
+                   &msx, blocked_rtc_path, 1000) != 0);
+        assert(msx_rtc_persistence_dirty(&msx));
+        assert(strcmp(msx_rtc_persistence_path(&msx),
+                      blocked_rtc_path) == 0);
+        active_dirty = overlay.dirty;
+
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MACHINE);
+        overlay.machine_row = (int)nms8250_index;
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MACHINE);
+        assert(overlay.dialog_target == OVERLAY_DIALOG_NONE);
+        assert(config.model == MSX_MODEL_PHILIPS_NMS8250);
+        assert(strcmp(config.machine_id, "custom-nms8250") == 0);
+        assert(msx.profile->model == MSX_MODEL_PHILIPS_NMS8250);
+        assert(memcmp(active_bios, msx.bios, sizeof(active_bios)) == 0);
+        assert(overlay.dirty == active_dirty);
+    }
+
     assert(remove(editor_path) == 0);
+    assert(remove(machine_bios_path) == 0);
+    assert(remove(machine_subrom_path) == 0);
     assert(remove(sunrise_rom_path) == 0);
     assert(remove(sunrise_rom_path_2) == 0);
     assert(remove(ide_image_path) == 0);
