@@ -213,8 +213,10 @@ reveals Advanced.
 port-mapped device and does not occupy either cartridge slot. Guest software
 must first run openMSXnet v0.9.7's separate `UNAPINET.COM` TSR under Nextor
 or MSX-DOS 2; 1983 does not bundle that third-party binary. Network traffic
-pulses the white network LED. See [`BOOT_TARGETS.md`](BOOT_TARGETS.md) for
-driver installation and the GeoBench setup.
+pulses the white network LED. The Extensions row reports `On (awaiting TSR)`
+until the guest driver detects the bridge, then changes to `On (TSR active)`.
+See [`BOOT_TARGETS.md`](BOOT_TARGETS.md) for driver installation and the
+GeoBench setup.
 
 MSX2 machines keep their battery-backed clock and CMOS settings in a
 per-machine file under the configuration directory's `rtc/` folder. With

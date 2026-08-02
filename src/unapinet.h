@@ -19,6 +19,7 @@ void unapinet_destroy(UnapiNet *net);
 
 bool unapinet_set_enabled(UnapiNet *net, bool enabled);
 bool unapinet_enabled(const UnapiNet *net);
+bool unapinet_guest_driver_active(const UnapiNet *net);
 void unapinet_reset(UnapiNet *net);
 void unapinet_poll(UnapiNet *net);
 

@@ -684,8 +684,14 @@ static void item_text(const Overlay *overlay, int row,
                 case EXTENSION_TCPIP_UNAPI:
                     snprintf(label, label_size,
                              "MSX TCP/IP UNAPI");
-                    snprintf(value, value_size, "%s",
-                             toggle_name(config->tcpip_unapi));
+                    if (!config->tcpip_unapi) {
+                        snprintf(value, value_size, "Off");
+                    } else if (unapinet_guest_driver_active(
+                                   overlay->unapinet)) {
+                        snprintf(value, value_size, "On (TSR active)");
+                    } else {
+                        snprintf(value, value_size, "On (awaiting TSR)");
+                    }
                     break;
                 case EXTENSION_KONAMI_SCC:
                     snprintf(label, label_size, "Konami SCC");
@@ -3866,13 +3872,20 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
     return true;
 }
 
-static const char *section_hint(OverlaySection section) {
-    switch (section) {
+static const char *section_hint(const Overlay *overlay) {
+    switch (overlay->section) {
         case OVERLAY_GENERAL:
             return "Machine, memory, audio, input, and optional controls.";
         case OVERLAY_MEDIA:
             return "Enter loads; R rewinds tape; Delete safely ejects.";
         case OVERLAY_EXTENSIONS:
+            if (overlay->row == EXTENSION_TCPIP_UNAPI) {
+                if (!overlay->config->tcpip_unapi)
+                    return "Enable the host bridge, then run UNAPINET.COM in the guest.";
+                if (unapinet_guest_driver_active(overlay->unapinet))
+                    return "UNAPINET.COM is active; standard TCP/IP UNAPI is available.";
+                return "Host bridge only; run UNAPINET.COM in Nextor/MSX-DOS 2.";
+            }
             return "Enter enables/disables; Space edits; Delete clears.";
         case OVERLAY_ADVANCED:
             return "Machine models, RTC/media safety, and diagnostics.";
@@ -4885,7 +4898,7 @@ static void overlay_render_content(const Overlay *overlay,
                  150, 160, 190);
     ui_draw_text(renderer, 20.0f,
                  (float)(OVERLAY_FIRST_Y + rows * OVERLAY_LINE_H + 25),
-                 section_hint(overlay->section), 120, 180, 150);
+                 section_hint(overlay), 120, 180, 150);
 
     if (overlay->state == OVERLAY_STATE_SUNRISE_SETUP) {
         render_sunrise_setup(overlay, renderer);

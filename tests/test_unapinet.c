@@ -46,10 +46,13 @@ static void test_wire_protocol(UnapiNet *net) {
 
     assert(!unapinet_io_read(net, UNAPINET_COMMAND_PORT, &value));
     assert(value == 0x5a);
+    assert(!unapinet_guest_driver_active(net));
     assert(unapinet_set_enabled(net, true));
+    assert(!unapinet_guest_driver_active(net));
 
     command(net, 0x00);
     expect_result(net, ping, sizeof(ping));
+    assert(unapinet_guest_driver_active(net));
     command(net, 0x10);
     expect_result(net, capabilities, sizeof(capabilities));
 
@@ -69,6 +72,7 @@ static void test_wire_protocol(UnapiNet *net) {
 
     unapinet_reset(net);
     assert(read_port(net, UNAPINET_COMMAND_PORT) == 0);
+    assert(!unapinet_guest_driver_active(net));
 }
 
 static void test_async_dns(UnapiNet *net) {
@@ -305,6 +309,7 @@ int main(void) {
     assert(unapinet_take_activity(net));
     assert(!unapinet_take_activity(net));
     assert(unapinet_set_enabled(net, false));
+    assert(!unapinet_guest_driver_active(net));
     assert(!unapinet_io_read(net, UNAPINET_COMMAND_PORT, &value));
     assert(value == 0x5a);
     unapinet_destroy(net);
