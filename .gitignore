@@ -51,3 +51,4 @@
 /test-suite.log
 *.o
 *.ppm
+test-rs232
