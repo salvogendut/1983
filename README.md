@@ -61,8 +61,9 @@ GitHub Releases page. See [`INSTALL.md`](INSTALL.md) for packaging details.
 
 ## Documentation
 
-- [`USAGE.md`](USAGE.md) — controls, machines, media, extensions, and
-  configuration.
+- [`USAGE.md`](USAGE.md) — machines, media, extensions, and quick start.
+- [`CONTROLS.md`](CONTROLS.md) — keyboard, overlay, gamepad, and GIF controls.
+- [`CONFIGURATION.md`](CONFIGURATION.md) — config files, RTC, and catalogue.
 - [`TECHNICAL.md`](TECHNICAL.md) — implemented hardware, timing, media, and
   frontend behavior.
 - [`DEVELOPMENT.md`](DEVELOPMENT.md) — source layout, design boundaries, and
