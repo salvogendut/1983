@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char *initial_path = "tests/test-megaflash-initial.tmp";
-static const char *state_path = "tests/test-megaflash-state.tmp";
+static const char *initial_path = "diagnostics/test-megaflash-initial.tmp";
+static const char *state_path = "diagnostics/test-megaflash-state.tmp";
 static const size_t official_initial_size = 8208384;
 
 static u8 *make_flash(void) {
@@ -223,10 +223,10 @@ static void test_atomic_persistent_flash(void) {
 }
 
 static void test_corruption_and_failed_flush_safety(void) {
-    const char *corrupt_path = "tests/test-megaflash-corrupt.tmp";
-    const char *blocked_parent = "tests/test-megaflash-blocker.tmp";
+    const char *corrupt_path = "diagnostics/test-megaflash-corrupt.tmp";
+    const char *blocked_parent = "diagnostics/test-megaflash-blocker.tmp";
     const char *blocked_state =
-        "tests/test-megaflash-blocker.tmp/state";
+        "diagnostics/test-megaflash-blocker.tmp/state";
     MsxMegaFlashRom mega;
     u8 *flash = make_flash();
     FILE *file;

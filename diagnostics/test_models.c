@@ -5,9 +5,9 @@
 #include <string.h>
 
 int main(void) {
-    static const char *path = "tests/test-models.tmp";
-    static const char *saved_path = "tests/test-models-saved.tmp";
-    static const char *firmware_path = "tests/test-model-firmware.tmp";
+    static const char *path = "diagnostics/test-models.tmp";
+    static const char *saved_path = "diagnostics/test-models-saved.tmp";
+    static const char *firmware_path = "diagnostics/test-model-firmware.tmp";
     ModelCatalog catalog;
     ModelCatalog saved;
     ModelDefinition edited;
@@ -55,17 +55,17 @@ int main(void) {
     assert(strcmp(model->name, "My custom MSX") == 0);
     assert(model->hardware == MSX_MODEL_GENERIC_MSX1);
     assert(strcmp(model->bios_path,
-                  "tests/firmware/main.rom") == 0);
+                  "diagnostics/firmware/main.rom") == 0);
     assert(strcmp(model->logo_path,
-                  "tests/firmware/logo.rom") == 0);
+                  "diagnostics/firmware/logo.rom") == 0);
     model = model_catalog_find(&catalog, "custom-msx2");
     assert(model);
     assert(model->hardware == MSX_MODEL_GENERIC_MSX2);
     assert(strcmp(model->bios_path, "/firmware/msx2.rom") == 0);
     assert(strcmp(model->subrom_path,
-                  "tests/firmware/sub.rom") == 0);
+                  "diagnostics/firmware/sub.rom") == 0);
     assert(strcmp(model->disk_rom_path,
-                  "tests/firmware/disk.rom") == 0);
+                  "diagnostics/firmware/disk.rom") == 0);
     assert(!model_catalog_find(&catalog, "unsupported"));
     assert(model_catalog_index(&catalog, "custom-msx2") == 1);
 
@@ -123,7 +123,7 @@ int main(void) {
     model = model_catalog_find(&saved, "custom-msx");
     assert(model);
     assert(strstr(model->bios_path,
-                  "/tests/firmware/main.rom"));
+                  "/diagnostics/firmware/main.rom"));
 
     assert(remove(firmware_path) == 0);
     assert(remove(saved_path) == 0);
