@@ -146,14 +146,14 @@ am_1983_OBJECTS = src/1983-config.$(OBJEXT) \
 am__DEPENDENCIES_1 =
 1983_LINK = $(CCLD) $(1983_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-am_test_ata_OBJECTS = tests/test_ata-test_ata.$(OBJEXT) \
+am_test_ata_OBJECTS = diagnostics/test_ata-test_ata.$(OBJEXT) \
 	src/test_ata-ata.$(OBJEXT)
 test_ata_OBJECTS = $(am_test_ata_OBJECTS)
 test_ata_LDADD = $(LDADD)
 test_ata_LINK = $(CCLD) $(test_ata_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_test_cartridge_OBJECTS =  \
-	tests/test_cartridge-test_cartridge.$(OBJEXT) \
+	diagnostics/test_cartridge-test_cartridge.$(OBJEXT) \
 	src/test_cartridge-cartridge.$(OBJEXT) \
 	src/test_cartridge-scc.$(OBJEXT)
 test_cartridge_OBJECTS = $(am_test_cartridge_OBJECTS)
@@ -161,13 +161,14 @@ test_cartridge_LDADD = $(LDADD)
 test_cartridge_LINK = $(CCLD) $(test_cartridge_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_cassette_OBJECTS =  \
-	tests/test_cassette-test_cassette.$(OBJEXT) \
+	diagnostics/test_cassette-test_cassette.$(OBJEXT) \
 	src/test_cassette-cassette.$(OBJEXT)
 test_cassette_OBJECTS = $(am_test_cassette_OBJECTS)
 test_cassette_LDADD = $(LDADD)
 test_cassette_LINK = $(CCLD) $(test_cassette_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_test_config_OBJECTS = tests/test_config-test_config.$(OBJEXT) \
+am_test_config_OBJECTS =  \
+	diagnostics/test_config-test_config.$(OBJEXT) \
 	src/test_config-config.$(OBJEXT) \
 	src/test_config-cartridge.$(OBJEXT) \
 	src/test_config-cassette.$(OBJEXT) \
@@ -184,25 +185,28 @@ test_config_OBJECTS = $(am_test_config_OBJECTS)
 test_config_LDADD = $(LDADD)
 test_config_LINK = $(CCLD) $(test_config_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_test_floppy_OBJECTS = tests/test_floppy-test_floppy.$(OBJEXT) \
+am_test_floppy_OBJECTS =  \
+	diagnostics/test_floppy-test_floppy.$(OBJEXT) \
 	src/test_floppy-floppy.$(OBJEXT)
 test_floppy_OBJECTS = $(am_test_floppy_OBJECTS)
 test_floppy_LDADD = $(LDADD)
 test_floppy_LINK = $(CCLD) $(test_floppy_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_test_gamepad_OBJECTS = tests/test_gamepad-test_gamepad.$(OBJEXT) \
+am_test_gamepad_OBJECTS =  \
+	diagnostics/test_gamepad-test_gamepad.$(OBJEXT) \
 	src/test_gamepad-gamepad.$(OBJEXT)
 test_gamepad_OBJECTS = $(am_test_gamepad_OBJECTS)
 test_gamepad_DEPENDENCIES = $(am__DEPENDENCIES_1)
 test_gamepad_LINK = $(CCLD) $(test_gamepad_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_test_gifcap_OBJECTS = tests/test_gifcap-test_gifcap.$(OBJEXT) \
+am_test_gifcap_OBJECTS =  \
+	diagnostics/test_gifcap-test_gifcap.$(OBJEXT) \
 	src/test_gifcap-gifcap.$(OBJEXT)
 test_gifcap_OBJECTS = $(am_test_gifcap_OBJECTS)
 test_gifcap_LDADD = $(LDADD)
 test_gifcap_LINK = $(CCLD) $(test_gifcap_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_test_kbd_OBJECTS = tests/test_kbd-test_kbd.$(OBJEXT) \
+am_test_kbd_OBJECTS = diagnostics/test_kbd-test_kbd.$(OBJEXT) \
 	src/test_kbd-cartridge.$(OBJEXT) \
 	src/test_kbd-cassette.$(OBJEXT) src/test_kbd-ata.$(OBJEXT) \
 	src/test_kbd-floppy.$(OBJEXT) src/test_kbd-kbd.$(OBJEXT) \
@@ -217,7 +221,7 @@ test_kbd_DEPENDENCIES = $(am__DEPENDENCIES_1)
 test_kbd_LINK = $(CCLD) $(test_kbd_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_test_megaflash_OBJECTS =  \
-	tests/test_megaflash-test_megaflash.$(OBJEXT) \
+	diagnostics/test_megaflash-test_megaflash.$(OBJEXT) \
 	src/test_megaflash-megaflash.$(OBJEXT) \
 	src/test_megaflash-psg.$(OBJEXT) \
 	src/test_megaflash-scc.$(OBJEXT) \
@@ -226,7 +230,8 @@ test_megaflash_OBJECTS = $(am_test_megaflash_OBJECTS)
 test_megaflash_LDADD = $(LDADD)
 test_megaflash_LINK = $(CCLD) $(test_megaflash_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_test_models_OBJECTS = tests/test_models-test_models.$(OBJEXT) \
+am_test_models_OBJECTS =  \
+	diagnostics/test_models-test_models.$(OBJEXT) \
 	src/test_models-models.$(OBJEXT) \
 	src/test_models-cartridge.$(OBJEXT) \
 	src/test_models-cassette.$(OBJEXT) \
@@ -243,7 +248,7 @@ test_models_OBJECTS = $(am_test_models_OBJECTS)
 test_models_LDADD = $(LDADD)
 test_models_LINK = $(CCLD) $(test_models_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_test_msx_OBJECTS = tests/test_msx-test_msx.$(OBJEXT) \
+am_test_msx_OBJECTS = diagnostics/test_msx-test_msx.$(OBJEXT) \
 	src/test_msx-cartridge.$(OBJEXT) \
 	src/test_msx-cassette.$(OBJEXT) src/test_msx-ata.$(OBJEXT) \
 	src/test_msx-floppy.$(OBJEXT) src/test_msx-megaflash.$(OBJEXT) \
@@ -256,7 +261,8 @@ test_msx_OBJECTS = $(am_test_msx_OBJECTS)
 test_msx_LDADD = $(LDADD)
 test_msx_LINK = $(CCLD) $(test_msx_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_test_overlay_OBJECTS = tests/test_overlay-test_overlay.$(OBJEXT) \
+am_test_overlay_OBJECTS =  \
+	diagnostics/test_overlay-test_overlay.$(OBJEXT) \
 	src/test_overlay-config.$(OBJEXT) \
 	src/test_overlay-cartridge.$(OBJEXT) \
 	src/test_overlay-cassette.$(OBJEXT) \
@@ -284,7 +290,7 @@ test_overlay_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 test_overlay_LINK = $(CCLD) $(test_overlay_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_test_paste_OBJECTS = tests/test_paste-test_paste.$(OBJEXT) \
+am_test_paste_OBJECTS = diagnostics/test_paste-test_paste.$(OBJEXT) \
 	src/test_paste-cartridge.$(OBJEXT) \
 	src/test_paste-cassette.$(OBJEXT) src/test_paste-ata.$(OBJEXT) \
 	src/test_paste-floppy.$(OBJEXT) \
@@ -299,39 +305,41 @@ test_paste_OBJECTS = $(am_test_paste_OBJECTS)
 test_paste_LDADD = $(LDADD)
 test_paste_LINK = $(CCLD) $(test_paste_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_test_psg_OBJECTS = tests/test_psg-test_psg.$(OBJEXT) \
+am_test_psg_OBJECTS = diagnostics/test_psg-test_psg.$(OBJEXT) \
 	src/test_psg-psg.$(OBJEXT)
 test_psg_OBJECTS = $(am_test_psg_OBJECTS)
 test_psg_LDADD = $(LDADD)
 test_psg_LINK = $(CCLD) $(test_psg_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_test_rtc_OBJECTS = tests/test_rtc-test_rtc.$(OBJEXT) \
+am_test_rtc_OBJECTS = diagnostics/test_rtc-test_rtc.$(OBJEXT) \
 	src/test_rtc-rtc.$(OBJEXT)
 test_rtc_OBJECTS = $(am_test_rtc_OBJECTS)
 test_rtc_LDADD = $(LDADD)
 test_rtc_LINK = $(CCLD) $(test_rtc_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_test_scc_OBJECTS = tests/test_scc-test_scc.$(OBJEXT) \
+am_test_scc_OBJECTS = diagnostics/test_scc-test_scc.$(OBJEXT) \
 	src/test_scc-scc.$(OBJEXT)
 test_scc_OBJECTS = $(am_test_scc_OBJECTS)
 test_scc_LDADD = $(LDADD)
 test_scc_LINK = $(CCLD) $(test_scc_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_test_sd_mapper_OBJECTS =  \
-	tests/test_sd_mapper-test_sd_mapper.$(OBJEXT) \
+	diagnostics/test_sd_mapper-test_sd_mapper.$(OBJEXT) \
 	src/test_sd_mapper-sdcard.$(OBJEXT) \
 	src/test_sd_mapper-sd_mapper.$(OBJEXT)
 test_sd_mapper_OBJECTS = $(am_test_sd_mapper_OBJECTS)
 test_sd_mapper_LDADD = $(LDADD)
 test_sd_mapper_LINK = $(CCLD) $(test_sd_mapper_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_test_sdcard_OBJECTS = tests/test_sdcard-test_sdcard.$(OBJEXT) \
+am_test_sdcard_OBJECTS =  \
+	diagnostics/test_sdcard-test_sdcard.$(OBJEXT) \
 	src/test_sdcard-sdcard.$(OBJEXT)
 test_sdcard_OBJECTS = $(am_test_sdcard_OBJECTS)
 test_sdcard_LDADD = $(LDADD)
 test_sdcard_LINK = $(CCLD) $(test_sdcard_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_test_sunrise_OBJECTS = tests/test_sunrise-test_sunrise.$(OBJEXT) \
+am_test_sunrise_OBJECTS =  \
+	diagnostics/test_sunrise-test_sunrise.$(OBJEXT) \
 	src/test_sunrise-ata.$(OBJEXT) \
 	src/test_sunrise-sunrise.$(OBJEXT)
 test_sunrise_OBJECTS = $(am_test_sunrise_OBJECTS)
@@ -339,20 +347,21 @@ test_sunrise_LDADD = $(LDADD)
 test_sunrise_LINK = $(CCLD) $(test_sunrise_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_unapinet_OBJECTS =  \
-	tests/test_unapinet-test_unapinet.$(OBJEXT) \
+	diagnostics/test_unapinet-test_unapinet.$(OBJEXT) \
 	src/test_unapinet-unapinet.$(OBJEXT)
 test_unapinet_OBJECTS = $(am_test_unapinet_OBJECTS)
 test_unapinet_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 test_unapinet_LINK = $(CCLD) $(test_unapinet_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_test_vdp_OBJECTS = tests/test_vdp-test_vdp.$(OBJEXT) \
+am_test_vdp_OBJECTS = diagnostics/test_vdp-test_vdp.$(OBJEXT) \
 	src/test_vdp-vdp.$(OBJEXT)
 test_vdp_OBJECTS = $(am_test_vdp_OBJECTS)
 test_vdp_LDADD = $(LDADD)
 test_vdp_LINK = $(CCLD) $(test_vdp_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_test_wd2793_OBJECTS = tests/test_wd2793-test_wd2793.$(OBJEXT) \
+am_test_wd2793_OBJECTS =  \
+	diagnostics/test_wd2793-test_wd2793.$(OBJEXT) \
 	src/test_wd2793-floppy.$(OBJEXT) \
 	src/test_wd2793-wd2793.$(OBJEXT)
 test_wd2793_OBJECTS = $(am_test_wd2793_OBJECTS)
@@ -374,22 +383,44 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
-	src/$(DEPDIR)/1983-audio.Po src/$(DEPDIR)/1983-cartridge.Po \
-	src/$(DEPDIR)/1983-cassette.Po src/$(DEPDIR)/1983-config.Po \
-	src/$(DEPDIR)/1983-display.Po src/$(DEPDIR)/1983-ffmpeg_gif.Po \
-	src/$(DEPDIR)/1983-floppy.Po src/$(DEPDIR)/1983-gamepad.Po \
-	src/$(DEPDIR)/1983-gifcap.Po src/$(DEPDIR)/1983-kbd.Po \
-	src/$(DEPDIR)/1983-leds.Po src/$(DEPDIR)/1983-main.Po \
-	src/$(DEPDIR)/1983-megaflash.Po src/$(DEPDIR)/1983-models.Po \
-	src/$(DEPDIR)/1983-msx.Po src/$(DEPDIR)/1983-notify.Po \
-	src/$(DEPDIR)/1983-overlay.Po src/$(DEPDIR)/1983-paste.Po \
-	src/$(DEPDIR)/1983-psg.Po src/$(DEPDIR)/1983-rtc.Po \
-	src/$(DEPDIR)/1983-scc.Po src/$(DEPDIR)/1983-sd_mapper.Po \
-	src/$(DEPDIR)/1983-sdcard.Po src/$(DEPDIR)/1983-sunrise.Po \
-	src/$(DEPDIR)/1983-ui.Po src/$(DEPDIR)/1983-unapinet.Po \
-	src/$(DEPDIR)/1983-vdp.Po src/$(DEPDIR)/1983-wd2793.Po \
-	src/$(DEPDIR)/1983-z80.Po src/$(DEPDIR)/test_ata-ata.Po \
+am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
+	diagnostics/$(DEPDIR)/test_cartridge-test_cartridge.Po \
+	diagnostics/$(DEPDIR)/test_cassette-test_cassette.Po \
+	diagnostics/$(DEPDIR)/test_config-test_config.Po \
+	diagnostics/$(DEPDIR)/test_floppy-test_floppy.Po \
+	diagnostics/$(DEPDIR)/test_gamepad-test_gamepad.Po \
+	diagnostics/$(DEPDIR)/test_gifcap-test_gifcap.Po \
+	diagnostics/$(DEPDIR)/test_kbd-test_kbd.Po \
+	diagnostics/$(DEPDIR)/test_megaflash-test_megaflash.Po \
+	diagnostics/$(DEPDIR)/test_models-test_models.Po \
+	diagnostics/$(DEPDIR)/test_msx-test_msx.Po \
+	diagnostics/$(DEPDIR)/test_overlay-test_overlay.Po \
+	diagnostics/$(DEPDIR)/test_paste-test_paste.Po \
+	diagnostics/$(DEPDIR)/test_psg-test_psg.Po \
+	diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po \
+	diagnostics/$(DEPDIR)/test_scc-test_scc.Po \
+	diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po \
+	diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po \
+	diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po \
+	diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po \
+	diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po \
+	diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po \
+	src/$(DEPDIR)/1983-ata.Po src/$(DEPDIR)/1983-audio.Po \
+	src/$(DEPDIR)/1983-cartridge.Po src/$(DEPDIR)/1983-cassette.Po \
+	src/$(DEPDIR)/1983-config.Po src/$(DEPDIR)/1983-display.Po \
+	src/$(DEPDIR)/1983-ffmpeg_gif.Po src/$(DEPDIR)/1983-floppy.Po \
+	src/$(DEPDIR)/1983-gamepad.Po src/$(DEPDIR)/1983-gifcap.Po \
+	src/$(DEPDIR)/1983-kbd.Po src/$(DEPDIR)/1983-leds.Po \
+	src/$(DEPDIR)/1983-main.Po src/$(DEPDIR)/1983-megaflash.Po \
+	src/$(DEPDIR)/1983-models.Po src/$(DEPDIR)/1983-msx.Po \
+	src/$(DEPDIR)/1983-notify.Po src/$(DEPDIR)/1983-overlay.Po \
+	src/$(DEPDIR)/1983-paste.Po src/$(DEPDIR)/1983-psg.Po \
+	src/$(DEPDIR)/1983-rtc.Po src/$(DEPDIR)/1983-scc.Po \
+	src/$(DEPDIR)/1983-sd_mapper.Po src/$(DEPDIR)/1983-sdcard.Po \
+	src/$(DEPDIR)/1983-sunrise.Po src/$(DEPDIR)/1983-ui.Po \
+	src/$(DEPDIR)/1983-unapinet.Po src/$(DEPDIR)/1983-vdp.Po \
+	src/$(DEPDIR)/1983-wd2793.Po src/$(DEPDIR)/1983-z80.Po \
+	src/$(DEPDIR)/test_ata-ata.Po \
 	src/$(DEPDIR)/test_cartridge-cartridge.Po \
 	src/$(DEPDIR)/test_cartridge-scc.Po \
 	src/$(DEPDIR)/test_cassette-cassette.Po \
@@ -503,29 +534,7 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_unapinet-unapinet.Po \
 	src/$(DEPDIR)/test_vdp-vdp.Po \
 	src/$(DEPDIR)/test_wd2793-floppy.Po \
-	src/$(DEPDIR)/test_wd2793-wd2793.Po \
-	tests/$(DEPDIR)/test_ata-test_ata.Po \
-	tests/$(DEPDIR)/test_cartridge-test_cartridge.Po \
-	tests/$(DEPDIR)/test_cassette-test_cassette.Po \
-	tests/$(DEPDIR)/test_config-test_config.Po \
-	tests/$(DEPDIR)/test_floppy-test_floppy.Po \
-	tests/$(DEPDIR)/test_gamepad-test_gamepad.Po \
-	tests/$(DEPDIR)/test_gifcap-test_gifcap.Po \
-	tests/$(DEPDIR)/test_kbd-test_kbd.Po \
-	tests/$(DEPDIR)/test_megaflash-test_megaflash.Po \
-	tests/$(DEPDIR)/test_models-test_models.Po \
-	tests/$(DEPDIR)/test_msx-test_msx.Po \
-	tests/$(DEPDIR)/test_overlay-test_overlay.Po \
-	tests/$(DEPDIR)/test_paste-test_paste.Po \
-	tests/$(DEPDIR)/test_psg-test_psg.Po \
-	tests/$(DEPDIR)/test_rtc-test_rtc.Po \
-	tests/$(DEPDIR)/test_scc-test_scc.Po \
-	tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po \
-	tests/$(DEPDIR)/test_sdcard-test_sdcard.Po \
-	tests/$(DEPDIR)/test_sunrise-test_sunrise.Po \
-	tests/$(DEPDIR)/test_unapinet-test_unapinet.Po \
-	tests/$(DEPDIR)/test_vdp-test_vdp.Po \
-	tests/$(DEPDIR)/test_wd2793-test_wd2793.Po
+	src/$(DEPDIR)/test_wd2793-wd2793.Po
 am__mv = mv -f
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -1016,75 +1025,75 @@ noinst_HEADERS = \
 1983_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS) -lm $(WIN_RC_OBJ)
 1983_DEPENDENCIES = $(WIN_RC_OBJ)
 CLEANFILES = icons/1983-rc.o
-TESTS = $(check_PROGRAMS) tests/test-cli.sh
-test_cartridge_SOURCES = tests/test_cartridge.c src/cartridge.c src/scc.c
+TESTS = $(check_PROGRAMS) diagnostics/test-cli.sh
+test_cartridge_SOURCES = diagnostics/test_cartridge.c src/cartridge.c src/scc.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
 test_cartridge_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_cassette_SOURCES = tests/test_cassette.c src/cassette.c
+test_cassette_SOURCES = diagnostics/test_cassette.c src/cassette.c
 test_cassette_CPPFLAGS = -I$(top_srcdir)/src
 test_cassette_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_ata_SOURCES = tests/test_ata.c src/ata.c
+test_ata_SOURCES = diagnostics/test_ata.c src/ata.c
 test_ata_CPPFLAGS = -I$(top_srcdir)/src
 test_ata_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_floppy_SOURCES = tests/test_floppy.c src/floppy.c
+test_floppy_SOURCES = diagnostics/test_floppy.c src/floppy.c
 test_floppy_CPPFLAGS = -I$(top_srcdir)/src
 test_floppy_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_wd2793_SOURCES = tests/test_wd2793.c src/floppy.c src/wd2793.c
+test_wd2793_SOURCES = diagnostics/test_wd2793.c src/floppy.c src/wd2793.c
 test_wd2793_CPPFLAGS = -I$(top_srcdir)/src
 test_wd2793_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_sunrise_SOURCES = tests/test_sunrise.c src/ata.c src/sunrise.c
+test_sunrise_SOURCES = diagnostics/test_sunrise.c src/ata.c src/sunrise.c
 test_sunrise_CPPFLAGS = -I$(top_srcdir)/src
 test_sunrise_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_sdcard_SOURCES = tests/test_sdcard.c src/sdcard.c
+test_sdcard_SOURCES = diagnostics/test_sdcard.c src/sdcard.c
 test_sdcard_CPPFLAGS = -I$(top_srcdir)/src
 test_sdcard_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_sd_mapper_SOURCES = tests/test_sd_mapper.c src/sdcard.c src/sd_mapper.c
+test_sd_mapper_SOURCES = diagnostics/test_sd_mapper.c src/sdcard.c src/sd_mapper.c
 test_sd_mapper_CPPFLAGS = -I$(top_srcdir)/src
 test_sd_mapper_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_megaflash_SOURCES = tests/test_megaflash.c src/megaflash.c src/psg.c src/scc.c src/sdcard.c
+test_megaflash_SOURCES = diagnostics/test_megaflash.c src/megaflash.c src/psg.c src/scc.c src/sdcard.c
 test_megaflash_CPPFLAGS = -I$(top_srcdir)/src
 test_megaflash_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_unapinet_SOURCES = tests/test_unapinet.c src/unapinet.c
+test_unapinet_SOURCES = diagnostics/test_unapinet.c src/unapinet.c
 test_unapinet_CPPFLAGS = -I$(top_srcdir)/src
 test_unapinet_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_unapinet_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS)
-test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_config_SOURCES = diagnostics/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_config_CPPFLAGS = -I$(top_srcdir)/src
 test_config_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
-test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_models_SOURCES = diagnostics/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_models_CPPFLAGS = -I$(top_srcdir)/src
 test_models_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_msx_SOURCES = diagnostics/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_gamepad_SOURCES = tests/test_gamepad.c src/gamepad.c
+test_gamepad_SOURCES = diagnostics/test_gamepad.c src/gamepad.c
 test_gamepad_CPPFLAGS = -I$(top_srcdir)/src
 test_gamepad_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_LDADD = $(SDL3_LIBS)
-test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/kbd.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_kbd_SOURCES = diagnostics/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/kbd.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
-test_paste_SOURCES = tests/test_paste.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/paste.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_paste_SOURCES = diagnostics/test_paste.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/paste.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_paste_CPPFLAGS = -I$(top_srcdir)/src
 test_paste_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/ui.c src/unapinet.c src/vdp.c src/wd2793.c src/z80.c
+test_overlay_SOURCES = diagnostics/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/ui.c src/unapinet.c src/vdp.c src/wd2793.c src/z80.c
 test_overlay_CPPFLAGS = -I$(top_srcdir)/src
 test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_overlay_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS) -lm
-test_vdp_SOURCES = tests/test_vdp.c src/vdp.c
+test_vdp_SOURCES = diagnostics/test_vdp.c src/vdp.c
 test_vdp_CPPFLAGS = -I$(top_srcdir)/src
 test_vdp_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_psg_SOURCES = tests/test_psg.c src/psg.c
+test_psg_SOURCES = diagnostics/test_psg.c src/psg.c
 test_psg_CPPFLAGS = -I$(top_srcdir)/src
 test_psg_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_scc_SOURCES = tests/test_scc.c src/scc.c
+test_scc_SOURCES = diagnostics/test_scc.c src/scc.c
 test_scc_CPPFLAGS = -I$(top_srcdir)/src
 test_scc_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_rtc_SOURCES = tests/test_rtc.c src/rtc.c
+test_rtc_SOURCES = diagnostics/test_rtc.c src/rtc.c
 test_rtc_CPPFLAGS = -I$(top_srcdir)/src
 test_rtc_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_gifcap_SOURCES = tests/test_gifcap.c src/gifcap.c
+test_gifcap_SOURCES = diagnostics/test_gifcap.c src/gifcap.c
 test_gifcap_CPPFLAGS = -I$(top_srcdir)/src
 test_gifcap_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 desktopdir = $(datadir)/applications
@@ -1127,7 +1136,7 @@ EXTRA_DIST = \
 	io.github.salvogendut.Emulator1983.yml \
 	.github/workflows/build.yml \
 	packaging/macos/package.sh \
-	tests/test-cli.sh \
+	diagnostics/test-cli.sh \
 	icons/1983.png \
 	icons/README.md \
 	icons/1983.rc \
@@ -1285,22 +1294,23 @@ src/1983-z80.$(OBJEXT): src/$(am__dirstamp) \
 1983$(EXEEXT): $(1983_OBJECTS) $(1983_DEPENDENCIES) $(EXTRA_1983_DEPENDENCIES) 
 	@rm -f 1983$(EXEEXT)
 	$(AM_V_CCLD)$(1983_LINK) $(1983_OBJECTS) $(1983_LDADD) $(LIBS)
-tests/$(am__dirstamp):
-	@$(MKDIR_P) tests
-	@: >>tests/$(am__dirstamp)
-tests/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) tests/$(DEPDIR)
-	@: >>tests/$(DEPDIR)/$(am__dirstamp)
-tests/test_ata-test_ata.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/$(am__dirstamp):
+	@$(MKDIR_P) diagnostics
+	@: >>diagnostics/$(am__dirstamp)
+diagnostics/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) diagnostics/$(DEPDIR)
+	@: >>diagnostics/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_ata-test_ata.$(OBJEXT): diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_ata-ata.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
 test-ata$(EXEEXT): $(test_ata_OBJECTS) $(test_ata_DEPENDENCIES) $(EXTRA_test_ata_DEPENDENCIES) 
 	@rm -f test-ata$(EXEEXT)
 	$(AM_V_CCLD)$(test_ata_LINK) $(test_ata_OBJECTS) $(test_ata_LDADD) $(LIBS)
-tests/test_cartridge-test_cartridge.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_cartridge-test_cartridge.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_cartridge-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_cartridge-scc.$(OBJEXT): src/$(am__dirstamp) \
@@ -1309,16 +1319,18 @@ src/test_cartridge-scc.$(OBJEXT): src/$(am__dirstamp) \
 test-cartridge$(EXEEXT): $(test_cartridge_OBJECTS) $(test_cartridge_DEPENDENCIES) $(EXTRA_test_cartridge_DEPENDENCIES) 
 	@rm -f test-cartridge$(EXEEXT)
 	$(AM_V_CCLD)$(test_cartridge_LINK) $(test_cartridge_OBJECTS) $(test_cartridge_LDADD) $(LIBS)
-tests/test_cassette-test_cassette.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_cassette-test_cassette.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_cassette-cassette.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
 test-cassette$(EXEEXT): $(test_cassette_OBJECTS) $(test_cassette_DEPENDENCIES) $(EXTRA_test_cassette_DEPENDENCIES) 
 	@rm -f test-cassette$(EXEEXT)
 	$(AM_V_CCLD)$(test_cassette_LINK) $(test_cassette_OBJECTS) $(test_cassette_LDADD) $(LIBS)
-tests/test_config-test_config.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_config-test_config.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_config-config.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-cartridge.$(OBJEXT): src/$(am__dirstamp) \
@@ -1355,32 +1367,35 @@ src/test_config-z80.$(OBJEXT): src/$(am__dirstamp) \
 test-config$(EXEEXT): $(test_config_OBJECTS) $(test_config_DEPENDENCIES) $(EXTRA_test_config_DEPENDENCIES) 
 	@rm -f test-config$(EXEEXT)
 	$(AM_V_CCLD)$(test_config_LINK) $(test_config_OBJECTS) $(test_config_LDADD) $(LIBS)
-tests/test_floppy-test_floppy.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_floppy-test_floppy.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_floppy-floppy.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
 test-floppy$(EXEEXT): $(test_floppy_OBJECTS) $(test_floppy_DEPENDENCIES) $(EXTRA_test_floppy_DEPENDENCIES) 
 	@rm -f test-floppy$(EXEEXT)
 	$(AM_V_CCLD)$(test_floppy_LINK) $(test_floppy_OBJECTS) $(test_floppy_LDADD) $(LIBS)
-tests/test_gamepad-test_gamepad.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_gamepad-test_gamepad.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_gamepad-gamepad.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
 test-gamepad$(EXEEXT): $(test_gamepad_OBJECTS) $(test_gamepad_DEPENDENCIES) $(EXTRA_test_gamepad_DEPENDENCIES) 
 	@rm -f test-gamepad$(EXEEXT)
 	$(AM_V_CCLD)$(test_gamepad_LINK) $(test_gamepad_OBJECTS) $(test_gamepad_LDADD) $(LIBS)
-tests/test_gifcap-test_gifcap.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_gifcap-test_gifcap.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_gifcap-gifcap.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
 test-gifcap$(EXEEXT): $(test_gifcap_OBJECTS) $(test_gifcap_DEPENDENCIES) $(EXTRA_test_gifcap_DEPENDENCIES) 
 	@rm -f test-gifcap$(EXEEXT)
 	$(AM_V_CCLD)$(test_gifcap_LINK) $(test_gifcap_OBJECTS) $(test_gifcap_LDADD) $(LIBS)
-tests/test_kbd-test_kbd.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_kbd-test_kbd.$(OBJEXT): diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-cassette.$(OBJEXT): src/$(am__dirstamp) \
@@ -1417,8 +1432,9 @@ src/test_kbd-z80.$(OBJEXT): src/$(am__dirstamp) \
 test-kbd$(EXEEXT): $(test_kbd_OBJECTS) $(test_kbd_DEPENDENCIES) $(EXTRA_test_kbd_DEPENDENCIES) 
 	@rm -f test-kbd$(EXEEXT)
 	$(AM_V_CCLD)$(test_kbd_LINK) $(test_kbd_OBJECTS) $(test_kbd_LDADD) $(LIBS)
-tests/test_megaflash-test_megaflash.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_megaflash-test_megaflash.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_megaflash-megaflash.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_megaflash-psg.$(OBJEXT): src/$(am__dirstamp) \
@@ -1431,8 +1447,9 @@ src/test_megaflash-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 test-megaflash$(EXEEXT): $(test_megaflash_OBJECTS) $(test_megaflash_DEPENDENCIES) $(EXTRA_test_megaflash_DEPENDENCIES) 
 	@rm -f test-megaflash$(EXEEXT)
 	$(AM_V_CCLD)$(test_megaflash_LINK) $(test_megaflash_OBJECTS) $(test_megaflash_LDADD) $(LIBS)
-tests/test_models-test_models.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_models-test_models.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_models-models.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-cartridge.$(OBJEXT): src/$(am__dirstamp) \
@@ -1469,8 +1486,8 @@ src/test_models-z80.$(OBJEXT): src/$(am__dirstamp) \
 test-models$(EXEEXT): $(test_models_OBJECTS) $(test_models_DEPENDENCIES) $(EXTRA_test_models_DEPENDENCIES) 
 	@rm -f test-models$(EXEEXT)
 	$(AM_V_CCLD)$(test_models_LINK) $(test_models_OBJECTS) $(test_models_LDADD) $(LIBS)
-tests/test_msx-test_msx.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_msx-test_msx.$(OBJEXT): diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-cassette.$(OBJEXT): src/$(am__dirstamp) \
@@ -1505,8 +1522,9 @@ src/test_msx-z80.$(OBJEXT): src/$(am__dirstamp) \
 test-msx$(EXEEXT): $(test_msx_OBJECTS) $(test_msx_DEPENDENCIES) $(EXTRA_test_msx_DEPENDENCIES) 
 	@rm -f test-msx$(EXEEXT)
 	$(AM_V_CCLD)$(test_msx_LINK) $(test_msx_OBJECTS) $(test_msx_LDADD) $(LIBS)
-tests/test_overlay-test_overlay.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_overlay-test_overlay.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-config.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-cartridge.$(OBJEXT): src/$(am__dirstamp) \
@@ -1557,8 +1575,9 @@ src/test_overlay-z80.$(OBJEXT): src/$(am__dirstamp) \
 test-overlay$(EXEEXT): $(test_overlay_OBJECTS) $(test_overlay_DEPENDENCIES) $(EXTRA_test_overlay_DEPENDENCIES) 
 	@rm -f test-overlay$(EXEEXT)
 	$(AM_V_CCLD)$(test_overlay_LINK) $(test_overlay_OBJECTS) $(test_overlay_LDADD) $(LIBS)
-tests/test_paste-test_paste.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_paste-test_paste.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_paste-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_paste-cassette.$(OBJEXT): src/$(am__dirstamp) \
@@ -1595,32 +1614,33 @@ src/test_paste-z80.$(OBJEXT): src/$(am__dirstamp) \
 test-paste$(EXEEXT): $(test_paste_OBJECTS) $(test_paste_DEPENDENCIES) $(EXTRA_test_paste_DEPENDENCIES) 
 	@rm -f test-paste$(EXEEXT)
 	$(AM_V_CCLD)$(test_paste_LINK) $(test_paste_OBJECTS) $(test_paste_LDADD) $(LIBS)
-tests/test_psg-test_psg.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_psg-test_psg.$(OBJEXT): diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_psg-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
 test-psg$(EXEEXT): $(test_psg_OBJECTS) $(test_psg_DEPENDENCIES) $(EXTRA_test_psg_DEPENDENCIES) 
 	@rm -f test-psg$(EXEEXT)
 	$(AM_V_CCLD)$(test_psg_LINK) $(test_psg_OBJECTS) $(test_psg_LDADD) $(LIBS)
-tests/test_rtc-test_rtc.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_rtc-test_rtc.$(OBJEXT): diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_rtc-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
 test-rtc$(EXEEXT): $(test_rtc_OBJECTS) $(test_rtc_DEPENDENCIES) $(EXTRA_test_rtc_DEPENDENCIES) 
 	@rm -f test-rtc$(EXEEXT)
 	$(AM_V_CCLD)$(test_rtc_LINK) $(test_rtc_OBJECTS) $(test_rtc_LDADD) $(LIBS)
-tests/test_scc-test_scc.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_scc-test_scc.$(OBJEXT): diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_scc-scc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
 test-scc$(EXEEXT): $(test_scc_OBJECTS) $(test_scc_DEPENDENCIES) $(EXTRA_test_scc_DEPENDENCIES) 
 	@rm -f test-scc$(EXEEXT)
 	$(AM_V_CCLD)$(test_scc_LINK) $(test_scc_OBJECTS) $(test_scc_LDADD) $(LIBS)
-tests/test_sd_mapper-test_sd_mapper.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_sd_mapper-test_sd_mapper.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_sd_mapper-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_sd_mapper-sd_mapper.$(OBJEXT): src/$(am__dirstamp) \
@@ -1629,16 +1649,18 @@ src/test_sd_mapper-sd_mapper.$(OBJEXT): src/$(am__dirstamp) \
 test-sd-mapper$(EXEEXT): $(test_sd_mapper_OBJECTS) $(test_sd_mapper_DEPENDENCIES) $(EXTRA_test_sd_mapper_DEPENDENCIES) 
 	@rm -f test-sd-mapper$(EXEEXT)
 	$(AM_V_CCLD)$(test_sd_mapper_LINK) $(test_sd_mapper_OBJECTS) $(test_sd_mapper_LDADD) $(LIBS)
-tests/test_sdcard-test_sdcard.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_sdcard-test_sdcard.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_sdcard-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
 test-sdcard$(EXEEXT): $(test_sdcard_OBJECTS) $(test_sdcard_DEPENDENCIES) $(EXTRA_test_sdcard_DEPENDENCIES) 
 	@rm -f test-sdcard$(EXEEXT)
 	$(AM_V_CCLD)$(test_sdcard_LINK) $(test_sdcard_OBJECTS) $(test_sdcard_LDADD) $(LIBS)
-tests/test_sunrise-test_sunrise.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_sunrise-test_sunrise.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_sunrise-ata.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_sunrise-sunrise.$(OBJEXT): src/$(am__dirstamp) \
@@ -1647,24 +1669,26 @@ src/test_sunrise-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 test-sunrise$(EXEEXT): $(test_sunrise_OBJECTS) $(test_sunrise_DEPENDENCIES) $(EXTRA_test_sunrise_DEPENDENCIES) 
 	@rm -f test-sunrise$(EXEEXT)
 	$(AM_V_CCLD)$(test_sunrise_LINK) $(test_sunrise_OBJECTS) $(test_sunrise_LDADD) $(LIBS)
-tests/test_unapinet-test_unapinet.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_unapinet-test_unapinet.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_unapinet-unapinet.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
 test-unapinet$(EXEEXT): $(test_unapinet_OBJECTS) $(test_unapinet_DEPENDENCIES) $(EXTRA_test_unapinet_DEPENDENCIES) 
 	@rm -f test-unapinet$(EXEEXT)
 	$(AM_V_CCLD)$(test_unapinet_LINK) $(test_unapinet_OBJECTS) $(test_unapinet_LDADD) $(LIBS)
-tests/test_vdp-test_vdp.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_vdp-test_vdp.$(OBJEXT): diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_vdp-vdp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
 test-vdp$(EXEEXT): $(test_vdp_OBJECTS) $(test_vdp_DEPENDENCIES) $(EXTRA_test_vdp_DEPENDENCIES) 
 	@rm -f test-vdp$(EXEEXT)
 	$(AM_V_CCLD)$(test_vdp_LINK) $(test_vdp_OBJECTS) $(test_vdp_LDADD) $(LIBS)
-tests/test_wd2793-test_wd2793.$(OBJEXT): tests/$(am__dirstamp) \
-	tests/$(DEPDIR)/$(am__dirstamp)
+diagnostics/test_wd2793-test_wd2793.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_wd2793-floppy.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_wd2793-wd2793.$(OBJEXT): src/$(am__dirstamp) \
@@ -1676,12 +1700,34 @@ test-wd2793$(EXEEXT): $(test_wd2793_OBJECTS) $(test_wd2793_DEPENDENCIES) $(EXTRA
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f diagnostics/*.$(OBJEXT)
 	-rm -f src/*.$(OBJEXT)
-	-rm -f tests/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_ata-test_ata.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_cartridge-test_cartridge.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_cassette-test_cassette.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_config-test_config.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_floppy-test_floppy.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_gamepad-test_gamepad.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_gifcap-test_gifcap.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_kbd-test_kbd.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_megaflash-test_megaflash.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_models-test_models.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_msx-test_msx.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_overlay-test_overlay.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_paste-test_paste.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_psg-test_psg.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_scc-test_scc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-audio.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-cartridge.Po@am__quote@ # am--include-marker
@@ -1837,28 +1883,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_vdp-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_wd2793-floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_wd2793-wd2793.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_ata-test_ata.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_cartridge-test_cartridge.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_cassette-test_cassette.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_config-test_config.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_floppy-test_floppy.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_gamepad-test_gamepad.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_gifcap-test_gifcap.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_kbd-test_kbd.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_megaflash-test_megaflash.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_models-test_models.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_msx-test_msx.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_overlay-test_overlay.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_paste-test_paste.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_psg-test_psg.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_rtc-test_rtc.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_scc-test_scc.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_sdcard-test_sdcard.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_sunrise-test_sunrise.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_unapinet-test_unapinet.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_vdp-test_vdp.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_wd2793-test_wd2793.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -2302,19 +2326,19 @@ src/1983-z80.obj: src/z80.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
 
-tests/test_ata-test_ata.o: tests/test_ata.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -MT tests/test_ata-test_ata.o -MD -MP -MF tests/$(DEPDIR)/test_ata-test_ata.Tpo -c -o tests/test_ata-test_ata.o `test -f 'tests/test_ata.c' || echo '$(srcdir)/'`tests/test_ata.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_ata-test_ata.Tpo tests/$(DEPDIR)/test_ata-test_ata.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_ata.c' object='tests/test_ata-test_ata.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_ata-test_ata.o: diagnostics/test_ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -MT diagnostics/test_ata-test_ata.o -MD -MP -MF diagnostics/$(DEPDIR)/test_ata-test_ata.Tpo -c -o diagnostics/test_ata-test_ata.o `test -f 'diagnostics/test_ata.c' || echo '$(srcdir)/'`diagnostics/test_ata.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_ata-test_ata.Tpo diagnostics/$(DEPDIR)/test_ata-test_ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_ata.c' object='diagnostics/test_ata-test_ata.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -c -o tests/test_ata-test_ata.o `test -f 'tests/test_ata.c' || echo '$(srcdir)/'`tests/test_ata.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -c -o diagnostics/test_ata-test_ata.o `test -f 'diagnostics/test_ata.c' || echo '$(srcdir)/'`diagnostics/test_ata.c
 
-tests/test_ata-test_ata.obj: tests/test_ata.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -MT tests/test_ata-test_ata.obj -MD -MP -MF tests/$(DEPDIR)/test_ata-test_ata.Tpo -c -o tests/test_ata-test_ata.obj `if test -f 'tests/test_ata.c'; then $(CYGPATH_W) 'tests/test_ata.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_ata.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_ata-test_ata.Tpo tests/$(DEPDIR)/test_ata-test_ata.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_ata.c' object='tests/test_ata-test_ata.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_ata-test_ata.obj: diagnostics/test_ata.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -MT diagnostics/test_ata-test_ata.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_ata-test_ata.Tpo -c -o diagnostics/test_ata-test_ata.obj `if test -f 'diagnostics/test_ata.c'; then $(CYGPATH_W) 'diagnostics/test_ata.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_ata.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_ata-test_ata.Tpo diagnostics/$(DEPDIR)/test_ata-test_ata.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_ata.c' object='diagnostics/test_ata-test_ata.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -c -o tests/test_ata-test_ata.obj `if test -f 'tests/test_ata.c'; then $(CYGPATH_W) 'tests/test_ata.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_ata.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -c -o diagnostics/test_ata-test_ata.obj `if test -f 'diagnostics/test_ata.c'; then $(CYGPATH_W) 'diagnostics/test_ata.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_ata.c'; fi`
 
 src/test_ata-ata.o: src/ata.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -MT src/test_ata-ata.o -MD -MP -MF src/$(DEPDIR)/test_ata-ata.Tpo -c -o src/test_ata-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
@@ -2330,19 +2354,19 @@ src/test_ata-ata.obj: src/ata.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_ata_CPPFLAGS) $(CPPFLAGS) $(test_ata_CFLAGS) $(CFLAGS) -c -o src/test_ata-ata.obj `if test -f 'src/ata.c'; then $(CYGPATH_W) 'src/ata.c'; else $(CYGPATH_W) '$(srcdir)/src/ata.c'; fi`
 
-tests/test_cartridge-test_cartridge.o: tests/test_cartridge.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -MT tests/test_cartridge-test_cartridge.o -MD -MP -MF tests/$(DEPDIR)/test_cartridge-test_cartridge.Tpo -c -o tests/test_cartridge-test_cartridge.o `test -f 'tests/test_cartridge.c' || echo '$(srcdir)/'`tests/test_cartridge.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_cartridge-test_cartridge.Tpo tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_cartridge.c' object='tests/test_cartridge-test_cartridge.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_cartridge-test_cartridge.o: diagnostics/test_cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -MT diagnostics/test_cartridge-test_cartridge.o -MD -MP -MF diagnostics/$(DEPDIR)/test_cartridge-test_cartridge.Tpo -c -o diagnostics/test_cartridge-test_cartridge.o `test -f 'diagnostics/test_cartridge.c' || echo '$(srcdir)/'`diagnostics/test_cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_cartridge-test_cartridge.Tpo diagnostics/$(DEPDIR)/test_cartridge-test_cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_cartridge.c' object='diagnostics/test_cartridge-test_cartridge.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -c -o tests/test_cartridge-test_cartridge.o `test -f 'tests/test_cartridge.c' || echo '$(srcdir)/'`tests/test_cartridge.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -c -o diagnostics/test_cartridge-test_cartridge.o `test -f 'diagnostics/test_cartridge.c' || echo '$(srcdir)/'`diagnostics/test_cartridge.c
 
-tests/test_cartridge-test_cartridge.obj: tests/test_cartridge.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -MT tests/test_cartridge-test_cartridge.obj -MD -MP -MF tests/$(DEPDIR)/test_cartridge-test_cartridge.Tpo -c -o tests/test_cartridge-test_cartridge.obj `if test -f 'tests/test_cartridge.c'; then $(CYGPATH_W) 'tests/test_cartridge.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_cartridge.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_cartridge-test_cartridge.Tpo tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_cartridge.c' object='tests/test_cartridge-test_cartridge.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_cartridge-test_cartridge.obj: diagnostics/test_cartridge.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -MT diagnostics/test_cartridge-test_cartridge.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_cartridge-test_cartridge.Tpo -c -o diagnostics/test_cartridge-test_cartridge.obj `if test -f 'diagnostics/test_cartridge.c'; then $(CYGPATH_W) 'diagnostics/test_cartridge.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_cartridge.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_cartridge-test_cartridge.Tpo diagnostics/$(DEPDIR)/test_cartridge-test_cartridge.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_cartridge.c' object='diagnostics/test_cartridge-test_cartridge.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -c -o tests/test_cartridge-test_cartridge.obj `if test -f 'tests/test_cartridge.c'; then $(CYGPATH_W) 'tests/test_cartridge.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_cartridge.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -c -o diagnostics/test_cartridge-test_cartridge.obj `if test -f 'diagnostics/test_cartridge.c'; then $(CYGPATH_W) 'diagnostics/test_cartridge.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_cartridge.c'; fi`
 
 src/test_cartridge-cartridge.o: src/cartridge.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -MT src/test_cartridge-cartridge.o -MD -MP -MF src/$(DEPDIR)/test_cartridge-cartridge.Tpo -c -o src/test_cartridge-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
@@ -2372,19 +2396,19 @@ src/test_cartridge-scc.obj: src/scc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cartridge_CPPFLAGS) $(CPPFLAGS) $(test_cartridge_CFLAGS) $(CFLAGS) -c -o src/test_cartridge-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
 
-tests/test_cassette-test_cassette.o: tests/test_cassette.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -MT tests/test_cassette-test_cassette.o -MD -MP -MF tests/$(DEPDIR)/test_cassette-test_cassette.Tpo -c -o tests/test_cassette-test_cassette.o `test -f 'tests/test_cassette.c' || echo '$(srcdir)/'`tests/test_cassette.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_cassette-test_cassette.Tpo tests/$(DEPDIR)/test_cassette-test_cassette.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_cassette.c' object='tests/test_cassette-test_cassette.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_cassette-test_cassette.o: diagnostics/test_cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -MT diagnostics/test_cassette-test_cassette.o -MD -MP -MF diagnostics/$(DEPDIR)/test_cassette-test_cassette.Tpo -c -o diagnostics/test_cassette-test_cassette.o `test -f 'diagnostics/test_cassette.c' || echo '$(srcdir)/'`diagnostics/test_cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_cassette-test_cassette.Tpo diagnostics/$(DEPDIR)/test_cassette-test_cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_cassette.c' object='diagnostics/test_cassette-test_cassette.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -c -o tests/test_cassette-test_cassette.o `test -f 'tests/test_cassette.c' || echo '$(srcdir)/'`tests/test_cassette.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -c -o diagnostics/test_cassette-test_cassette.o `test -f 'diagnostics/test_cassette.c' || echo '$(srcdir)/'`diagnostics/test_cassette.c
 
-tests/test_cassette-test_cassette.obj: tests/test_cassette.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -MT tests/test_cassette-test_cassette.obj -MD -MP -MF tests/$(DEPDIR)/test_cassette-test_cassette.Tpo -c -o tests/test_cassette-test_cassette.obj `if test -f 'tests/test_cassette.c'; then $(CYGPATH_W) 'tests/test_cassette.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_cassette.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_cassette-test_cassette.Tpo tests/$(DEPDIR)/test_cassette-test_cassette.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_cassette.c' object='tests/test_cassette-test_cassette.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_cassette-test_cassette.obj: diagnostics/test_cassette.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -MT diagnostics/test_cassette-test_cassette.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_cassette-test_cassette.Tpo -c -o diagnostics/test_cassette-test_cassette.obj `if test -f 'diagnostics/test_cassette.c'; then $(CYGPATH_W) 'diagnostics/test_cassette.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_cassette.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_cassette-test_cassette.Tpo diagnostics/$(DEPDIR)/test_cassette-test_cassette.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_cassette.c' object='diagnostics/test_cassette-test_cassette.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -c -o tests/test_cassette-test_cassette.obj `if test -f 'tests/test_cassette.c'; then $(CYGPATH_W) 'tests/test_cassette.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_cassette.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -c -o diagnostics/test_cassette-test_cassette.obj `if test -f 'diagnostics/test_cassette.c'; then $(CYGPATH_W) 'diagnostics/test_cassette.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_cassette.c'; fi`
 
 src/test_cassette-cassette.o: src/cassette.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -MT src/test_cassette-cassette.o -MD -MP -MF src/$(DEPDIR)/test_cassette-cassette.Tpo -c -o src/test_cassette-cassette.o `test -f 'src/cassette.c' || echo '$(srcdir)/'`src/cassette.c
@@ -2400,19 +2424,19 @@ src/test_cassette-cassette.obj: src/cassette.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cassette_CPPFLAGS) $(CPPFLAGS) $(test_cassette_CFLAGS) $(CFLAGS) -c -o src/test_cassette-cassette.obj `if test -f 'src/cassette.c'; then $(CYGPATH_W) 'src/cassette.c'; else $(CYGPATH_W) '$(srcdir)/src/cassette.c'; fi`
 
-tests/test_config-test_config.o: tests/test_config.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT tests/test_config-test_config.o -MD -MP -MF tests/$(DEPDIR)/test_config-test_config.Tpo -c -o tests/test_config-test_config.o `test -f 'tests/test_config.c' || echo '$(srcdir)/'`tests/test_config.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_config-test_config.Tpo tests/$(DEPDIR)/test_config-test_config.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_config.c' object='tests/test_config-test_config.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_config-test_config.o: diagnostics/test_config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT diagnostics/test_config-test_config.o -MD -MP -MF diagnostics/$(DEPDIR)/test_config-test_config.Tpo -c -o diagnostics/test_config-test_config.o `test -f 'diagnostics/test_config.c' || echo '$(srcdir)/'`diagnostics/test_config.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_config-test_config.Tpo diagnostics/$(DEPDIR)/test_config-test_config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_config.c' object='diagnostics/test_config-test_config.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o tests/test_config-test_config.o `test -f 'tests/test_config.c' || echo '$(srcdir)/'`tests/test_config.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o diagnostics/test_config-test_config.o `test -f 'diagnostics/test_config.c' || echo '$(srcdir)/'`diagnostics/test_config.c
 
-tests/test_config-test_config.obj: tests/test_config.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT tests/test_config-test_config.obj -MD -MP -MF tests/$(DEPDIR)/test_config-test_config.Tpo -c -o tests/test_config-test_config.obj `if test -f 'tests/test_config.c'; then $(CYGPATH_W) 'tests/test_config.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_config.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_config-test_config.Tpo tests/$(DEPDIR)/test_config-test_config.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_config.c' object='tests/test_config-test_config.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_config-test_config.obj: diagnostics/test_config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT diagnostics/test_config-test_config.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_config-test_config.Tpo -c -o diagnostics/test_config-test_config.obj `if test -f 'diagnostics/test_config.c'; then $(CYGPATH_W) 'diagnostics/test_config.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_config.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_config-test_config.Tpo diagnostics/$(DEPDIR)/test_config-test_config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_config.c' object='diagnostics/test_config-test_config.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o tests/test_config-test_config.obj `if test -f 'tests/test_config.c'; then $(CYGPATH_W) 'tests/test_config.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_config.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o diagnostics/test_config-test_config.obj `if test -f 'diagnostics/test_config.c'; then $(CYGPATH_W) 'diagnostics/test_config.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_config.c'; fi`
 
 src/test_config-config.o: src/config.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-config.o -MD -MP -MF src/$(DEPDIR)/test_config-config.Tpo -c -o src/test_config-config.o `test -f 'src/config.c' || echo '$(srcdir)/'`src/config.c
@@ -2638,19 +2662,19 @@ src/test_config-z80.obj: src/z80.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
 
-tests/test_floppy-test_floppy.o: tests/test_floppy.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_floppy_CPPFLAGS) $(CPPFLAGS) $(test_floppy_CFLAGS) $(CFLAGS) -MT tests/test_floppy-test_floppy.o -MD -MP -MF tests/$(DEPDIR)/test_floppy-test_floppy.Tpo -c -o tests/test_floppy-test_floppy.o `test -f 'tests/test_floppy.c' || echo '$(srcdir)/'`tests/test_floppy.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_floppy-test_floppy.Tpo tests/$(DEPDIR)/test_floppy-test_floppy.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_floppy.c' object='tests/test_floppy-test_floppy.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_floppy-test_floppy.o: diagnostics/test_floppy.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_floppy_CPPFLAGS) $(CPPFLAGS) $(test_floppy_CFLAGS) $(CFLAGS) -MT diagnostics/test_floppy-test_floppy.o -MD -MP -MF diagnostics/$(DEPDIR)/test_floppy-test_floppy.Tpo -c -o diagnostics/test_floppy-test_floppy.o `test -f 'diagnostics/test_floppy.c' || echo '$(srcdir)/'`diagnostics/test_floppy.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_floppy-test_floppy.Tpo diagnostics/$(DEPDIR)/test_floppy-test_floppy.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_floppy.c' object='diagnostics/test_floppy-test_floppy.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_floppy_CPPFLAGS) $(CPPFLAGS) $(test_floppy_CFLAGS) $(CFLAGS) -c -o tests/test_floppy-test_floppy.o `test -f 'tests/test_floppy.c' || echo '$(srcdir)/'`tests/test_floppy.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_floppy_CPPFLAGS) $(CPPFLAGS) $(test_floppy_CFLAGS) $(CFLAGS) -c -o diagnostics/test_floppy-test_floppy.o `test -f 'diagnostics/test_floppy.c' || echo '$(srcdir)/'`diagnostics/test_floppy.c
 
-tests/test_floppy-test_floppy.obj: tests/test_floppy.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_floppy_CPPFLAGS) $(CPPFLAGS) $(test_floppy_CFLAGS) $(CFLAGS) -MT tests/test_floppy-test_floppy.obj -MD -MP -MF tests/$(DEPDIR)/test_floppy-test_floppy.Tpo -c -o tests/test_floppy-test_floppy.obj `if test -f 'tests/test_floppy.c'; then $(CYGPATH_W) 'tests/test_floppy.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_floppy.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_floppy-test_floppy.Tpo tests/$(DEPDIR)/test_floppy-test_floppy.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_floppy.c' object='tests/test_floppy-test_floppy.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_floppy-test_floppy.obj: diagnostics/test_floppy.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_floppy_CPPFLAGS) $(CPPFLAGS) $(test_floppy_CFLAGS) $(CFLAGS) -MT diagnostics/test_floppy-test_floppy.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_floppy-test_floppy.Tpo -c -o diagnostics/test_floppy-test_floppy.obj `if test -f 'diagnostics/test_floppy.c'; then $(CYGPATH_W) 'diagnostics/test_floppy.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_floppy.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_floppy-test_floppy.Tpo diagnostics/$(DEPDIR)/test_floppy-test_floppy.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_floppy.c' object='diagnostics/test_floppy-test_floppy.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_floppy_CPPFLAGS) $(CPPFLAGS) $(test_floppy_CFLAGS) $(CFLAGS) -c -o tests/test_floppy-test_floppy.obj `if test -f 'tests/test_floppy.c'; then $(CYGPATH_W) 'tests/test_floppy.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_floppy.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_floppy_CPPFLAGS) $(CPPFLAGS) $(test_floppy_CFLAGS) $(CFLAGS) -c -o diagnostics/test_floppy-test_floppy.obj `if test -f 'diagnostics/test_floppy.c'; then $(CYGPATH_W) 'diagnostics/test_floppy.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_floppy.c'; fi`
 
 src/test_floppy-floppy.o: src/floppy.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_floppy_CPPFLAGS) $(CPPFLAGS) $(test_floppy_CFLAGS) $(CFLAGS) -MT src/test_floppy-floppy.o -MD -MP -MF src/$(DEPDIR)/test_floppy-floppy.Tpo -c -o src/test_floppy-floppy.o `test -f 'src/floppy.c' || echo '$(srcdir)/'`src/floppy.c
@@ -2666,19 +2690,19 @@ src/test_floppy-floppy.obj: src/floppy.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_floppy_CPPFLAGS) $(CPPFLAGS) $(test_floppy_CFLAGS) $(CFLAGS) -c -o src/test_floppy-floppy.obj `if test -f 'src/floppy.c'; then $(CYGPATH_W) 'src/floppy.c'; else $(CYGPATH_W) '$(srcdir)/src/floppy.c'; fi`
 
-tests/test_gamepad-test_gamepad.o: tests/test_gamepad.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -MT tests/test_gamepad-test_gamepad.o -MD -MP -MF tests/$(DEPDIR)/test_gamepad-test_gamepad.Tpo -c -o tests/test_gamepad-test_gamepad.o `test -f 'tests/test_gamepad.c' || echo '$(srcdir)/'`tests/test_gamepad.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_gamepad-test_gamepad.Tpo tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_gamepad.c' object='tests/test_gamepad-test_gamepad.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_gamepad-test_gamepad.o: diagnostics/test_gamepad.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -MT diagnostics/test_gamepad-test_gamepad.o -MD -MP -MF diagnostics/$(DEPDIR)/test_gamepad-test_gamepad.Tpo -c -o diagnostics/test_gamepad-test_gamepad.o `test -f 'diagnostics/test_gamepad.c' || echo '$(srcdir)/'`diagnostics/test_gamepad.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_gamepad-test_gamepad.Tpo diagnostics/$(DEPDIR)/test_gamepad-test_gamepad.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_gamepad.c' object='diagnostics/test_gamepad-test_gamepad.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -c -o tests/test_gamepad-test_gamepad.o `test -f 'tests/test_gamepad.c' || echo '$(srcdir)/'`tests/test_gamepad.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -c -o diagnostics/test_gamepad-test_gamepad.o `test -f 'diagnostics/test_gamepad.c' || echo '$(srcdir)/'`diagnostics/test_gamepad.c
 
-tests/test_gamepad-test_gamepad.obj: tests/test_gamepad.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -MT tests/test_gamepad-test_gamepad.obj -MD -MP -MF tests/$(DEPDIR)/test_gamepad-test_gamepad.Tpo -c -o tests/test_gamepad-test_gamepad.obj `if test -f 'tests/test_gamepad.c'; then $(CYGPATH_W) 'tests/test_gamepad.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_gamepad.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_gamepad-test_gamepad.Tpo tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_gamepad.c' object='tests/test_gamepad-test_gamepad.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_gamepad-test_gamepad.obj: diagnostics/test_gamepad.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -MT diagnostics/test_gamepad-test_gamepad.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_gamepad-test_gamepad.Tpo -c -o diagnostics/test_gamepad-test_gamepad.obj `if test -f 'diagnostics/test_gamepad.c'; then $(CYGPATH_W) 'diagnostics/test_gamepad.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_gamepad.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_gamepad-test_gamepad.Tpo diagnostics/$(DEPDIR)/test_gamepad-test_gamepad.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_gamepad.c' object='diagnostics/test_gamepad-test_gamepad.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -c -o tests/test_gamepad-test_gamepad.obj `if test -f 'tests/test_gamepad.c'; then $(CYGPATH_W) 'tests/test_gamepad.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_gamepad.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -c -o diagnostics/test_gamepad-test_gamepad.obj `if test -f 'diagnostics/test_gamepad.c'; then $(CYGPATH_W) 'diagnostics/test_gamepad.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_gamepad.c'; fi`
 
 src/test_gamepad-gamepad.o: src/gamepad.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -MT src/test_gamepad-gamepad.o -MD -MP -MF src/$(DEPDIR)/test_gamepad-gamepad.Tpo -c -o src/test_gamepad-gamepad.o `test -f 'src/gamepad.c' || echo '$(srcdir)/'`src/gamepad.c
@@ -2694,19 +2718,19 @@ src/test_gamepad-gamepad.obj: src/gamepad.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -c -o src/test_gamepad-gamepad.obj `if test -f 'src/gamepad.c'; then $(CYGPATH_W) 'src/gamepad.c'; else $(CYGPATH_W) '$(srcdir)/src/gamepad.c'; fi`
 
-tests/test_gifcap-test_gifcap.o: tests/test_gifcap.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -MT tests/test_gifcap-test_gifcap.o -MD -MP -MF tests/$(DEPDIR)/test_gifcap-test_gifcap.Tpo -c -o tests/test_gifcap-test_gifcap.o `test -f 'tests/test_gifcap.c' || echo '$(srcdir)/'`tests/test_gifcap.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_gifcap-test_gifcap.Tpo tests/$(DEPDIR)/test_gifcap-test_gifcap.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_gifcap.c' object='tests/test_gifcap-test_gifcap.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_gifcap-test_gifcap.o: diagnostics/test_gifcap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -MT diagnostics/test_gifcap-test_gifcap.o -MD -MP -MF diagnostics/$(DEPDIR)/test_gifcap-test_gifcap.Tpo -c -o diagnostics/test_gifcap-test_gifcap.o `test -f 'diagnostics/test_gifcap.c' || echo '$(srcdir)/'`diagnostics/test_gifcap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_gifcap-test_gifcap.Tpo diagnostics/$(DEPDIR)/test_gifcap-test_gifcap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_gifcap.c' object='diagnostics/test_gifcap-test_gifcap.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -c -o tests/test_gifcap-test_gifcap.o `test -f 'tests/test_gifcap.c' || echo '$(srcdir)/'`tests/test_gifcap.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -c -o diagnostics/test_gifcap-test_gifcap.o `test -f 'diagnostics/test_gifcap.c' || echo '$(srcdir)/'`diagnostics/test_gifcap.c
 
-tests/test_gifcap-test_gifcap.obj: tests/test_gifcap.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -MT tests/test_gifcap-test_gifcap.obj -MD -MP -MF tests/$(DEPDIR)/test_gifcap-test_gifcap.Tpo -c -o tests/test_gifcap-test_gifcap.obj `if test -f 'tests/test_gifcap.c'; then $(CYGPATH_W) 'tests/test_gifcap.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_gifcap.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_gifcap-test_gifcap.Tpo tests/$(DEPDIR)/test_gifcap-test_gifcap.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_gifcap.c' object='tests/test_gifcap-test_gifcap.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_gifcap-test_gifcap.obj: diagnostics/test_gifcap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -MT diagnostics/test_gifcap-test_gifcap.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_gifcap-test_gifcap.Tpo -c -o diagnostics/test_gifcap-test_gifcap.obj `if test -f 'diagnostics/test_gifcap.c'; then $(CYGPATH_W) 'diagnostics/test_gifcap.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_gifcap.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_gifcap-test_gifcap.Tpo diagnostics/$(DEPDIR)/test_gifcap-test_gifcap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_gifcap.c' object='diagnostics/test_gifcap-test_gifcap.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -c -o tests/test_gifcap-test_gifcap.obj `if test -f 'tests/test_gifcap.c'; then $(CYGPATH_W) 'tests/test_gifcap.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_gifcap.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -c -o diagnostics/test_gifcap-test_gifcap.obj `if test -f 'diagnostics/test_gifcap.c'; then $(CYGPATH_W) 'diagnostics/test_gifcap.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_gifcap.c'; fi`
 
 src/test_gifcap-gifcap.o: src/gifcap.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -MT src/test_gifcap-gifcap.o -MD -MP -MF src/$(DEPDIR)/test_gifcap-gifcap.Tpo -c -o src/test_gifcap-gifcap.o `test -f 'src/gifcap.c' || echo '$(srcdir)/'`src/gifcap.c
@@ -2722,19 +2746,19 @@ src/test_gifcap-gifcap.obj: src/gifcap.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -c -o src/test_gifcap-gifcap.obj `if test -f 'src/gifcap.c'; then $(CYGPATH_W) 'src/gifcap.c'; else $(CYGPATH_W) '$(srcdir)/src/gifcap.c'; fi`
 
-tests/test_kbd-test_kbd.o: tests/test_kbd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT tests/test_kbd-test_kbd.o -MD -MP -MF tests/$(DEPDIR)/test_kbd-test_kbd.Tpo -c -o tests/test_kbd-test_kbd.o `test -f 'tests/test_kbd.c' || echo '$(srcdir)/'`tests/test_kbd.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_kbd-test_kbd.Tpo tests/$(DEPDIR)/test_kbd-test_kbd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_kbd.c' object='tests/test_kbd-test_kbd.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_kbd-test_kbd.o: diagnostics/test_kbd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT diagnostics/test_kbd-test_kbd.o -MD -MP -MF diagnostics/$(DEPDIR)/test_kbd-test_kbd.Tpo -c -o diagnostics/test_kbd-test_kbd.o `test -f 'diagnostics/test_kbd.c' || echo '$(srcdir)/'`diagnostics/test_kbd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_kbd-test_kbd.Tpo diagnostics/$(DEPDIR)/test_kbd-test_kbd.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_kbd.c' object='diagnostics/test_kbd-test_kbd.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o tests/test_kbd-test_kbd.o `test -f 'tests/test_kbd.c' || echo '$(srcdir)/'`tests/test_kbd.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o diagnostics/test_kbd-test_kbd.o `test -f 'diagnostics/test_kbd.c' || echo '$(srcdir)/'`diagnostics/test_kbd.c
 
-tests/test_kbd-test_kbd.obj: tests/test_kbd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT tests/test_kbd-test_kbd.obj -MD -MP -MF tests/$(DEPDIR)/test_kbd-test_kbd.Tpo -c -o tests/test_kbd-test_kbd.obj `if test -f 'tests/test_kbd.c'; then $(CYGPATH_W) 'tests/test_kbd.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_kbd.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_kbd-test_kbd.Tpo tests/$(DEPDIR)/test_kbd-test_kbd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_kbd.c' object='tests/test_kbd-test_kbd.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_kbd-test_kbd.obj: diagnostics/test_kbd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT diagnostics/test_kbd-test_kbd.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_kbd-test_kbd.Tpo -c -o diagnostics/test_kbd-test_kbd.obj `if test -f 'diagnostics/test_kbd.c'; then $(CYGPATH_W) 'diagnostics/test_kbd.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_kbd.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_kbd-test_kbd.Tpo diagnostics/$(DEPDIR)/test_kbd-test_kbd.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_kbd.c' object='diagnostics/test_kbd-test_kbd.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o tests/test_kbd-test_kbd.obj `if test -f 'tests/test_kbd.c'; then $(CYGPATH_W) 'tests/test_kbd.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_kbd.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o diagnostics/test_kbd-test_kbd.obj `if test -f 'diagnostics/test_kbd.c'; then $(CYGPATH_W) 'diagnostics/test_kbd.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_kbd.c'; fi`
 
 src/test_kbd-cartridge.o: src/cartridge.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-cartridge.o -MD -MP -MF src/$(DEPDIR)/test_kbd-cartridge.Tpo -c -o src/test_kbd-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
@@ -2960,19 +2984,19 @@ src/test_kbd-z80.obj: src/z80.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
 
-tests/test_megaflash-test_megaflash.o: tests/test_megaflash.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT tests/test_megaflash-test_megaflash.o -MD -MP -MF tests/$(DEPDIR)/test_megaflash-test_megaflash.Tpo -c -o tests/test_megaflash-test_megaflash.o `test -f 'tests/test_megaflash.c' || echo '$(srcdir)/'`tests/test_megaflash.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_megaflash-test_megaflash.Tpo tests/$(DEPDIR)/test_megaflash-test_megaflash.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_megaflash.c' object='tests/test_megaflash-test_megaflash.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_megaflash-test_megaflash.o: diagnostics/test_megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT diagnostics/test_megaflash-test_megaflash.o -MD -MP -MF diagnostics/$(DEPDIR)/test_megaflash-test_megaflash.Tpo -c -o diagnostics/test_megaflash-test_megaflash.o `test -f 'diagnostics/test_megaflash.c' || echo '$(srcdir)/'`diagnostics/test_megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_megaflash-test_megaflash.Tpo diagnostics/$(DEPDIR)/test_megaflash-test_megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_megaflash.c' object='diagnostics/test_megaflash-test_megaflash.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o tests/test_megaflash-test_megaflash.o `test -f 'tests/test_megaflash.c' || echo '$(srcdir)/'`tests/test_megaflash.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o diagnostics/test_megaflash-test_megaflash.o `test -f 'diagnostics/test_megaflash.c' || echo '$(srcdir)/'`diagnostics/test_megaflash.c
 
-tests/test_megaflash-test_megaflash.obj: tests/test_megaflash.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT tests/test_megaflash-test_megaflash.obj -MD -MP -MF tests/$(DEPDIR)/test_megaflash-test_megaflash.Tpo -c -o tests/test_megaflash-test_megaflash.obj `if test -f 'tests/test_megaflash.c'; then $(CYGPATH_W) 'tests/test_megaflash.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_megaflash.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_megaflash-test_megaflash.Tpo tests/$(DEPDIR)/test_megaflash-test_megaflash.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_megaflash.c' object='tests/test_megaflash-test_megaflash.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_megaflash-test_megaflash.obj: diagnostics/test_megaflash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT diagnostics/test_megaflash-test_megaflash.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_megaflash-test_megaflash.Tpo -c -o diagnostics/test_megaflash-test_megaflash.obj `if test -f 'diagnostics/test_megaflash.c'; then $(CYGPATH_W) 'diagnostics/test_megaflash.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_megaflash.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_megaflash-test_megaflash.Tpo diagnostics/$(DEPDIR)/test_megaflash-test_megaflash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_megaflash.c' object='diagnostics/test_megaflash-test_megaflash.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o tests/test_megaflash-test_megaflash.obj `if test -f 'tests/test_megaflash.c'; then $(CYGPATH_W) 'tests/test_megaflash.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_megaflash.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o diagnostics/test_megaflash-test_megaflash.obj `if test -f 'diagnostics/test_megaflash.c'; then $(CYGPATH_W) 'diagnostics/test_megaflash.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_megaflash.c'; fi`
 
 src/test_megaflash-megaflash.o: src/megaflash.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -MT src/test_megaflash-megaflash.o -MD -MP -MF src/$(DEPDIR)/test_megaflash-megaflash.Tpo -c -o src/test_megaflash-megaflash.o `test -f 'src/megaflash.c' || echo '$(srcdir)/'`src/megaflash.c
@@ -3030,19 +3054,19 @@ src/test_megaflash-sdcard.obj: src/sdcard.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_megaflash_CPPFLAGS) $(CPPFLAGS) $(test_megaflash_CFLAGS) $(CFLAGS) -c -o src/test_megaflash-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
 
-tests/test_models-test_models.o: tests/test_models.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT tests/test_models-test_models.o -MD -MP -MF tests/$(DEPDIR)/test_models-test_models.Tpo -c -o tests/test_models-test_models.o `test -f 'tests/test_models.c' || echo '$(srcdir)/'`tests/test_models.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_models-test_models.Tpo tests/$(DEPDIR)/test_models-test_models.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_models.c' object='tests/test_models-test_models.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_models-test_models.o: diagnostics/test_models.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT diagnostics/test_models-test_models.o -MD -MP -MF diagnostics/$(DEPDIR)/test_models-test_models.Tpo -c -o diagnostics/test_models-test_models.o `test -f 'diagnostics/test_models.c' || echo '$(srcdir)/'`diagnostics/test_models.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_models-test_models.Tpo diagnostics/$(DEPDIR)/test_models-test_models.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_models.c' object='diagnostics/test_models-test_models.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o tests/test_models-test_models.o `test -f 'tests/test_models.c' || echo '$(srcdir)/'`tests/test_models.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o diagnostics/test_models-test_models.o `test -f 'diagnostics/test_models.c' || echo '$(srcdir)/'`diagnostics/test_models.c
 
-tests/test_models-test_models.obj: tests/test_models.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT tests/test_models-test_models.obj -MD -MP -MF tests/$(DEPDIR)/test_models-test_models.Tpo -c -o tests/test_models-test_models.obj `if test -f 'tests/test_models.c'; then $(CYGPATH_W) 'tests/test_models.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_models.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_models-test_models.Tpo tests/$(DEPDIR)/test_models-test_models.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_models.c' object='tests/test_models-test_models.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_models-test_models.obj: diagnostics/test_models.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT diagnostics/test_models-test_models.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_models-test_models.Tpo -c -o diagnostics/test_models-test_models.obj `if test -f 'diagnostics/test_models.c'; then $(CYGPATH_W) 'diagnostics/test_models.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_models.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_models-test_models.Tpo diagnostics/$(DEPDIR)/test_models-test_models.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_models.c' object='diagnostics/test_models-test_models.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o tests/test_models-test_models.obj `if test -f 'tests/test_models.c'; then $(CYGPATH_W) 'tests/test_models.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_models.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o diagnostics/test_models-test_models.obj `if test -f 'diagnostics/test_models.c'; then $(CYGPATH_W) 'diagnostics/test_models.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_models.c'; fi`
 
 src/test_models-models.o: src/models.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-models.o -MD -MP -MF src/$(DEPDIR)/test_models-models.Tpo -c -o src/test_models-models.o `test -f 'src/models.c' || echo '$(srcdir)/'`src/models.c
@@ -3268,19 +3292,19 @@ src/test_models-z80.obj: src/z80.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
 
-tests/test_msx-test_msx.o: tests/test_msx.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT tests/test_msx-test_msx.o -MD -MP -MF tests/$(DEPDIR)/test_msx-test_msx.Tpo -c -o tests/test_msx-test_msx.o `test -f 'tests/test_msx.c' || echo '$(srcdir)/'`tests/test_msx.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_msx-test_msx.Tpo tests/$(DEPDIR)/test_msx-test_msx.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_msx.c' object='tests/test_msx-test_msx.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_msx-test_msx.o: diagnostics/test_msx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT diagnostics/test_msx-test_msx.o -MD -MP -MF diagnostics/$(DEPDIR)/test_msx-test_msx.Tpo -c -o diagnostics/test_msx-test_msx.o `test -f 'diagnostics/test_msx.c' || echo '$(srcdir)/'`diagnostics/test_msx.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_msx-test_msx.Tpo diagnostics/$(DEPDIR)/test_msx-test_msx.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_msx.c' object='diagnostics/test_msx-test_msx.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o tests/test_msx-test_msx.o `test -f 'tests/test_msx.c' || echo '$(srcdir)/'`tests/test_msx.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o diagnostics/test_msx-test_msx.o `test -f 'diagnostics/test_msx.c' || echo '$(srcdir)/'`diagnostics/test_msx.c
 
-tests/test_msx-test_msx.obj: tests/test_msx.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT tests/test_msx-test_msx.obj -MD -MP -MF tests/$(DEPDIR)/test_msx-test_msx.Tpo -c -o tests/test_msx-test_msx.obj `if test -f 'tests/test_msx.c'; then $(CYGPATH_W) 'tests/test_msx.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_msx.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_msx-test_msx.Tpo tests/$(DEPDIR)/test_msx-test_msx.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_msx.c' object='tests/test_msx-test_msx.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_msx-test_msx.obj: diagnostics/test_msx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT diagnostics/test_msx-test_msx.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_msx-test_msx.Tpo -c -o diagnostics/test_msx-test_msx.obj `if test -f 'diagnostics/test_msx.c'; then $(CYGPATH_W) 'diagnostics/test_msx.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_msx.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_msx-test_msx.Tpo diagnostics/$(DEPDIR)/test_msx-test_msx.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_msx.c' object='diagnostics/test_msx-test_msx.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o tests/test_msx-test_msx.obj `if test -f 'tests/test_msx.c'; then $(CYGPATH_W) 'tests/test_msx.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_msx.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o diagnostics/test_msx-test_msx.obj `if test -f 'diagnostics/test_msx.c'; then $(CYGPATH_W) 'diagnostics/test_msx.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_msx.c'; fi`
 
 src/test_msx-cartridge.o: src/cartridge.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-cartridge.o -MD -MP -MF src/$(DEPDIR)/test_msx-cartridge.Tpo -c -o src/test_msx-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
@@ -3492,19 +3516,19 @@ src/test_msx-z80.obj: src/z80.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
 
-tests/test_overlay-test_overlay.o: tests/test_overlay.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT tests/test_overlay-test_overlay.o -MD -MP -MF tests/$(DEPDIR)/test_overlay-test_overlay.Tpo -c -o tests/test_overlay-test_overlay.o `test -f 'tests/test_overlay.c' || echo '$(srcdir)/'`tests/test_overlay.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_overlay-test_overlay.Tpo tests/$(DEPDIR)/test_overlay-test_overlay.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_overlay.c' object='tests/test_overlay-test_overlay.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_overlay-test_overlay.o: diagnostics/test_overlay.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT diagnostics/test_overlay-test_overlay.o -MD -MP -MF diagnostics/$(DEPDIR)/test_overlay-test_overlay.Tpo -c -o diagnostics/test_overlay-test_overlay.o `test -f 'diagnostics/test_overlay.c' || echo '$(srcdir)/'`diagnostics/test_overlay.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_overlay-test_overlay.Tpo diagnostics/$(DEPDIR)/test_overlay-test_overlay.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_overlay.c' object='diagnostics/test_overlay-test_overlay.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o tests/test_overlay-test_overlay.o `test -f 'tests/test_overlay.c' || echo '$(srcdir)/'`tests/test_overlay.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o diagnostics/test_overlay-test_overlay.o `test -f 'diagnostics/test_overlay.c' || echo '$(srcdir)/'`diagnostics/test_overlay.c
 
-tests/test_overlay-test_overlay.obj: tests/test_overlay.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT tests/test_overlay-test_overlay.obj -MD -MP -MF tests/$(DEPDIR)/test_overlay-test_overlay.Tpo -c -o tests/test_overlay-test_overlay.obj `if test -f 'tests/test_overlay.c'; then $(CYGPATH_W) 'tests/test_overlay.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_overlay.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_overlay-test_overlay.Tpo tests/$(DEPDIR)/test_overlay-test_overlay.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_overlay.c' object='tests/test_overlay-test_overlay.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_overlay-test_overlay.obj: diagnostics/test_overlay.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT diagnostics/test_overlay-test_overlay.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_overlay-test_overlay.Tpo -c -o diagnostics/test_overlay-test_overlay.obj `if test -f 'diagnostics/test_overlay.c'; then $(CYGPATH_W) 'diagnostics/test_overlay.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_overlay.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_overlay-test_overlay.Tpo diagnostics/$(DEPDIR)/test_overlay-test_overlay.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_overlay.c' object='diagnostics/test_overlay-test_overlay.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o tests/test_overlay-test_overlay.obj `if test -f 'tests/test_overlay.c'; then $(CYGPATH_W) 'tests/test_overlay.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_overlay.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o diagnostics/test_overlay-test_overlay.obj `if test -f 'diagnostics/test_overlay.c'; then $(CYGPATH_W) 'diagnostics/test_overlay.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_overlay.c'; fi`
 
 src/test_overlay-config.o: src/config.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-config.o -MD -MP -MF src/$(DEPDIR)/test_overlay-config.Tpo -c -o src/test_overlay-config.o `test -f 'src/config.c' || echo '$(srcdir)/'`src/config.c
@@ -3828,19 +3852,19 @@ src/test_overlay-z80.obj: src/z80.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
 
-tests/test_paste-test_paste.o: tests/test_paste.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT tests/test_paste-test_paste.o -MD -MP -MF tests/$(DEPDIR)/test_paste-test_paste.Tpo -c -o tests/test_paste-test_paste.o `test -f 'tests/test_paste.c' || echo '$(srcdir)/'`tests/test_paste.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_paste-test_paste.Tpo tests/$(DEPDIR)/test_paste-test_paste.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_paste.c' object='tests/test_paste-test_paste.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_paste-test_paste.o: diagnostics/test_paste.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT diagnostics/test_paste-test_paste.o -MD -MP -MF diagnostics/$(DEPDIR)/test_paste-test_paste.Tpo -c -o diagnostics/test_paste-test_paste.o `test -f 'diagnostics/test_paste.c' || echo '$(srcdir)/'`diagnostics/test_paste.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_paste-test_paste.Tpo diagnostics/$(DEPDIR)/test_paste-test_paste.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_paste.c' object='diagnostics/test_paste-test_paste.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o tests/test_paste-test_paste.o `test -f 'tests/test_paste.c' || echo '$(srcdir)/'`tests/test_paste.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o diagnostics/test_paste-test_paste.o `test -f 'diagnostics/test_paste.c' || echo '$(srcdir)/'`diagnostics/test_paste.c
 
-tests/test_paste-test_paste.obj: tests/test_paste.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT tests/test_paste-test_paste.obj -MD -MP -MF tests/$(DEPDIR)/test_paste-test_paste.Tpo -c -o tests/test_paste-test_paste.obj `if test -f 'tests/test_paste.c'; then $(CYGPATH_W) 'tests/test_paste.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_paste.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_paste-test_paste.Tpo tests/$(DEPDIR)/test_paste-test_paste.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_paste.c' object='tests/test_paste-test_paste.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_paste-test_paste.obj: diagnostics/test_paste.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT diagnostics/test_paste-test_paste.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_paste-test_paste.Tpo -c -o diagnostics/test_paste-test_paste.obj `if test -f 'diagnostics/test_paste.c'; then $(CYGPATH_W) 'diagnostics/test_paste.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_paste.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_paste-test_paste.Tpo diagnostics/$(DEPDIR)/test_paste-test_paste.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_paste.c' object='diagnostics/test_paste-test_paste.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o tests/test_paste-test_paste.obj `if test -f 'tests/test_paste.c'; then $(CYGPATH_W) 'tests/test_paste.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_paste.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o diagnostics/test_paste-test_paste.obj `if test -f 'diagnostics/test_paste.c'; then $(CYGPATH_W) 'diagnostics/test_paste.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_paste.c'; fi`
 
 src/test_paste-cartridge.o: src/cartridge.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT src/test_paste-cartridge.o -MD -MP -MF src/$(DEPDIR)/test_paste-cartridge.Tpo -c -o src/test_paste-cartridge.o `test -f 'src/cartridge.c' || echo '$(srcdir)/'`src/cartridge.c
@@ -4066,19 +4090,19 @@ src/test_paste-z80.obj: src/z80.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o src/test_paste-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
 
-tests/test_psg-test_psg.o: tests/test_psg.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_psg_CPPFLAGS) $(CPPFLAGS) $(test_psg_CFLAGS) $(CFLAGS) -MT tests/test_psg-test_psg.o -MD -MP -MF tests/$(DEPDIR)/test_psg-test_psg.Tpo -c -o tests/test_psg-test_psg.o `test -f 'tests/test_psg.c' || echo '$(srcdir)/'`tests/test_psg.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_psg-test_psg.Tpo tests/$(DEPDIR)/test_psg-test_psg.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_psg.c' object='tests/test_psg-test_psg.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_psg-test_psg.o: diagnostics/test_psg.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_psg_CPPFLAGS) $(CPPFLAGS) $(test_psg_CFLAGS) $(CFLAGS) -MT diagnostics/test_psg-test_psg.o -MD -MP -MF diagnostics/$(DEPDIR)/test_psg-test_psg.Tpo -c -o diagnostics/test_psg-test_psg.o `test -f 'diagnostics/test_psg.c' || echo '$(srcdir)/'`diagnostics/test_psg.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_psg-test_psg.Tpo diagnostics/$(DEPDIR)/test_psg-test_psg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_psg.c' object='diagnostics/test_psg-test_psg.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_psg_CPPFLAGS) $(CPPFLAGS) $(test_psg_CFLAGS) $(CFLAGS) -c -o tests/test_psg-test_psg.o `test -f 'tests/test_psg.c' || echo '$(srcdir)/'`tests/test_psg.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_psg_CPPFLAGS) $(CPPFLAGS) $(test_psg_CFLAGS) $(CFLAGS) -c -o diagnostics/test_psg-test_psg.o `test -f 'diagnostics/test_psg.c' || echo '$(srcdir)/'`diagnostics/test_psg.c
 
-tests/test_psg-test_psg.obj: tests/test_psg.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_psg_CPPFLAGS) $(CPPFLAGS) $(test_psg_CFLAGS) $(CFLAGS) -MT tests/test_psg-test_psg.obj -MD -MP -MF tests/$(DEPDIR)/test_psg-test_psg.Tpo -c -o tests/test_psg-test_psg.obj `if test -f 'tests/test_psg.c'; then $(CYGPATH_W) 'tests/test_psg.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_psg.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_psg-test_psg.Tpo tests/$(DEPDIR)/test_psg-test_psg.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_psg.c' object='tests/test_psg-test_psg.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_psg-test_psg.obj: diagnostics/test_psg.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_psg_CPPFLAGS) $(CPPFLAGS) $(test_psg_CFLAGS) $(CFLAGS) -MT diagnostics/test_psg-test_psg.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_psg-test_psg.Tpo -c -o diagnostics/test_psg-test_psg.obj `if test -f 'diagnostics/test_psg.c'; then $(CYGPATH_W) 'diagnostics/test_psg.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_psg.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_psg-test_psg.Tpo diagnostics/$(DEPDIR)/test_psg-test_psg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_psg.c' object='diagnostics/test_psg-test_psg.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_psg_CPPFLAGS) $(CPPFLAGS) $(test_psg_CFLAGS) $(CFLAGS) -c -o tests/test_psg-test_psg.obj `if test -f 'tests/test_psg.c'; then $(CYGPATH_W) 'tests/test_psg.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_psg.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_psg_CPPFLAGS) $(CPPFLAGS) $(test_psg_CFLAGS) $(CFLAGS) -c -o diagnostics/test_psg-test_psg.obj `if test -f 'diagnostics/test_psg.c'; then $(CYGPATH_W) 'diagnostics/test_psg.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_psg.c'; fi`
 
 src/test_psg-psg.o: src/psg.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_psg_CPPFLAGS) $(CPPFLAGS) $(test_psg_CFLAGS) $(CFLAGS) -MT src/test_psg-psg.o -MD -MP -MF src/$(DEPDIR)/test_psg-psg.Tpo -c -o src/test_psg-psg.o `test -f 'src/psg.c' || echo '$(srcdir)/'`src/psg.c
@@ -4094,19 +4118,19 @@ src/test_psg-psg.obj: src/psg.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_psg_CPPFLAGS) $(CPPFLAGS) $(test_psg_CFLAGS) $(CFLAGS) -c -o src/test_psg-psg.obj `if test -f 'src/psg.c'; then $(CYGPATH_W) 'src/psg.c'; else $(CYGPATH_W) '$(srcdir)/src/psg.c'; fi`
 
-tests/test_rtc-test_rtc.o: tests/test_rtc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -MT tests/test_rtc-test_rtc.o -MD -MP -MF tests/$(DEPDIR)/test_rtc-test_rtc.Tpo -c -o tests/test_rtc-test_rtc.o `test -f 'tests/test_rtc.c' || echo '$(srcdir)/'`tests/test_rtc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_rtc-test_rtc.Tpo tests/$(DEPDIR)/test_rtc-test_rtc.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_rtc.c' object='tests/test_rtc-test_rtc.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_rtc-test_rtc.o: diagnostics/test_rtc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -MT diagnostics/test_rtc-test_rtc.o -MD -MP -MF diagnostics/$(DEPDIR)/test_rtc-test_rtc.Tpo -c -o diagnostics/test_rtc-test_rtc.o `test -f 'diagnostics/test_rtc.c' || echo '$(srcdir)/'`diagnostics/test_rtc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_rtc-test_rtc.Tpo diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_rtc.c' object='diagnostics/test_rtc-test_rtc.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -c -o tests/test_rtc-test_rtc.o `test -f 'tests/test_rtc.c' || echo '$(srcdir)/'`tests/test_rtc.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -c -o diagnostics/test_rtc-test_rtc.o `test -f 'diagnostics/test_rtc.c' || echo '$(srcdir)/'`diagnostics/test_rtc.c
 
-tests/test_rtc-test_rtc.obj: tests/test_rtc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -MT tests/test_rtc-test_rtc.obj -MD -MP -MF tests/$(DEPDIR)/test_rtc-test_rtc.Tpo -c -o tests/test_rtc-test_rtc.obj `if test -f 'tests/test_rtc.c'; then $(CYGPATH_W) 'tests/test_rtc.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_rtc.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_rtc-test_rtc.Tpo tests/$(DEPDIR)/test_rtc-test_rtc.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_rtc.c' object='tests/test_rtc-test_rtc.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_rtc-test_rtc.obj: diagnostics/test_rtc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -MT diagnostics/test_rtc-test_rtc.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_rtc-test_rtc.Tpo -c -o diagnostics/test_rtc-test_rtc.obj `if test -f 'diagnostics/test_rtc.c'; then $(CYGPATH_W) 'diagnostics/test_rtc.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_rtc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_rtc-test_rtc.Tpo diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_rtc.c' object='diagnostics/test_rtc-test_rtc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -c -o tests/test_rtc-test_rtc.obj `if test -f 'tests/test_rtc.c'; then $(CYGPATH_W) 'tests/test_rtc.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_rtc.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -c -o diagnostics/test_rtc-test_rtc.obj `if test -f 'diagnostics/test_rtc.c'; then $(CYGPATH_W) 'diagnostics/test_rtc.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_rtc.c'; fi`
 
 src/test_rtc-rtc.o: src/rtc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -MT src/test_rtc-rtc.o -MD -MP -MF src/$(DEPDIR)/test_rtc-rtc.Tpo -c -o src/test_rtc-rtc.o `test -f 'src/rtc.c' || echo '$(srcdir)/'`src/rtc.c
@@ -4122,19 +4146,19 @@ src/test_rtc-rtc.obj: src/rtc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -c -o src/test_rtc-rtc.obj `if test -f 'src/rtc.c'; then $(CYGPATH_W) 'src/rtc.c'; else $(CYGPATH_W) '$(srcdir)/src/rtc.c'; fi`
 
-tests/test_scc-test_scc.o: tests/test_scc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -MT tests/test_scc-test_scc.o -MD -MP -MF tests/$(DEPDIR)/test_scc-test_scc.Tpo -c -o tests/test_scc-test_scc.o `test -f 'tests/test_scc.c' || echo '$(srcdir)/'`tests/test_scc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_scc-test_scc.Tpo tests/$(DEPDIR)/test_scc-test_scc.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_scc.c' object='tests/test_scc-test_scc.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_scc-test_scc.o: diagnostics/test_scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -MT diagnostics/test_scc-test_scc.o -MD -MP -MF diagnostics/$(DEPDIR)/test_scc-test_scc.Tpo -c -o diagnostics/test_scc-test_scc.o `test -f 'diagnostics/test_scc.c' || echo '$(srcdir)/'`diagnostics/test_scc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_scc-test_scc.Tpo diagnostics/$(DEPDIR)/test_scc-test_scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_scc.c' object='diagnostics/test_scc-test_scc.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -c -o tests/test_scc-test_scc.o `test -f 'tests/test_scc.c' || echo '$(srcdir)/'`tests/test_scc.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -c -o diagnostics/test_scc-test_scc.o `test -f 'diagnostics/test_scc.c' || echo '$(srcdir)/'`diagnostics/test_scc.c
 
-tests/test_scc-test_scc.obj: tests/test_scc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -MT tests/test_scc-test_scc.obj -MD -MP -MF tests/$(DEPDIR)/test_scc-test_scc.Tpo -c -o tests/test_scc-test_scc.obj `if test -f 'tests/test_scc.c'; then $(CYGPATH_W) 'tests/test_scc.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_scc.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_scc-test_scc.Tpo tests/$(DEPDIR)/test_scc-test_scc.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_scc.c' object='tests/test_scc-test_scc.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_scc-test_scc.obj: diagnostics/test_scc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -MT diagnostics/test_scc-test_scc.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_scc-test_scc.Tpo -c -o diagnostics/test_scc-test_scc.obj `if test -f 'diagnostics/test_scc.c'; then $(CYGPATH_W) 'diagnostics/test_scc.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_scc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_scc-test_scc.Tpo diagnostics/$(DEPDIR)/test_scc-test_scc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_scc.c' object='diagnostics/test_scc-test_scc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -c -o tests/test_scc-test_scc.obj `if test -f 'tests/test_scc.c'; then $(CYGPATH_W) 'tests/test_scc.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_scc.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -c -o diagnostics/test_scc-test_scc.obj `if test -f 'diagnostics/test_scc.c'; then $(CYGPATH_W) 'diagnostics/test_scc.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_scc.c'; fi`
 
 src/test_scc-scc.o: src/scc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -MT src/test_scc-scc.o -MD -MP -MF src/$(DEPDIR)/test_scc-scc.Tpo -c -o src/test_scc-scc.o `test -f 'src/scc.c' || echo '$(srcdir)/'`src/scc.c
@@ -4150,19 +4174,19 @@ src/test_scc-scc.obj: src/scc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -c -o src/test_scc-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
 
-tests/test_sd_mapper-test_sd_mapper.o: tests/test_sd_mapper.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -MT tests/test_sd_mapper-test_sd_mapper.o -MD -MP -MF tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo -c -o tests/test_sd_mapper-test_sd_mapper.o `test -f 'tests/test_sd_mapper.c' || echo '$(srcdir)/'`tests/test_sd_mapper.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_sd_mapper.c' object='tests/test_sd_mapper-test_sd_mapper.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_sd_mapper-test_sd_mapper.o: diagnostics/test_sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -MT diagnostics/test_sd_mapper-test_sd_mapper.o -MD -MP -MF diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo -c -o diagnostics/test_sd_mapper-test_sd_mapper.o `test -f 'diagnostics/test_sd_mapper.c' || echo '$(srcdir)/'`diagnostics/test_sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_sd_mapper.c' object='diagnostics/test_sd_mapper-test_sd_mapper.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -c -o tests/test_sd_mapper-test_sd_mapper.o `test -f 'tests/test_sd_mapper.c' || echo '$(srcdir)/'`tests/test_sd_mapper.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -c -o diagnostics/test_sd_mapper-test_sd_mapper.o `test -f 'diagnostics/test_sd_mapper.c' || echo '$(srcdir)/'`diagnostics/test_sd_mapper.c
 
-tests/test_sd_mapper-test_sd_mapper.obj: tests/test_sd_mapper.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -MT tests/test_sd_mapper-test_sd_mapper.obj -MD -MP -MF tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo -c -o tests/test_sd_mapper-test_sd_mapper.obj `if test -f 'tests/test_sd_mapper.c'; then $(CYGPATH_W) 'tests/test_sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_sd_mapper.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_sd_mapper.c' object='tests/test_sd_mapper-test_sd_mapper.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_sd_mapper-test_sd_mapper.obj: diagnostics/test_sd_mapper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -MT diagnostics/test_sd_mapper-test_sd_mapper.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo -c -o diagnostics/test_sd_mapper-test_sd_mapper.obj `if test -f 'diagnostics/test_sd_mapper.c'; then $(CYGPATH_W) 'diagnostics/test_sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_sd_mapper.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_sd_mapper.c' object='diagnostics/test_sd_mapper-test_sd_mapper.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -c -o tests/test_sd_mapper-test_sd_mapper.obj `if test -f 'tests/test_sd_mapper.c'; then $(CYGPATH_W) 'tests/test_sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_sd_mapper.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -c -o diagnostics/test_sd_mapper-test_sd_mapper.obj `if test -f 'diagnostics/test_sd_mapper.c'; then $(CYGPATH_W) 'diagnostics/test_sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_sd_mapper.c'; fi`
 
 src/test_sd_mapper-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -MT src/test_sd_mapper-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_sd_mapper-sdcard.Tpo -c -o src/test_sd_mapper-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -4192,19 +4216,19 @@ src/test_sd_mapper-sd_mapper.obj: src/sd_mapper.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -c -o src/test_sd_mapper-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
 
-tests/test_sdcard-test_sdcard.o: tests/test_sdcard.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -MT tests/test_sdcard-test_sdcard.o -MD -MP -MF tests/$(DEPDIR)/test_sdcard-test_sdcard.Tpo -c -o tests/test_sdcard-test_sdcard.o `test -f 'tests/test_sdcard.c' || echo '$(srcdir)/'`tests/test_sdcard.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_sdcard-test_sdcard.Tpo tests/$(DEPDIR)/test_sdcard-test_sdcard.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_sdcard.c' object='tests/test_sdcard-test_sdcard.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_sdcard-test_sdcard.o: diagnostics/test_sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -MT diagnostics/test_sdcard-test_sdcard.o -MD -MP -MF diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Tpo -c -o diagnostics/test_sdcard-test_sdcard.o `test -f 'diagnostics/test_sdcard.c' || echo '$(srcdir)/'`diagnostics/test_sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Tpo diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_sdcard.c' object='diagnostics/test_sdcard-test_sdcard.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -c -o tests/test_sdcard-test_sdcard.o `test -f 'tests/test_sdcard.c' || echo '$(srcdir)/'`tests/test_sdcard.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -c -o diagnostics/test_sdcard-test_sdcard.o `test -f 'diagnostics/test_sdcard.c' || echo '$(srcdir)/'`diagnostics/test_sdcard.c
 
-tests/test_sdcard-test_sdcard.obj: tests/test_sdcard.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -MT tests/test_sdcard-test_sdcard.obj -MD -MP -MF tests/$(DEPDIR)/test_sdcard-test_sdcard.Tpo -c -o tests/test_sdcard-test_sdcard.obj `if test -f 'tests/test_sdcard.c'; then $(CYGPATH_W) 'tests/test_sdcard.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_sdcard.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_sdcard-test_sdcard.Tpo tests/$(DEPDIR)/test_sdcard-test_sdcard.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_sdcard.c' object='tests/test_sdcard-test_sdcard.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_sdcard-test_sdcard.obj: diagnostics/test_sdcard.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -MT diagnostics/test_sdcard-test_sdcard.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Tpo -c -o diagnostics/test_sdcard-test_sdcard.obj `if test -f 'diagnostics/test_sdcard.c'; then $(CYGPATH_W) 'diagnostics/test_sdcard.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_sdcard.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Tpo diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_sdcard.c' object='diagnostics/test_sdcard-test_sdcard.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -c -o tests/test_sdcard-test_sdcard.obj `if test -f 'tests/test_sdcard.c'; then $(CYGPATH_W) 'tests/test_sdcard.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_sdcard.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -c -o diagnostics/test_sdcard-test_sdcard.obj `if test -f 'diagnostics/test_sdcard.c'; then $(CYGPATH_W) 'diagnostics/test_sdcard.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_sdcard.c'; fi`
 
 src/test_sdcard-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -MT src/test_sdcard-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_sdcard-sdcard.Tpo -c -o src/test_sdcard-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -4220,19 +4244,19 @@ src/test_sdcard-sdcard.obj: src/sdcard.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -c -o src/test_sdcard-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
 
-tests/test_sunrise-test_sunrise.o: tests/test_sunrise.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -MT tests/test_sunrise-test_sunrise.o -MD -MP -MF tests/$(DEPDIR)/test_sunrise-test_sunrise.Tpo -c -o tests/test_sunrise-test_sunrise.o `test -f 'tests/test_sunrise.c' || echo '$(srcdir)/'`tests/test_sunrise.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_sunrise-test_sunrise.Tpo tests/$(DEPDIR)/test_sunrise-test_sunrise.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_sunrise.c' object='tests/test_sunrise-test_sunrise.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_sunrise-test_sunrise.o: diagnostics/test_sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -MT diagnostics/test_sunrise-test_sunrise.o -MD -MP -MF diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Tpo -c -o diagnostics/test_sunrise-test_sunrise.o `test -f 'diagnostics/test_sunrise.c' || echo '$(srcdir)/'`diagnostics/test_sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Tpo diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_sunrise.c' object='diagnostics/test_sunrise-test_sunrise.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -c -o tests/test_sunrise-test_sunrise.o `test -f 'tests/test_sunrise.c' || echo '$(srcdir)/'`tests/test_sunrise.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -c -o diagnostics/test_sunrise-test_sunrise.o `test -f 'diagnostics/test_sunrise.c' || echo '$(srcdir)/'`diagnostics/test_sunrise.c
 
-tests/test_sunrise-test_sunrise.obj: tests/test_sunrise.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -MT tests/test_sunrise-test_sunrise.obj -MD -MP -MF tests/$(DEPDIR)/test_sunrise-test_sunrise.Tpo -c -o tests/test_sunrise-test_sunrise.obj `if test -f 'tests/test_sunrise.c'; then $(CYGPATH_W) 'tests/test_sunrise.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_sunrise.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_sunrise-test_sunrise.Tpo tests/$(DEPDIR)/test_sunrise-test_sunrise.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_sunrise.c' object='tests/test_sunrise-test_sunrise.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_sunrise-test_sunrise.obj: diagnostics/test_sunrise.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -MT diagnostics/test_sunrise-test_sunrise.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Tpo -c -o diagnostics/test_sunrise-test_sunrise.obj `if test -f 'diagnostics/test_sunrise.c'; then $(CYGPATH_W) 'diagnostics/test_sunrise.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_sunrise.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Tpo diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_sunrise.c' object='diagnostics/test_sunrise-test_sunrise.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -c -o tests/test_sunrise-test_sunrise.obj `if test -f 'tests/test_sunrise.c'; then $(CYGPATH_W) 'tests/test_sunrise.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_sunrise.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -c -o diagnostics/test_sunrise-test_sunrise.obj `if test -f 'diagnostics/test_sunrise.c'; then $(CYGPATH_W) 'diagnostics/test_sunrise.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_sunrise.c'; fi`
 
 src/test_sunrise-ata.o: src/ata.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -MT src/test_sunrise-ata.o -MD -MP -MF src/$(DEPDIR)/test_sunrise-ata.Tpo -c -o src/test_sunrise-ata.o `test -f 'src/ata.c' || echo '$(srcdir)/'`src/ata.c
@@ -4262,19 +4286,19 @@ src/test_sunrise-sunrise.obj: src/sunrise.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -c -o src/test_sunrise-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
 
-tests/test_unapinet-test_unapinet.o: tests/test_unapinet.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -MT tests/test_unapinet-test_unapinet.o -MD -MP -MF tests/$(DEPDIR)/test_unapinet-test_unapinet.Tpo -c -o tests/test_unapinet-test_unapinet.o `test -f 'tests/test_unapinet.c' || echo '$(srcdir)/'`tests/test_unapinet.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_unapinet-test_unapinet.Tpo tests/$(DEPDIR)/test_unapinet-test_unapinet.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_unapinet.c' object='tests/test_unapinet-test_unapinet.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_unapinet-test_unapinet.o: diagnostics/test_unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -MT diagnostics/test_unapinet-test_unapinet.o -MD -MP -MF diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Tpo -c -o diagnostics/test_unapinet-test_unapinet.o `test -f 'diagnostics/test_unapinet.c' || echo '$(srcdir)/'`diagnostics/test_unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Tpo diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_unapinet.c' object='diagnostics/test_unapinet-test_unapinet.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -c -o tests/test_unapinet-test_unapinet.o `test -f 'tests/test_unapinet.c' || echo '$(srcdir)/'`tests/test_unapinet.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -c -o diagnostics/test_unapinet-test_unapinet.o `test -f 'diagnostics/test_unapinet.c' || echo '$(srcdir)/'`diagnostics/test_unapinet.c
 
-tests/test_unapinet-test_unapinet.obj: tests/test_unapinet.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -MT tests/test_unapinet-test_unapinet.obj -MD -MP -MF tests/$(DEPDIR)/test_unapinet-test_unapinet.Tpo -c -o tests/test_unapinet-test_unapinet.obj `if test -f 'tests/test_unapinet.c'; then $(CYGPATH_W) 'tests/test_unapinet.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_unapinet.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_unapinet-test_unapinet.Tpo tests/$(DEPDIR)/test_unapinet-test_unapinet.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_unapinet.c' object='tests/test_unapinet-test_unapinet.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_unapinet-test_unapinet.obj: diagnostics/test_unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -MT diagnostics/test_unapinet-test_unapinet.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Tpo -c -o diagnostics/test_unapinet-test_unapinet.obj `if test -f 'diagnostics/test_unapinet.c'; then $(CYGPATH_W) 'diagnostics/test_unapinet.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_unapinet.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Tpo diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_unapinet.c' object='diagnostics/test_unapinet-test_unapinet.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -c -o tests/test_unapinet-test_unapinet.obj `if test -f 'tests/test_unapinet.c'; then $(CYGPATH_W) 'tests/test_unapinet.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_unapinet.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -c -o diagnostics/test_unapinet-test_unapinet.obj `if test -f 'diagnostics/test_unapinet.c'; then $(CYGPATH_W) 'diagnostics/test_unapinet.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_unapinet.c'; fi`
 
 src/test_unapinet-unapinet.o: src/unapinet.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -MT src/test_unapinet-unapinet.o -MD -MP -MF src/$(DEPDIR)/test_unapinet-unapinet.Tpo -c -o src/test_unapinet-unapinet.o `test -f 'src/unapinet.c' || echo '$(srcdir)/'`src/unapinet.c
@@ -4290,19 +4314,19 @@ src/test_unapinet-unapinet.obj: src/unapinet.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -c -o src/test_unapinet-unapinet.obj `if test -f 'src/unapinet.c'; then $(CYGPATH_W) 'src/unapinet.c'; else $(CYGPATH_W) '$(srcdir)/src/unapinet.c'; fi`
 
-tests/test_vdp-test_vdp.o: tests/test_vdp.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -MT tests/test_vdp-test_vdp.o -MD -MP -MF tests/$(DEPDIR)/test_vdp-test_vdp.Tpo -c -o tests/test_vdp-test_vdp.o `test -f 'tests/test_vdp.c' || echo '$(srcdir)/'`tests/test_vdp.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_vdp-test_vdp.Tpo tests/$(DEPDIR)/test_vdp-test_vdp.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_vdp.c' object='tests/test_vdp-test_vdp.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_vdp-test_vdp.o: diagnostics/test_vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -MT diagnostics/test_vdp-test_vdp.o -MD -MP -MF diagnostics/$(DEPDIR)/test_vdp-test_vdp.Tpo -c -o diagnostics/test_vdp-test_vdp.o `test -f 'diagnostics/test_vdp.c' || echo '$(srcdir)/'`diagnostics/test_vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_vdp-test_vdp.Tpo diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_vdp.c' object='diagnostics/test_vdp-test_vdp.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -c -o tests/test_vdp-test_vdp.o `test -f 'tests/test_vdp.c' || echo '$(srcdir)/'`tests/test_vdp.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -c -o diagnostics/test_vdp-test_vdp.o `test -f 'diagnostics/test_vdp.c' || echo '$(srcdir)/'`diagnostics/test_vdp.c
 
-tests/test_vdp-test_vdp.obj: tests/test_vdp.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -MT tests/test_vdp-test_vdp.obj -MD -MP -MF tests/$(DEPDIR)/test_vdp-test_vdp.Tpo -c -o tests/test_vdp-test_vdp.obj `if test -f 'tests/test_vdp.c'; then $(CYGPATH_W) 'tests/test_vdp.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_vdp.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_vdp-test_vdp.Tpo tests/$(DEPDIR)/test_vdp-test_vdp.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_vdp.c' object='tests/test_vdp-test_vdp.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_vdp-test_vdp.obj: diagnostics/test_vdp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -MT diagnostics/test_vdp-test_vdp.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_vdp-test_vdp.Tpo -c -o diagnostics/test_vdp-test_vdp.obj `if test -f 'diagnostics/test_vdp.c'; then $(CYGPATH_W) 'diagnostics/test_vdp.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_vdp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_vdp-test_vdp.Tpo diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_vdp.c' object='diagnostics/test_vdp-test_vdp.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -c -o tests/test_vdp-test_vdp.obj `if test -f 'tests/test_vdp.c'; then $(CYGPATH_W) 'tests/test_vdp.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_vdp.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -c -o diagnostics/test_vdp-test_vdp.obj `if test -f 'diagnostics/test_vdp.c'; then $(CYGPATH_W) 'diagnostics/test_vdp.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_vdp.c'; fi`
 
 src/test_vdp-vdp.o: src/vdp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -MT src/test_vdp-vdp.o -MD -MP -MF src/$(DEPDIR)/test_vdp-vdp.Tpo -c -o src/test_vdp-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
@@ -4318,19 +4342,19 @@ src/test_vdp-vdp.obj: src/vdp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -c -o src/test_vdp-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
 
-tests/test_wd2793-test_wd2793.o: tests/test_wd2793.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wd2793_CPPFLAGS) $(CPPFLAGS) $(test_wd2793_CFLAGS) $(CFLAGS) -MT tests/test_wd2793-test_wd2793.o -MD -MP -MF tests/$(DEPDIR)/test_wd2793-test_wd2793.Tpo -c -o tests/test_wd2793-test_wd2793.o `test -f 'tests/test_wd2793.c' || echo '$(srcdir)/'`tests/test_wd2793.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_wd2793-test_wd2793.Tpo tests/$(DEPDIR)/test_wd2793-test_wd2793.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_wd2793.c' object='tests/test_wd2793-test_wd2793.o' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_wd2793-test_wd2793.o: diagnostics/test_wd2793.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wd2793_CPPFLAGS) $(CPPFLAGS) $(test_wd2793_CFLAGS) $(CFLAGS) -MT diagnostics/test_wd2793-test_wd2793.o -MD -MP -MF diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Tpo -c -o diagnostics/test_wd2793-test_wd2793.o `test -f 'diagnostics/test_wd2793.c' || echo '$(srcdir)/'`diagnostics/test_wd2793.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Tpo diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_wd2793.c' object='diagnostics/test_wd2793-test_wd2793.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wd2793_CPPFLAGS) $(CPPFLAGS) $(test_wd2793_CFLAGS) $(CFLAGS) -c -o tests/test_wd2793-test_wd2793.o `test -f 'tests/test_wd2793.c' || echo '$(srcdir)/'`tests/test_wd2793.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wd2793_CPPFLAGS) $(CPPFLAGS) $(test_wd2793_CFLAGS) $(CFLAGS) -c -o diagnostics/test_wd2793-test_wd2793.o `test -f 'diagnostics/test_wd2793.c' || echo '$(srcdir)/'`diagnostics/test_wd2793.c
 
-tests/test_wd2793-test_wd2793.obj: tests/test_wd2793.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wd2793_CPPFLAGS) $(CPPFLAGS) $(test_wd2793_CFLAGS) $(CFLAGS) -MT tests/test_wd2793-test_wd2793.obj -MD -MP -MF tests/$(DEPDIR)/test_wd2793-test_wd2793.Tpo -c -o tests/test_wd2793-test_wd2793.obj `if test -f 'tests/test_wd2793.c'; then $(CYGPATH_W) 'tests/test_wd2793.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_wd2793.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_wd2793-test_wd2793.Tpo tests/$(DEPDIR)/test_wd2793-test_wd2793.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_wd2793.c' object='tests/test_wd2793-test_wd2793.obj' libtool=no @AMDEPBACKSLASH@
+diagnostics/test_wd2793-test_wd2793.obj: diagnostics/test_wd2793.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wd2793_CPPFLAGS) $(CPPFLAGS) $(test_wd2793_CFLAGS) $(CFLAGS) -MT diagnostics/test_wd2793-test_wd2793.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Tpo -c -o diagnostics/test_wd2793-test_wd2793.obj `if test -f 'diagnostics/test_wd2793.c'; then $(CYGPATH_W) 'diagnostics/test_wd2793.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_wd2793.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Tpo diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_wd2793.c' object='diagnostics/test_wd2793-test_wd2793.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wd2793_CPPFLAGS) $(CPPFLAGS) $(test_wd2793_CFLAGS) $(CFLAGS) -c -o tests/test_wd2793-test_wd2793.obj `if test -f 'tests/test_wd2793.c'; then $(CYGPATH_W) 'tests/test_wd2793.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_wd2793.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wd2793_CPPFLAGS) $(CPPFLAGS) $(test_wd2793_CFLAGS) $(CFLAGS) -c -o diagnostics/test_wd2793-test_wd2793.obj `if test -f 'diagnostics/test_wd2793.c'; then $(CYGPATH_W) 'diagnostics/test_wd2793.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_wd2793.c'; fi`
 
 src/test_wd2793-floppy.o: src/floppy.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wd2793_CPPFLAGS) $(CPPFLAGS) $(test_wd2793_CFLAGS) $(CFLAGS) -MT src/test_wd2793-floppy.o -MD -MP -MF src/$(DEPDIR)/test_wd2793-floppy.Tpo -c -o src/test_wd2793-floppy.o `test -f 'src/floppy.c' || echo '$(srcdir)/'`src/floppy.c
@@ -4970,9 +4994,9 @@ test-gifcap.log: test-gifcap$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-tests/test-cli.sh.log: tests/test-cli.sh
-	@p='tests/test-cli.sh'; \
-	b='tests/test-cli.sh'; \
+diagnostics/test-cli.sh.log: diagnostics/test-cli.sh
+	@p='diagnostics/test-cli.sh'; \
+	b='diagnostics/test-cli.sh'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -5209,10 +5233,10 @@ clean-generic:
 distclean-generic:
 	-$(am__rm_f) $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || $(am__rm_f) $(CONFIG_CLEAN_VPATH_FILES)
+	-$(am__rm_f) diagnostics/$(DEPDIR)/$(am__dirstamp)
+	-$(am__rm_f) diagnostics/$(am__dirstamp)
 	-$(am__rm_f) src/$(DEPDIR)/$(am__dirstamp)
 	-$(am__rm_f) src/$(am__dirstamp)
-	-$(am__rm_f) tests/$(DEPDIR)/$(am__dirstamp)
-	-$(am__rm_f) tests/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -5224,6 +5248,28 @@ clean-am: clean-binPROGRAMS clean-checkPROGRAMS clean-generic \
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
+	-rm -f diagnostics/$(DEPDIR)/test_ata-test_ata.Po
+	-rm -f diagnostics/$(DEPDIR)/test_cartridge-test_cartridge.Po
+	-rm -f diagnostics/$(DEPDIR)/test_cassette-test_cassette.Po
+	-rm -f diagnostics/$(DEPDIR)/test_config-test_config.Po
+	-rm -f diagnostics/$(DEPDIR)/test_floppy-test_floppy.Po
+	-rm -f diagnostics/$(DEPDIR)/test_gamepad-test_gamepad.Po
+	-rm -f diagnostics/$(DEPDIR)/test_gifcap-test_gifcap.Po
+	-rm -f diagnostics/$(DEPDIR)/test_kbd-test_kbd.Po
+	-rm -f diagnostics/$(DEPDIR)/test_megaflash-test_megaflash.Po
+	-rm -f diagnostics/$(DEPDIR)/test_models-test_models.Po
+	-rm -f diagnostics/$(DEPDIR)/test_msx-test_msx.Po
+	-rm -f diagnostics/$(DEPDIR)/test_overlay-test_overlay.Po
+	-rm -f diagnostics/$(DEPDIR)/test_paste-test_paste.Po
+	-rm -f diagnostics/$(DEPDIR)/test_psg-test_psg.Po
+	-rm -f diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po
+	-rm -f diagnostics/$(DEPDIR)/test_scc-test_scc.Po
+	-rm -f diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
+	-rm -f diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po
+	-rm -f diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po
+	-rm -f diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po
+	-rm -f diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po
+	-rm -f diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po
 	-rm -f src/$(DEPDIR)/1983-ata.Po
 	-rm -f src/$(DEPDIR)/1983-audio.Po
 	-rm -f src/$(DEPDIR)/1983-cartridge.Po
@@ -5379,28 +5425,6 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-floppy.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-wd2793.Po
-	-rm -f tests/$(DEPDIR)/test_ata-test_ata.Po
-	-rm -f tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
-	-rm -f tests/$(DEPDIR)/test_cassette-test_cassette.Po
-	-rm -f tests/$(DEPDIR)/test_config-test_config.Po
-	-rm -f tests/$(DEPDIR)/test_floppy-test_floppy.Po
-	-rm -f tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
-	-rm -f tests/$(DEPDIR)/test_gifcap-test_gifcap.Po
-	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po
-	-rm -f tests/$(DEPDIR)/test_megaflash-test_megaflash.Po
-	-rm -f tests/$(DEPDIR)/test_models-test_models.Po
-	-rm -f tests/$(DEPDIR)/test_msx-test_msx.Po
-	-rm -f tests/$(DEPDIR)/test_overlay-test_overlay.Po
-	-rm -f tests/$(DEPDIR)/test_paste-test_paste.Po
-	-rm -f tests/$(DEPDIR)/test_psg-test_psg.Po
-	-rm -f tests/$(DEPDIR)/test_rtc-test_rtc.Po
-	-rm -f tests/$(DEPDIR)/test_scc-test_scc.Po
-	-rm -f tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
-	-rm -f tests/$(DEPDIR)/test_sdcard-test_sdcard.Po
-	-rm -f tests/$(DEPDIR)/test_sunrise-test_sunrise.Po
-	-rm -f tests/$(DEPDIR)/test_unapinet-test_unapinet.Po
-	-rm -f tests/$(DEPDIR)/test_vdp-test_vdp.Po
-	-rm -f tests/$(DEPDIR)/test_wd2793-test_wd2793.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -5453,6 +5477,28 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
+	-rm -f diagnostics/$(DEPDIR)/test_ata-test_ata.Po
+	-rm -f diagnostics/$(DEPDIR)/test_cartridge-test_cartridge.Po
+	-rm -f diagnostics/$(DEPDIR)/test_cassette-test_cassette.Po
+	-rm -f diagnostics/$(DEPDIR)/test_config-test_config.Po
+	-rm -f diagnostics/$(DEPDIR)/test_floppy-test_floppy.Po
+	-rm -f diagnostics/$(DEPDIR)/test_gamepad-test_gamepad.Po
+	-rm -f diagnostics/$(DEPDIR)/test_gifcap-test_gifcap.Po
+	-rm -f diagnostics/$(DEPDIR)/test_kbd-test_kbd.Po
+	-rm -f diagnostics/$(DEPDIR)/test_megaflash-test_megaflash.Po
+	-rm -f diagnostics/$(DEPDIR)/test_models-test_models.Po
+	-rm -f diagnostics/$(DEPDIR)/test_msx-test_msx.Po
+	-rm -f diagnostics/$(DEPDIR)/test_overlay-test_overlay.Po
+	-rm -f diagnostics/$(DEPDIR)/test_paste-test_paste.Po
+	-rm -f diagnostics/$(DEPDIR)/test_psg-test_psg.Po
+	-rm -f diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po
+	-rm -f diagnostics/$(DEPDIR)/test_scc-test_scc.Po
+	-rm -f diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
+	-rm -f diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po
+	-rm -f diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po
+	-rm -f diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po
+	-rm -f diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po
+	-rm -f diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po
 	-rm -f src/$(DEPDIR)/1983-ata.Po
 	-rm -f src/$(DEPDIR)/1983-audio.Po
 	-rm -f src/$(DEPDIR)/1983-cartridge.Po
@@ -5608,28 +5654,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-floppy.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-wd2793.Po
-	-rm -f tests/$(DEPDIR)/test_ata-test_ata.Po
-	-rm -f tests/$(DEPDIR)/test_cartridge-test_cartridge.Po
-	-rm -f tests/$(DEPDIR)/test_cassette-test_cassette.Po
-	-rm -f tests/$(DEPDIR)/test_config-test_config.Po
-	-rm -f tests/$(DEPDIR)/test_floppy-test_floppy.Po
-	-rm -f tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
-	-rm -f tests/$(DEPDIR)/test_gifcap-test_gifcap.Po
-	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po
-	-rm -f tests/$(DEPDIR)/test_megaflash-test_megaflash.Po
-	-rm -f tests/$(DEPDIR)/test_models-test_models.Po
-	-rm -f tests/$(DEPDIR)/test_msx-test_msx.Po
-	-rm -f tests/$(DEPDIR)/test_overlay-test_overlay.Po
-	-rm -f tests/$(DEPDIR)/test_paste-test_paste.Po
-	-rm -f tests/$(DEPDIR)/test_psg-test_psg.Po
-	-rm -f tests/$(DEPDIR)/test_rtc-test_rtc.Po
-	-rm -f tests/$(DEPDIR)/test_scc-test_scc.Po
-	-rm -f tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
-	-rm -f tests/$(DEPDIR)/test_sdcard-test_sdcard.Po
-	-rm -f tests/$(DEPDIR)/test_sunrise-test_sunrise.Po
-	-rm -f tests/$(DEPDIR)/test_unapinet-test_unapinet.Po
-	-rm -f tests/$(DEPDIR)/test_vdp-test_vdp.Po
-	-rm -f tests/$(DEPDIR)/test_wd2793-test_wd2793.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

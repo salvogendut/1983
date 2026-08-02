@@ -36,27 +36,27 @@ complete MSX hardware specification.
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
 | `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, sprite-mode-2, and command engine |
 | `src/wd2793.*` | Philips memory-mapped WD2793 registers, commands, drive selection, IRQ/DRQ, and transfer state |
-| `tests/test_ata.c` | ATA identify, sector reads, errors, reset, activity, and conservative mount checks |
-| `tests/test_floppy.c` | Raw DSK geometry, read/write, failed replacement, flush failure, and safe ejection |
-| `tests/test_wd2793.c` | Commands, register mirrors, dual-drive selection, IRQ/DRQ, sector transfers, reset, and write protection |
-| `tests/test_sunrise.c` | Sunrise banking, overlay decode, data latch, master/slave, soft reset, and disk lifetime |
-| `tests/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/Nextor boot checks |
-| `tests/test_cartridge.c` | Linear, ASCII8/16, Konami, Konami SCC, detection, bank wrapping, reset, and eject checks |
-| `tests/test_cassette.c` | CAS type and command detection, waveform layout and monitor sampling, emulated-time transport, reset, rewind, eject, and conservative mounts |
-| `tests/test_config.c` | Persistent cartridge, cassette, mapper, extension, and Joy Port settings |
-| `tests/test_gamepad.c` | SDL-independent direction, trigger, dead-zone, and opposing-input mapping |
-| `tests/test_models.c` | Machine-catalogue parsing, hardware mapping, relative paths, and invalid-entry filtering |
-| `tests/test_overlay.c` | Overlay navigation, fixed 1.5× presentation scale, cassette transport, guided Sunrise setup, dynamic hardware rows, cartridge-slot LEDs, and model editing |
-| `tests/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
-| `tests/test_paste.c` | Paste timing, international punctuation, line-ending, replacement, and cancellation checks |
-| `tests/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
-| `tests/test_rtc.c` | RP-5C01 banks, masks, 12/24-hour and test modes, calendar boundaries, offline continuity, corruption rejection, and safe persistence |
-| `tests/test_sdcard.c` | SPI initialization, identification, capacity, read/write, multiple transfers, addressing, image safety, and error handling |
-| `tests/test_sd_mapper.c` | Firmware banking, expanded subslots, card selection/status, timer, mapper ports, reset, and image lifetime |
-| `tests/test_megaflash.c` | Expanded layout, mapper families, flash program/erase/persistence, dual SD, sound, corruption, and flush safety |
-| `tests/test_unapinet.c` | openMSXnet handshake and wire results plus real loopback DNS, TCP, UDP, reset, and activity checks |
-| `tests/test_scc.c` | SCC compatible/plus maps, waveform sharing, generators, deformation, and audio |
-| `tests/test_vdp.c` | Pattern/sprite-mode-1/2 rendering, V9938 bitmap layouts, commands, preloaded transfers, and beam/status checks |
+| `diagnostics/test_ata.c` | ATA identify, sector reads, errors, reset, activity, and conservative mount checks |
+| `diagnostics/test_floppy.c` | Raw DSK geometry, read/write, failed replacement, flush failure, and safe ejection |
+| `diagnostics/test_wd2793.c` | Commands, register mirrors, dual-drive selection, IRQ/DRQ, sector transfers, reset, and write protection |
+| `diagnostics/test_sunrise.c` | Sunrise banking, overlay decode, data latch, master/slave, soft reset, and disk lifetime |
+| `diagnostics/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/Nextor boot checks |
+| `diagnostics/test_cartridge.c` | Linear, ASCII8/16, Konami, Konami SCC, detection, bank wrapping, reset, and eject checks |
+| `diagnostics/test_cassette.c` | CAS type and command detection, waveform layout and monitor sampling, emulated-time transport, reset, rewind, eject, and conservative mounts |
+| `diagnostics/test_config.c` | Persistent cartridge, cassette, mapper, extension, and Joy Port settings |
+| `diagnostics/test_gamepad.c` | SDL-independent direction, trigger, dead-zone, and opposing-input mapping |
+| `diagnostics/test_models.c` | Machine-catalogue parsing, hardware mapping, relative paths, and invalid-entry filtering |
+| `diagnostics/test_overlay.c` | Overlay navigation, fixed 1.5× presentation scale, cassette transport, guided Sunrise setup, dynamic hardware rows, cartridge-slot LEDs, and model editing |
+| `diagnostics/test_kbd.c` | Exhaustive international matrix, rollover, alias, PPI, and guest-shortcut checks |
+| `diagnostics/test_paste.c` | Paste timing, international punctuation, line-ending, replacement, and cancellation checks |
+| `diagnostics/test_psg.c` | PSG registers, generators, envelope shapes, mixer, DAC, and mute checks |
+| `diagnostics/test_rtc.c` | RP-5C01 banks, masks, 12/24-hour and test modes, calendar boundaries, offline continuity, corruption rejection, and safe persistence |
+| `diagnostics/test_sdcard.c` | SPI initialization, identification, capacity, read/write, multiple transfers, addressing, image safety, and error handling |
+| `diagnostics/test_sd_mapper.c` | Firmware banking, expanded subslots, card selection/status, timer, mapper ports, reset, and image lifetime |
+| `diagnostics/test_megaflash.c` | Expanded layout, mapper families, flash program/erase/persistence, dual SD, sound, corruption, and flush safety |
+| `diagnostics/test_unapinet.c` | openMSXnet handshake and wire results plus real loopback DNS, TCP, UDP, reset, and activity checks |
+| `diagnostics/test_scc.c` | SCC compatible/plus maps, waveform sharing, generators, deformation, and audio |
+| `diagnostics/test_vdp.c` | Pattern/sprite-mode-1/2 rendering, V9938 bitmap layouts, commands, preloaded transfers, and beam/status checks |
 
 Frontend modules may inspect summarized machine state for presentation, but
 guest hardware should not depend on SDL. Keeping that direction of dependency

@@ -80,96 +80,96 @@ icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 CLEANFILES = icons/1983-rc.o
 
 check_PROGRAMS = test-cartridge test-cassette test-ata test-floppy test-wd2793 test-sunrise test-sdcard test-sd-mapper test-megaflash test-unapinet test-config test-models test-msx test-gamepad test-kbd test-paste test-overlay test-vdp test-psg test-scc test-rtc test-gifcap
-TESTS = $(check_PROGRAMS) tests/test-cli.sh
-test_cartridge_SOURCES = tests/test_cartridge.c src/cartridge.c src/scc.c
+TESTS = $(check_PROGRAMS) diagnostics/test-cli.sh
+test_cartridge_SOURCES = diagnostics/test_cartridge.c src/cartridge.c src/scc.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
 test_cartridge_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_cassette_SOURCES = tests/test_cassette.c src/cassette.c
+test_cassette_SOURCES = diagnostics/test_cassette.c src/cassette.c
 test_cassette_CPPFLAGS = -I$(top_srcdir)/src
 test_cassette_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_ata_SOURCES = tests/test_ata.c src/ata.c
+test_ata_SOURCES = diagnostics/test_ata.c src/ata.c
 test_ata_CPPFLAGS = -I$(top_srcdir)/src
 test_ata_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_floppy_SOURCES = tests/test_floppy.c src/floppy.c
+test_floppy_SOURCES = diagnostics/test_floppy.c src/floppy.c
 test_floppy_CPPFLAGS = -I$(top_srcdir)/src
 test_floppy_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_wd2793_SOURCES = tests/test_wd2793.c src/floppy.c src/wd2793.c
+test_wd2793_SOURCES = diagnostics/test_wd2793.c src/floppy.c src/wd2793.c
 test_wd2793_CPPFLAGS = -I$(top_srcdir)/src
 test_wd2793_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_sunrise_SOURCES = tests/test_sunrise.c src/ata.c src/sunrise.c
+test_sunrise_SOURCES = diagnostics/test_sunrise.c src/ata.c src/sunrise.c
 test_sunrise_CPPFLAGS = -I$(top_srcdir)/src
 test_sunrise_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_sdcard_SOURCES = tests/test_sdcard.c src/sdcard.c
+test_sdcard_SOURCES = diagnostics/test_sdcard.c src/sdcard.c
 test_sdcard_CPPFLAGS = -I$(top_srcdir)/src
 test_sdcard_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_sd_mapper_SOURCES = tests/test_sd_mapper.c src/sdcard.c src/sd_mapper.c
+test_sd_mapper_SOURCES = diagnostics/test_sd_mapper.c src/sdcard.c src/sd_mapper.c
 test_sd_mapper_CPPFLAGS = -I$(top_srcdir)/src
 test_sd_mapper_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_megaflash_SOURCES = tests/test_megaflash.c src/megaflash.c src/psg.c src/scc.c src/sdcard.c
+test_megaflash_SOURCES = diagnostics/test_megaflash.c src/megaflash.c src/psg.c src/scc.c src/sdcard.c
 test_megaflash_CPPFLAGS = -I$(top_srcdir)/src
 test_megaflash_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_unapinet_SOURCES = tests/test_unapinet.c src/unapinet.c
+test_unapinet_SOURCES = diagnostics/test_unapinet.c src/unapinet.c
 test_unapinet_CPPFLAGS = -I$(top_srcdir)/src
 test_unapinet_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_unapinet_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS)
 
-test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_config_SOURCES = diagnostics/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_config_CPPFLAGS = -I$(top_srcdir)/src
 test_config_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_models_SOURCES = tests/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_models_SOURCES = diagnostics/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_models_CPPFLAGS = -I$(top_srcdir)/src
 test_models_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_msx_SOURCES = tests/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_msx_SOURCES = diagnostics/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_gamepad_SOURCES = tests/test_gamepad.c src/gamepad.c
+test_gamepad_SOURCES = diagnostics/test_gamepad.c src/gamepad.c
 test_gamepad_CPPFLAGS = -I$(top_srcdir)/src
 test_gamepad_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_LDADD = $(SDL3_LIBS)
 
-test_kbd_SOURCES = tests/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/kbd.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_kbd_SOURCES = diagnostics/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/kbd.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
 
-test_paste_SOURCES = tests/test_paste.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/paste.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
+test_paste_SOURCES = diagnostics/test_paste.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/paste.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_paste_CPPFLAGS = -I$(top_srcdir)/src
 test_paste_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/ui.c src/unapinet.c src/vdp.c src/wd2793.c src/z80.c
+test_overlay_SOURCES = diagnostics/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/ui.c src/unapinet.c src/vdp.c src/wd2793.c src/z80.c
 test_overlay_CPPFLAGS = -I$(top_srcdir)/src
 test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_overlay_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS) -lm
 
-test_vdp_SOURCES = tests/test_vdp.c src/vdp.c
+test_vdp_SOURCES = diagnostics/test_vdp.c src/vdp.c
 test_vdp_CPPFLAGS = -I$(top_srcdir)/src
 test_vdp_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_psg_SOURCES = tests/test_psg.c src/psg.c
+test_psg_SOURCES = diagnostics/test_psg.c src/psg.c
 test_psg_CPPFLAGS = -I$(top_srcdir)/src
 test_psg_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_scc_SOURCES = tests/test_scc.c src/scc.c
+test_scc_SOURCES = diagnostics/test_scc.c src/scc.c
 test_scc_CPPFLAGS = -I$(top_srcdir)/src
 test_scc_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_rtc_SOURCES = tests/test_rtc.c src/rtc.c
+test_rtc_SOURCES = diagnostics/test_rtc.c src/rtc.c
 test_rtc_CPPFLAGS = -I$(top_srcdir)/src
 test_rtc_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_gifcap_SOURCES = tests/test_gifcap.c src/gifcap.c
+test_gifcap_SOURCES = diagnostics/test_gifcap.c src/gifcap.c
 test_gifcap_CPPFLAGS = -I$(top_srcdir)/src
 test_gifcap_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
@@ -217,7 +217,7 @@ EXTRA_DIST = \
 	io.github.salvogendut.Emulator1983.yml \
 	.github/workflows/build.yml \
 	packaging/macos/package.sh \
-	tests/test-cli.sh \
+	diagnostics/test-cli.sh \
 	icons/1983.png \
 	icons/README.md \
 	icons/1983.rc \
