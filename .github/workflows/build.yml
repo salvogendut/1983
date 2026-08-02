@@ -108,6 +108,7 @@ jobs:
             test-cartridge.exe test-cassette.exe test-ata.exe
             test-floppy.exe test-wd2793.exe test-sunrise.exe
             test-sdcard.exe test-sd-mapper.exe test-megaflash.exe
+            test-unapinet.exe
             test-config.exe test-models.exe test-msx.exe
             test-gamepad.exe test-kbd.exe test-paste.exe
             test-vdp.exe test-psg.exe

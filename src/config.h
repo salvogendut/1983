@@ -45,6 +45,7 @@ typedef struct {
     bool sunrise_ide;
     bool sd_mapper;
     bool megaflash;
+    bool tcpip_unapi;
     bool sd_mapper_ram;
     bool sd_mapper_alternate_driver;
     FloppyImageMode floppy_image_mode;

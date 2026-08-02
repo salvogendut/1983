@@ -18,6 +18,7 @@
 #include "overlay.h"
 #include "paste.h"
 #include "ui.h"
+#include "unapinet.h"
 
 #ifndef PROG_GIT_COMMIT
 #define PROG_GIT_COMMIT "unknown"
@@ -52,6 +53,7 @@ typedef struct {
     int floppy_image_mode;
     int ide_image_mode;
     int sd_image_mode;
+    int tcpip_unapi;
     int scale;
     int exit_after;
     const char *paste_text;
@@ -80,6 +82,8 @@ static const char *usage =
     "  --megaflash-rom PATH load a MegaFlashROM image (max 8 MiB)\n"
     "  --megaflash-sd-a PATH insert its first raw SD-card image\n"
     "  --megaflash-sd-b PATH insert its second raw SD-card image\n"
+    "  --unapi             enable the MSX TCP/IP UNAPI host bridge\n"
+    "  --no-unapi          disable the MSX TCP/IP UNAPI host bridge\n"
     "  --sd-mode MODE       SD access: read-only (default) or read-write\n"
     "  --disk-a PATH       insert a raw MSX DSK image in Drive A\n"
     "  --disk-b PATH       insert a raw MSX DSK image in Drive B\n"
@@ -193,6 +197,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
     cli->floppy_image_mode = -1;
     cli->ide_image_mode = -1;
     cli->sd_image_mode = -1;
+    cli->tcpip_unapi = -1;
     cli->scale = -1;
     cli->exit_after = -1;
     cli->paste_at = 60;
@@ -219,6 +224,14 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
         }
         if (strcmp(argument, "--dump-state") == 0) {
             cli->dump_state = true;
+            continue;
+        }
+        if (strcmp(argument, "--unapi") == 0) {
+            cli->tcpip_unapi = 1;
+            continue;
+        }
+        if (strcmp(argument, "--no-unapi") == 0) {
+            cli->tcpip_unapi = 0;
             continue;
         }
         if ((strcmp(argument, "--config") == 0 ||
@@ -503,6 +516,7 @@ int main(int argc, char **argv) {
     AudioOutput audio;
     GamepadInput gamepad;
     Overlay overlay;
+    UnapiNet *unapinet = NULL;
     char rtc_path[PATH_MAX];
     char megaflash_state_path[PATH_MAX];
     SDL_WindowID window_id;
@@ -654,6 +668,11 @@ int main(int argc, char **argv) {
     if (cli.sd_image_mode >= 0)
         config.sd_image_mode =
             (SdImageMode)cli.sd_image_mode;
+    if (cli.tcpip_unapi >= 0) {
+        config.tcpip_unapi = cli.tcpip_unapi != 0;
+        if (config.tcpip_unapi)
+            config.extra_hardware = true;
+    }
     if (cli.cassette_path)
         snprintf(config.cassette_path,
                  sizeof(config.cassette_path),
@@ -943,10 +962,36 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
+    unapinet = unapinet_create();
+    if (!unapinet) {
+        fprintf(stderr, "cannot create MSX TCP/IP UNAPI bridge\n");
+        if (cli.tcpip_unapi > 0) {
+            msx_destroy(&msx);
+            return 1;
+        }
+        config.tcpip_unapi = false;
+    } else {
+        msx_set_io_extension(
+            &msx, unapinet, unapinet_io_read,
+            unapinet_io_write, unapinet_io_reset);
+        if (config.tcpip_unapi &&
+            !unapinet_set_enabled(unapinet, true)) {
+            fprintf(stderr,
+                    "cannot enable MSX TCP/IP UNAPI bridge: %s\n",
+                    unapinet_error(unapinet));
+            config.tcpip_unapi = false;
+            if (cli.tcpip_unapi > 0) {
+                unapinet_destroy(unapinet);
+                msx_destroy(&msx);
+                return 1;
+            }
+        }
+    }
     definition = model_catalog_find(&models, config.machine_id);
     if (display_init(&display, &config, &msx,
                      definition ? definition->name : NULL) < 0) {
         display_quit(&display);
+        unapinet_destroy(unapinet);
         msx_destroy(&msx);
         return 1;
     }
@@ -957,7 +1002,8 @@ int main(int argc, char **argv) {
     notify_init();
     notify_set_mode(config.notifications);
     leds_init();
-    overlay_init(&overlay, &config, &models, &display, &msx);
+    overlay_init(
+        &overlay, &config, &models, &display, &msx, unapinet);
     if (msx_can_boot(&msx))
         notify_post("Firmware running - F9 opens options");
     else
@@ -1082,6 +1128,10 @@ int main(int argc, char **argv) {
                      cassette_file_type_name(type),
                      cassette_load_command(type));
     }
+    if (unapinet_enabled(unapinet))
+        startup_info(config.notifications,
+                     "MSX TCP/IP UNAPI bridge enabled on ports 28h/29h; "
+                     "run UNAPINET.COM in Nextor\n");
 
     next_frame_ns = SDL_GetTicksNS();
     paced_frame_hz = msx.frame_hz;
@@ -1318,6 +1368,7 @@ int main(int argc, char **argv) {
         }
         if (!msx.paused && !overlay.visible)
             paste_tick(&paste, &msx);
+        unapinet_poll(unapinet);
         msx_run_frame(&msx);
         audio_output_submit(&audio, msx.audio_samples,
                             msx.audio_sample_count);
@@ -1338,6 +1389,8 @@ int main(int argc, char **argv) {
             leds_ping(LED_FDC_A);
         if (msx_drive_b_take_activity(&msx))
             leds_ping(LED_FDC_B);
+        if (unapinet_take_activity(unapinet))
+            leds_ping(LED_NETWORK);
         notify_tick(1000 / msx.frame_hz);
         display_draw(&display, &msx);
         draw_debug(&config, &msx, &display);
@@ -1482,6 +1535,8 @@ int main(int argc, char **argv) {
     gamepad_input_destroy(&gamepad);
     paste_cancel(&paste, &msx);
     set_mouse_capture(&display, &msx, false);
+    msx_set_io_extension(&msx, NULL, NULL, NULL, NULL);
+    unapinet_destroy(unapinet);
     display_quit(&display);
     msx_destroy(&msx);
     return shutdown_status;

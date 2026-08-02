@@ -21,6 +21,7 @@ int main(void) {
     assert(!config.sd_mapper);
     assert(!config.sd_mapper_rom_path[0]);
     assert(!config.megaflash);
+    assert(!config.tcpip_unapi);
     assert(!config.megaflash_rom_path[0]);
     assert(!config.megaflash_card_path[0][0]);
     assert(!config.megaflash_card_path[1][0]);
@@ -115,6 +116,7 @@ int main(void) {
              sizeof(config.cassette_path),
              "/tapes/software.cas");
     config.sd_mapper = true;
+    config.tcpip_unapi = true;
     snprintf(config.sd_mapper_rom_path,
              sizeof(config.sd_mapper_rom_path),
              "/roms/SDXC110.ROM");
@@ -172,6 +174,7 @@ int main(void) {
     assert(strcmp(loaded.cassette_path,
                   "/tapes/software.cas") == 0);
     assert(loaded.sd_mapper);
+    assert(loaded.tcpip_unapi);
     assert(strcmp(loaded.sd_mapper_rom_path,
                   "/roms/SDXC110.ROM") == 0);
     assert(strcmp(loaded.sd_card_path[0],

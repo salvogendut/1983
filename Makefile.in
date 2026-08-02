@@ -97,10 +97,11 @@ check_PROGRAMS = test-cartridge$(EXEEXT) test-cassette$(EXEEXT) \
 	test-ata$(EXEEXT) test-floppy$(EXEEXT) test-wd2793$(EXEEXT) \
 	test-sunrise$(EXEEXT) test-sdcard$(EXEEXT) \
 	test-sd-mapper$(EXEEXT) test-megaflash$(EXEEXT) \
-	test-config$(EXEEXT) test-models$(EXEEXT) test-msx$(EXEEXT) \
-	test-gamepad$(EXEEXT) test-kbd$(EXEEXT) test-paste$(EXEEXT) \
-	test-overlay$(EXEEXT) test-vdp$(EXEEXT) test-psg$(EXEEXT) \
-	test-scc$(EXEEXT) test-rtc$(EXEEXT)
+	test-unapinet$(EXEEXT) test-config$(EXEEXT) \
+	test-models$(EXEEXT) test-msx$(EXEEXT) test-gamepad$(EXEEXT) \
+	test-kbd$(EXEEXT) test-paste$(EXEEXT) test-overlay$(EXEEXT) \
+	test-vdp$(EXEEXT) test-psg$(EXEEXT) test-scc$(EXEEXT) \
+	test-rtc$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -137,8 +138,9 @@ am_1983_OBJECTS = src/1983-config.$(OBJEXT) \
 	src/1983-psg.$(OBJEXT) src/1983-rtc.$(OBJEXT) \
 	src/1983-scc.$(OBJEXT) src/1983-sdcard.$(OBJEXT) \
 	src/1983-sd_mapper.$(OBJEXT) src/1983-sunrise.$(OBJEXT) \
-	src/1983-ui.$(OBJEXT) src/1983-vdp.$(OBJEXT) \
-	src/1983-wd2793.$(OBJEXT) src/1983-z80.$(OBJEXT)
+	src/1983-ui.$(OBJEXT) src/1983-unapinet.$(OBJEXT) \
+	src/1983-vdp.$(OBJEXT) src/1983-wd2793.$(OBJEXT) \
+	src/1983-z80.$(OBJEXT)
 1983_OBJECTS = $(am_1983_OBJECTS)
 am__DEPENDENCIES_1 =
 1983_LINK = $(CCLD) $(1983_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
@@ -265,11 +267,14 @@ am_test_overlay_OBJECTS = tests/test_overlay-test_overlay.$(OBJEXT) \
 	src/test_overlay-sdcard.$(OBJEXT) \
 	src/test_overlay-sd_mapper.$(OBJEXT) \
 	src/test_overlay-sunrise.$(OBJEXT) \
-	src/test_overlay-ui.$(OBJEXT) src/test_overlay-vdp.$(OBJEXT) \
+	src/test_overlay-ui.$(OBJEXT) \
+	src/test_overlay-unapinet.$(OBJEXT) \
+	src/test_overlay-vdp.$(OBJEXT) \
 	src/test_overlay-wd2793.$(OBJEXT) \
 	src/test_overlay-z80.$(OBJEXT)
 test_overlay_OBJECTS = $(am_test_overlay_OBJECTS)
-test_overlay_DEPENDENCIES = $(am__DEPENDENCIES_1)
+test_overlay_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 test_overlay_LINK = $(CCLD) $(test_overlay_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_paste_OBJECTS = tests/test_paste-test_paste.$(OBJEXT) \
@@ -326,6 +331,14 @@ test_sunrise_OBJECTS = $(am_test_sunrise_OBJECTS)
 test_sunrise_LDADD = $(LDADD)
 test_sunrise_LINK = $(CCLD) $(test_sunrise_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_test_unapinet_OBJECTS =  \
+	tests/test_unapinet-test_unapinet.$(OBJEXT) \
+	src/test_unapinet-unapinet.$(OBJEXT)
+test_unapinet_OBJECTS = $(am_test_unapinet_OBJECTS)
+test_unapinet_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+test_unapinet_LINK = $(CCLD) $(test_unapinet_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_vdp_OBJECTS = tests/test_vdp-test_vdp.$(OBJEXT) \
 	src/test_vdp-vdp.$(OBJEXT)
 test_vdp_OBJECTS = $(am_test_vdp_OBJECTS)
@@ -346,11 +359,11 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 =
+am__v_GEN_1 = 
 AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
-am__v_at_1 =
+am__v_at_1 = 
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__maybe_remake_depfiles = depfiles
@@ -366,9 +379,9 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/1983-psg.Po src/$(DEPDIR)/1983-rtc.Po \
 	src/$(DEPDIR)/1983-scc.Po src/$(DEPDIR)/1983-sd_mapper.Po \
 	src/$(DEPDIR)/1983-sdcard.Po src/$(DEPDIR)/1983-sunrise.Po \
-	src/$(DEPDIR)/1983-ui.Po src/$(DEPDIR)/1983-vdp.Po \
-	src/$(DEPDIR)/1983-wd2793.Po src/$(DEPDIR)/1983-z80.Po \
-	src/$(DEPDIR)/test_ata-ata.Po \
+	src/$(DEPDIR)/1983-ui.Po src/$(DEPDIR)/1983-unapinet.Po \
+	src/$(DEPDIR)/1983-vdp.Po src/$(DEPDIR)/1983-wd2793.Po \
+	src/$(DEPDIR)/1983-z80.Po src/$(DEPDIR)/test_ata-ata.Po \
 	src/$(DEPDIR)/test_cartridge-cartridge.Po \
 	src/$(DEPDIR)/test_cartridge-scc.Po \
 	src/$(DEPDIR)/test_cassette-cassette.Po \
@@ -452,6 +465,7 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_overlay-sdcard.Po \
 	src/$(DEPDIR)/test_overlay-sunrise.Po \
 	src/$(DEPDIR)/test_overlay-ui.Po \
+	src/$(DEPDIR)/test_overlay-unapinet.Po \
 	src/$(DEPDIR)/test_overlay-vdp.Po \
 	src/$(DEPDIR)/test_overlay-wd2793.Po \
 	src/$(DEPDIR)/test_overlay-z80.Po \
@@ -477,6 +491,7 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_sdcard-sdcard.Po \
 	src/$(DEPDIR)/test_sunrise-ata.Po \
 	src/$(DEPDIR)/test_sunrise-sunrise.Po \
+	src/$(DEPDIR)/test_unapinet-unapinet.Po \
 	src/$(DEPDIR)/test_vdp-vdp.Po \
 	src/$(DEPDIR)/test_wd2793-floppy.Po \
 	src/$(DEPDIR)/test_wd2793-wd2793.Po \
@@ -498,25 +513,26 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po \
 	tests/$(DEPDIR)/test_sdcard-test_sdcard.Po \
 	tests/$(DEPDIR)/test_sunrise-test_sunrise.Po \
+	tests/$(DEPDIR)/test_unapinet-test_unapinet.Po \
 	tests/$(DEPDIR)/test_vdp-test_vdp.Po \
 	tests/$(DEPDIR)/test_wd2793-test_wd2793.Po
 am__mv = mv -f
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
-am__v_lt_1 =
+am__v_lt_1 = 
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
 am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 =
+am__v_CC_1 = 
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 =
+am__v_CCLD_1 = 
 SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_cartridge_SOURCES) $(test_cassette_SOURCES) \
 	$(test_config_SOURCES) $(test_floppy_SOURCES) \
@@ -526,7 +542,8 @@ SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_paste_SOURCES) $(test_psg_SOURCES) $(test_rtc_SOURCES) \
 	$(test_scc_SOURCES) $(test_sd_mapper_SOURCES) \
 	$(test_sdcard_SOURCES) $(test_sunrise_SOURCES) \
-	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
+	$(test_unapinet_SOURCES) $(test_vdp_SOURCES) \
+	$(test_wd2793_SOURCES)
 DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_cartridge_SOURCES) $(test_cassette_SOURCES) \
 	$(test_config_SOURCES) $(test_floppy_SOURCES) \
@@ -536,7 +553,8 @@ DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_paste_SOURCES) $(test_psg_SOURCES) $(test_rtc_SOURCES) \
 	$(test_scc_SOURCES) $(test_sd_mapper_SOURCES) \
 	$(test_sdcard_SOURCES) $(test_sunrise_SOURCES) \
-	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
+	$(test_unapinet_SOURCES) $(test_vdp_SOURCES) \
+	$(test_wd2793_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -838,6 +856,7 @@ LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
+NETWORK_LIBS = @NETWORK_LIBS@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
@@ -939,6 +958,7 @@ AM_LDFLAGS = $(WIN_STACK_LDFLAGS)
 	src/sd_mapper.c \
 	src/sunrise.c \
 	src/ui.c \
+	src/unapinet.c \
 	src/vdp.c \
 	src/wd2793.c \
 	src/z80.c
@@ -968,6 +988,7 @@ noinst_HEADERS = \
 	src/sunrise.h \
 	src/types.h \
 	src/ui.h \
+	src/unapinet.h \
 	src/vdp.h \
 	src/wd2793.h \
 	src/z80.h
@@ -976,7 +997,7 @@ noinst_HEADERS = \
 1983_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic \
 	-DPROG_GIT_COMMIT=\"$(PROG_GIT_COMMIT)\"
 
-1983_LDADD = $(SDL3_LIBS) -lm $(WIN_RC_OBJ)
+1983_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS) -lm $(WIN_RC_OBJ)
 1983_DEPENDENCIES = $(WIN_RC_OBJ)
 CLEANFILES = icons/1983-rc.o
 TESTS = $(check_PROGRAMS) tests/test-cli.sh
@@ -1007,6 +1028,10 @@ test_sd_mapper_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_megaflash_SOURCES = tests/test_megaflash.c src/megaflash.c src/psg.c src/scc.c src/sdcard.c
 test_megaflash_CPPFLAGS = -I$(top_srcdir)/src
 test_megaflash_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_unapinet_SOURCES = tests/test_unapinet.c src/unapinet.c
+test_unapinet_CPPFLAGS = -I$(top_srcdir)/src
+test_unapinet_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
+test_unapinet_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS)
 test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_config_CPPFLAGS = -I$(top_srcdir)/src
 test_config_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
@@ -1027,10 +1052,10 @@ test_kbd_LDADD = $(SDL3_LIBS)
 test_paste_SOURCES = tests/test_paste.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/paste.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_paste_CPPFLAGS = -I$(top_srcdir)/src
 test_paste_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/ui.c src/vdp.c src/wd2793.c src/z80.c
+test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/ui.c src/unapinet.c src/vdp.c src/wd2793.c src/z80.c
 test_overlay_CPPFLAGS = -I$(top_srcdir)/src
 test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
-test_overlay_LDADD = $(SDL3_LIBS) -lm
+test_overlay_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS) -lm
 test_vdp_SOURCES = tests/test_vdp.c src/vdp.c
 test_vdp_CPPFLAGS = -I$(top_srcdir)/src
 test_vdp_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
@@ -1224,6 +1249,8 @@ src/1983-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-ui.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-unapinet.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-vdp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-wd2793.$(OBJEXT): src/$(am__dirstamp) \
@@ -1231,7 +1258,7 @@ src/1983-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 src/1983-z80.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-1983$(EXEEXT): $(1983_OBJECTS) $(1983_DEPENDENCIES) $(EXTRA_1983_DEPENDENCIES)
+1983$(EXEEXT): $(1983_OBJECTS) $(1983_DEPENDENCIES) $(EXTRA_1983_DEPENDENCIES) 
 	@rm -f 1983$(EXEEXT)
 	$(AM_V_CCLD)$(1983_LINK) $(1983_OBJECTS) $(1983_LDADD) $(LIBS)
 tests/$(am__dirstamp):
@@ -1245,7 +1272,7 @@ tests/test_ata-test_ata.$(OBJEXT): tests/$(am__dirstamp) \
 src/test_ata-ata.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-ata$(EXEEXT): $(test_ata_OBJECTS) $(test_ata_DEPENDENCIES) $(EXTRA_test_ata_DEPENDENCIES)
+test-ata$(EXEEXT): $(test_ata_OBJECTS) $(test_ata_DEPENDENCIES) $(EXTRA_test_ata_DEPENDENCIES) 
 	@rm -f test-ata$(EXEEXT)
 	$(AM_V_CCLD)$(test_ata_LINK) $(test_ata_OBJECTS) $(test_ata_LDADD) $(LIBS)
 tests/test_cartridge-test_cartridge.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1255,7 +1282,7 @@ src/test_cartridge-cartridge.$(OBJEXT): src/$(am__dirstamp) \
 src/test_cartridge-scc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-cartridge$(EXEEXT): $(test_cartridge_OBJECTS) $(test_cartridge_DEPENDENCIES) $(EXTRA_test_cartridge_DEPENDENCIES)
+test-cartridge$(EXEEXT): $(test_cartridge_OBJECTS) $(test_cartridge_DEPENDENCIES) $(EXTRA_test_cartridge_DEPENDENCIES) 
 	@rm -f test-cartridge$(EXEEXT)
 	$(AM_V_CCLD)$(test_cartridge_LINK) $(test_cartridge_OBJECTS) $(test_cartridge_LDADD) $(LIBS)
 tests/test_cassette-test_cassette.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1263,7 +1290,7 @@ tests/test_cassette-test_cassette.$(OBJEXT): tests/$(am__dirstamp) \
 src/test_cassette-cassette.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-cassette$(EXEEXT): $(test_cassette_OBJECTS) $(test_cassette_DEPENDENCIES) $(EXTRA_test_cassette_DEPENDENCIES)
+test-cassette$(EXEEXT): $(test_cassette_OBJECTS) $(test_cassette_DEPENDENCIES) $(EXTRA_test_cassette_DEPENDENCIES) 
 	@rm -f test-cassette$(EXEEXT)
 	$(AM_V_CCLD)$(test_cassette_LINK) $(test_cassette_OBJECTS) $(test_cassette_LDADD) $(LIBS)
 tests/test_config-test_config.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1301,7 +1328,7 @@ src/test_config-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 src/test_config-z80.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-config$(EXEEXT): $(test_config_OBJECTS) $(test_config_DEPENDENCIES) $(EXTRA_test_config_DEPENDENCIES)
+test-config$(EXEEXT): $(test_config_OBJECTS) $(test_config_DEPENDENCIES) $(EXTRA_test_config_DEPENDENCIES) 
 	@rm -f test-config$(EXEEXT)
 	$(AM_V_CCLD)$(test_config_LINK) $(test_config_OBJECTS) $(test_config_LDADD) $(LIBS)
 tests/test_floppy-test_floppy.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1309,7 +1336,7 @@ tests/test_floppy-test_floppy.$(OBJEXT): tests/$(am__dirstamp) \
 src/test_floppy-floppy.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-floppy$(EXEEXT): $(test_floppy_OBJECTS) $(test_floppy_DEPENDENCIES) $(EXTRA_test_floppy_DEPENDENCIES)
+test-floppy$(EXEEXT): $(test_floppy_OBJECTS) $(test_floppy_DEPENDENCIES) $(EXTRA_test_floppy_DEPENDENCIES) 
 	@rm -f test-floppy$(EXEEXT)
 	$(AM_V_CCLD)$(test_floppy_LINK) $(test_floppy_OBJECTS) $(test_floppy_LDADD) $(LIBS)
 tests/test_gamepad-test_gamepad.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1317,7 +1344,7 @@ tests/test_gamepad-test_gamepad.$(OBJEXT): tests/$(am__dirstamp) \
 src/test_gamepad-gamepad.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-gamepad$(EXEEXT): $(test_gamepad_OBJECTS) $(test_gamepad_DEPENDENCIES) $(EXTRA_test_gamepad_DEPENDENCIES)
+test-gamepad$(EXEEXT): $(test_gamepad_OBJECTS) $(test_gamepad_DEPENDENCIES) $(EXTRA_test_gamepad_DEPENDENCIES) 
 	@rm -f test-gamepad$(EXEEXT)
 	$(AM_V_CCLD)$(test_gamepad_LINK) $(test_gamepad_OBJECTS) $(test_gamepad_LDADD) $(LIBS)
 tests/test_kbd-test_kbd.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1355,7 +1382,7 @@ src/test_kbd-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 src/test_kbd-z80.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-kbd$(EXEEXT): $(test_kbd_OBJECTS) $(test_kbd_DEPENDENCIES) $(EXTRA_test_kbd_DEPENDENCIES)
+test-kbd$(EXEEXT): $(test_kbd_OBJECTS) $(test_kbd_DEPENDENCIES) $(EXTRA_test_kbd_DEPENDENCIES) 
 	@rm -f test-kbd$(EXEEXT)
 	$(AM_V_CCLD)$(test_kbd_LINK) $(test_kbd_OBJECTS) $(test_kbd_LDADD) $(LIBS)
 tests/test_megaflash-test_megaflash.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1369,7 +1396,7 @@ src/test_megaflash-scc.$(OBJEXT): src/$(am__dirstamp) \
 src/test_megaflash-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-megaflash$(EXEEXT): $(test_megaflash_OBJECTS) $(test_megaflash_DEPENDENCIES) $(EXTRA_test_megaflash_DEPENDENCIES)
+test-megaflash$(EXEEXT): $(test_megaflash_OBJECTS) $(test_megaflash_DEPENDENCIES) $(EXTRA_test_megaflash_DEPENDENCIES) 
 	@rm -f test-megaflash$(EXEEXT)
 	$(AM_V_CCLD)$(test_megaflash_LINK) $(test_megaflash_OBJECTS) $(test_megaflash_LDADD) $(LIBS)
 tests/test_models-test_models.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1407,7 +1434,7 @@ src/test_models-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 src/test_models-z80.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-models$(EXEEXT): $(test_models_OBJECTS) $(test_models_DEPENDENCIES) $(EXTRA_test_models_DEPENDENCIES)
+test-models$(EXEEXT): $(test_models_OBJECTS) $(test_models_DEPENDENCIES) $(EXTRA_test_models_DEPENDENCIES) 
 	@rm -f test-models$(EXEEXT)
 	$(AM_V_CCLD)$(test_models_LINK) $(test_models_OBJECTS) $(test_models_LDADD) $(LIBS)
 tests/test_msx-test_msx.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1443,7 +1470,7 @@ src/test_msx-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 src/test_msx-z80.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-msx$(EXEEXT): $(test_msx_OBJECTS) $(test_msx_DEPENDENCIES) $(EXTRA_test_msx_DEPENDENCIES)
+test-msx$(EXEEXT): $(test_msx_OBJECTS) $(test_msx_DEPENDENCIES) $(EXTRA_test_msx_DEPENDENCIES) 
 	@rm -f test-msx$(EXEEXT)
 	$(AM_V_CCLD)$(test_msx_LINK) $(test_msx_OBJECTS) $(test_msx_LDADD) $(LIBS)
 tests/test_overlay-test_overlay.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1486,6 +1513,8 @@ src/test_overlay-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-ui.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-unapinet.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-vdp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-wd2793.$(OBJEXT): src/$(am__dirstamp) \
@@ -1493,7 +1522,7 @@ src/test_overlay-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 src/test_overlay-z80.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-overlay$(EXEEXT): $(test_overlay_OBJECTS) $(test_overlay_DEPENDENCIES) $(EXTRA_test_overlay_DEPENDENCIES)
+test-overlay$(EXEEXT): $(test_overlay_OBJECTS) $(test_overlay_DEPENDENCIES) $(EXTRA_test_overlay_DEPENDENCIES) 
 	@rm -f test-overlay$(EXEEXT)
 	$(AM_V_CCLD)$(test_overlay_LINK) $(test_overlay_OBJECTS) $(test_overlay_LDADD) $(LIBS)
 tests/test_paste-test_paste.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1531,7 +1560,7 @@ src/test_paste-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 src/test_paste-z80.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-paste$(EXEEXT): $(test_paste_OBJECTS) $(test_paste_DEPENDENCIES) $(EXTRA_test_paste_DEPENDENCIES)
+test-paste$(EXEEXT): $(test_paste_OBJECTS) $(test_paste_DEPENDENCIES) $(EXTRA_test_paste_DEPENDENCIES) 
 	@rm -f test-paste$(EXEEXT)
 	$(AM_V_CCLD)$(test_paste_LINK) $(test_paste_OBJECTS) $(test_paste_LDADD) $(LIBS)
 tests/test_psg-test_psg.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1539,7 +1568,7 @@ tests/test_psg-test_psg.$(OBJEXT): tests/$(am__dirstamp) \
 src/test_psg-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-psg$(EXEEXT): $(test_psg_OBJECTS) $(test_psg_DEPENDENCIES) $(EXTRA_test_psg_DEPENDENCIES)
+test-psg$(EXEEXT): $(test_psg_OBJECTS) $(test_psg_DEPENDENCIES) $(EXTRA_test_psg_DEPENDENCIES) 
 	@rm -f test-psg$(EXEEXT)
 	$(AM_V_CCLD)$(test_psg_LINK) $(test_psg_OBJECTS) $(test_psg_LDADD) $(LIBS)
 tests/test_rtc-test_rtc.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1547,7 +1576,7 @@ tests/test_rtc-test_rtc.$(OBJEXT): tests/$(am__dirstamp) \
 src/test_rtc-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-rtc$(EXEEXT): $(test_rtc_OBJECTS) $(test_rtc_DEPENDENCIES) $(EXTRA_test_rtc_DEPENDENCIES)
+test-rtc$(EXEEXT): $(test_rtc_OBJECTS) $(test_rtc_DEPENDENCIES) $(EXTRA_test_rtc_DEPENDENCIES) 
 	@rm -f test-rtc$(EXEEXT)
 	$(AM_V_CCLD)$(test_rtc_LINK) $(test_rtc_OBJECTS) $(test_rtc_LDADD) $(LIBS)
 tests/test_scc-test_scc.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1555,7 +1584,7 @@ tests/test_scc-test_scc.$(OBJEXT): tests/$(am__dirstamp) \
 src/test_scc-scc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-scc$(EXEEXT): $(test_scc_OBJECTS) $(test_scc_DEPENDENCIES) $(EXTRA_test_scc_DEPENDENCIES)
+test-scc$(EXEEXT): $(test_scc_OBJECTS) $(test_scc_DEPENDENCIES) $(EXTRA_test_scc_DEPENDENCIES) 
 	@rm -f test-scc$(EXEEXT)
 	$(AM_V_CCLD)$(test_scc_LINK) $(test_scc_OBJECTS) $(test_scc_LDADD) $(LIBS)
 tests/test_sd_mapper-test_sd_mapper.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1565,7 +1594,7 @@ src/test_sd_mapper-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 src/test_sd_mapper-sd_mapper.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-sd-mapper$(EXEEXT): $(test_sd_mapper_OBJECTS) $(test_sd_mapper_DEPENDENCIES) $(EXTRA_test_sd_mapper_DEPENDENCIES)
+test-sd-mapper$(EXEEXT): $(test_sd_mapper_OBJECTS) $(test_sd_mapper_DEPENDENCIES) $(EXTRA_test_sd_mapper_DEPENDENCIES) 
 	@rm -f test-sd-mapper$(EXEEXT)
 	$(AM_V_CCLD)$(test_sd_mapper_LINK) $(test_sd_mapper_OBJECTS) $(test_sd_mapper_LDADD) $(LIBS)
 tests/test_sdcard-test_sdcard.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1573,7 +1602,7 @@ tests/test_sdcard-test_sdcard.$(OBJEXT): tests/$(am__dirstamp) \
 src/test_sdcard-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-sdcard$(EXEEXT): $(test_sdcard_OBJECTS) $(test_sdcard_DEPENDENCIES) $(EXTRA_test_sdcard_DEPENDENCIES)
+test-sdcard$(EXEEXT): $(test_sdcard_OBJECTS) $(test_sdcard_DEPENDENCIES) $(EXTRA_test_sdcard_DEPENDENCIES) 
 	@rm -f test-sdcard$(EXEEXT)
 	$(AM_V_CCLD)$(test_sdcard_LINK) $(test_sdcard_OBJECTS) $(test_sdcard_LDADD) $(LIBS)
 tests/test_sunrise-test_sunrise.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1583,15 +1612,23 @@ src/test_sunrise-ata.$(OBJEXT): src/$(am__dirstamp) \
 src/test_sunrise-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-sunrise$(EXEEXT): $(test_sunrise_OBJECTS) $(test_sunrise_DEPENDENCIES) $(EXTRA_test_sunrise_DEPENDENCIES)
+test-sunrise$(EXEEXT): $(test_sunrise_OBJECTS) $(test_sunrise_DEPENDENCIES) $(EXTRA_test_sunrise_DEPENDENCIES) 
 	@rm -f test-sunrise$(EXEEXT)
 	$(AM_V_CCLD)$(test_sunrise_LINK) $(test_sunrise_OBJECTS) $(test_sunrise_LDADD) $(LIBS)
+tests/test_unapinet-test_unapinet.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_unapinet-unapinet.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-unapinet$(EXEEXT): $(test_unapinet_OBJECTS) $(test_unapinet_DEPENDENCIES) $(EXTRA_test_unapinet_DEPENDENCIES) 
+	@rm -f test-unapinet$(EXEEXT)
+	$(AM_V_CCLD)$(test_unapinet_LINK) $(test_unapinet_OBJECTS) $(test_unapinet_LDADD) $(LIBS)
 tests/test_vdp-test_vdp.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_vdp-vdp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-vdp$(EXEEXT): $(test_vdp_OBJECTS) $(test_vdp_DEPENDENCIES) $(EXTRA_test_vdp_DEPENDENCIES)
+test-vdp$(EXEEXT): $(test_vdp_OBJECTS) $(test_vdp_DEPENDENCIES) $(EXTRA_test_vdp_DEPENDENCIES) 
 	@rm -f test-vdp$(EXEEXT)
 	$(AM_V_CCLD)$(test_vdp_LINK) $(test_vdp_OBJECTS) $(test_vdp_LDADD) $(LIBS)
 tests/test_wd2793-test_wd2793.$(OBJEXT): tests/$(am__dirstamp) \
@@ -1601,7 +1638,7 @@ src/test_wd2793-floppy.$(OBJEXT): src/$(am__dirstamp) \
 src/test_wd2793-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
-test-wd2793$(EXEEXT): $(test_wd2793_OBJECTS) $(test_wd2793_DEPENDENCIES) $(EXTRA_test_wd2793_DEPENDENCIES)
+test-wd2793$(EXEEXT): $(test_wd2793_OBJECTS) $(test_wd2793_DEPENDENCIES) $(EXTRA_test_wd2793_DEPENDENCIES) 
 	@rm -f test-wd2793$(EXEEXT)
 	$(AM_V_CCLD)$(test_wd2793_LINK) $(test_wd2793_OBJECTS) $(test_wd2793_LDADD) $(LIBS)
 
@@ -1637,6 +1674,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-ui.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-unapinet.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-wd2793.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-z80.Po@am__quote@ # am--include-marker
@@ -1732,6 +1770,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-ui.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-unapinet.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-wd2793.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-z80.Po@am__quote@ # am--include-marker
@@ -1759,6 +1798,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sdcard-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sunrise-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sunrise-sunrise.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_unapinet-unapinet.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_vdp-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_wd2793-floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_wd2793-wd2793.Po@am__quote@ # am--include-marker
@@ -1780,6 +1820,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_sdcard-test_sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_sunrise-test_sunrise.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_unapinet-test_unapinet.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_vdp-test_vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_wd2793-test_wd2793.Po@am__quote@ # am--include-marker
 
@@ -2140,6 +2181,20 @@ src/1983-ui.obj: src/ui.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ui.c' object='src/1983-ui.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-ui.obj `if test -f 'src/ui.c'; then $(CYGPATH_W) 'src/ui.c'; else $(CYGPATH_W) '$(srcdir)/src/ui.c'; fi`
+
+src/1983-unapinet.o: src/unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-unapinet.o -MD -MP -MF src/$(DEPDIR)/1983-unapinet.Tpo -c -o src/1983-unapinet.o `test -f 'src/unapinet.c' || echo '$(srcdir)/'`src/unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-unapinet.Tpo src/$(DEPDIR)/1983-unapinet.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/unapinet.c' object='src/1983-unapinet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-unapinet.o `test -f 'src/unapinet.c' || echo '$(srcdir)/'`src/unapinet.c
+
+src/1983-unapinet.obj: src/unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-unapinet.obj -MD -MP -MF src/$(DEPDIR)/1983-unapinet.Tpo -c -o src/1983-unapinet.obj `if test -f 'src/unapinet.c'; then $(CYGPATH_W) 'src/unapinet.c'; else $(CYGPATH_W) '$(srcdir)/src/unapinet.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-unapinet.Tpo src/$(DEPDIR)/1983-unapinet.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/unapinet.c' object='src/1983-unapinet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-unapinet.obj `if test -f 'src/unapinet.c'; then $(CYGPATH_W) 'src/unapinet.c'; else $(CYGPATH_W) '$(srcdir)/src/unapinet.c'; fi`
 
 src/1983-vdp.o: src/vdp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-vdp.o -MD -MP -MF src/$(DEPDIR)/1983-vdp.Tpo -c -o src/1983-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
@@ -3625,6 +3680,20 @@ src/test_overlay-ui.obj: src/ui.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-ui.obj `if test -f 'src/ui.c'; then $(CYGPATH_W) 'src/ui.c'; else $(CYGPATH_W) '$(srcdir)/src/ui.c'; fi`
 
+src/test_overlay-unapinet.o: src/unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-unapinet.o -MD -MP -MF src/$(DEPDIR)/test_overlay-unapinet.Tpo -c -o src/test_overlay-unapinet.o `test -f 'src/unapinet.c' || echo '$(srcdir)/'`src/unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-unapinet.Tpo src/$(DEPDIR)/test_overlay-unapinet.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/unapinet.c' object='src/test_overlay-unapinet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-unapinet.o `test -f 'src/unapinet.c' || echo '$(srcdir)/'`src/unapinet.c
+
+src/test_overlay-unapinet.obj: src/unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-unapinet.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-unapinet.Tpo -c -o src/test_overlay-unapinet.obj `if test -f 'src/unapinet.c'; then $(CYGPATH_W) 'src/unapinet.c'; else $(CYGPATH_W) '$(srcdir)/src/unapinet.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-unapinet.Tpo src/$(DEPDIR)/test_overlay-unapinet.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/unapinet.c' object='src/test_overlay-unapinet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-unapinet.obj `if test -f 'src/unapinet.c'; then $(CYGPATH_W) 'src/unapinet.c'; else $(CYGPATH_W) '$(srcdir)/src/unapinet.c'; fi`
+
 src/test_overlay-vdp.o: src/vdp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-vdp.o -MD -MP -MF src/$(DEPDIR)/test_overlay-vdp.Tpo -c -o src/test_overlay-vdp.o `test -f 'src/vdp.c' || echo '$(srcdir)/'`src/vdp.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-vdp.Tpo src/$(DEPDIR)/test_overlay-vdp.Po
@@ -4100,6 +4169,34 @@ src/test_sunrise-sunrise.obj: src/sunrise.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sunrise.c' object='src/test_sunrise-sunrise.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -c -o src/test_sunrise-sunrise.obj `if test -f 'src/sunrise.c'; then $(CYGPATH_W) 'src/sunrise.c'; else $(CYGPATH_W) '$(srcdir)/src/sunrise.c'; fi`
+
+tests/test_unapinet-test_unapinet.o: tests/test_unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -MT tests/test_unapinet-test_unapinet.o -MD -MP -MF tests/$(DEPDIR)/test_unapinet-test_unapinet.Tpo -c -o tests/test_unapinet-test_unapinet.o `test -f 'tests/test_unapinet.c' || echo '$(srcdir)/'`tests/test_unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_unapinet-test_unapinet.Tpo tests/$(DEPDIR)/test_unapinet-test_unapinet.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_unapinet.c' object='tests/test_unapinet-test_unapinet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -c -o tests/test_unapinet-test_unapinet.o `test -f 'tests/test_unapinet.c' || echo '$(srcdir)/'`tests/test_unapinet.c
+
+tests/test_unapinet-test_unapinet.obj: tests/test_unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -MT tests/test_unapinet-test_unapinet.obj -MD -MP -MF tests/$(DEPDIR)/test_unapinet-test_unapinet.Tpo -c -o tests/test_unapinet-test_unapinet.obj `if test -f 'tests/test_unapinet.c'; then $(CYGPATH_W) 'tests/test_unapinet.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_unapinet.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_unapinet-test_unapinet.Tpo tests/$(DEPDIR)/test_unapinet-test_unapinet.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_unapinet.c' object='tests/test_unapinet-test_unapinet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -c -o tests/test_unapinet-test_unapinet.obj `if test -f 'tests/test_unapinet.c'; then $(CYGPATH_W) 'tests/test_unapinet.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_unapinet.c'; fi`
+
+src/test_unapinet-unapinet.o: src/unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -MT src/test_unapinet-unapinet.o -MD -MP -MF src/$(DEPDIR)/test_unapinet-unapinet.Tpo -c -o src/test_unapinet-unapinet.o `test -f 'src/unapinet.c' || echo '$(srcdir)/'`src/unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_unapinet-unapinet.Tpo src/$(DEPDIR)/test_unapinet-unapinet.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/unapinet.c' object='src/test_unapinet-unapinet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -c -o src/test_unapinet-unapinet.o `test -f 'src/unapinet.c' || echo '$(srcdir)/'`src/unapinet.c
+
+src/test_unapinet-unapinet.obj: src/unapinet.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -MT src/test_unapinet-unapinet.obj -MD -MP -MF src/$(DEPDIR)/test_unapinet-unapinet.Tpo -c -o src/test_unapinet-unapinet.obj `if test -f 'src/unapinet.c'; then $(CYGPATH_W) 'src/unapinet.c'; else $(CYGPATH_W) '$(srcdir)/src/unapinet.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_unapinet-unapinet.Tpo src/$(DEPDIR)/test_unapinet-unapinet.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/unapinet.c' object='src/test_unapinet-unapinet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -c -o src/test_unapinet-unapinet.obj `if test -f 'src/unapinet.c'; then $(CYGPATH_W) 'src/unapinet.c'; else $(CYGPATH_W) '$(srcdir)/src/unapinet.c'; fi`
 
 tests/test_vdp-test_vdp.o: tests/test_vdp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -MT tests/test_vdp-test_vdp.o -MD -MP -MF tests/$(DEPDIR)/test_vdp-test_vdp.Tpo -c -o tests/test_vdp-test_vdp.o `test -f 'tests/test_vdp.c' || echo '$(srcdir)/'`tests/test_vdp.c
@@ -4690,6 +4787,13 @@ test-megaflash.log: test-megaflash$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-unapinet.log: test-unapinet$(EXEEXT)
+	@p='test-unapinet$(EXEEXT)'; \
+	b='test-unapinet'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-config.log: test-config$(EXEEXT)
 	@p='test-config$(EXEEXT)'; \
 	b='test-config'; \
@@ -5045,6 +5149,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-sdcard.Po
 	-rm -f src/$(DEPDIR)/1983-sunrise.Po
 	-rm -f src/$(DEPDIR)/1983-ui.Po
+	-rm -f src/$(DEPDIR)/1983-unapinet.Po
 	-rm -f src/$(DEPDIR)/1983-vdp.Po
 	-rm -f src/$(DEPDIR)/1983-wd2793.Po
 	-rm -f src/$(DEPDIR)/1983-z80.Po
@@ -5140,6 +5245,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_overlay-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_overlay-ui.Po
+	-rm -f src/$(DEPDIR)/test_overlay-unapinet.Po
 	-rm -f src/$(DEPDIR)/test_overlay-vdp.Po
 	-rm -f src/$(DEPDIR)/test_overlay-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_overlay-z80.Po
@@ -5167,6 +5273,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_sdcard-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_sunrise-ata.Po
 	-rm -f src/$(DEPDIR)/test_sunrise-sunrise.Po
+	-rm -f src/$(DEPDIR)/test_unapinet-unapinet.Po
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-floppy.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-wd2793.Po
@@ -5188,6 +5295,7 @@ distclean: distclean-am
 	-rm -f tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
 	-rm -f tests/$(DEPDIR)/test_sdcard-test_sdcard.Po
 	-rm -f tests/$(DEPDIR)/test_sunrise-test_sunrise.Po
+	-rm -f tests/$(DEPDIR)/test_unapinet-test_unapinet.Po
 	-rm -f tests/$(DEPDIR)/test_vdp-test_vdp.Po
 	-rm -f tests/$(DEPDIR)/test_wd2793-test_wd2793.Po
 	-rm -f Makefile
@@ -5266,6 +5374,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-sdcard.Po
 	-rm -f src/$(DEPDIR)/1983-sunrise.Po
 	-rm -f src/$(DEPDIR)/1983-ui.Po
+	-rm -f src/$(DEPDIR)/1983-unapinet.Po
 	-rm -f src/$(DEPDIR)/1983-vdp.Po
 	-rm -f src/$(DEPDIR)/1983-wd2793.Po
 	-rm -f src/$(DEPDIR)/1983-z80.Po
@@ -5361,6 +5470,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_overlay-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_overlay-ui.Po
+	-rm -f src/$(DEPDIR)/test_overlay-unapinet.Po
 	-rm -f src/$(DEPDIR)/test_overlay-vdp.Po
 	-rm -f src/$(DEPDIR)/test_overlay-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_overlay-z80.Po
@@ -5388,6 +5498,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_sdcard-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_sunrise-ata.Po
 	-rm -f src/$(DEPDIR)/test_sunrise-sunrise.Po
+	-rm -f src/$(DEPDIR)/test_unapinet-unapinet.Po
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-floppy.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-wd2793.Po
@@ -5409,6 +5520,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f tests/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
 	-rm -f tests/$(DEPDIR)/test_sdcard-test_sdcard.Po
 	-rm -f tests/$(DEPDIR)/test_sunrise-test_sunrise.Po
+	-rm -f tests/$(DEPDIR)/test_unapinet-test_unapinet.Po
 	-rm -f tests/$(DEPDIR)/test_vdp-test_vdp.Po
 	-rm -f tests/$(DEPDIR)/test_wd2793-test_wd2793.Po
 	-rm -f Makefile

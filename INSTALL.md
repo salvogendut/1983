@@ -18,6 +18,12 @@ Every bundle includes `1983-models.conf` and the redistributable C-BIOS
 MSX1 main and logo ROMs. A fresh launch therefore boots the basic `cbios`
 MSX1 machine without downloading proprietary firmware.
 
+The TCP/IP UNAPI host bridge is included on every platform. Its separate
+guest driver, openMSXnet v0.9.7's `UNAPINET.COM`, is not bundled; download it
+from the upstream release and copy it to a Nextor/MSX-DOS 2 disk as described
+in [`BOOT_TARGETS.md`](BOOT_TARGETS.md). The Flatpak manifest grants network
+access so the bridge can reach the host network stack.
+
 The macOS bundles are ad-hoc signed, not notarized with an Apple Developer
 ID. The first launch may require right-clicking the application and choosing
 **Open**.

@@ -308,6 +308,9 @@ void config_load(Config *config, const char *path) {
             config->sd_mapper = parse_bool(value, config->sd_mapper);
         else if (strcmp(key, "megaflash") == 0)
             config->megaflash = parse_bool(value, config->megaflash);
+        else if (strcmp(key, "tcpip_unapi") == 0)
+            config->tcpip_unapi =
+                parse_bool(value, config->tcpip_unapi);
         else if (strcmp(key, "sd_mapper_ram") == 0)
             config->sd_mapper_ram =
                 parse_bool(value, config->sd_mapper_ram);
@@ -503,6 +506,8 @@ int config_save(const Config *config) {
             bool_name(config->sd_mapper_alternate_driver));
     fprintf(file, "megaflash = %s\n",
             bool_name(config->megaflash));
+    fprintf(file, "tcpip_unapi = %s\n",
+            bool_name(config->tcpip_unapi));
     fprintf(file, "megaflash_rom = %s\n",
             config->megaflash_rom_path);
     fprintf(file, "scc = %s\n", bool_name(config->scc));

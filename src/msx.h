@@ -77,6 +77,10 @@ typedef struct {
     bool       requires_subrom;
 } MsxProfile;
 
+typedef bool (*MsxIoExtensionRead)(void *context, u16 port, u8 *value);
+typedef bool (*MsxIoExtensionWrite)(void *context, u16 port, u8 value);
+typedef void (*MsxIoExtensionReset)(void *context);
+
 typedef struct {
     const MsxProfile *profile;
     MsxRegion region;
@@ -139,6 +143,12 @@ typedef struct {
     bool cassette_audible_monitor;
     int bus_ticked_in_step;
 
+    /* Optional port-mapped host device, such as the TCP/IP UNAPI bridge. */
+    void *io_extension_context;
+    MsxIoExtensionRead io_extension_read;
+    MsxIoExtensionWrite io_extension_write;
+    MsxIoExtensionReset io_extension_reset;
+
     u64 cycles;
     u64 instructions;
     unsigned cycle_fraction;
@@ -164,6 +174,10 @@ void msx_configure(MsxMachine *msx, MsxModel model, MsxRegion region,
                    int ram_kb);
 void msx_reset(MsxMachine *msx);
 void msx_run_frame(MsxMachine *msx);
+void msx_set_io_extension(MsxMachine *msx, void *context,
+                          MsxIoExtensionRead read_handler,
+                          MsxIoExtensionWrite write_handler,
+                          MsxIoExtensionReset reset_handler);
 
 u8   msx_memory_read(MsxMachine *msx, u16 address);
 void msx_memory_write(MsxMachine *msx, u16 address, u8 value);

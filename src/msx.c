@@ -567,6 +567,20 @@ void msx_reset(MsxMachine *msx) {
     z80_init(&msx->cpu);
     z80_reset(&msx->cpu);
     vdp_reset(&msx->vdp);
+    if (msx->io_extension_reset)
+        msx->io_extension_reset(msx->io_extension_context);
+}
+
+void msx_set_io_extension(MsxMachine *msx, void *context,
+                          MsxIoExtensionRead read_handler,
+                          MsxIoExtensionWrite write_handler,
+                          MsxIoExtensionReset reset_handler) {
+    if (!msx)
+        return;
+    msx->io_extension_context = context;
+    msx->io_extension_read = read_handler;
+    msx->io_extension_write = write_handler;
+    msx->io_extension_reset = reset_handler;
 }
 
 void msx_configure(MsxMachine *msx, MsxModel model, MsxRegion region,
@@ -863,9 +877,14 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
 
 u8 msx_io_read(MsxMachine *msx, u16 port) {
     u8 low;
+    u8 extension_value;
 
     if (!msx)
         return 0xff;
+    if (msx->io_extension_read &&
+        msx->io_extension_read(
+            msx->io_extension_context, port, &extension_value))
+        return extension_value;
     low = (u8)port;
     switch (low) {
         case 0x98:
@@ -927,6 +946,10 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
     u8 low;
 
     if (!msx)
+        return;
+    if (msx->io_extension_write &&
+        msx->io_extension_write(
+            msx->io_extension_context, port, value))
         return;
     low = (u8)port;
     switch (low) {

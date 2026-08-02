@@ -125,12 +125,47 @@ picker completion, and command-line startup all honor the same reservation
 state. Enabling an extension ejects and forgets media in the newly reserved
 slot.
 
+The TCP/IP UNAPI host bridge is port-mapped, so it does not participate in
+that reservation policy and can coexist with two occupied cartridge slots.
+
 The footer always shows Cartridge I and Cartridge II indicators between
 Power and Caps Lock. An occupied ROM slot or a slot owned by Sunrise IDE,
 SD Mapper V2, or MegaFlashROM is orange. IDE reads use the dedicated Sunrise
-IDE indicator; SD traffic uses independent green SD A and SD B indicators.
-The cartridge renderer also supports an orange/white network-cartridge form,
-whose white half reports network access when a network device is added.
+IDE indicator; SD traffic uses independent green SD A and SD B indicators,
+and TCP/IP bridge traffic uses a dedicated white network indicator.
+
+## MSX TCP/IP UNAPI
+
+The optional host network device is wire-compatible with
+[openMSXnet v0.9.7](https://github.com/antxiko/openMSXnet). It claims I/O
+ports `0x28` and `0x29`, answers the v1 `0xAB` detection handshake and bridge
+version 4 capability response, and implements the byte-exact private protocol
+used by the unmodified `UNAPINET.COM` guest driver. The bridge supplies
+asynchronous IPv4 DNS, four active or passive TCP connections with bounded
+send and receive buffers, and four UDP endpoints with bounded datagram
+queues. IPv4 addresses use network byte order while ports, lengths, and
+handles use the layouts defined by openMSXnet v1.
+
+`UNAPINET.COM` is a separate TSR which exposes standard TCP/IP UNAPI 1.1 to
+MSX programs through EXTBIO. It requires an MSX-DOS 2-compatible environment
+and memory mapper, normally supplied by Nextor. The driver is not firmware,
+is not a cartridge ROM, and is not bundled with 1983; use the v0.9.7 binary
+from openMSXnet's releases and place it on the guest disk. GeoBench and SymbOS
+then use their ordinary TCP/IP UNAPI clients without emulator-specific code.
+
+Extensions > MSX TCP/IP UNAPI and the `--unapi` option control the same
+persistent `tcpip_unapi` setting. Disabling it, resetting the MSX, or exiting
+1983 closes every socket and cancels pending DNS state. The extension never
+reserves a cartridge slot. ICMP echo follows openMSXnet's non-Windows v1
+behavior: requests are acknowledged but no reply is reported; TCP and UDP
+are fully available on every supported host.
+
+Enabling the bridge grants the guest access to the host's IPv4 networking.
+Outgoing TCP/UDP connections and passive TCP listeners therefore cross the
+emulator boundary and are subject to the host firewall. Passive listeners
+bind to all host interfaces, traffic is not encrypted by the bridge, and
+untrusted guest software should be treated like an untrusted native network
+client. The Flatpak package requests network sharing explicitly.
 
 ## Cassette
 

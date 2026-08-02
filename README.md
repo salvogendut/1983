@@ -26,7 +26,9 @@ SDL3 allows.
 > official Sunrise Nextor kernel can boot the GeoBench raw image to its
 > desktop, while the official SD Mapper V2 ROM boots both Nextor system
 > media and the GeoBench image from SD. The official MegaFlashROM preflash
-> also boots its Nextor 2.10 ROM disk to the command prompt.
+> also boots its Nextor 2.10 ROM disk to the command prompt. An optional
+> openMSXnet-compatible host bridge lets the unmodified `UNAPINET.COM` TSR
+> provide TCP/IP UNAPI 1.1 to GeoBench, SymbOS, and other MSX software.
 > Standard MSX CAS cassette playback
 > is integrated with the BIOS motor and input path. Protected floppy
 > formats, cassette recording, MSX-MUSIC audio, and other extensions remain in
@@ -57,6 +59,8 @@ SDL3 allows.
   sector writes, optional second floppy, and independent activity LEDs.
 - Standard MSX CAS playback with emulated motor control, transport status,
   rewind/eject controls, and the Tape LED.
+- openMSXnet v0.9.7-compatible TCP/IP UNAPI bridge with asynchronous DNS,
+  active/passive TCP, UDP, reset-safe socket lifetime, and network activity.
 - Headless execution and deterministic component and firmware tests.
 
 The detailed implementation and remaining limitations are recorded in
@@ -100,6 +104,7 @@ Useful options:
   --sd-a /path/to/card.img --sd-mode read-only
 ./1983 --model msx1 --megaflash-rom /path/to/megaflash-8m.rom \
   --megaflash-sd-a /path/to/card.img --sd-mode read-only
+./1983 --model nms8250 --unapi
 ./1983 --config ./test.conf
 ./1983 --headless --unthrottled --exit-after 10
 ./1983 --help
@@ -203,6 +208,13 @@ extra Return.
 
 **General > Extra Hardware** reveals Extensions; **General > Tinker**
 reveals Advanced.
+
+**Extensions > MSX TCP/IP UNAPI** enables the host network bridge. It is a
+port-mapped device and does not occupy either cartridge slot. Guest software
+must first run openMSXnet v0.9.7's separate `UNAPINET.COM` TSR under Nextor
+or MSX-DOS 2; 1983 does not bundle that third-party binary. Network traffic
+pulses the white network LED. See [`BOOT_TARGETS.md`](BOOT_TARGETS.md) for
+driver installation and the GeoBench setup.
 
 MSX2 machines keep their battery-backed clock and CMOS settings in a
 per-machine file under the configuration directory's `rtc/` folder. With

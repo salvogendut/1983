@@ -32,6 +32,7 @@ complete MSX hardware specification.
 | `src/sdcard.*` | Host-independent SPI SD command state, raw-card image lifetime, complete-sector writes, flush, errors, and activity |
 | `src/sd_mapper.*` | SD Mapper V2 expanded-slot, firmware banking, dual-card registers, timer, and independent 512 KiB mapper |
 | `src/sunrise.*` | Sunrise IDE cartridge ROM banking, address decode, 16-bit data latch, and ATA bridge |
+| `src/unapinet.*` | openMSXnet v1 port protocol, bounded host TCP/UDP sockets, asynchronous DNS, and network lifecycle |
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
 | `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, sprite-mode-2, and command engine |
 | `src/wd2793.*` | Philips memory-mapped WD2793 registers, commands, drive selection, IRQ/DRQ, and transfer state |
@@ -53,6 +54,7 @@ complete MSX hardware specification.
 | `tests/test_sdcard.c` | SPI initialization, identification, capacity, read/write, multiple transfers, addressing, image safety, and error handling |
 | `tests/test_sd_mapper.c` | Firmware banking, expanded subslots, card selection/status, timer, mapper ports, reset, and image lifetime |
 | `tests/test_megaflash.c` | Expanded layout, mapper families, flash program/erase/persistence, dual SD, sound, corruption, and flush safety |
+| `tests/test_unapinet.c` | openMSXnet handshake and wire results plus real loopback DNS, TCP, UDP, reset, and activity checks |
 | `tests/test_scc.c` | SCC compatible/plus maps, waveform sharing, generators, deformation, and audio |
 | `tests/test_vdp.c` | Pattern/sprite-mode-1/2 rendering, V9938 bitmap layouts, commands, preloaded transfers, and beam/status checks |
 
@@ -156,9 +158,26 @@ operations must consult that function rather than duplicating extension
 policy.
 `configure_leds()` maps the resolved owner and cartridge presence onto the
 two physical slot indicators. Sunrise storage activity uses the dedicated
-IDE LED, while both SD cartridges use the dedicated SD A/B LEDs. Future
-network backends should report access through
-`leds_ping_cartridge_activity()` for their owning slot.
+IDE LED, while both SD cartridges use the dedicated SD A/B LEDs. The
+port-mapped TCP/IP UNAPI bridge owns no cartridge slot and reports traffic
+through the dedicated network LED.
+
+## TCP/IP UNAPI boundary
+
+`src/unapinet.c` is the host half of openMSXnet's v1 bridge. It consumes only
+I/O ports `0x28`/`0x29`; `src/msx.c` exposes those through a generic optional
+I/O-device callback rather than pretending the bridge is a cartridge. The
+guest half remains the upstream v0.9.7 `UNAPINET.COM` TSR, whose detection
+magic, command numbers, mixed-endian wire records, four-handle limits, and
+error quirks are compatibility requirements.
+
+Socket and resolver work must never block the Z80 frame loop. TCP connects
+and all descriptors are non-blocking, data is held in fixed-size buffers,
+and DNS resolution runs on one SDL thread with generation-based cancellation.
+The frame loop polls ready sockets; reset, toggle-off, and process shutdown
+invalidate DNS results and close every descriptor. Tests use real host
+loopback sockets and the exact v1 command stream without requiring external
+Internet access or the third-party TSR binary.
 
 ## Sunrise and ATA boundaries
 

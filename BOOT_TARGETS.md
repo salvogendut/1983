@@ -268,9 +268,46 @@ openmsx -machine Philips_NMS_8250 \
 ```
 
 This is the GeoBench launcher's default. Its `MSX_RAM=stock` mode omits
-`ram512k`, and `MSX_UNAPI=0` omits `unapinet`. The networking extension is
-not required for the first disk-boot checkpoint; it will become an optional
-device once the base machine and storage path are deterministic.
+`ram512k`, and `MSX_UNAPI=0` omits `unapinet`. 1983 now provides the same
+optional host device with `--unapi` or **Extensions > MSX TCP/IP UNAPI**.
+It is not required for disk boot and does not consume a cartridge slot.
+
+### TCP/IP UNAPI guest setup
+
+Download `UNAPINET.COM` from the
+[openMSXnet v0.9.7 release](https://github.com/antxiko/openMSXnet/releases/tag/v0.9.7).
+It is the guest half of the bridge and is intentionally not distributed by
+1983. Copy it to a Nextor/MSX-DOS 2 boot volume and execute it once before
+GeoBench or SymbOS. GeoBench's current image starts its FAT16 partition at
+sector 32, so `mtools` can install it while the image is not mounted with:
+
+```sh
+mcopy -o -i /path/to/GBMSX.IMG@@16384 /path/to/UNAPINET.COM ::
+mdir -i /path/to/GBMSX.IMG@@16384 ::UNAPINET.COM
+```
+
+GeoBench's image builder can stage the same upstream binary and arrange for
+it to run before `GBMSX.COM`:
+
+```sh
+MSX_UNAPI_TSR=/path/to/UNAPINET.COM \
+  bash ../geobench/tools/build_kernel_msx.sh
+```
+
+Then boot the rebuilt image through the normal Sunrise lane with the bridge
+enabled:
+
+```sh
+./1983 --model nms8250 \
+  --sunrise-rom /path/to/Nextor-2.1.1.SunriseIDE.ROM \
+  --ide ../geobench/QA/GBMSX.IMG --ide-mode read-only --unapi
+```
+
+`UNAPINET.COM` must print its successful installation message before the
+client starts. GeoBench Browser and Telnet, and SymbOS applications using
+TCP/IP UNAPI, then discover the standard `TCP/IP` implementation through
+EXTBIO. If the TSR is absent, enabling the 1983 toggle alone only exposes the
+private ports and no standard guest UNAPI implementation exists.
 
 Nextor can run on MSX1 and can fall back to MSX-DOS 1 mode, but its normal
 MSX-DOS 2-compatible mode requires at least 128 KB in the largest memory
@@ -424,7 +461,9 @@ also provides:
   A/B Media selectors;
 - a persistent standard MSX CAS cassette selector and transport under Media;
 - a persistent Floppy A selector for the NMS 8250;
-- an Advanced second-floppy switch which conditionally adds Floppy B.
+- an Extensions second-floppy switch which conditionally adds Floppy B;
+- a persistent port-mapped MSX TCP/IP UNAPI host bridge which does not
+  reserve a cartridge slot.
 
 Each cartridge selector opens the shared SDL3 file-dialog workflow and has an
 adjacent `auto`/manual mapper selector. Delete ejects the selected cartridge.
