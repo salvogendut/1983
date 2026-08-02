@@ -817,10 +817,6 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
 
     if (!msx)
         return;
-    if (address == 0xfcc0)
-        fprintf(stderr, "BIOSSLT-WRITE pc=%04X val=%02X slot=%02X frame=%lu de=%04X af=%04X\n",
-                msx->cpu.pc, value, msx->primary_slot,
-                (unsigned long)msx->frame, msx->cpu.de, msx->cpu.af);
     primary = selected_slot(msx, address);
     if (address == 0xffff && slot_is_expanded(msx, primary)) {
         if ((primary == 1 || primary == 2) &&
@@ -892,10 +888,6 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
                 return msx_joystick_read_psg(msx);
             return psg_read_data(&msx->psg);
         case 0xa8:
-            if (msx->frame < 10 && msx->cpu.pc < 0x4000)
-                fprintf(stderr, "IN-A8 pc=%04X val=%02X frame=%lu\n",
-                        msx->cpu.pc, msx->primary_slot,
-                        (unsigned long)msx->frame);
             return msx->primary_slot;
         case 0xa9:
             return msx_keyboard_read_row(msx, msx->ppi_port_c & 0x0f);
