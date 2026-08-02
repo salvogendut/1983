@@ -33,15 +33,30 @@ firmware choice in the per-user `1983.conf`.
 --sunrise-rom + --ide    Sunrise IDE controller ROM and image, --ide-mode
 --sd-mapper-rom + --sd-a/--sd-b      SD Mapper V2, --sd-mode
 --megaflash-rom + --megaflash-sd-a/--megaflash-sd-b  MegaFlashROM, --sd-mode
---unapi                   optional openMSXnet host bridge on NMS 8250
---rs232                   RS-232C interface on ports 80h-87h (PTY /tmp/1983-rs232)
---rs232-rom PATH          user-provided RS-232C EXTBIO/driver ROM
---headless --unthrottled --exit-after N   deterministic runs
---gif-out FILE            capture GIF on startup
---screenshot              (see Controls / F4)
-```
+ --unapi                   optional openMSXnet host bridge on NMS 8250
+ --rs232                   RS-232C interface on ports 80h-87h (PTY /tmp/1983-rs232)
+ --rs232-rom PATH          user-provided RS-232C EXTBIO/driver ROM
+ --headless --unthrottled --exit-after N   deterministic runs
+ --gif-out FILE            capture GIF on startup
+ --screenshot              (see Controls / F4)
+ ```
 
 Run `./1983 --help` for the complete list.
+
+### RS-232C and the driver ROM
+
+Enabling **Extensions > RS-232C** (or `--rs232` / `rs232 = true`) turns on the
+serial interface itself: the 8251/8254 respond on ports `80h-87h` and the host
+side is a PTY at `/tmp/1983-rs232` (Linux/BSD) that you attach with
+`picocom /tmp/1983-rs232` or `minicom -D /tmp/1983-rs232`. Guest software that
+programs the ports directly works with just this.
+
+The **EXTBIO/driver ROM is only needed for auto-detection** so MSX-BASIC's
+`OPEN "COM0:"` finds the interface (EXTBIO function 08h). It is user-provided:
+set `rs232_rom = /path/to/rs232.rom` (or `--rs232-rom PATH`) and the ROM is
+loaded into a cartridge slot automatically when RS-232C is enabled. Without
+it, the port device still works, but `OPEN "COM0:"` auto-detect is
+unavailable. The ROM is not bundled with 1983.
 
 ## Firmware and machines
 
