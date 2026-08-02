@@ -53,3 +53,4 @@
 *.ppm
 test-rs232
 test-serial
+test-rs232dev

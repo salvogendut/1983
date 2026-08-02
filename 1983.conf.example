@@ -79,6 +79,9 @@ megaflash_rom =
 # Host TCP/IP bridge on ports 28h/29h. Requires openMSXnet's
 # UNAPINET.COM TSR under Nextor/MSX-DOS 2; it does not use a cartridge slot.
 tcpip_unapi = false
+# MSX RS-232C interface on ports 80h-87h (8251 USART + 8254 timer).
+# On Linux/BSD the host side is a PTY at /tmp/1983-rs232 for picocom/minicom.
+rs232 = false
 scc = false
 msx_music = false
 kanji_rom = false

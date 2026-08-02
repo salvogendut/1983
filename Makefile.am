@@ -24,10 +24,13 @@ AM_LDFLAGS = $(WIN_STACK_LDFLAGS)
 	src/paste.c \
 	src/psg.c \
 	src/rs232.c \
+	src/rs232_dev.c \
 	src/rtc.c \
 	src/scc.c \
 	src/sdcard.c \
 	src/sd_mapper.c \
+	src/serial_8251.c \
+	src/serial_8254.c \
 	src/sunrise.c \
 	src/ui.c \
 	src/unapinet.c \
@@ -56,6 +59,7 @@ noinst_HEADERS = \
 	src/paste.h \
 	src/psg.h \
 	src/rs232.h \
+	src/rs232_dev.h \
 	src/rtc.h \
 	src/scc.h \
 	src/sdcard.h \
@@ -84,7 +88,7 @@ icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 
 CLEANFILES = icons/1983-rc.o
 
-check_PROGRAMS = test-cartridge test-cassette test-ata test-floppy test-wd2793 test-sunrise test-sdcard test-sd-mapper test-megaflash test-unapinet test-config test-models test-msx test-gamepad test-kbd test-paste test-overlay test-vdp test-psg test-scc test-rtc test-gifcap test-rs232 test-serial
+check_PROGRAMS = test-cartridge test-cassette test-ata test-floppy test-wd2793 test-sunrise test-sdcard test-sd-mapper test-megaflash test-unapinet test-config test-models test-msx test-gamepad test-kbd test-paste test-overlay test-vdp test-psg test-scc test-rtc test-gifcap test-rs232 test-rs232dev test-serial
 TESTS = $(check_PROGRAMS) diagnostics/test-cli.sh
 test_cartridge_SOURCES = diagnostics/test_cartridge.c src/cartridge.c src/scc.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
@@ -153,7 +157,7 @@ test_paste_SOURCES = diagnostics/test_paste.c src/cartridge.c src/cassette.c src
 test_paste_CPPFLAGS = -I$(top_srcdir)/src
 test_paste_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_overlay_SOURCES = diagnostics/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/ui.c src/unapinet.c src/vdp.c src/wd2793.c src/z80.c
+test_overlay_SOURCES = diagnostics/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rs232.c src/rs232_dev.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/serial_8251.c src/serial_8254.c src/sunrise.c src/ui.c src/unapinet.c src/vdp.c src/wd2793.c src/z80.c
 test_overlay_CPPFLAGS = -I$(top_srcdir)/src
 test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_overlay_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS) -lm
@@ -185,6 +189,10 @@ test_rs232_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_serial_SOURCES = diagnostics/test_serial.c src/serial_8251.c src/serial_8251.h src/serial_8254.c src/serial_8254.h src/serial_timing.h
 test_serial_CPPFLAGS = -I$(top_srcdir)/src
 test_serial_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+
+test_rs232dev_SOURCES = diagnostics/test_rs232_dev.c src/rs232.c src/rs232_dev.c src/serial_8251.c src/serial_8254.c
+test_rs232dev_CPPFLAGS = -I$(top_srcdir)/src
+test_rs232dev_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
 desktopdir         = $(datadir)/applications
 dist_desktop_DATA  = io.github.salvogendut.Emulator1983.desktop

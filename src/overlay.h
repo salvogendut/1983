@@ -7,6 +7,7 @@
 #include "display.h"
 #include "models.h"
 #include "msx.h"
+#include "rs232_dev.h"
 #include "unapinet.h"
 
 typedef enum {
@@ -64,6 +65,7 @@ typedef struct {
     Display *display;
     MsxMachine *msx;
     UnapiNet *unapinet;
+    Rs232Device *rs232dev;
 
     OverlayDialogTarget dialog_target;
     char dialog_path[PATH_MAX];
@@ -104,7 +106,8 @@ typedef struct {
 
 void overlay_init(Overlay *overlay, Config *config,
                   ModelCatalog *models, Display *display,
-                  MsxMachine *msx, UnapiNet *unapinet);
+                  MsxMachine *msx, UnapiNet *unapinet,
+                  Rs232Device *rs232dev);
 bool overlay_handle_event(Overlay *overlay, const SDL_Event *event);
 void overlay_tick(Overlay *overlay);
 void overlay_render_cassette_scope(const Overlay *overlay);

@@ -54,6 +54,7 @@ enum {
     EXTENSION_KONAMI_SCC,
     EXTENSION_MSX_MUSIC,
     EXTENSION_SECOND_FLOPPY,
+    EXTENSION_RS232,
     EXTENSION_ROWS
 };
 
@@ -696,6 +697,20 @@ static void item_text(const Overlay *overlay, int row,
                         snprintf(value, value_size, "On (awaiting TSR)");
                     }
                     break;
+                case EXTENSION_RS232: {
+                    const char *host = "";
+                    snprintf(label, label_size, "RS-232C");
+                    if (overlay->rs232dev &&
+                        rs232dev_enabled(overlay->rs232dev))
+                        host = rs232dev_host_device(overlay->rs232dev);
+                    if (!config->rs232)
+                        snprintf(value, value_size, "Off");
+                    else if (host[0])
+                        snprintf(value, value_size, "On (%s)", host);
+                    else
+                        snprintf(value, value_size, "On (no host link)");
+                    break;
+                }
                 case EXTENSION_KONAMI_SCC:
                     snprintf(label, label_size, "Konami SCC");
                     cartridge_extension_text(
@@ -859,6 +874,7 @@ static void configure_leds(const Config *config, const MsxMachine *msx) {
     leds_set_enabled(LED_SD_B,
                      config->sd_mapper || config->megaflash);
     leds_set_enabled(LED_NETWORK, config->tcpip_unapi);
+    leds_set_enabled(LED_RS232, config->rs232);
     leds_set_state(LED_POWER, true);
     leds_set_state(LED_CAPS, msx->caps_led);
     leds_set_state(LED_KANA, msx->kana_led);
@@ -3189,6 +3205,23 @@ static void activate_item(Overlay *overlay) {
                                 ? "enabled; run UNAPINET.COM in Nextor"
                                 : "disabled");
                     break;
+                case EXTENSION_RS232:
+                    config->rs232 = !config->rs232;
+                    if (overlay->rs232dev)
+                        rs232dev_set_enabled(
+                            overlay->rs232dev, config->rs232);
+                    notify_post(
+                        "MSX RS-232C interface %s%s",
+                        config->rs232 ? "enabled" : "disabled",
+                        config->rs232 ? " at "
+                          : "");
+                    if (config->rs232) {
+                        const char *host = rs232dev_host_device(
+                            overlay->rs232dev);
+                        notify_post("RS-232C link: %s",
+                                    host[0] ? host : "no host link");
+                    }
+                    break;
                 case EXTENSION_KONAMI_SCC:
                     if (!toggle_cartridge_extension(
                             overlay, &config->scc,
@@ -3327,7 +3360,8 @@ static void activate_item(Overlay *overlay) {
 
 void overlay_init(Overlay *overlay, Config *config,
                   ModelCatalog *models, Display *display,
-                  MsxMachine *msx, UnapiNet *unapinet) {
+                  MsxMachine *msx, UnapiNet *unapinet,
+                  Rs232Device *rs232dev) {
     memset(overlay, 0, sizeof(*overlay));
     overlay->dialog_target = OVERLAY_DIALOG_NONE;
     overlay->config = config;
@@ -3335,6 +3369,7 @@ void overlay_init(Overlay *overlay, Config *config,
     overlay->display = display;
     overlay->msx = msx;
     overlay->unapinet = unapinet;
+    overlay->rs232dev = rs232dev;
     apply_config(overlay);
 }
 
@@ -3933,6 +3968,9 @@ static const char *section_hint(const Overlay *overlay) {
                 if (unapinet_guest_driver_active(overlay->unapinet))
                     return "UNAPINET.COM is active; standard TCP/IP UNAPI is available.";
                 return "Host bridge only; run UNAPINET.COM in Nextor/MSX-DOS 2.";
+            }
+            if (overlay->row == EXTENSION_RS232) {
+                return "Enable, then attach picocom/minicom to the host link.";
             }
             return "Enter enables/disables; Space edits; Delete clears.";
         case OVERLAY_ADVANCED:

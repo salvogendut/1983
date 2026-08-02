@@ -322,6 +322,8 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "tcpip_unapi") == 0)
             config->tcpip_unapi =
                 parse_bool(value, config->tcpip_unapi);
+        else if (strcmp(key, "rs232") == 0)
+            config->rs232 = parse_bool(value, config->rs232);
         else if (strcmp(key, "sd_mapper_ram") == 0)
             config->sd_mapper_ram =
                 parse_bool(value, config->sd_mapper_ram);
@@ -525,6 +527,8 @@ int config_save(const Config *config) {
             bool_name(config->megaflash));
     fprintf(file, "tcpip_unapi = %s\n",
             bool_name(config->tcpip_unapi));
+    fprintf(file, "rs232 = %s\n",
+            bool_name(config->rs232));
     fprintf(file, "megaflash_rom = %s\n",
             config->megaflash_rom_path);
     fprintf(file, "scc = %s\n", bool_name(config->scc));
