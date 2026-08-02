@@ -1,9 +1,10 @@
 # 1983 - Usage guide
 
-This guide covers day-to-day operation: starting machines, controls, media,
-extensions, and configuration. The top-level overview lives in
-[`README.md`](README.md); implementation details live in
-[`TECHNICAL.md`](TECHNICAL.md) and
+This guide covers day-to-day operation: starting machines, media, and
+extensions. The top-level overview lives in [`README.md`](README.md); the
+keyboard/input reference lives in [`CONTROLS.md`](CONTROLS.md),
+configuration in [`CONFIGURATION.md`](CONFIGURATION.md), and implementation
+details in [`TECHNICAL.md`](TECHNICAL.md) and
 [`DEVELOPMENT.md`](DEVELOPMENT.md).
 
 ## Quick start
@@ -55,53 +56,6 @@ editor** provides graphical add/edit/duplicate/delete over the catalogue.
 
 See [`BOOT_TARGETS.md`](BOOT_TARGETS.md) for firmware lanes, checkpoints, and
 the GeoBench/Nextor targets.
-
-## Controls
-
-| Key | Action |
-|-----|--------|
-| F4 | Save a PPM screenshot (with a camera-shutter sound) |
-| F5 | Reset |
-| F6 | Toggle animated GIF recording |
-| F8 | Monitor/disassembler placeholder |
-| F9 | Open / save-and-close the options overlay |
-| F11 | Toggle fullscreen |
-| F12 | Quit |
-| Pause | Pause or resume |
-| Ctrl++ / Ctrl+- | Adjust window scale |
-| Ctrl+V | Paste host clipboard into the MSX |
-| Shift+F1…F5 | MSX F1…F5 |
-| Shift+F7 / Shift+F8 | MSX SELECT / STOP |
-| Ctrl+Enter | Release captured mouse |
-
-SDL scancodes map positionally to the international MSX keyboard: Left
-Ctrl=CTRL, Left Alt=GRAPH, Right Alt=CODE, Right Ctrl=ACC/dead key; both
-Shift keys, editing, arrows, and the numeric keypad are supported.
-
-### Overlay
-
-Left/Right change section, Up/Down select, Enter activates, F9 saves, Escape
-closes (or offers to discard). In **Extensions**, Enter toggles a device,
-Space edits its settings, Delete clears saved settings. **General > Extra
-Hardware** reveals Extensions; **General > Tinker** reveals Advanced.
-
-### GIF capture
-
-**F6** or `--gif-out PATH` records an animated GIF. The Advanced section
-cycles resolution (720/540/360/240/180), frame rate (25/20/10/5), and encoder
-(built-in GIF89a or FFmpeg optimize).
-
-### Mouse and gamepad
-
-With the selected port set to Mouse, click the emulator window to capture
-relative movement; Left/Right host buttons map to MSX A/B. Ctrl+Enter, F9,
-reset, or losing focus releases capture. With the selected Main Input
-connector set to Joystick, the primary SDL3 gamepad drives it while connected.
-
-### Clipboard paste
-
-Ctrl+V replays the host clipboard into the emulated keyboard matrix one key at
-a time, verbatim and without an extra Return.
 
 ## Media
 
@@ -162,13 +116,4 @@ stays yellow. The official `mfrsd.rom` preflash is accepted at its native
 
 ## Configuration
 
-User settings live in `~/.config/1983/1983.conf` on Unix and the app-data
-directory on Windows; `--config PATH` selects an isolated configuration (RTC
-files follow it, so isolated runs get isolated clocks). On Unix,
-`--config /dev/null` disables RTC persistence for disposable runs.
-`1983.conf.example` documents available settings.
-
-`1983-models.conf` is searched in the user config directory, the current
-directory, and the installed app-data directory; `--models PATH` selects a
-different catalogue. The local `DOS/` directory is reserved for guest DOS
-files and is never distributed.
+See [`CONFIGURATION.md`](CONFIGURATION.md).

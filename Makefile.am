@@ -206,6 +206,8 @@ EXTRA_DIST = \
 	LICENSE \
 	README.md \
 	USAGE.md \
+	CONTROLS.md \
+	CONFIGURATION.md \
 	1983.png \
 	sample-rainbios-nextor-geobench-on-1983-20260802-165621.gif \
 	TECHNICAL.md \
