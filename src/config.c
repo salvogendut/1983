@@ -147,6 +147,9 @@ void config_defaults(Config *config) {
     config->scale = 1;
     config->smoothing = false;
     config->crt_scanlines = DISPLAY_CRT_SCANLINES_DEFAULT;
+    config->gif_width = GIF_CAPTURE_WIDTH_DEFAULT;
+    config->gif_fps = GIF_CAPTURE_FPS_DEFAULT;
+    config->gif_ffmpeg = false;
     config->audio_volume = 80;
     config->main_input = INPUT_PORT_A;
     config->joy_port_device[0] = JOY_PORT_JOYSTICK;
@@ -278,6 +281,14 @@ void config_load(Config *config, const char *path) {
             config->real_crt = parse_bool(value, config->real_crt);
         else if (strcmp(key, "crt_scanlines") == 0)
             config->crt_scanlines = atoi(value);
+        else if (strcmp(key, "gif_resolution") == 0) {
+            int w, h;
+            if (sscanf(value, "%dx%d", &w, &h) == 2)
+                config->gif_width = w;
+        } else if (strcmp(key, "gif_fps") == 0)
+            config->gif_fps = atoi(value);
+        else if (strcmp(key, "gif_ffmpeg") == 0)
+            config->gif_ffmpeg = parse_bool(value, config->gif_ffmpeg);
         else if (strcmp(key, "audio_volume") == 0)
             config->audio_volume = atoi(value);
         else if (strcmp(key, "cassette_audible_monitor") == 0)
@@ -450,7 +461,13 @@ int config_save(const Config *config) {
     fprintf(file, "fullscreen = %s\n", bool_name(config->fullscreen));
     fprintf(file, "smoothing = %s\n", bool_name(config->smoothing));
     fprintf(file, "real_crt = %s\n", bool_name(config->real_crt));
-    fprintf(file, "crt_scanlines = %d\n\n", config->crt_scanlines);
+    fprintf(file, "crt_scanlines = %d\n"
+            "gif_resolution = %dx%d\n"
+            "gif_fps = %d\n"
+            "gif_ffmpeg = %s\n\n",
+            config->crt_scanlines,
+            config->gif_width, (config->gif_width * 3) / 4,
+            config->gif_fps, bool_name(config->gif_ffmpeg));
     fprintf(file, "[audio]\n");
     fprintf(file, "audio_volume = %d\n\n", config->audio_volume);
     fprintf(file, "[input]\n");

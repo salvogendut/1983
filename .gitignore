@@ -21,6 +21,7 @@
 /test-models
 /test-gamepad
 /test-overlay
+/test-gifcap
 /tests/test-*.log
 /tests/test-*.trs
 /Makefile

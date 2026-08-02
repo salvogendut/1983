@@ -13,6 +13,9 @@
 
 #define DISPLAY_CRT_SCANLINES_DEFAULT 35
 
+#define GIF_CAPTURE_WIDTH_DEFAULT 720
+#define GIF_CAPTURE_FPS_DEFAULT   25
+
 typedef enum {
     INPUT_PORT_A = 0,
     INPUT_PORT_B
@@ -34,6 +37,10 @@ typedef struct {
     bool smoothing;
     bool real_crt;
     int  crt_scanlines;
+
+    int  gif_width;
+    int  gif_fps;
+    bool gif_ffmpeg;
 
     int audio_volume;
 

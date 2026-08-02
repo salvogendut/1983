@@ -47,6 +47,9 @@ int main(void) {
     assert(config.rtc_persistence);
     assert(!config.cassette_audible_monitor);
     assert(!config.cassette_visual_monitor);
+    assert(config.gif_width == GIF_CAPTURE_WIDTH_DEFAULT);
+    assert(config.gif_fps == GIF_CAPTURE_FPS_DEFAULT);
+    assert(!config.gif_ffmpeg);
     assert(config_cartridge_extension_count(&config) == 0);
     assert(config_cartridge_slot_available(&config, 0));
     assert(config_cartridge_slot_available(&config, 1));
@@ -141,6 +144,9 @@ int main(void) {
     config.tinker = true;
     config.cassette_audible_monitor = true;
     config.cassette_visual_monitor = true;
+    config.gif_width = 360;
+    config.gif_fps = 10;
+    config.gif_ffmpeg = true;
     assert(config_cartridge_extension_count(&config) == 2);
     assert(strcmp(config_cartridge_slot_owner(&config, 0),
                   "SD Mapper V2") == 0);
@@ -195,6 +201,9 @@ int main(void) {
     assert(loaded.tinker);
     assert(loaded.cassette_audible_monitor);
     assert(loaded.cassette_visual_monitor);
+    assert(loaded.gif_width == 360);
+    assert(loaded.gif_fps == 10);
+    assert(loaded.gif_ffmpeg);
     assert(strcmp(loaded.bios_path,
                   "/roms/nms8250_basic-bios2.rom") == 0);
     assert(strcmp(loaded.logo_path, "/roms/cbios_logo.rom") == 0);

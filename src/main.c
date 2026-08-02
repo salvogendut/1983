@@ -5,11 +5,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "audio.h"
 #include "config.h"
 #include "display.h"
 #include "gamepad.h"
+#include "gifcap.h"
+#include "ffmpeg_gif.h"
 #include "kbd.h"
 #include "leds.h"
 #include "models.h"
@@ -45,6 +48,7 @@ typedef struct {
     const char *ide_image_path;
     const char *cassette_path;
     const char *screenshot_path;
+    const char *gif_out;
     const char *cartridge_path[MSX_CARTRIDGE_SLOTS];
     MsxCartridgeMapper cartridge_mapper[MSX_CARTRIDGE_SLOTS];
     bool cartridge_mapper_set[MSX_CARTRIDGE_SLOTS];
@@ -64,6 +68,110 @@ typedef struct {
     bool unthrottled;
     bool dump_state;
 } Cli;
+
+typedef struct {
+    GifCap  *encoder;
+    uint64_t interval_ns;
+    uint64_t elapsed_ns;
+    bool     first_frame;
+    bool     optimize;
+    char    *path;
+} GifCapture;
+
+static bool gif_capture_width_supported(int width) {
+    return width == 720 || width == 540 || width == 360 ||
+           width == 240 || width == 180;
+}
+
+static bool gif_capture_fps_supported(int fps) {
+    return fps == 25 || fps == 20 || fps == 10 || fps == 5;
+}
+
+static bool gif_capture_start(GifCapture *capture, const char *path,
+                              const Config *cfg) {
+    if (!capture || !path || !path[0] || capture->encoder)
+        return false;
+
+    int width = gif_capture_width_supported(cfg->gif_width)
+              ? cfg->gif_width : GIF_CAPTURE_WIDTH_DEFAULT;
+    int fps = gif_capture_fps_supported(cfg->gif_fps)
+            ? cfg->gif_fps : GIF_CAPTURE_FPS_DEFAULT;
+    int height = (width * 3) / 4;
+
+    capture->encoder = gifcap_open(path, DISPLAY_FB_W, DISPLAY_FB_H,
+                                   width, height, 100 / fps);
+    if (!capture->encoder)
+        return false;
+
+    capture->optimize = cfg->gif_ffmpeg && FFMPEG_GIF_SUPPORTED;
+    if (capture->optimize) {
+        size_t path_len = strlen(path) + 1;
+        capture->path = malloc(path_len);
+        if (capture->path)
+            memcpy(capture->path, path, path_len);
+        else
+            capture->optimize = false;
+    }
+    capture->interval_ns = 1000000000ULL / (uint64_t)fps;
+    capture->elapsed_ns = 0;
+    capture->first_frame = true;
+    fprintf(stderr, "[videocap] recording to %s\n", path);
+    return true;
+}
+
+static void gif_capture_stop(GifCapture *capture) {
+    if (!capture || !capture->encoder)
+        return;
+
+    int frames = gifcap_frame_count(capture->encoder);
+    gifcap_close(capture->encoder);
+    capture->encoder = NULL;
+    fprintf(stderr, "[videocap] GIF stopped (%d frames)\n", frames);
+    if (capture->optimize && capture->path)
+        ffmpeg_gif_optimize(capture->path);
+
+    free(capture->path);
+    capture->path = NULL;
+    capture->optimize = false;
+    capture->interval_ns = 0;
+    capture->elapsed_ns = 0;
+    capture->first_frame = false;
+}
+
+static void gif_capture_frame(GifCapture *capture, const u32 *pixels,
+                              uint64_t emulated_frame_ns) {
+    if (!capture || !capture->encoder)
+        return;
+
+    bool due = capture->first_frame;
+    capture->first_frame = false;
+    if (!due) {
+        capture->elapsed_ns += emulated_frame_ns;
+        if (capture->elapsed_ns >= capture->interval_ns) {
+            capture->elapsed_ns %= capture->interval_ns;
+            due = true;
+        }
+    }
+    if (due && !gifcap_frame(capture->encoder, pixels))
+        gif_capture_stop(capture);
+}
+
+static void gif_capture_toggle(GifCapture *capture, const Config *cfg) {
+    if (capture->encoder) {
+        gif_capture_stop(capture);
+    } else {
+        char path[256];
+        time_t t = time(NULL);
+        struct tm *lt = localtime(&t);
+        if (lt)
+            strftime(path, sizeof(path), "1983-%Y%m%d-%H%M%S.gif", lt);
+        else
+            snprintf(path, sizeof(path), "1983-capture.gif");
+        if (!gif_capture_start(capture, path, cfg))
+            fprintf(stderr,
+                    "[videocap] GIF open failed for '%s'\n", path);
+    }
+}
 
 static const char *usage =
     "Usage: 1983 [options]\n"
@@ -106,6 +214,7 @@ static const char *usage =
     "  --paste-at N        start --paste-text at host frame N (default 60)\n"
     "  --paste-repeat N    requeue --paste-text every N frames (default 0)\n"
     "  --dump-ram A:N      print N guest RAM bytes from address A on exit\n"
+    "  --gif-out PATH       record a GIF to PATH using the capture profile\n"
     "  --unthrottled       disable 50/60 Hz frame pacing\n"
     "  --dump-state        print CPU/bus/VDP state on exit\n"
     "  -h, --help          show this help\n"
@@ -257,6 +366,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--ide-mode") == 0 ||
              strcmp(argument, "--cassette") == 0 ||
              strcmp(argument, "--screenshot") == 0 ||
+             strcmp(argument, "--gif-out") == 0 ||
              strcmp(argument, "--paste-text") == 0 ||
              strcmp(argument, "--paste-at") == 0 ||
              strcmp(argument, "--paste-repeat") == 0 ||
@@ -321,6 +431,8 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->cassette_path = argv[++i];
         } else if (strcmp(argument, "--screenshot") == 0) {
             cli->screenshot_path = argv[++i];
+        } else if (strcmp(argument, "--gif-out") == 0) {
+            cli->gif_out = argv[++i];
         } else if (strcmp(argument, "--paste-text") == 0) {
             cli->paste_text = argv[++i];
         } else if (strcmp(argument, "--paste-at") == 0) {
@@ -516,6 +628,7 @@ int main(int argc, char **argv) {
     AudioOutput audio;
     GamepadInput gamepad;
     Overlay overlay;
+    GifCapture capture;
     UnapiNet *unapinet = NULL;
     char rtc_path[PATH_MAX];
     char megaflash_state_path[PATH_MAX];
@@ -1013,6 +1126,11 @@ int main(int argc, char **argv) {
         notify_post("Gamepad connected: %s",
                     gamepad_input_name(&gamepad));
 
+    memset(&capture, 0, sizeof(capture));
+    if (cli.gif_out &&
+        !gif_capture_start(&capture, cli.gif_out, &config))
+        fprintf(stderr, "gif-out: failed to open %s\n", cli.gif_out);
+
     startup_info(config.notifications,
                  "1983 - MSX / MSX2 emulator (git %s)\n",
                  PROG_GIT_COMMIT);
@@ -1026,7 +1144,7 @@ int main(int argc, char **argv) {
                  msx.profile->psg_variant == PSG_VARIANT_YM2149
                  ? "YM2149" : "AY-3-8910");
     startup_info(config.notifications,
-                 "F4 screenshot, F5 reset, F9 options, "
+                 "F4 screenshot, F5 reset, F6 GIF record, F9 options, "
                  "F11 fullscreen, F12 quit\n");
     startup_info(config.notifications,
                  "Shift+F1..F5 = MSX F1..F5, Shift+F7 = SELECT, "
@@ -1319,7 +1437,11 @@ int main(int argc, char **argv) {
                     notify_post("Machine reset");
                     break;
                 case SDLK_F6:
-                    notify_post("Animated capture is planned");
+                    gif_capture_toggle(&capture, &config);
+                    if (capture.encoder)
+                        notify_post("GIF recording started");
+                    else
+                        notify_post("GIF recording stopped");
                     break;
                 case SDLK_F8:
                     notify_post("Monitor/disassembler is planned");
@@ -1393,6 +1515,8 @@ int main(int argc, char **argv) {
             leds_ping(LED_NETWORK);
         notify_tick(1000 / msx.frame_hz);
         display_draw(&display, &msx);
+        gif_capture_frame(&capture, display.pixels,
+                          1000000000ULL / (uint64_t)msx.frame_hz);
         draw_debug(&config, &msx, &display);
         draw_paused(&msx, &display);
         overlay_render_cassette_scope(&overlay);
@@ -1438,6 +1562,7 @@ int main(int argc, char **argv) {
         display_save_ppm(&display, cli.screenshot_path) != 0)
         fprintf(stderr, "cannot save final screenshot: %s\n",
                 cli.screenshot_path);
+    gif_capture_stop(&capture);
     config.fullscreen = display.fullscreen;
     config.scale = display.scale;
     config_save(&config);

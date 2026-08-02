@@ -11,6 +11,8 @@ AM_LDFLAGS = $(WIN_STACK_LDFLAGS)
 	src/audio.c \
 	src/display.c \
 	src/gamepad.c \
+	src/gifcap.c \
+	src/ffmpeg_gif.c \
 	src/kbd.c \
 	src/leds.c \
 	src/main.c \
@@ -41,6 +43,8 @@ noinst_HEADERS = \
 	src/audio.h \
 	src/display.h \
 	src/gamepad.h \
+	src/gifcap.h \
+	src/ffmpeg_gif.h \
 	src/kbd.h \
 	src/leds.h \
 	src/megaflash.h \
@@ -74,7 +78,7 @@ icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 
 CLEANFILES = icons/1983-rc.o
 
-check_PROGRAMS = test-cartridge test-cassette test-ata test-floppy test-wd2793 test-sunrise test-sdcard test-sd-mapper test-megaflash test-unapinet test-config test-models test-msx test-gamepad test-kbd test-paste test-overlay test-vdp test-psg test-scc test-rtc
+check_PROGRAMS = test-cartridge test-cassette test-ata test-floppy test-wd2793 test-sunrise test-sdcard test-sd-mapper test-megaflash test-unapinet test-config test-models test-msx test-gamepad test-kbd test-paste test-overlay test-vdp test-psg test-scc test-rtc test-gifcap
 TESTS = $(check_PROGRAMS) tests/test-cli.sh
 test_cartridge_SOURCES = tests/test_cartridge.c src/cartridge.c src/scc.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
@@ -163,6 +167,10 @@ test_scc_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_rtc_SOURCES = tests/test_rtc.c src/rtc.c
 test_rtc_CPPFLAGS = -I$(top_srcdir)/src
 test_rtc_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+
+test_gifcap_SOURCES = tests/test_gifcap.c src/gifcap.c
+test_gifcap_CPPFLAGS = -I$(top_srcdir)/src
+test_gifcap_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
 desktopdir         = $(datadir)/applications
 dist_desktop_DATA  = io.github.salvogendut.Emulator1983.desktop

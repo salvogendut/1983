@@ -107,6 +107,7 @@ Useful options:
 ./1983 --model nms8250 --unapi
 ./1983 --config ./test.conf
 ./1983 --headless --unthrottled --exit-after 10
+./1983 --gif-out demo.gif --exit-after 120
 ./1983 --help
 ```
 
@@ -173,7 +174,7 @@ checkpoints, the GeoBench/Nextor target, and licensing boundaries.
 |-----|--------|
 | F4 | Save a PPM screenshot |
 | F5 | Reset |
-| F6 | Animated capture placeholder |
+| F6 | Start or stop animated GIF recording |
 | F8 | Monitor/disassembler placeholder |
 | F9 | Open or save and close the options overlay |
 | F11 | Toggle fullscreen |
@@ -185,6 +186,11 @@ checkpoints, the GeoBench/Nextor target, and licensing boundaries.
 | Shift+F7 / Shift+F8 | Send MSX SELECT / STOP |
 | Click in window | Capture the mouse when the selected port is Mouse |
 | Ctrl+Enter | Release captured mouse input |
+
+Press **F6** to start or stop animated GIF recording, or pass `--gif-out PATH` on
+the command line to capture on startup. The **Advanced** overlay section cycles
+the capture resolution (720/540/360/240/180), frame rate (25/20/10/5 fps), and
+encoder (built-in GIF89a or FFmpeg optimize).
 
 Inside the overlay, Left and Right change section, Up and Down select a row,
 Enter activates it, F9 saves, and Escape closes or offers to discard changes.
