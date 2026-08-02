@@ -786,6 +786,50 @@ static int z80_step_impl(Z80 *cpu, Z80Bus *bus) {
     u8 op = FETCH8();
     cpu->last_op = op;
     cpu->last_prefix = 0;
+
+    /* TEMP DEBUG: trace the GeoBench/RainBIOS dispatch loop */
+    {
+        static int printed = 0;
+        static int capture = 0;
+        static int dumped = 0;
+        int hot = (cpu->pc >= 0xEE00 && cpu->pc < 0xEF00) ||
+                  (cpu->pc >= 0xF37E && cpu->pc < 0xF3A0) ||
+                  (cpu->pc < 0x0100) ||
+                  (cpu->pc >= 0x14A0 && cpu->pc < 0x14C0);
+        if (!dumped && cpu->pc == 0xEE40) {
+            dumped = 1;
+            fprintf(stderr, "DISPATCH-DUMP:");
+            for (u16 a = 0xEE00; a < 0xEE80; ++a)
+                fprintf(stderr, " %02X", bus->mem_read(bus->ctx, a));
+            fprintf(stderr, "\n");
+            fprintf(stderr, "PAGE0-DUMP:");
+            for (u16 a = 0x0000; a < 0x0100; ++a)
+                fprintf(stderr, " %02X", bus->mem_read(bus->ctx, a));
+            fprintf(stderr, "\n");
+            fprintf(stderr, "F1E0-DUMP:");
+            for (u16 a = 0xF1E0; a < 0xF240; ++a)
+                fprintf(stderr, " %02X", bus->mem_read(bus->ctx, a));
+            fprintf(stderr, "\n");
+        }
+        if (printed < 400000 && (capture || (cpu->pc == 0xEE3C && cpu->iy == 0))) {
+            capture = 1;
+            u8 sl = bus->io_read(bus->ctx, 0xa8);
+            if (cpu->pc == 0x00D9) {
+                fprintf(stderr, "PC=00D8 jptarget=%02X%02X slot=%02X\n",
+                        bus->mem_read(bus->ctx, 0x00D9),
+                        bus->mem_read(bus->ctx, 0x00DA), sl);
+            }
+            fprintf(stderr, "pc=%04X slot=%02X op=%02X m0D8=%02X m14B5=%02X mF393=%02X sp=%04X af=%04X iy=%04X ix=%04X bsl=%02X exp0=%02X\n",
+                    cpu->pc, sl, op,
+                    bus->mem_read(bus->ctx, 0x00D8),
+                    bus->mem_read(bus->ctx, 0x14B5),
+                    bus->mem_read(bus->ctx, 0xF393),
+                    cpu->sp, cpu->af, cpu->iy, cpu->ix,
+                    bus->mem_read(bus->ctx, 0xFCC0),
+                    bus->mem_read(bus->ctx, 0xFCC1));
+            printed++;
+        }
+    }
     cpu->r = ((cpu->r + 1) & 0x7F) | (cpu->r & 0x80);
 
     switch (op) {
