@@ -1124,6 +1124,7 @@ dist_icon512_DATA = icons/512x512/apps/io.github.salvogendut.Emulator1983.png
 EXTRA_DIST = \
 	LICENSE \
 	README.md \
+	USAGE.md \
 	1983.png \
 	sample-rainbios-nextor-geobench-on-1983-20260802-165621.gif \
 	TECHNICAL.md \
