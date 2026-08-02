@@ -23,6 +23,7 @@ AM_LDFLAGS = $(WIN_STACK_LDFLAGS)
 	src/overlay.c \
 	src/paste.c \
 	src/psg.c \
+	src/rs232.c \
 	src/rtc.c \
 	src/scc.c \
 	src/sdcard.c \
@@ -54,10 +55,14 @@ noinst_HEADERS = \
 	src/overlay.h \
 	src/paste.h \
 	src/psg.h \
+	src/rs232.h \
 	src/rtc.h \
 	src/scc.h \
 	src/sdcard.h \
 	src/sd_mapper.h \
+	src/serial_8251.h \
+	src/serial_8254.h \
+	src/serial_timing.h \
 	src/sunrise.h \
 	src/shutter_wav.h \
 	src/types.h \
@@ -79,7 +84,7 @@ icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 
 CLEANFILES = icons/1983-rc.o
 
-check_PROGRAMS = test-cartridge test-cassette test-ata test-floppy test-wd2793 test-sunrise test-sdcard test-sd-mapper test-megaflash test-unapinet test-config test-models test-msx test-gamepad test-kbd test-paste test-overlay test-vdp test-psg test-scc test-rtc test-gifcap
+check_PROGRAMS = test-cartridge test-cassette test-ata test-floppy test-wd2793 test-sunrise test-sdcard test-sd-mapper test-megaflash test-unapinet test-config test-models test-msx test-gamepad test-kbd test-paste test-overlay test-vdp test-psg test-scc test-rtc test-gifcap test-rs232 test-serial
 TESTS = $(check_PROGRAMS) diagnostics/test-cli.sh
 test_cartridge_SOURCES = diagnostics/test_cartridge.c src/cartridge.c src/scc.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
@@ -172,6 +177,14 @@ test_rtc_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_gifcap_SOURCES = diagnostics/test_gifcap.c src/gifcap.c
 test_gifcap_CPPFLAGS = -I$(top_srcdir)/src
 test_gifcap_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+
+test_rs232_SOURCES = diagnostics/test_rs232.c src/rs232.c
+test_rs232_CPPFLAGS = -I$(top_srcdir)/src
+test_rs232_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+
+test_serial_SOURCES = diagnostics/test_serial.c src/serial_8251.c src/serial_8251.h src/serial_8254.c src/serial_8254.h src/serial_timing.h
+test_serial_CPPFLAGS = -I$(top_srcdir)/src
+test_serial_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
 desktopdir         = $(datadir)/applications
 dist_desktop_DATA  = io.github.salvogendut.Emulator1983.desktop
