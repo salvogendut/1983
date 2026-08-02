@@ -264,9 +264,9 @@ static void test_sd_mapper_expanded_cartridge_bus(void) {
 }
 
 static void test_megaflash_expanded_cartridge_bus(void) {
-    const char *replacement_path = "diagnostics/test-megaflash-replace.tmp";
-    const char *state_path = "diagnostics/test-megaflash-state.tmp";
-    const char *pending_path = "diagnostics/test-megaflash-state.pending.tmp";
+    const char *replacement_path = "diagnostics/test-msx-megaflash-replace.tmp";
+    const char *state_path = "diagnostics/test-msx-megaflash-state.tmp";
+    const char *pending_path = "diagnostics/test-msx-megaflash-state.pending.tmp";
     MsxMachine msx;
     u8 *flash = malloc(MSX_MEGAFLASH_FLASH_SIZE);
 
