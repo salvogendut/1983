@@ -26,6 +26,7 @@ static const LedPalette palette[LED_COUNT] = {
     [LED_IDE]         = { 55, 45,  8, 255, 220, 40 },
     [LED_SD_A]        = { 12, 45, 20, 70, 255, 100 },
     [LED_SD_B]        = { 12, 45, 20, 70, 255, 100 },
+    [LED_NETWORK]     = { 48, 48, 48, 245, 245, 245 },
 };
 
 static const LedPalette cartridge_network_activity =
@@ -56,6 +57,7 @@ static const char *label_for(LedId id) {
         case LED_IDE:   return "Sunrise IDE";
         case LED_SD_A:  return "SD Card A";
         case LED_SD_B:  return "SD Card B";
+        case LED_NETWORK: return "MSX TCP/IP UNAPI";
         case LED_COUNT: break;
     }
     return "";

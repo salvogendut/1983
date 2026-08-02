@@ -29,7 +29,8 @@ the 1984 and 1985 sibling emulators.
 | Cartridges | Dual Linear, ASCII8/16, Konami, and Konami SCC devices plus SD Mapper V2 and MegaFlashROM SCC+ SD composite cartridges are implemented |
 | Cassette | Standard CAS playback, BIOS motor/comparator wiring, overlay/CLI loading, transport display, and Tape LED are implemented; recording and sampled audio are planned |
 | Disk | Sunrise ATA-IDE/Nextor, dual-card SD Mapper V2 and MegaFlashROM storage, and Philips WD2793 paths are implemented with safe writable raw images, optional dual floppies, and activity LEDs; protected/flux formats remain planned |
-| Input | International keyboard, dual PSG joystick ports, SDL3 gamepad hotplug/routing, MSX mouse capture/protocols, and persistent Joy Port selections are implemented; alternate matrices and clipboard paste are planned |
+| Network | openMSXnet v0.9.7-compatible host TCP/IP UNAPI bridge, guest TSR workflow, asynchronous DNS, TCP, UDP, and activity LED are implemented |
+| Input | International keyboard, clipboard paste, dual PSG joystick ports, SDL3 gamepad hotplug/routing, MSX mouse capture/protocols, and persistent Joy Port selections are implemented; alternate national matrices are planned |
 | MSX2 hardware | Internal mapper, RP-5C01 RTC with persistent per-machine CMOS, and editable firmware catalogue are implemented; more extensions are planned |
 | Tools | Screenshots and headless automation exist; snapshots, debugger, disassembler, and deterministic capture are planned |
 
@@ -63,6 +64,8 @@ the 1984 and 1985 sibling emulators.
     multi-mapper subslots, dual MegaSD media, an independent 512 KiB mapper,
     SCC-I and cartridge PSG audio, the complete GUI/CLI media workflow, and
     an official preflash/Nextor boot checkpoint.
+14. Port-mapped MSX TCP/IP UNAPI host bridge compatible with openMSXnet
+    v0.9.7 and its unmodified mapped-RAM `UNAPINET.COM` driver.
 
 ## Near-term targets
 

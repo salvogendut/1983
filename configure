@@ -614,6 +614,7 @@ am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
 PROG_GIT_COMMIT
+NETWORK_LIBS
 WIN_STACK_LDFLAGS
 WIN_RC_OBJ
 WINDRES
@@ -4978,12 +4979,15 @@ fi
 
     WIN_RC_OBJ="icons/1983-rc.o"
     WIN_STACK_LDFLAGS="-Wl,--stack,16777216"
+    NETWORK_LIBS="-lws2_32 -liphlpapi"
     ;;
   *)
     WIN_RC_OBJ=""
     WIN_STACK_LDFLAGS=""
+    NETWORK_LIBS=""
     ;;
 esac
+
 
 
 

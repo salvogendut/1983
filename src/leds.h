@@ -17,6 +17,7 @@ typedef enum {
     LED_IDE,
     LED_SD_A,
     LED_SD_B,
+    LED_NETWORK,
     LED_COUNT
 } LedId;
 

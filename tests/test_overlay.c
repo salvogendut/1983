@@ -348,9 +348,15 @@ int main(void) {
     assert(fclose(fixture) == 0);
     model_catalog_defaults(&models);
     {
+        size_t cbios_index = model_catalog_index(&models, "cbios");
         size_t nms8250_index = model_catalog_index(&models, "nms8250");
 
+        assert(cbios_index < models.count);
         assert(nms8250_index < models.count);
+        snprintf(models.entries[cbios_index].bios_path,
+                 sizeof(models.entries[cbios_index].bios_path), "%s",
+                 machine_bios_path);
+        models.entries[cbios_index].logo_path[0] = '\0';
         snprintf(models.entries[nms8250_index].bios_path,
                  sizeof(models.entries[nms8250_index].bios_path), "%s",
                  machine_bios_path);
@@ -399,7 +405,7 @@ int main(void) {
            LED_CARTRIDGE_NETWORK);
     assert(leds_get_cartridge_state(0).present);
     assert(leds_get_cartridge_state(0).activity);
-    overlay_init(&overlay, &config, &models, &display, &msx);
+    overlay_init(&overlay, &config, &models, &display, &msx, NULL);
     assert(leds_get_cartridge_state(0).type ==
            LED_CARTRIDGE_STANDARD);
     assert(!leds_get_cartridge_state(0).present);
@@ -634,6 +640,12 @@ int main(void) {
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_SPACE);
     assert(overlay.state == OVERLAY_STATE_MENU);
+    assert(!config.tcpip_unapi);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.tcpip_unapi);
+    assert(config_cartridge_extension_count(&config) == 1);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_SPACE);
     assert(!config.scc);
     send_key(&overlay, SDLK_RETURN);
     assert(config.scc);
@@ -820,15 +832,15 @@ int main(void) {
     config.extra_hardware = true;
     config.tinker = true;
     msx_configure(&msx, config.model, config.region, 128);
-    overlay_init(&overlay, &config, &models, &display, &msx);
+    overlay_init(&overlay, &config, &models, &display, &msx, NULL);
     send_key(&overlay, SDLK_F9);
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_MEDIA);
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_EXTENSIONS);
-    for (int row = 0; row < 5; ++row)
+    for (int row = 0; row < 6; ++row)
         send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 5);
+    assert(overlay.row == 6);
     send_key(&overlay, SDLK_RETURN);
     assert(config.second_drive);
     send_key(&overlay, SDLK_LEFT);
@@ -837,7 +849,7 @@ int main(void) {
     assert(overlay.row == 6);
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_EXTENSIONS);
-    for (int row = 0; row < 5; ++row)
+    for (int row = 0; row < 6; ++row)
         send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(!config.second_drive);
@@ -859,7 +871,7 @@ int main(void) {
     config.tinker = true;
     msx_configure(&msx, config.model, config.region,
                   config.memory_kb);
-    overlay_init(&overlay, &config, &models, &display, &msx);
+    overlay_init(&overlay, &config, &models, &display, &msx, NULL);
     send_key(&overlay, SDLK_F9);
     send_key(&overlay, SDLK_RIGHT);
     send_key(&overlay, SDLK_RIGHT);
@@ -1031,7 +1043,7 @@ int main(void) {
     }
     msx_configure(&msx, config.model, config.region,
                   config.memory_kb);
-    overlay_init(&overlay, &config, &models, &display, &msx);
+    overlay_init(&overlay, &config, &models, &display, &msx, NULL);
     send_key(&overlay, SDLK_F9);
     send_key(&overlay, SDLK_RIGHT);
     send_key(&overlay, SDLK_RIGHT);
@@ -1186,7 +1198,7 @@ int main(void) {
         config.tinker = true;
         msx_configure(&msx, config.model, config.region,
                       config.memory_kb);
-        overlay_init(&overlay, &config, &models, &display, &msx);
+        overlay_init(&overlay, &config, &models, &display, &msx, NULL);
         send_key(&overlay, SDLK_F9);
         send_key(&overlay, SDLK_RETURN);
         assert(overlay.state == OVERLAY_STATE_MACHINE);

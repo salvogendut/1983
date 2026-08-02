@@ -73,6 +73,9 @@ sd_mapper_alternate_driver = false
 # Guest flash changes are stored separately and never overwrite this source.
 megaflash = false
 megaflash_rom =
+# Host TCP/IP bridge on ports 28h/29h. Requires openMSXnet's
+# UNAPINET.COM TSR under Nextor/MSX-DOS 2; it does not use a cartridge slot.
+tcpip_unapi = false
 scc = false
 msx_music = false
 kanji_rom = false

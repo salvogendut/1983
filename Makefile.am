@@ -27,6 +27,7 @@ AM_LDFLAGS = $(WIN_STACK_LDFLAGS)
 	src/sd_mapper.c \
 	src/sunrise.c \
 	src/ui.c \
+	src/unapinet.c \
 	src/vdp.c \
 	src/wd2793.c \
 	src/z80.c
@@ -56,6 +57,7 @@ noinst_HEADERS = \
 	src/sunrise.h \
 	src/types.h \
 	src/ui.h \
+	src/unapinet.h \
 	src/vdp.h \
 	src/wd2793.h \
 	src/z80.h
@@ -63,7 +65,7 @@ noinst_HEADERS = \
 1983_CPPFLAGS = -DPKGDATADIR=\"$(pkgdatadir)\"
 1983_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic \
 	-DPROG_GIT_COMMIT=\"$(PROG_GIT_COMMIT)\"
-1983_LDADD = $(SDL3_LIBS) -lm $(WIN_RC_OBJ)
+1983_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS) -lm $(WIN_RC_OBJ)
 1983_DEPENDENCIES = $(WIN_RC_OBJ)
 
 icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
@@ -72,7 +74,7 @@ icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 
 CLEANFILES = icons/1983-rc.o
 
-check_PROGRAMS = test-cartridge test-cassette test-ata test-floppy test-wd2793 test-sunrise test-sdcard test-sd-mapper test-megaflash test-config test-models test-msx test-gamepad test-kbd test-paste test-overlay test-vdp test-psg test-scc test-rtc
+check_PROGRAMS = test-cartridge test-cassette test-ata test-floppy test-wd2793 test-sunrise test-sdcard test-sd-mapper test-megaflash test-unapinet test-config test-models test-msx test-gamepad test-kbd test-paste test-overlay test-vdp test-psg test-scc test-rtc
 TESTS = $(check_PROGRAMS) tests/test-cli.sh
 test_cartridge_SOURCES = tests/test_cartridge.c src/cartridge.c src/scc.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
@@ -110,6 +112,11 @@ test_megaflash_SOURCES = tests/test_megaflash.c src/megaflash.c src/psg.c src/sc
 test_megaflash_CPPFLAGS = -I$(top_srcdir)/src
 test_megaflash_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
+test_unapinet_SOURCES = tests/test_unapinet.c src/unapinet.c
+test_unapinet_CPPFLAGS = -I$(top_srcdir)/src
+test_unapinet_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
+test_unapinet_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS)
+
 test_config_SOURCES = tests/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_config_CPPFLAGS = -I$(top_srcdir)/src
 test_config_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
@@ -136,10 +143,10 @@ test_paste_SOURCES = tests/test_paste.c src/cartridge.c src/cassette.c src/ata.c
 test_paste_CPPFLAGS = -I$(top_srcdir)/src
 test_paste_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 
-test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/ui.c src/vdp.c src/wd2793.c src/z80.c
+test_overlay_SOURCES = tests/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/ui.c src/unapinet.c src/vdp.c src/wd2793.c src/z80.c
 test_overlay_CPPFLAGS = -I$(top_srcdir)/src
 test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
-test_overlay_LDADD = $(SDL3_LIBS) -lm
+test_overlay_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS) -lm
 
 test_vdp_SOURCES = tests/test_vdp.c src/vdp.c
 test_vdp_CPPFLAGS = -I$(top_srcdir)/src

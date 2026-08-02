@@ -20,7 +20,8 @@ BuildRequires:  libappstream-glib
 SDL3. It emulates the Z80, TMS9918-family and V9938 video, AY/YM audio,
 keyboard, joystick and mouse input, cartridges and common mappers, cassettes,
 Philips floppy drives, Sunrise IDE, SD Mapper V2, MegaFlashROM SCC+ SD, and
-the MSX2 real-time clock.
+the MSX2 real-time clock. An openMSXnet-compatible host bridge can expose
+TCP/IP UNAPI networking through the separately supplied guest TSR.
 
 The redistributable C-BIOS 0.29 MSX1 main and logo ROMs are included as a
 ready-to-run default. Proprietary machine, controller, cartridge, and media

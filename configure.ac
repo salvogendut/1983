@@ -19,14 +19,17 @@ case $host_os in
     AC_CHECK_TOOL([WINDRES], [windres], [windres])
     WIN_RC_OBJ="icons/1983-rc.o"
     WIN_STACK_LDFLAGS="-Wl,--stack,16777216"
+    NETWORK_LIBS="-lws2_32 -liphlpapi"
     ;;
   *)
     WIN_RC_OBJ=""
     WIN_STACK_LDFLAGS=""
+    NETWORK_LIBS=""
     ;;
 esac
 AC_SUBST([WIN_RC_OBJ])
 AC_SUBST([WIN_STACK_LDFLAGS])
+AC_SUBST([NETWORK_LIBS])
 AC_SUBST([WINDRES])
 
 PROG_GIT_COMMIT=`git -C "$srcdir" rev-parse --short HEAD 2>/dev/null || echo unknown`

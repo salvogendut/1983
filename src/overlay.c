@@ -50,6 +50,7 @@ enum {
     EXTENSION_SUNRISE_IDE = 0,
     EXTENSION_SD_MAPPER,
     EXTENSION_MEGAFLASH,
+    EXTENSION_TCPIP_UNAPI,
     EXTENSION_KONAMI_SCC,
     EXTENSION_MSX_MUSIC,
     EXTENSION_SECOND_FLOPPY,
@@ -680,6 +681,12 @@ static void item_text(const Overlay *overlay, int row,
                     megaflash_extension_text(
                         overlay, value, value_size);
                     break;
+                case EXTENSION_TCPIP_UNAPI:
+                    snprintf(label, label_size,
+                             "MSX TCP/IP UNAPI");
+                    snprintf(value, value_size, "%s",
+                             toggle_name(config->tcpip_unapi));
+                    break;
                 case EXTENSION_KONAMI_SCC:
                     snprintf(label, label_size, "Konami SCC");
                     cartridge_extension_text(
@@ -825,6 +832,7 @@ static void configure_leds(const Config *config, const MsxMachine *msx) {
                      config->sd_mapper || config->megaflash);
     leds_set_enabled(LED_SD_B,
                      config->sd_mapper || config->megaflash);
+    leds_set_enabled(LED_NETWORK, config->tcpip_unapi);
     leds_set_state(LED_POWER, true);
     leds_set_state(LED_CAPS, msx->caps_led);
     leds_set_state(LED_KANA, msx->kana_led);
@@ -898,6 +906,14 @@ static void apply_config(Overlay *overlay) {
     msx_sd_mapper_set_ram_enabled(msx, config->sd_mapper_ram);
     msx_sd_mapper_set_alternate_driver(
         msx, config->sd_mapper_alternate_driver);
+    if (overlay->unapinet &&
+        unapinet_enabled(overlay->unapinet) != config->tcpip_unapi &&
+        !unapinet_set_enabled(
+            overlay->unapinet, config->tcpip_unapi)) {
+        config->tcpip_unapi = false;
+        notify_post("Could not enable MSX TCP/IP UNAPI: %s",
+                    unapinet_error(overlay->unapinet));
+    }
     notify_set_mode(config->notifications);
     configure_leds(config, msx);
 }
@@ -3121,6 +3137,13 @@ static void activate_item(Overlay *overlay) {
                         return;
                     }
                     break;
+                case EXTENSION_TCPIP_UNAPI:
+                    config->tcpip_unapi = !config->tcpip_unapi;
+                    notify_post("MSX TCP/IP UNAPI bridge %s",
+                                config->tcpip_unapi
+                                ? "enabled; run UNAPINET.COM in Nextor"
+                                : "disabled");
+                    break;
                 case EXTENSION_KONAMI_SCC:
                     if (!toggle_cartridge_extension(
                             overlay, &config->scc,
@@ -3250,13 +3273,14 @@ static void activate_item(Overlay *overlay) {
 
 void overlay_init(Overlay *overlay, Config *config,
                   ModelCatalog *models, Display *display,
-                  MsxMachine *msx) {
+                  MsxMachine *msx, UnapiNet *unapinet) {
     memset(overlay, 0, sizeof(*overlay));
     overlay->dialog_target = OVERLAY_DIALOG_NONE;
     overlay->config = config;
     overlay->models = models;
     overlay->display = display;
     overlay->msx = msx;
+    overlay->unapinet = unapinet;
     apply_config(overlay);
 }
 
