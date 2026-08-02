@@ -101,7 +101,7 @@ check_PROGRAMS = test-cartridge$(EXEEXT) test-cassette$(EXEEXT) \
 	test-models$(EXEEXT) test-msx$(EXEEXT) test-gamepad$(EXEEXT) \
 	test-kbd$(EXEEXT) test-paste$(EXEEXT) test-overlay$(EXEEXT) \
 	test-vdp$(EXEEXT) test-psg$(EXEEXT) test-scc$(EXEEXT) \
-	test-rtc$(EXEEXT)
+	test-rtc$(EXEEXT) test-gifcap$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -130,7 +130,8 @@ am_1983_OBJECTS = src/1983-config.$(OBJEXT) \
 	src/1983-cartridge.$(OBJEXT) src/1983-cassette.$(OBJEXT) \
 	src/1983-ata.$(OBJEXT) src/1983-floppy.$(OBJEXT) \
 	src/1983-audio.$(OBJEXT) src/1983-display.$(OBJEXT) \
-	src/1983-gamepad.$(OBJEXT) src/1983-kbd.$(OBJEXT) \
+	src/1983-gamepad.$(OBJEXT) src/1983-gifcap.$(OBJEXT) \
+	src/1983-ffmpeg_gif.$(OBJEXT) src/1983-kbd.$(OBJEXT) \
 	src/1983-leds.$(OBJEXT) src/1983-main.$(OBJEXT) \
 	src/1983-megaflash.$(OBJEXT) src/1983-models.$(OBJEXT) \
 	src/1983-msx.$(OBJEXT) src/1983-notify.$(OBJEXT) \
@@ -194,6 +195,12 @@ am_test_gamepad_OBJECTS = tests/test_gamepad-test_gamepad.$(OBJEXT) \
 test_gamepad_OBJECTS = $(am_test_gamepad_OBJECTS)
 test_gamepad_DEPENDENCIES = $(am__DEPENDENCIES_1)
 test_gamepad_LINK = $(CCLD) $(test_gamepad_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_test_gifcap_OBJECTS = tests/test_gifcap-test_gifcap.$(OBJEXT) \
+	src/test_gifcap-gifcap.$(OBJEXT)
+test_gifcap_OBJECTS = $(am_test_gifcap_OBJECTS)
+test_gifcap_LDADD = $(LDADD)
+test_gifcap_LINK = $(CCLD) $(test_gifcap_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_kbd_OBJECTS = tests/test_kbd-test_kbd.$(OBJEXT) \
 	src/test_kbd-cartridge.$(OBJEXT) \
@@ -370,8 +377,9 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/1983-audio.Po src/$(DEPDIR)/1983-cartridge.Po \
 	src/$(DEPDIR)/1983-cassette.Po src/$(DEPDIR)/1983-config.Po \
-	src/$(DEPDIR)/1983-display.Po src/$(DEPDIR)/1983-floppy.Po \
-	src/$(DEPDIR)/1983-gamepad.Po src/$(DEPDIR)/1983-kbd.Po \
+	src/$(DEPDIR)/1983-display.Po src/$(DEPDIR)/1983-ffmpeg_gif.Po \
+	src/$(DEPDIR)/1983-floppy.Po src/$(DEPDIR)/1983-gamepad.Po \
+	src/$(DEPDIR)/1983-gifcap.Po src/$(DEPDIR)/1983-kbd.Po \
 	src/$(DEPDIR)/1983-leds.Po src/$(DEPDIR)/1983-main.Po \
 	src/$(DEPDIR)/1983-megaflash.Po src/$(DEPDIR)/1983-models.Po \
 	src/$(DEPDIR)/1983-msx.Po src/$(DEPDIR)/1983-notify.Po \
@@ -403,6 +411,7 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	src/$(DEPDIR)/test_config-z80.Po \
 	src/$(DEPDIR)/test_floppy-floppy.Po \
 	src/$(DEPDIR)/test_gamepad-gamepad.Po \
+	src/$(DEPDIR)/test_gifcap-gifcap.Po \
 	src/$(DEPDIR)/test_kbd-ata.Po \
 	src/$(DEPDIR)/test_kbd-cartridge.Po \
 	src/$(DEPDIR)/test_kbd-cassette.Po \
@@ -501,6 +510,7 @@ am__depfiles_remade = src/$(DEPDIR)/1983-ata.Po \
 	tests/$(DEPDIR)/test_config-test_config.Po \
 	tests/$(DEPDIR)/test_floppy-test_floppy.Po \
 	tests/$(DEPDIR)/test_gamepad-test_gamepad.Po \
+	tests/$(DEPDIR)/test_gifcap-test_gifcap.Po \
 	tests/$(DEPDIR)/test_kbd-test_kbd.Po \
 	tests/$(DEPDIR)/test_megaflash-test_megaflash.Po \
 	tests/$(DEPDIR)/test_models-test_models.Po \
@@ -536,25 +546,25 @@ am__v_CCLD_1 =
 SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_cartridge_SOURCES) $(test_cassette_SOURCES) \
 	$(test_config_SOURCES) $(test_floppy_SOURCES) \
-	$(test_gamepad_SOURCES) $(test_kbd_SOURCES) \
-	$(test_megaflash_SOURCES) $(test_models_SOURCES) \
-	$(test_msx_SOURCES) $(test_overlay_SOURCES) \
-	$(test_paste_SOURCES) $(test_psg_SOURCES) $(test_rtc_SOURCES) \
-	$(test_scc_SOURCES) $(test_sd_mapper_SOURCES) \
-	$(test_sdcard_SOURCES) $(test_sunrise_SOURCES) \
-	$(test_unapinet_SOURCES) $(test_vdp_SOURCES) \
-	$(test_wd2793_SOURCES)
+	$(test_gamepad_SOURCES) $(test_gifcap_SOURCES) \
+	$(test_kbd_SOURCES) $(test_megaflash_SOURCES) \
+	$(test_models_SOURCES) $(test_msx_SOURCES) \
+	$(test_overlay_SOURCES) $(test_paste_SOURCES) \
+	$(test_psg_SOURCES) $(test_rtc_SOURCES) $(test_scc_SOURCES) \
+	$(test_sd_mapper_SOURCES) $(test_sdcard_SOURCES) \
+	$(test_sunrise_SOURCES) $(test_unapinet_SOURCES) \
+	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
 DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_cartridge_SOURCES) $(test_cassette_SOURCES) \
 	$(test_config_SOURCES) $(test_floppy_SOURCES) \
-	$(test_gamepad_SOURCES) $(test_kbd_SOURCES) \
-	$(test_megaflash_SOURCES) $(test_models_SOURCES) \
-	$(test_msx_SOURCES) $(test_overlay_SOURCES) \
-	$(test_paste_SOURCES) $(test_psg_SOURCES) $(test_rtc_SOURCES) \
-	$(test_scc_SOURCES) $(test_sd_mapper_SOURCES) \
-	$(test_sdcard_SOURCES) $(test_sunrise_SOURCES) \
-	$(test_unapinet_SOURCES) $(test_vdp_SOURCES) \
-	$(test_wd2793_SOURCES)
+	$(test_gamepad_SOURCES) $(test_gifcap_SOURCES) \
+	$(test_kbd_SOURCES) $(test_megaflash_SOURCES) \
+	$(test_models_SOURCES) $(test_msx_SOURCES) \
+	$(test_overlay_SOURCES) $(test_paste_SOURCES) \
+	$(test_psg_SOURCES) $(test_rtc_SOURCES) $(test_scc_SOURCES) \
+	$(test_sd_mapper_SOURCES) $(test_sdcard_SOURCES) \
+	$(test_sunrise_SOURCES) $(test_unapinet_SOURCES) \
+	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -845,6 +855,7 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
+FFMPEG = @FFMPEG@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -942,6 +953,8 @@ AM_LDFLAGS = $(WIN_STACK_LDFLAGS)
 	src/audio.c \
 	src/display.c \
 	src/gamepad.c \
+	src/gifcap.c \
+	src/ffmpeg_gif.c \
 	src/kbd.c \
 	src/leds.c \
 	src/main.c \
@@ -972,6 +985,8 @@ noinst_HEADERS = \
 	src/audio.h \
 	src/display.h \
 	src/gamepad.h \
+	src/gifcap.h \
+	src/ffmpeg_gif.h \
 	src/kbd.h \
 	src/leds.h \
 	src/megaflash.h \
@@ -1068,6 +1083,9 @@ test_scc_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_rtc_SOURCES = tests/test_rtc.c src/rtc.c
 test_rtc_CPPFLAGS = -I$(top_srcdir)/src
 test_rtc_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_gifcap_SOURCES = tests/test_gifcap.c src/gifcap.c
+test_gifcap_CPPFLAGS = -I$(top_srcdir)/src
+test_gifcap_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 desktopdir = $(datadir)/applications
 dist_desktop_DATA = io.github.salvogendut.Emulator1983.desktop
 metainfodir = $(datadir)/metainfo
@@ -1217,6 +1235,10 @@ src/1983-display.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-gamepad.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-gifcap.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-ffmpeg_gif.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-kbd.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-leds.$(OBJEXT): src/$(am__dirstamp) \
@@ -1347,6 +1369,14 @@ src/test_gamepad-gamepad.$(OBJEXT): src/$(am__dirstamp) \
 test-gamepad$(EXEEXT): $(test_gamepad_OBJECTS) $(test_gamepad_DEPENDENCIES) $(EXTRA_test_gamepad_DEPENDENCIES) 
 	@rm -f test-gamepad$(EXEEXT)
 	$(AM_V_CCLD)$(test_gamepad_LINK) $(test_gamepad_OBJECTS) $(test_gamepad_LDADD) $(LIBS)
+tests/test_gifcap-test_gifcap.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+src/test_gifcap-gifcap.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-gifcap$(EXEEXT): $(test_gifcap_OBJECTS) $(test_gifcap_DEPENDENCIES) $(EXTRA_test_gifcap_DEPENDENCIES) 
+	@rm -f test-gifcap$(EXEEXT)
+	$(AM_V_CCLD)$(test_gifcap_LINK) $(test_gifcap_OBJECTS) $(test_gifcap_LDADD) $(LIBS)
 tests/test_kbd-test_kbd.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-cartridge.$(OBJEXT): src/$(am__dirstamp) \
@@ -1656,8 +1686,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-cassette.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-display.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-ffmpeg_gif.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-gamepad.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-gifcap.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-kbd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-leds.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-main.Po@am__quote@ # am--include-marker
@@ -1700,6 +1732,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-z80.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_floppy-floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_gamepad-gamepad.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_gifcap-gifcap.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-cartridge.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-cassette.Po@am__quote@ # am--include-marker
@@ -1808,6 +1841,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_config-test_config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_floppy-test_floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_gamepad-test_gamepad.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_gifcap-test_gifcap.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_kbd-test_kbd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_megaflash-test_megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test_models-test_models.Po@am__quote@ # am--include-marker
@@ -1957,6 +1991,34 @@ src/1983-gamepad.obj: src/gamepad.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/gamepad.c' object='src/1983-gamepad.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-gamepad.obj `if test -f 'src/gamepad.c'; then $(CYGPATH_W) 'src/gamepad.c'; else $(CYGPATH_W) '$(srcdir)/src/gamepad.c'; fi`
+
+src/1983-gifcap.o: src/gifcap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-gifcap.o -MD -MP -MF src/$(DEPDIR)/1983-gifcap.Tpo -c -o src/1983-gifcap.o `test -f 'src/gifcap.c' || echo '$(srcdir)/'`src/gifcap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-gifcap.Tpo src/$(DEPDIR)/1983-gifcap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/gifcap.c' object='src/1983-gifcap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-gifcap.o `test -f 'src/gifcap.c' || echo '$(srcdir)/'`src/gifcap.c
+
+src/1983-gifcap.obj: src/gifcap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-gifcap.obj -MD -MP -MF src/$(DEPDIR)/1983-gifcap.Tpo -c -o src/1983-gifcap.obj `if test -f 'src/gifcap.c'; then $(CYGPATH_W) 'src/gifcap.c'; else $(CYGPATH_W) '$(srcdir)/src/gifcap.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-gifcap.Tpo src/$(DEPDIR)/1983-gifcap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/gifcap.c' object='src/1983-gifcap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-gifcap.obj `if test -f 'src/gifcap.c'; then $(CYGPATH_W) 'src/gifcap.c'; else $(CYGPATH_W) '$(srcdir)/src/gifcap.c'; fi`
+
+src/1983-ffmpeg_gif.o: src/ffmpeg_gif.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-ffmpeg_gif.o -MD -MP -MF src/$(DEPDIR)/1983-ffmpeg_gif.Tpo -c -o src/1983-ffmpeg_gif.o `test -f 'src/ffmpeg_gif.c' || echo '$(srcdir)/'`src/ffmpeg_gif.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-ffmpeg_gif.Tpo src/$(DEPDIR)/1983-ffmpeg_gif.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ffmpeg_gif.c' object='src/1983-ffmpeg_gif.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-ffmpeg_gif.o `test -f 'src/ffmpeg_gif.c' || echo '$(srcdir)/'`src/ffmpeg_gif.c
+
+src/1983-ffmpeg_gif.obj: src/ffmpeg_gif.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-ffmpeg_gif.obj -MD -MP -MF src/$(DEPDIR)/1983-ffmpeg_gif.Tpo -c -o src/1983-ffmpeg_gif.obj `if test -f 'src/ffmpeg_gif.c'; then $(CYGPATH_W) 'src/ffmpeg_gif.c'; else $(CYGPATH_W) '$(srcdir)/src/ffmpeg_gif.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-ffmpeg_gif.Tpo src/$(DEPDIR)/1983-ffmpeg_gif.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ffmpeg_gif.c' object='src/1983-ffmpeg_gif.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-ffmpeg_gif.obj `if test -f 'src/ffmpeg_gif.c'; then $(CYGPATH_W) 'src/ffmpeg_gif.c'; else $(CYGPATH_W) '$(srcdir)/src/ffmpeg_gif.c'; fi`
 
 src/1983-kbd.o: src/kbd.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-kbd.o -MD -MP -MF src/$(DEPDIR)/1983-kbd.Tpo -c -o src/1983-kbd.o `test -f 'src/kbd.c' || echo '$(srcdir)/'`src/kbd.c
@@ -2629,6 +2691,34 @@ src/test_gamepad-gamepad.obj: src/gamepad.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/gamepad.c' object='src/test_gamepad-gamepad.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gamepad_CPPFLAGS) $(CPPFLAGS) $(test_gamepad_CFLAGS) $(CFLAGS) -c -o src/test_gamepad-gamepad.obj `if test -f 'src/gamepad.c'; then $(CYGPATH_W) 'src/gamepad.c'; else $(CYGPATH_W) '$(srcdir)/src/gamepad.c'; fi`
+
+tests/test_gifcap-test_gifcap.o: tests/test_gifcap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -MT tests/test_gifcap-test_gifcap.o -MD -MP -MF tests/$(DEPDIR)/test_gifcap-test_gifcap.Tpo -c -o tests/test_gifcap-test_gifcap.o `test -f 'tests/test_gifcap.c' || echo '$(srcdir)/'`tests/test_gifcap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_gifcap-test_gifcap.Tpo tests/$(DEPDIR)/test_gifcap-test_gifcap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_gifcap.c' object='tests/test_gifcap-test_gifcap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -c -o tests/test_gifcap-test_gifcap.o `test -f 'tests/test_gifcap.c' || echo '$(srcdir)/'`tests/test_gifcap.c
+
+tests/test_gifcap-test_gifcap.obj: tests/test_gifcap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -MT tests/test_gifcap-test_gifcap.obj -MD -MP -MF tests/$(DEPDIR)/test_gifcap-test_gifcap.Tpo -c -o tests/test_gifcap-test_gifcap.obj `if test -f 'tests/test_gifcap.c'; then $(CYGPATH_W) 'tests/test_gifcap.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_gifcap.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/test_gifcap-test_gifcap.Tpo tests/$(DEPDIR)/test_gifcap-test_gifcap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test_gifcap.c' object='tests/test_gifcap-test_gifcap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -c -o tests/test_gifcap-test_gifcap.obj `if test -f 'tests/test_gifcap.c'; then $(CYGPATH_W) 'tests/test_gifcap.c'; else $(CYGPATH_W) '$(srcdir)/tests/test_gifcap.c'; fi`
+
+src/test_gifcap-gifcap.o: src/gifcap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -MT src/test_gifcap-gifcap.o -MD -MP -MF src/$(DEPDIR)/test_gifcap-gifcap.Tpo -c -o src/test_gifcap-gifcap.o `test -f 'src/gifcap.c' || echo '$(srcdir)/'`src/gifcap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_gifcap-gifcap.Tpo src/$(DEPDIR)/test_gifcap-gifcap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/gifcap.c' object='src/test_gifcap-gifcap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -c -o src/test_gifcap-gifcap.o `test -f 'src/gifcap.c' || echo '$(srcdir)/'`src/gifcap.c
+
+src/test_gifcap-gifcap.obj: src/gifcap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -MT src/test_gifcap-gifcap.obj -MD -MP -MF src/$(DEPDIR)/test_gifcap-gifcap.Tpo -c -o src/test_gifcap-gifcap.obj `if test -f 'src/gifcap.c'; then $(CYGPATH_W) 'src/gifcap.c'; else $(CYGPATH_W) '$(srcdir)/src/gifcap.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_gifcap-gifcap.Tpo src/$(DEPDIR)/test_gifcap-gifcap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/gifcap.c' object='src/test_gifcap-gifcap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_gifcap_CPPFLAGS) $(CPPFLAGS) $(test_gifcap_CFLAGS) $(CFLAGS) -c -o src/test_gifcap-gifcap.obj `if test -f 'src/gifcap.c'; then $(CYGPATH_W) 'src/gifcap.c'; else $(CYGPATH_W) '$(srcdir)/src/gifcap.c'; fi`
 
 tests/test_kbd-test_kbd.o: tests/test_kbd.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT tests/test_kbd-test_kbd.o -MD -MP -MF tests/$(DEPDIR)/test_kbd-test_kbd.Tpo -c -o tests/test_kbd-test_kbd.o `test -f 'tests/test_kbd.c' || echo '$(srcdir)/'`tests/test_kbd.c
@@ -4871,6 +4961,13 @@ test-rtc.log: test-rtc$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-gifcap.log: test-gifcap$(EXEEXT)
+	@p='test-gifcap$(EXEEXT)'; \
+	b='test-gifcap'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 tests/test-cli.sh.log: tests/test-cli.sh
 	@p='tests/test-cli.sh'; \
 	b='tests/test-cli.sh'; \
@@ -5131,8 +5228,10 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-cassette.Po
 	-rm -f src/$(DEPDIR)/1983-config.Po
 	-rm -f src/$(DEPDIR)/1983-display.Po
+	-rm -f src/$(DEPDIR)/1983-ffmpeg_gif.Po
 	-rm -f src/$(DEPDIR)/1983-floppy.Po
 	-rm -f src/$(DEPDIR)/1983-gamepad.Po
+	-rm -f src/$(DEPDIR)/1983-gifcap.Po
 	-rm -f src/$(DEPDIR)/1983-kbd.Po
 	-rm -f src/$(DEPDIR)/1983-leds.Po
 	-rm -f src/$(DEPDIR)/1983-main.Po
@@ -5175,6 +5274,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_config-z80.Po
 	-rm -f src/$(DEPDIR)/test_floppy-floppy.Po
 	-rm -f src/$(DEPDIR)/test_gamepad-gamepad.Po
+	-rm -f src/$(DEPDIR)/test_gifcap-gifcap.Po
 	-rm -f src/$(DEPDIR)/test_kbd-ata.Po
 	-rm -f src/$(DEPDIR)/test_kbd-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_kbd-cassette.Po
@@ -5283,6 +5383,7 @@ distclean: distclean-am
 	-rm -f tests/$(DEPDIR)/test_config-test_config.Po
 	-rm -f tests/$(DEPDIR)/test_floppy-test_floppy.Po
 	-rm -f tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
+	-rm -f tests/$(DEPDIR)/test_gifcap-test_gifcap.Po
 	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po
 	-rm -f tests/$(DEPDIR)/test_megaflash-test_megaflash.Po
 	-rm -f tests/$(DEPDIR)/test_models-test_models.Po
@@ -5356,8 +5457,10 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-cassette.Po
 	-rm -f src/$(DEPDIR)/1983-config.Po
 	-rm -f src/$(DEPDIR)/1983-display.Po
+	-rm -f src/$(DEPDIR)/1983-ffmpeg_gif.Po
 	-rm -f src/$(DEPDIR)/1983-floppy.Po
 	-rm -f src/$(DEPDIR)/1983-gamepad.Po
+	-rm -f src/$(DEPDIR)/1983-gifcap.Po
 	-rm -f src/$(DEPDIR)/1983-kbd.Po
 	-rm -f src/$(DEPDIR)/1983-leds.Po
 	-rm -f src/$(DEPDIR)/1983-main.Po
@@ -5400,6 +5503,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_config-z80.Po
 	-rm -f src/$(DEPDIR)/test_floppy-floppy.Po
 	-rm -f src/$(DEPDIR)/test_gamepad-gamepad.Po
+	-rm -f src/$(DEPDIR)/test_gifcap-gifcap.Po
 	-rm -f src/$(DEPDIR)/test_kbd-ata.Po
 	-rm -f src/$(DEPDIR)/test_kbd-cartridge.Po
 	-rm -f src/$(DEPDIR)/test_kbd-cassette.Po
@@ -5508,6 +5612,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f tests/$(DEPDIR)/test_config-test_config.Po
 	-rm -f tests/$(DEPDIR)/test_floppy-test_floppy.Po
 	-rm -f tests/$(DEPDIR)/test_gamepad-test_gamepad.Po
+	-rm -f tests/$(DEPDIR)/test_gifcap-test_gifcap.Po
 	-rm -f tests/$(DEPDIR)/test_kbd-test_kbd.Po
 	-rm -f tests/$(DEPDIR)/test_megaflash-test_megaflash.Po
 	-rm -f tests/$(DEPDIR)/test_models-test_models.Po

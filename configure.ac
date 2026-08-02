@@ -14,6 +14,15 @@ PKG_CHECK_MODULES([SDL3], [sdl3], [],
                   [AC_MSG_ERROR([SDL3 development files not found])])
 AC_CHECK_LIB([m], [sin], [], [AC_MSG_ERROR([libm not found])])
 
+AC_PATH_PROG([FFMPEG], [ffmpeg], [])
+AS_IF([test -n "$FFMPEG"],
+      [AC_DEFINE_UNQUOTED([FFMPEG_PATH], ["$FFMPEG"],
+                          [Path to ffmpeg binary])
+       AC_DEFINE([HAVE_FFMPEG], [1],
+                 [ffmpeg available for GIF optimization])
+       AC_MSG_NOTICE([GIF optimization enabled via $FFMPEG])],
+      [AC_MSG_NOTICE([GIF optimization disabled (ffmpeg not found)])])
+
 case $host_os in
   mingw*|cygwin*|msys*)
     AC_CHECK_TOOL([WINDRES], [windres], [windres])

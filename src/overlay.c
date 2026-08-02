@@ -68,6 +68,9 @@ enum {
     ADVANCED_SMOOTHING,
     ADVANCED_REAL_CRT,
     ADVANCED_CRT_SCANLINES,
+    ADVANCED_GIF_RESOLUTION,
+    ADVANCED_GIF_FPS,
+    ADVANCED_GIF_ENCODER,
     ADVANCED_CASSETTE_AUDIBLE,
     ADVANCED_CASSETTE_VISUAL,
     ADVANCED_NOTIFICATIONS,
@@ -782,6 +785,23 @@ static void item_text(const Overlay *overlay, int row,
                              config->real_crt ? "%d%%" : "%d%% (inactive)",
                              config->crt_scanlines);
                     break;
+                case ADVANCED_GIF_RESOLUTION:
+                    snprintf(label, label_size, "GIF resolution");
+                    snprintf(value, value_size, "%dx%d",
+                             config->gif_width,
+                             (config->gif_width * 3) / 4);
+                    break;
+                case ADVANCED_GIF_FPS:
+                    snprintf(label, label_size, "GIF frame rate");
+                    snprintf(value, value_size, "%d fps",
+                             config->gif_fps);
+                    break;
+                case ADVANCED_GIF_ENCODER:
+                    snprintf(label, label_size, "GIF encoder");
+                    snprintf(value, value_size, "%s",
+                             config->gif_ffmpeg
+                                 ? "FFmpeg optimize" : "built-in");
+                    break;
                 case ADVANCED_CASSETTE_AUDIBLE:
                     snprintf(label, label_size,
                              "Tape Audio Monitor");
@@ -1350,6 +1370,25 @@ static void change_notification_mode(Config *config) {
     if (config->notifications > NOTIFY_MODE_CONSOLE)
         config->notifications = NOTIFY_MODE_OFF;
     notify_set_mode(config->notifications);
+}
+
+static int cycle_gif_width(int width) {
+    switch (width) {
+        case 720: return 540;
+        case 540: return 360;
+        case 360: return 240;
+        case 240: return 180;
+        default:  return 720;
+    }
+}
+
+static int cycle_gif_fps(int fps) {
+    switch (fps) {
+        case 25: return 20;
+        case 20: return 10;
+        case 10: return 5;
+        default: return 25;
+    }
 }
 
 static void copy_dirname(char *destination, size_t destination_size,
@@ -3251,6 +3290,15 @@ static void activate_item(Overlay *overlay) {
                     config->crt_scanlines += 5;
                     if (config->crt_scanlines > 95)
                         config->crt_scanlines = 0;
+                    break;
+                case ADVANCED_GIF_RESOLUTION:
+                    config->gif_width = cycle_gif_width(config->gif_width);
+                    break;
+                case ADVANCED_GIF_FPS:
+                    config->gif_fps = cycle_gif_fps(config->gif_fps);
+                    break;
+                case ADVANCED_GIF_ENCODER:
+                    config->gif_ffmpeg = !config->gif_ffmpeg;
                     break;
                 case ADVANCED_CASSETTE_AUDIBLE:
                     config->cassette_audible_monitor =
