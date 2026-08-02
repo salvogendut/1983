@@ -19,7 +19,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#ifndef _WIN32
+#if RS232_HAVE_HOST_BACKEND
 #include <fcntl.h>
 #include <unistd.h>
 #include <termios.h>
@@ -46,6 +46,7 @@ static inline size_t rsb_space(size_t head, size_t tail) {
 }
 static inline bool rsb_empty(size_t head, size_t tail) { return head == tail; }
 
+#if RS232_HAVE_HOST_BACKEND
 static void rx_push(Rs232 *r, u8 b) {
     if (rsb_space(r->rx_head, r->rx_tail) == 0) return;
     r->rx_buf[r->rx_head & MASK] = b;
@@ -69,9 +70,10 @@ static bool tx_pop(Rs232 *r, u8 *out) {
     r->tx_tail = (r->tx_tail + 1) & MASK;
     return true;
 }
+#endif /* host backend */
 bool rs232_rx_has(const Rs232 *r) { return !rsb_empty(r->rx_head, r->rx_tail); }
 
-#ifndef _WIN32
+#if RS232_HAVE_HOST_BACKEND
 static int open_pty(Rs232 *r, const char *link_path) {
     int fd = posix_openpt(O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (fd < 0) { perror("rs232: posix_openpt"); return -1; }
@@ -152,7 +154,7 @@ static int open_tcp(Rs232 *r, int port) {
 static void close_fd(int *pfd) {
     if (*pfd >= 0) { close(*pfd); *pfd = -1; }
 }
-#endif /* !_WIN32 */
+#endif /* host backend */
 
 void rs232_init(Rs232 *r, bool enable, const char *backend, int tcp_port,
                 const char *pty_link_path) {
@@ -163,7 +165,7 @@ void rs232_init(Rs232 *r, bool enable, const char *backend, int tcp_port,
     r->present    = enable;
     if (!r->present) return;
 
-#ifdef _WIN32
+#if !RS232_HAVE_HOST_BACKEND
     (void)backend; (void)tcp_port; (void)pty_link_path;
     fprintf(stderr, "rs232: backend not supported on Windows yet - disabling\n");
     r->present = false;
@@ -185,7 +187,7 @@ void rs232_init(Rs232 *r, bool enable, const char *backend, int tcp_port,
 }
 
 void rs232_shutdown(Rs232 *r) {
-#ifndef _WIN32
+#if RS232_HAVE_HOST_BACKEND
     close_fd(&r->pty_master);
     close_fd(&r->tcp_client);
     close_fd(&r->tcp_listen);
@@ -197,7 +199,7 @@ void rs232_shutdown(Rs232 *r) {
     r->present = false;
 }
 
-#ifndef _WIN32
+#if RS232_HAVE_HOST_BACKEND
 static void poll_pty(Rs232 *r) {
     if (r->pty_master < 0) return;
     while (rsb_space(r->rx_head, r->rx_tail) > 0) {
@@ -248,11 +250,11 @@ static void poll_tcp(Rs232 *r) {
         }
     }
 }
-#endif /* !_WIN32 */
+#endif /* host backend */
 
 void rs232_poll(Rs232 *r) {
     if (!r->present) return;
-#ifndef _WIN32
+#if RS232_HAVE_HOST_BACKEND
     if (r->backend == RS232_BACKEND_PTY) poll_pty(r);
     else                                 poll_tcp(r);
 #else

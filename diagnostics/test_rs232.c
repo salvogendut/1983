@@ -1,4 +1,7 @@
-/* test_rs232.c - RS-232 host backend (PTY/TCP + ring buffers) self-test. */
+/* test_rs232.c - RS-232 host backend (PTY/TCP + ring buffers) self-test.
+ * Only Linux/BSD have the POSIX pty/socket backend; on Windows and macOS
+ * the test is skipped (Automake "SKIP" status, exit code 77).
+ */
 
 #include "rs232.h"
 #include "types.h"
@@ -7,11 +10,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifndef _WIN32
-#include <fcntl.h>
-#include <unistd.h>
-#endif
-
 static int failures = 0;
 
 static void check(int cond, const char *what) {
@@ -19,9 +17,12 @@ static void check(int cond, const char *what) {
     else       { printf("ok:   %s\n", what); }
 }
 
-#ifndef _WIN32
+#if RS232_HAVE_HOST_BACKEND
+#include <fcntl.h>
+#include <unistd.h>
+
 static int read_slave(const char *slave) {
-    /* Open the host-facing slave side once more and read whatever the
+    /* Open the host-side slave side once more and read whatever the
      * master has already received, so the loopback can observe TX. */
     int fd = open(slave, O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (fd < 0) return -2;
@@ -35,6 +36,11 @@ static int read_slave(const char *slave) {
 int main(void) {
     Rs232 r;
 
+#if !RS232_HAVE_HOST_BACKEND
+    (void)r;
+    printf("SKIP: serial host backend unavailable on this platform\n");
+    return 77;
+#else
     /* Ring-buffer FIFO behaviour (host-side only). */
     rs232_init(&r, true, "pty", 0, NULL);
     check(r.present, "pty backend initializes");
@@ -74,4 +80,5 @@ int main(void) {
     if (failures) { fprintf(stderr, "%d test(s) FAILED\n", failures); return 1; }
     printf("all rs232 backend tests passed\n");
     return 0;
+#endif
 }

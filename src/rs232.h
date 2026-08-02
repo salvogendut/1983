@@ -17,6 +17,16 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+/* The host PTY/TCP transport relies on POSIX pty/socket APIs that are not
+ * (reliably) available in CI on Windows or macOS; the 8251/8254 register
+ * model itself is platform independent. Disable only the host backend there.
+ */
+#if defined(_WIN32) || defined(__APPLE__)
+#define RS232_HAVE_HOST_BACKEND 0
+#else
+#define RS232_HAVE_HOST_BACKEND 1
+#endif
+
 
 #define RS232_RING 4096   /* power of two */
 
@@ -50,6 +60,7 @@ typedef struct Rs232 {
  * `pty_link_path` is the stable host-side symlink to create for PTY
  * backends (e.g. "/tmp/1983-rs232"); NULL or empty disables the link.
  * Call rs232_init with enable=false to leave the port absent. */
+#if RS232_HAVE_HOST_BACKEND
 void rs232_init(Rs232 *r, bool enable, const char *backend,
                 int tcp_port, const char *pty_link_path);
 void rs232_shutdown(Rs232 *r);
@@ -61,3 +72,4 @@ void rs232_poll(Rs232 *r);
 bool rs232_rx_pop (Rs232 *r, u8 *out);
 bool rs232_tx_push(Rs232 *r, u8 b);
 bool rs232_rx_has (const Rs232 *r);
+#endif /* RS232_HAVE_HOST_BACKEND */
