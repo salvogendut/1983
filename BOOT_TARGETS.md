@@ -309,6 +309,14 @@ TCP/IP UNAPI, then discover the standard `TCP/IP` implementation through
 EXTBIO. If the TSR is absent, enabling the 1983 toggle alone only exposes the
 private ports and no standard guest UNAPI implementation exists.
 
+If GeoBench Browser reports `NO NETWORK`, open **Extensions** and inspect the
+MSX TCP/IP UNAPI row. `On (awaiting TSR)` means the host bridge is available
+but `UNAPINET.COM` has not run in the current guest session. `On (TSR active)`
+confirms that the driver completed the openMSXnet handshake. In particular,
+the normal `QA/GBMSX.IMG` does not acquire the third-party TSR merely by
+enabling the emulator extension; build or copy a local image using the steps
+above.
+
 Nextor can run on MSX1 and can fall back to MSX-DOS 1 mode, but its normal
 MSX-DOS 2-compatible mode requires at least 128 KB in the largest memory
 mapper. A 64 KB machine can reach an MSX-DOS 1 command prompt when the

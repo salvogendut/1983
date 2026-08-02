@@ -76,7 +76,7 @@ typedef struct {
 } UdpConnection;
 
 struct UnapiNet {
-    bool enabled, sockets_ready;
+    bool enabled, sockets_ready, guest_driver_active;
     atomic_bool activity;
     char error[192];
     u8 status, params[MAX_PARAMS], result[MAX_TRANSFER + 16];
@@ -210,6 +210,7 @@ void unapinet_reset(UnapiNet *n) {
     for (unsigned i = 0; i < MAX_TCP; ++i) close_tcp(&n->tcp[i], CR_NEVER, true);
     for (unsigned i = 0; i < MAX_UDP; ++i) close_udp(&n->udp[i]);
     n->status = ST_OK; n->params_size = n->result_size = n->result_pos = 0;
+    n->guest_driver_active = false;
     SDL_LockMutex(n->dns_mutex); ++n->dns_generation;
     n->dns_state = 0; n->dns_ip = 0; SDL_UnlockMutex(n->dns_mutex);
     n->activity = false;
@@ -230,6 +231,9 @@ bool unapinet_set_enabled(UnapiNet *n, bool enabled) {
     n->enabled = enabled; n->error[0] = '\0'; return true;
 }
 bool unapinet_enabled(const UnapiNet *n) { return n && n->enabled; }
+bool unapinet_guest_driver_active(const UnapiNet *n) {
+    return n && n->enabled && n->guest_driver_active;
+}
 void unapinet_destroy(UnapiNet *n) {
     if (!n) return;
     if (n->dns_thread) {
@@ -574,7 +578,10 @@ static void cmd_udp_recv(UnapiNet *n) {
 static void process_command(UnapiNet *n, u8 command) {
     unapinet_poll(n);
     switch (command) {
-        case 0x00: answer_byte(n, 0xab); break;
+        case 0x00:
+            n->guest_driver_active = true;
+            answer_byte(n, 0xab);
+            break;
         case 0x01: cmd_dns_query(n); break;
         case 0x02: cmd_dns_status(n); break;
         case 0x03: cmd_tcp_open(n); break;
