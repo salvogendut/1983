@@ -101,7 +101,8 @@ check_PROGRAMS = test-cartridge$(EXEEXT) test-cassette$(EXEEXT) \
 	test-models$(EXEEXT) test-msx$(EXEEXT) test-gamepad$(EXEEXT) \
 	test-kbd$(EXEEXT) test-paste$(EXEEXT) test-overlay$(EXEEXT) \
 	test-vdp$(EXEEXT) test-psg$(EXEEXT) test-scc$(EXEEXT) \
-	test-rtc$(EXEEXT) test-gifcap$(EXEEXT) test-rs232$(EXEEXT)
+	test-rtc$(EXEEXT) test-gifcap$(EXEEXT) test-rs232$(EXEEXT) \
+	test-serial$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -344,6 +345,14 @@ test_sdcard_OBJECTS = $(am_test_sdcard_OBJECTS)
 test_sdcard_LDADD = $(LDADD)
 test_sdcard_LINK = $(CCLD) $(test_sdcard_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_test_serial_OBJECTS =  \
+	diagnostics/test_serial-test_serial.$(OBJEXT) \
+	src/test_serial-serial_8251.$(OBJEXT) \
+	src/test_serial-serial_8254.$(OBJEXT)
+test_serial_OBJECTS = $(am_test_serial_OBJECTS)
+test_serial_LDADD = $(LDADD)
+test_serial_LINK = $(CCLD) $(test_serial_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_sunrise_OBJECTS =  \
 	diagnostics/test_sunrise-test_sunrise.$(OBJEXT) \
 	src/test_sunrise-ata.$(OBJEXT) \
@@ -408,6 +417,7 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	diagnostics/$(DEPDIR)/test_scc-test_scc.Po \
 	diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po \
 	diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po \
+	diagnostics/$(DEPDIR)/test_serial-test_serial.Po \
 	diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po \
 	diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po \
 	diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po \
@@ -537,6 +547,8 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po \
 	src/$(DEPDIR)/test_sd_mapper-sdcard.Po \
 	src/$(DEPDIR)/test_sdcard-sdcard.Po \
+	src/$(DEPDIR)/test_serial-serial_8251.Po \
+	src/$(DEPDIR)/test_serial-serial_8254.Po \
 	src/$(DEPDIR)/test_sunrise-ata.Po \
 	src/$(DEPDIR)/test_sunrise-sunrise.Po \
 	src/$(DEPDIR)/test_unapinet-unapinet.Po \
@@ -569,9 +581,9 @@ SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_overlay_SOURCES) $(test_paste_SOURCES) \
 	$(test_psg_SOURCES) $(test_rs232_SOURCES) $(test_rtc_SOURCES) \
 	$(test_scc_SOURCES) $(test_sd_mapper_SOURCES) \
-	$(test_sdcard_SOURCES) $(test_sunrise_SOURCES) \
-	$(test_unapinet_SOURCES) $(test_vdp_SOURCES) \
-	$(test_wd2793_SOURCES)
+	$(test_sdcard_SOURCES) $(test_serial_SOURCES) \
+	$(test_sunrise_SOURCES) $(test_unapinet_SOURCES) \
+	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
 DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_cartridge_SOURCES) $(test_cassette_SOURCES) \
 	$(test_config_SOURCES) $(test_floppy_SOURCES) \
@@ -581,9 +593,9 @@ DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_overlay_SOURCES) $(test_paste_SOURCES) \
 	$(test_psg_SOURCES) $(test_rs232_SOURCES) $(test_rtc_SOURCES) \
 	$(test_scc_SOURCES) $(test_sd_mapper_SOURCES) \
-	$(test_sdcard_SOURCES) $(test_sunrise_SOURCES) \
-	$(test_unapinet_SOURCES) $(test_vdp_SOURCES) \
-	$(test_wd2793_SOURCES)
+	$(test_sdcard_SOURCES) $(test_serial_SOURCES) \
+	$(test_sunrise_SOURCES) $(test_unapinet_SOURCES) \
+	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -1021,6 +1033,9 @@ noinst_HEADERS = \
 	src/scc.h \
 	src/sdcard.h \
 	src/sd_mapper.h \
+	src/serial_8251.h \
+	src/serial_8254.h \
+	src/serial_timing.h \
 	src/sunrise.h \
 	src/shutter_wav.h \
 	src/types.h \
@@ -1111,6 +1126,9 @@ test_gifcap_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_rs232_SOURCES = diagnostics/test_rs232.c src/rs232.c
 test_rs232_CPPFLAGS = -I$(top_srcdir)/src
 test_rs232_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_serial_SOURCES = diagnostics/test_serial.c src/serial_8251.c src/serial_8251.h src/serial_8254.c src/serial_8254.h src/serial_timing.h
+test_serial_CPPFLAGS = -I$(top_srcdir)/src
+test_serial_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 desktopdir = $(datadir)/applications
 dist_desktop_DATA = io.github.salvogendut.Emulator1983.desktop
 metainfodir = $(datadir)/metainfo
@@ -1687,6 +1705,17 @@ src/test_sdcard-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 test-sdcard$(EXEEXT): $(test_sdcard_OBJECTS) $(test_sdcard_DEPENDENCIES) $(EXTRA_test_sdcard_DEPENDENCIES) 
 	@rm -f test-sdcard$(EXEEXT)
 	$(AM_V_CCLD)$(test_sdcard_LINK) $(test_sdcard_OBJECTS) $(test_sdcard_LDADD) $(LIBS)
+diagnostics/test_serial-test_serial.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
+src/test_serial-serial_8251.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_serial-serial_8254.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-serial$(EXEEXT): $(test_serial_OBJECTS) $(test_serial_DEPENDENCIES) $(EXTRA_test_serial_DEPENDENCIES) 
+	@rm -f test-serial$(EXEEXT)
+	$(AM_V_CCLD)$(test_serial_LINK) $(test_serial_OBJECTS) $(test_serial_LDADD) $(LIBS)
 diagnostics/test_sunrise-test_sunrise.$(OBJEXT):  \
 	diagnostics/$(am__dirstamp) \
 	diagnostics/$(DEPDIR)/$(am__dirstamp)
@@ -1754,6 +1783,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_scc-test_scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_serial-test_serial.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po@am__quote@ # am--include-marker
@@ -1909,6 +1939,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sd_mapper-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sdcard-sdcard.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_serial-serial_8251.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_serial-serial_8254.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sunrise-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sunrise-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_unapinet-unapinet.Po@am__quote@ # am--include-marker
@@ -4318,6 +4350,48 @@ src/test_sdcard-sdcard.obj: src/sdcard.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sdcard_CPPFLAGS) $(CPPFLAGS) $(test_sdcard_CFLAGS) $(CFLAGS) -c -o src/test_sdcard-sdcard.obj `if test -f 'src/sdcard.c'; then $(CYGPATH_W) 'src/sdcard.c'; else $(CYGPATH_W) '$(srcdir)/src/sdcard.c'; fi`
 
+diagnostics/test_serial-test_serial.o: diagnostics/test_serial.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_serial_CPPFLAGS) $(CPPFLAGS) $(test_serial_CFLAGS) $(CFLAGS) -MT diagnostics/test_serial-test_serial.o -MD -MP -MF diagnostics/$(DEPDIR)/test_serial-test_serial.Tpo -c -o diagnostics/test_serial-test_serial.o `test -f 'diagnostics/test_serial.c' || echo '$(srcdir)/'`diagnostics/test_serial.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_serial-test_serial.Tpo diagnostics/$(DEPDIR)/test_serial-test_serial.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_serial.c' object='diagnostics/test_serial-test_serial.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_serial_CPPFLAGS) $(CPPFLAGS) $(test_serial_CFLAGS) $(CFLAGS) -c -o diagnostics/test_serial-test_serial.o `test -f 'diagnostics/test_serial.c' || echo '$(srcdir)/'`diagnostics/test_serial.c
+
+diagnostics/test_serial-test_serial.obj: diagnostics/test_serial.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_serial_CPPFLAGS) $(CPPFLAGS) $(test_serial_CFLAGS) $(CFLAGS) -MT diagnostics/test_serial-test_serial.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_serial-test_serial.Tpo -c -o diagnostics/test_serial-test_serial.obj `if test -f 'diagnostics/test_serial.c'; then $(CYGPATH_W) 'diagnostics/test_serial.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_serial.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_serial-test_serial.Tpo diagnostics/$(DEPDIR)/test_serial-test_serial.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_serial.c' object='diagnostics/test_serial-test_serial.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_serial_CPPFLAGS) $(CPPFLAGS) $(test_serial_CFLAGS) $(CFLAGS) -c -o diagnostics/test_serial-test_serial.obj `if test -f 'diagnostics/test_serial.c'; then $(CYGPATH_W) 'diagnostics/test_serial.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_serial.c'; fi`
+
+src/test_serial-serial_8251.o: src/serial_8251.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_serial_CPPFLAGS) $(CPPFLAGS) $(test_serial_CFLAGS) $(CFLAGS) -MT src/test_serial-serial_8251.o -MD -MP -MF src/$(DEPDIR)/test_serial-serial_8251.Tpo -c -o src/test_serial-serial_8251.o `test -f 'src/serial_8251.c' || echo '$(srcdir)/'`src/serial_8251.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_serial-serial_8251.Tpo src/$(DEPDIR)/test_serial-serial_8251.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8251.c' object='src/test_serial-serial_8251.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_serial_CPPFLAGS) $(CPPFLAGS) $(test_serial_CFLAGS) $(CFLAGS) -c -o src/test_serial-serial_8251.o `test -f 'src/serial_8251.c' || echo '$(srcdir)/'`src/serial_8251.c
+
+src/test_serial-serial_8251.obj: src/serial_8251.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_serial_CPPFLAGS) $(CPPFLAGS) $(test_serial_CFLAGS) $(CFLAGS) -MT src/test_serial-serial_8251.obj -MD -MP -MF src/$(DEPDIR)/test_serial-serial_8251.Tpo -c -o src/test_serial-serial_8251.obj `if test -f 'src/serial_8251.c'; then $(CYGPATH_W) 'src/serial_8251.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8251.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_serial-serial_8251.Tpo src/$(DEPDIR)/test_serial-serial_8251.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8251.c' object='src/test_serial-serial_8251.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_serial_CPPFLAGS) $(CPPFLAGS) $(test_serial_CFLAGS) $(CFLAGS) -c -o src/test_serial-serial_8251.obj `if test -f 'src/serial_8251.c'; then $(CYGPATH_W) 'src/serial_8251.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8251.c'; fi`
+
+src/test_serial-serial_8254.o: src/serial_8254.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_serial_CPPFLAGS) $(CPPFLAGS) $(test_serial_CFLAGS) $(CFLAGS) -MT src/test_serial-serial_8254.o -MD -MP -MF src/$(DEPDIR)/test_serial-serial_8254.Tpo -c -o src/test_serial-serial_8254.o `test -f 'src/serial_8254.c' || echo '$(srcdir)/'`src/serial_8254.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_serial-serial_8254.Tpo src/$(DEPDIR)/test_serial-serial_8254.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8254.c' object='src/test_serial-serial_8254.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_serial_CPPFLAGS) $(CPPFLAGS) $(test_serial_CFLAGS) $(CFLAGS) -c -o src/test_serial-serial_8254.o `test -f 'src/serial_8254.c' || echo '$(srcdir)/'`src/serial_8254.c
+
+src/test_serial-serial_8254.obj: src/serial_8254.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_serial_CPPFLAGS) $(CPPFLAGS) $(test_serial_CFLAGS) $(CFLAGS) -MT src/test_serial-serial_8254.obj -MD -MP -MF src/$(DEPDIR)/test_serial-serial_8254.Tpo -c -o src/test_serial-serial_8254.obj `if test -f 'src/serial_8254.c'; then $(CYGPATH_W) 'src/serial_8254.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8254.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_serial-serial_8254.Tpo src/$(DEPDIR)/test_serial-serial_8254.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8254.c' object='src/test_serial-serial_8254.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_serial_CPPFLAGS) $(CPPFLAGS) $(test_serial_CFLAGS) $(CFLAGS) -c -o src/test_serial-serial_8254.obj `if test -f 'src/serial_8254.c'; then $(CYGPATH_W) 'src/serial_8254.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8254.c'; fi`
+
 diagnostics/test_sunrise-test_sunrise.o: diagnostics/test_sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sunrise_CPPFLAGS) $(CPPFLAGS) $(test_sunrise_CFLAGS) $(CFLAGS) -MT diagnostics/test_sunrise-test_sunrise.o -MD -MP -MF diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Tpo -c -o diagnostics/test_sunrise-test_sunrise.o `test -f 'diagnostics/test_sunrise.c' || echo '$(srcdir)/'`diagnostics/test_sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Tpo diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po
@@ -5075,6 +5149,13 @@ test-rs232.log: test-rs232$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-serial.log: test-serial$(EXEEXT)
+	@p='test-serial$(EXEEXT)'; \
+	b='test-serial'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 diagnostics/test-cli.sh.log: diagnostics/test-cli.sh
 	@p='diagnostics/test-cli.sh'; \
 	b='diagnostics/test-cli.sh'; \
@@ -5348,6 +5429,7 @@ distclean: distclean-am
 	-rm -f diagnostics/$(DEPDIR)/test_scc-test_scc.Po
 	-rm -f diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
 	-rm -f diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po
+	-rm -f diagnostics/$(DEPDIR)/test_serial-test_serial.Po
 	-rm -f diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po
 	-rm -f diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po
 	-rm -f diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po
@@ -5503,6 +5585,8 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_sdcard-sdcard.Po
+	-rm -f src/$(DEPDIR)/test_serial-serial_8251.Po
+	-rm -f src/$(DEPDIR)/test_serial-serial_8254.Po
 	-rm -f src/$(DEPDIR)/test_sunrise-ata.Po
 	-rm -f src/$(DEPDIR)/test_sunrise-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_unapinet-unapinet.Po
@@ -5580,6 +5664,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f diagnostics/$(DEPDIR)/test_scc-test_scc.Po
 	-rm -f diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
 	-rm -f diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po
+	-rm -f diagnostics/$(DEPDIR)/test_serial-test_serial.Po
 	-rm -f diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po
 	-rm -f diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po
 	-rm -f diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po
@@ -5735,6 +5820,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_sdcard-sdcard.Po
+	-rm -f src/$(DEPDIR)/test_serial-serial_8251.Po
+	-rm -f src/$(DEPDIR)/test_serial-serial_8254.Po
 	-rm -f src/$(DEPDIR)/test_sunrise-ata.Po
 	-rm -f src/$(DEPDIR)/test_sunrise-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_unapinet-unapinet.Po

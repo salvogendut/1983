@@ -52,3 +52,4 @@
 *.o
 *.ppm
 test-rs232
+test-serial
