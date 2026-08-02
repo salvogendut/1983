@@ -63,6 +63,10 @@ SDL3 allows.
   active/passive TCP, UDP, reset-safe socket lifetime, and network activity.
 - Headless execution and deterministic component and firmware tests.
 
+![1983 booting RainBIOS + Nextor, then the GEOBENCH desktop, captured to an animated GIF](sample-rainbios-nextor-geobench-on-1983-20260802-165621.gif)
+
+*Sample output of the built-in GIF screen capture.*
+
 The detailed implementation and remaining limitations are recorded in
 [`TECHNICAL.md`](TECHNICAL.md).
 
