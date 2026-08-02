@@ -20,6 +20,7 @@
 #include "notify.h"
 #include "overlay.h"
 #include "paste.h"
+#include "rs232_dev.h"
 #include "shutter_wav.h"
 #include "ui.h"
 #include "unapinet.h"
@@ -59,6 +60,7 @@ typedef struct {
     int ide_image_mode;
     int sd_image_mode;
     int tcpip_unapi;
+    int rs232;
     int scale;
     int exit_after;
     const char *paste_text;
@@ -86,6 +88,37 @@ static bool gif_capture_width_supported(int width) {
 
 static bool gif_capture_fps_supported(int fps) {
     return fps == 25 || fps == 20 || fps == 10 || fps == 5;
+}
+
+/* The MsxMachine exposes a single optional-I/O slot; route both the UNAPI
+ * bridge and the RS-232C interface through one dispatcher. */
+static UnapiNet *g_unapinet;
+static Rs232Device *g_rs232dev;
+
+static bool g_io_read(void *context, u16 port, u8 *value) {
+    (void)context;
+    if (g_rs232dev && rs232dev_io_read(g_rs232dev, port, value))
+        return true;
+    if (g_unapinet && unapinet_io_read(g_unapinet, port, value))
+        return true;
+    return false;
+}
+static bool g_io_write(void *context, u16 port, u8 value) {
+    (void)context;
+    if (g_rs232dev && rs232dev_io_write(g_rs232dev, port, value))
+        return true;
+    if (g_unapinet && unapinet_io_write(g_unapinet, port, value))
+        return true;
+    return false;
+}
+static void g_io_reset(void *context) {
+    (void)context;
+    if (g_rs232dev) rs232dev_io_reset(g_rs232dev);
+    if (g_unapinet) unapinet_io_reset(g_unapinet);
+}
+static void g_io_advance(void *context, unsigned cycles) {
+    (void)context;
+    if (g_rs232dev) rs232dev_io_advance(g_rs232dev, cycles);
 }
 
 static bool gif_capture_start(GifCapture *capture, const char *path,
@@ -193,6 +226,8 @@ static const char *usage =
     "  --megaflash-sd-b PATH insert its second raw SD-card image\n"
     "  --unapi             enable the MSX TCP/IP UNAPI host bridge\n"
     "  --no-unapi          disable the MSX TCP/IP UNAPI host bridge\n"
+    "  --rs232             enable the MSX RS-232C serial interface\n"
+    "  --no-rs232          disable the MSX RS-232C serial interface\n"
     "  --sd-mode MODE       SD access: read-only (default) or read-write\n"
     "  --disk-a PATH       insert a raw MSX DSK image in Drive A\n"
     "  --disk-b PATH       insert a raw MSX DSK image in Drive B\n"
@@ -308,6 +343,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
     cli->ide_image_mode = -1;
     cli->sd_image_mode = -1;
     cli->tcpip_unapi = -1;
+    cli->rs232 = -1;
     cli->scale = -1;
     cli->exit_after = -1;
     cli->paste_at = 60;
@@ -342,6 +378,14 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
         }
         if (strcmp(argument, "--no-unapi") == 0) {
             cli->tcpip_unapi = 0;
+            continue;
+        }
+        if (strcmp(argument, "--rs232") == 0) {
+            cli->rs232 = 1;
+            continue;
+        }
+        if (strcmp(argument, "--no-rs232") == 0) {
+            cli->rs232 = 0;
             continue;
         }
         if ((strcmp(argument, "--config") == 0 ||
@@ -634,6 +678,7 @@ int main(int argc, char **argv) {
     Overlay overlay;
     GifCapture capture;
     UnapiNet *unapinet = NULL;
+    Rs232Device *rs232dev = NULL;
     char rtc_path[PATH_MAX];
     char megaflash_state_path[PATH_MAX];
     SDL_WindowID window_id;
@@ -788,6 +833,11 @@ int main(int argc, char **argv) {
     if (cli.tcpip_unapi >= 0) {
         config.tcpip_unapi = cli.tcpip_unapi != 0;
         if (config.tcpip_unapi)
+            config.extra_hardware = true;
+    }
+    if (cli.rs232 >= 0) {
+        config.rs232 = cli.rs232 != 0;
+        if (config.rs232)
             config.extra_hardware = true;
     }
     if (cli.cassette_path)
@@ -1087,27 +1137,47 @@ int main(int argc, char **argv) {
             return 1;
         }
         config.tcpip_unapi = false;
-    } else {
-        msx_set_io_extension(
-            &msx, unapinet, unapinet_io_read,
-            unapinet_io_write, unapinet_io_reset);
-        if (config.tcpip_unapi &&
-            !unapinet_set_enabled(unapinet, true)) {
-            fprintf(stderr,
-                    "cannot enable MSX TCP/IP UNAPI bridge: %s\n",
-                    unapinet_error(unapinet));
-            config.tcpip_unapi = false;
-            if (cli.tcpip_unapi > 0) {
-                unapinet_destroy(unapinet);
-                msx_destroy(&msx);
-                return 1;
-            }
+    }
+    g_unapinet = unapinet;
+
+    rs232dev = rs232dev_create();
+    if (!rs232dev) {
+        fprintf(stderr, "cannot create MSX RS-232C interface\n");
+        if (cli.rs232 > 0) {
+            unapinet_destroy(unapinet);
+            msx_destroy(&msx);
+            return 1;
+        }
+        config.rs232 = false;
+    }
+    g_rs232dev = rs232dev;
+
+    msx_set_io_extension(
+        &msx, NULL, g_io_read, g_io_write, g_io_reset);
+    msx_set_io_extension_advance(&msx, NULL, g_io_advance);
+
+    if (config.tcpip_unapi &&
+        !unapinet_set_enabled(unapinet, true)) {
+        fprintf(stderr,
+                "cannot enable MSX TCP/IP UNAPI bridge: %s\n",
+                unapinet_error(unapinet));
+        config.tcpip_unapi = false;
+        if (cli.tcpip_unapi > 0) {
+            rs232dev_destroy(rs232dev);
+            unapinet_destroy(unapinet);
+            msx_destroy(&msx);
+            return 1;
         }
     }
+    if (config.rs232)
+        rs232dev_set_enabled(rs232dev, true);
+    else
+        rs232dev_set_enabled(rs232dev, false);
     definition = model_catalog_find(&models, config.machine_id);
     if (display_init(&display, &config, &msx,
                      definition ? definition->name : NULL) < 0) {
         display_quit(&display);
+        rs232dev_destroy(rs232dev);
         unapinet_destroy(unapinet);
         msx_destroy(&msx);
         return 1;
@@ -1138,7 +1208,7 @@ int main(int argc, char **argv) {
     notify_set_mode(config.notifications);
     leds_init();
     overlay_init(
-        &overlay, &config, &models, &display, &msx, unapinet);
+        &overlay, &config, &models, &display, &msx, unapinet, rs232dev);
     if (msx_can_boot(&msx))
         notify_post("Firmware running - F9 opens options");
     else
@@ -1540,6 +1610,10 @@ int main(int argc, char **argv) {
             leds_ping(LED_FDC_B);
         if (unapinet_take_activity(unapinet))
             leds_ping(LED_NETWORK);
+        if (rs232dev_take_rx_activity(rs232dev))
+            leds_ping_half(LED_RS232, true);   /* green RX half */
+        if (rs232dev_take_tx_activity(rs232dev))
+            leds_ping_half(LED_RS232, false);  /* red TX half */
         notify_tick(1000 / msx.frame_hz);
         display_draw(&display, &msx);
         gif_capture_frame(&capture, display.pixels,
@@ -1692,6 +1766,8 @@ int main(int argc, char **argv) {
     paste_cancel(&paste, &msx);
     set_mouse_capture(&display, &msx, false);
     msx_set_io_extension(&msx, NULL, NULL, NULL, NULL);
+    msx_set_io_extension_advance(&msx, NULL, NULL);
+    rs232dev_destroy(rs232dev);
     unapinet_destroy(unapinet);
     display_quit(&display);
     msx_destroy(&msx);

@@ -405,7 +405,7 @@ int main(void) {
            LED_CARTRIDGE_NETWORK);
     assert(leds_get_cartridge_state(0).present);
     assert(leds_get_cartridge_state(0).activity);
-    overlay_init(&overlay, &config, &models, &display, &msx, NULL);
+    overlay_init(&overlay, &config, &models, &display, &msx, NULL, NULL);
     assert(leds_get_cartridge_state(0).type ==
            LED_CARTRIDGE_STANDARD);
     assert(!leds_get_cartridge_state(0).present);
@@ -832,7 +832,7 @@ int main(void) {
     config.extra_hardware = true;
     config.tinker = true;
     msx_configure(&msx, config.model, config.region, 128);
-    overlay_init(&overlay, &config, &models, &display, &msx, NULL);
+    overlay_init(&overlay, &config, &models, &display, &msx, NULL, NULL);
     send_key(&overlay, SDLK_F9);
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_MEDIA);
@@ -865,13 +865,26 @@ int main(void) {
     send_key(&overlay, SDLK_RETURN);
     assert(!config.rtc_persistence);
 
+    /* RS-232C is the last Extensions row; toggling flips the device. */
+    send_key(&overlay, SDLK_UP);
+    send_key(&overlay, SDLK_LEFT);
+    assert(overlay.section == OVERLAY_EXTENSIONS);
+    for (int row = 0; row < 7; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 7); /* EXTENSION_RS232 */
+    assert(!config.rs232);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.rs232);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.rs232);
+
     /* SD Mapper setup keeps controller firmware separate from card media. */
     config_defaults(&config);
     config.extra_hardware = true;
     config.tinker = true;
     msx_configure(&msx, config.model, config.region,
                   config.memory_kb);
-    overlay_init(&overlay, &config, &models, &display, &msx, NULL);
+    overlay_init(&overlay, &config, &models, &display, &msx, NULL, NULL);
     send_key(&overlay, SDLK_F9);
     send_key(&overlay, SDLK_RIGHT);
     send_key(&overlay, SDLK_RIGHT);
@@ -1043,7 +1056,7 @@ int main(void) {
     }
     msx_configure(&msx, config.model, config.region,
                   config.memory_kb);
-    overlay_init(&overlay, &config, &models, &display, &msx, NULL);
+    overlay_init(&overlay, &config, &models, &display, &msx, NULL, NULL);
     send_key(&overlay, SDLK_F9);
     send_key(&overlay, SDLK_RIGHT);
     send_key(&overlay, SDLK_RIGHT);
@@ -1198,7 +1211,7 @@ int main(void) {
         config.tinker = true;
         msx_configure(&msx, config.model, config.region,
                       config.memory_kb);
-        overlay_init(&overlay, &config, &models, &display, &msx, NULL);
+        overlay_init(&overlay, &config, &models, &display, &msx, NULL, NULL);
         send_key(&overlay, SDLK_F9);
         send_key(&overlay, SDLK_RETURN);
         assert(overlay.state == OVERLAY_STATE_MACHINE);

@@ -333,6 +333,9 @@ static void advance_machine(MsxMachine *msx, int cycles) {
 
     msx->cycles += (unsigned)cycles;
     vdp_advance(&msx->vdp, (unsigned)cycles);
+    if (msx->io_extension_advance)
+        msx->io_extension_advance(msx->io_extension_context,
+                                  (unsigned)cycles);
     if (msx->profile && msx->profile->rtc)
         rtc_advance(&msx->rtc, (unsigned)cycles, MSX_CPU_HZ);
     sd_mapper_tick(&msx->sd_mapper, (unsigned)cycles, MSX_CPU_HZ);
@@ -581,6 +584,14 @@ void msx_set_io_extension(MsxMachine *msx, void *context,
     msx->io_extension_read = read_handler;
     msx->io_extension_write = write_handler;
     msx->io_extension_reset = reset_handler;
+}
+
+void msx_set_io_extension_advance(MsxMachine *msx, void *context,
+                                  MsxIoExtensionAdvance advance_handler) {
+    if (!msx)
+        return;
+    msx->io_extension_context = context;
+    msx->io_extension_advance = advance_handler;
 }
 
 void msx_configure(MsxMachine *msx, MsxModel model, MsxRegion region,

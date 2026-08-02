@@ -18,6 +18,7 @@ typedef enum {
     LED_SD_A,
     LED_SD_B,
     LED_NETWORK,
+    LED_RS232,
     LED_COUNT
 } LedId;
 
@@ -36,6 +37,8 @@ void leds_init(void);
 void leds_set_enabled(LedId id, bool enabled);
 void leds_set_state(LedId id, bool active);
 void leds_ping(LedId id);
+/* Split LED (e.g. RS-232): left half = green RX, right half = red TX. */
+void leds_ping_half(LedId id, bool left);
 void leds_set_cartridge(unsigned slot, LedCartridgeType type, bool present);
 void leds_set_cartridge_activity(unsigned slot, bool active);
 void leds_ping_cartridge_activity(unsigned slot);

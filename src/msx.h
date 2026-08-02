@@ -80,6 +80,7 @@ typedef struct {
 typedef bool (*MsxIoExtensionRead)(void *context, u16 port, u8 *value);
 typedef bool (*MsxIoExtensionWrite)(void *context, u16 port, u8 value);
 typedef void (*MsxIoExtensionReset)(void *context);
+typedef void (*MsxIoExtensionAdvance)(void *context, unsigned cycles);
 
 typedef struct {
     const MsxProfile *profile;
@@ -148,6 +149,7 @@ typedef struct {
     MsxIoExtensionRead io_extension_read;
     MsxIoExtensionWrite io_extension_write;
     MsxIoExtensionReset io_extension_reset;
+    MsxIoExtensionAdvance io_extension_advance;
 
     u64 cycles;
     u64 instructions;
@@ -178,6 +180,8 @@ void msx_set_io_extension(MsxMachine *msx, void *context,
                           MsxIoExtensionRead read_handler,
                           MsxIoExtensionWrite write_handler,
                           MsxIoExtensionReset reset_handler);
+void msx_set_io_extension_advance(MsxMachine *msx, void *context,
+                                  MsxIoExtensionAdvance advance_handler);
 
 u8   msx_memory_read(MsxMachine *msx, u16 address);
 void msx_memory_write(MsxMachine *msx, u16 address, u8 value);

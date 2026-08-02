@@ -34,6 +34,7 @@ firmware choice in the per-user `1983.conf`.
 --sd-mapper-rom + --sd-a/--sd-b      SD Mapper V2, --sd-mode
 --megaflash-rom + --megaflash-sd-a/--megaflash-sd-b  MegaFlashROM, --sd-mode
 --unapi                   optional openMSXnet host bridge on NMS 8250
+--rs232                   RS-232C interface on ports 80h-87h (PTY /tmp/1983-rs232)
 --headless --unthrottled --exit-after N   deterministic runs
 --gif-out FILE            capture GIF on startup
 --screenshot              (see Controls / F4)

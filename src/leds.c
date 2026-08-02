@@ -27,7 +27,14 @@ static const LedPalette palette[LED_COUNT] = {
     [LED_SD_A]        = { 12, 45, 20, 70, 255, 100 },
     [LED_SD_B]        = { 12, 45, 20, 70, 255, 100 },
     [LED_NETWORK]     = { 48, 48, 48, 245, 245, 245 },
+    [LED_RS232]       = { 48, 48, 48, 245, 245, 245 },
 };
+
+/* RS-232 is a split indicator: left half green for RX, right half red for TX. */
+static const LedPalette rs232_rx_palette =
+    { 14, 45, 16, 90, 255, 110 };
+static const LedPalette rs232_tx_palette =
+    { 70, 16, 14, 255, 70, 60 };
 
 static const LedPalette cartridge_network_activity =
     { 48, 48, 48, 245, 245, 245 };
@@ -35,6 +42,7 @@ static const LedPalette cartridge_network_activity =
 static bool enabled[LED_COUNT];
 static bool state[LED_COUNT];
 static Uint64 last_ping[LED_COUNT];
+static Uint64 last_ping_half[LED_COUNT]; /* right half (TX) for split LEDs */
 static LedCartridgeState cartridges[2];
 static bool mouse_inside;
 static float mouse_x;
@@ -58,6 +66,7 @@ static const char *label_for(LedId id) {
         case LED_SD_A:  return "SD Card A";
         case LED_SD_B:  return "SD Card B";
         case LED_NETWORK: return "MSX TCP/IP UNAPI";
+        case LED_RS232:   return "RS-232 (RX | TX)";
         case LED_COUNT: break;
     }
     return "";
@@ -89,6 +98,7 @@ void leds_init(void) {
     memset(enabled, 0, sizeof(enabled));
     memset(state, 0, sizeof(state));
     memset(last_ping, 0, sizeof(last_ping));
+    memset(last_ping_half, 0, sizeof(last_ping_half));
     memset(cartridges, 0, sizeof(cartridges));
     mouse_inside = false;
     hover_active = false;
@@ -113,6 +123,15 @@ void leds_set_state(LedId id, bool active) {
 void leds_ping(LedId id) {
     if ((unsigned)id < LED_COUNT)
         last_ping[id] = SDL_GetTicks();
+}
+
+void leds_ping_half(LedId id, bool left) {
+    if ((unsigned)id >= LED_COUNT)
+        return;
+    if (left)
+        last_ping[id] = SDL_GetTicks();
+    else
+        last_ping_half[id] = SDL_GetTicks();
 }
 
 void leds_set_cartridge(unsigned slot, LedCartridgeType type, bool present) {
@@ -202,9 +221,21 @@ void leds_render(SDL_Renderer *renderer, int x, int y, int w, int h) {
         cartridge_slot = cartridge_slot_for_led((LedId)i);
         active = state[i] ||
                  (last_ping[i] && now - last_ping[i] < LED_GLOW_MS);
-        if (cartridge_slot >= 0 &&
-            cartridges[cartridge_slot].type !=
-                LED_CARTRIDGE_STANDARD) {
+        if (i == LED_RS232) {
+            /* Split RS-232 LED: green RX (left) / red TX (right). */
+            float half_w = led_w * 0.5f;
+            bool rx_active = (last_ping[i] &&
+                              now - last_ping[i] < LED_GLOW_MS);
+            bool tx_active = (last_ping_half[i] &&
+                              now - last_ping_half[i] < LED_GLOW_MS);
+            fill_palette(renderer, cursor_x, led_y, half_w, led_h,
+                         &rs232_rx_palette, rx_active);
+            fill_palette(renderer, cursor_x + half_w, led_y,
+                         led_w - half_w, led_h,
+                         &rs232_tx_palette, tx_active);
+        } else if (cartridge_slot >= 0 &&
+                   cartridges[cartridge_slot].type !=
+                       LED_CARTRIDGE_STANDARD) {
             float half_w = led_w * 0.5f;
             bool access =
                 cartridges[cartridge_slot].activity ||
@@ -226,13 +257,17 @@ void leds_render(SDL_Renderer *renderer, int x, int y, int w, int h) {
             mouse_x >= cursor_x && mouse_x < cursor_x + led_w &&
             mouse_y >= led_y && mouse_y < led_y + led_h) {
             bool split =
-                cartridge_slot >= 0 &&
-                cartridges[cartridge_slot].type !=
-                    LED_CARTRIDGE_STANDARD;
+                i == LED_RS232 ||
+                (cartridge_slot >= 0 &&
+                 cartridges[cartridge_slot].type !=
+                     LED_CARTRIDGE_STANDARD);
             bool activity_half =
                 split && mouse_x >= cursor_x + led_w * 0.5f;
 
-            if (activity_half) {
+            if (i == LED_RS232) {
+                snprintf(hover_label, sizeof(hover_label),
+                         activity_half ? "RS-232 TX" : "RS-232 RX");
+            } else if (activity_half) {
                 snprintf(
                     hover_label, sizeof(hover_label),
                     "Cartridge %s network access",

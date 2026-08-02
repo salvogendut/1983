@@ -102,7 +102,7 @@ check_PROGRAMS = test-cartridge$(EXEEXT) test-cassette$(EXEEXT) \
 	test-kbd$(EXEEXT) test-paste$(EXEEXT) test-overlay$(EXEEXT) \
 	test-vdp$(EXEEXT) test-psg$(EXEEXT) test-scc$(EXEEXT) \
 	test-rtc$(EXEEXT) test-gifcap$(EXEEXT) test-rs232$(EXEEXT) \
-	test-serial$(EXEEXT)
+	test-rs232dev$(EXEEXT) test-serial$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -138,11 +138,13 @@ am_1983_OBJECTS = src/1983-config.$(OBJEXT) \
 	src/1983-msx.$(OBJEXT) src/1983-notify.$(OBJEXT) \
 	src/1983-overlay.$(OBJEXT) src/1983-paste.$(OBJEXT) \
 	src/1983-psg.$(OBJEXT) src/1983-rs232.$(OBJEXT) \
-	src/1983-rtc.$(OBJEXT) src/1983-scc.$(OBJEXT) \
-	src/1983-sdcard.$(OBJEXT) src/1983-sd_mapper.$(OBJEXT) \
-	src/1983-sunrise.$(OBJEXT) src/1983-ui.$(OBJEXT) \
-	src/1983-unapinet.$(OBJEXT) src/1983-vdp.$(OBJEXT) \
-	src/1983-wd2793.$(OBJEXT) src/1983-z80.$(OBJEXT)
+	src/1983-rs232_dev.$(OBJEXT) src/1983-rtc.$(OBJEXT) \
+	src/1983-scc.$(OBJEXT) src/1983-sdcard.$(OBJEXT) \
+	src/1983-sd_mapper.$(OBJEXT) src/1983-serial_8251.$(OBJEXT) \
+	src/1983-serial_8254.$(OBJEXT) src/1983-sunrise.$(OBJEXT) \
+	src/1983-ui.$(OBJEXT) src/1983-unapinet.$(OBJEXT) \
+	src/1983-vdp.$(OBJEXT) src/1983-wd2793.$(OBJEXT) \
+	src/1983-z80.$(OBJEXT)
 1983_OBJECTS = $(am_1983_OBJECTS)
 am__DEPENDENCIES_1 =
 1983_LINK = $(CCLD) $(1983_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
@@ -276,10 +278,14 @@ am_test_overlay_OBJECTS =  \
 	src/test_overlay-msx.$(OBJEXT) \
 	src/test_overlay-notify.$(OBJEXT) \
 	src/test_overlay-overlay.$(OBJEXT) \
-	src/test_overlay-psg.$(OBJEXT) src/test_overlay-rtc.$(OBJEXT) \
-	src/test_overlay-scc.$(OBJEXT) \
+	src/test_overlay-psg.$(OBJEXT) \
+	src/test_overlay-rs232.$(OBJEXT) \
+	src/test_overlay-rs232_dev.$(OBJEXT) \
+	src/test_overlay-rtc.$(OBJEXT) src/test_overlay-scc.$(OBJEXT) \
 	src/test_overlay-sdcard.$(OBJEXT) \
 	src/test_overlay-sd_mapper.$(OBJEXT) \
+	src/test_overlay-serial_8251.$(OBJEXT) \
+	src/test_overlay-serial_8254.$(OBJEXT) \
 	src/test_overlay-sunrise.$(OBJEXT) \
 	src/test_overlay-ui.$(OBJEXT) \
 	src/test_overlay-unapinet.$(OBJEXT) \
@@ -318,6 +324,16 @@ test_rs232_OBJECTS = $(am_test_rs232_OBJECTS)
 test_rs232_LDADD = $(LDADD)
 test_rs232_LINK = $(CCLD) $(test_rs232_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_test_rs232dev_OBJECTS =  \
+	diagnostics/test_rs232dev-test_rs232_dev.$(OBJEXT) \
+	src/test_rs232dev-rs232.$(OBJEXT) \
+	src/test_rs232dev-rs232_dev.$(OBJEXT) \
+	src/test_rs232dev-serial_8251.$(OBJEXT) \
+	src/test_rs232dev-serial_8254.$(OBJEXT)
+test_rs232dev_OBJECTS = $(am_test_rs232dev_OBJECTS)
+test_rs232dev_LDADD = $(LDADD)
+test_rs232dev_LINK = $(CCLD) $(test_rs232dev_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_test_rtc_OBJECTS = diagnostics/test_rtc-test_rtc.$(OBJEXT) \
 	src/test_rtc-rtc.$(OBJEXT)
 test_rtc_OBJECTS = $(am_test_rtc_OBJECTS)
@@ -413,6 +429,7 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	diagnostics/$(DEPDIR)/test_paste-test_paste.Po \
 	diagnostics/$(DEPDIR)/test_psg-test_psg.Po \
 	diagnostics/$(DEPDIR)/test_rs232-test_rs232.Po \
+	diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Po \
 	diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po \
 	diagnostics/$(DEPDIR)/test_scc-test_scc.Po \
 	diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po \
@@ -432,12 +449,15 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/1983-models.Po src/$(DEPDIR)/1983-msx.Po \
 	src/$(DEPDIR)/1983-notify.Po src/$(DEPDIR)/1983-overlay.Po \
 	src/$(DEPDIR)/1983-paste.Po src/$(DEPDIR)/1983-psg.Po \
-	src/$(DEPDIR)/1983-rs232.Po src/$(DEPDIR)/1983-rtc.Po \
-	src/$(DEPDIR)/1983-scc.Po src/$(DEPDIR)/1983-sd_mapper.Po \
-	src/$(DEPDIR)/1983-sdcard.Po src/$(DEPDIR)/1983-sunrise.Po \
-	src/$(DEPDIR)/1983-ui.Po src/$(DEPDIR)/1983-unapinet.Po \
-	src/$(DEPDIR)/1983-vdp.Po src/$(DEPDIR)/1983-wd2793.Po \
-	src/$(DEPDIR)/1983-z80.Po src/$(DEPDIR)/test_ata-ata.Po \
+	src/$(DEPDIR)/1983-rs232.Po src/$(DEPDIR)/1983-rs232_dev.Po \
+	src/$(DEPDIR)/1983-rtc.Po src/$(DEPDIR)/1983-scc.Po \
+	src/$(DEPDIR)/1983-sd_mapper.Po src/$(DEPDIR)/1983-sdcard.Po \
+	src/$(DEPDIR)/1983-serial_8251.Po \
+	src/$(DEPDIR)/1983-serial_8254.Po \
+	src/$(DEPDIR)/1983-sunrise.Po src/$(DEPDIR)/1983-ui.Po \
+	src/$(DEPDIR)/1983-unapinet.Po src/$(DEPDIR)/1983-vdp.Po \
+	src/$(DEPDIR)/1983-wd2793.Po src/$(DEPDIR)/1983-z80.Po \
+	src/$(DEPDIR)/test_ata-ata.Po \
 	src/$(DEPDIR)/test_cartridge-cartridge.Po \
 	src/$(DEPDIR)/test_cartridge-scc.Po \
 	src/$(DEPDIR)/test_cassette-cassette.Po \
@@ -516,10 +536,14 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_overlay-notify.Po \
 	src/$(DEPDIR)/test_overlay-overlay.Po \
 	src/$(DEPDIR)/test_overlay-psg.Po \
+	src/$(DEPDIR)/test_overlay-rs232.Po \
+	src/$(DEPDIR)/test_overlay-rs232_dev.Po \
 	src/$(DEPDIR)/test_overlay-rtc.Po \
 	src/$(DEPDIR)/test_overlay-scc.Po \
 	src/$(DEPDIR)/test_overlay-sd_mapper.Po \
 	src/$(DEPDIR)/test_overlay-sdcard.Po \
+	src/$(DEPDIR)/test_overlay-serial_8251.Po \
+	src/$(DEPDIR)/test_overlay-serial_8254.Po \
 	src/$(DEPDIR)/test_overlay-sunrise.Po \
 	src/$(DEPDIR)/test_overlay-ui.Po \
 	src/$(DEPDIR)/test_overlay-unapinet.Po \
@@ -543,6 +567,10 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_paste-wd2793.Po \
 	src/$(DEPDIR)/test_paste-z80.Po src/$(DEPDIR)/test_psg-psg.Po \
 	src/$(DEPDIR)/test_rs232-rs232.Po \
+	src/$(DEPDIR)/test_rs232dev-rs232.Po \
+	src/$(DEPDIR)/test_rs232dev-rs232_dev.Po \
+	src/$(DEPDIR)/test_rs232dev-serial_8251.Po \
+	src/$(DEPDIR)/test_rs232dev-serial_8254.Po \
 	src/$(DEPDIR)/test_rtc-rtc.Po src/$(DEPDIR)/test_scc-scc.Po \
 	src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po \
 	src/$(DEPDIR)/test_sd_mapper-sdcard.Po \
@@ -579,7 +607,8 @@ SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_kbd_SOURCES) $(test_megaflash_SOURCES) \
 	$(test_models_SOURCES) $(test_msx_SOURCES) \
 	$(test_overlay_SOURCES) $(test_paste_SOURCES) \
-	$(test_psg_SOURCES) $(test_rs232_SOURCES) $(test_rtc_SOURCES) \
+	$(test_psg_SOURCES) $(test_rs232_SOURCES) \
+	$(test_rs232dev_SOURCES) $(test_rtc_SOURCES) \
 	$(test_scc_SOURCES) $(test_sd_mapper_SOURCES) \
 	$(test_sdcard_SOURCES) $(test_serial_SOURCES) \
 	$(test_sunrise_SOURCES) $(test_unapinet_SOURCES) \
@@ -591,7 +620,8 @@ DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_kbd_SOURCES) $(test_megaflash_SOURCES) \
 	$(test_models_SOURCES) $(test_msx_SOURCES) \
 	$(test_overlay_SOURCES) $(test_paste_SOURCES) \
-	$(test_psg_SOURCES) $(test_rs232_SOURCES) $(test_rtc_SOURCES) \
+	$(test_psg_SOURCES) $(test_rs232_SOURCES) \
+	$(test_rs232dev_SOURCES) $(test_rtc_SOURCES) \
 	$(test_scc_SOURCES) $(test_sd_mapper_SOURCES) \
 	$(test_sdcard_SOURCES) $(test_serial_SOURCES) \
 	$(test_sunrise_SOURCES) $(test_unapinet_SOURCES) \
@@ -997,10 +1027,13 @@ AM_LDFLAGS = $(WIN_STACK_LDFLAGS)
 	src/paste.c \
 	src/psg.c \
 	src/rs232.c \
+	src/rs232_dev.c \
 	src/rtc.c \
 	src/scc.c \
 	src/sdcard.c \
 	src/sd_mapper.c \
+	src/serial_8251.c \
+	src/serial_8254.c \
 	src/sunrise.c \
 	src/ui.c \
 	src/unapinet.c \
@@ -1029,6 +1062,7 @@ noinst_HEADERS = \
 	src/paste.h \
 	src/psg.h \
 	src/rs232.h \
+	src/rs232_dev.h \
 	src/rtc.h \
 	src/scc.h \
 	src/sdcard.h \
@@ -1104,7 +1138,7 @@ test_kbd_LDADD = $(SDL3_LIBS)
 test_paste_SOURCES = diagnostics/test_paste.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/paste.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/vdp.c src/wd2793.c src/z80.c
 test_paste_CPPFLAGS = -I$(top_srcdir)/src
 test_paste_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_overlay_SOURCES = diagnostics/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/ui.c src/unapinet.c src/vdp.c src/wd2793.c src/z80.c
+test_overlay_SOURCES = diagnostics/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rs232.c src/rs232_dev.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/serial_8251.c src/serial_8254.c src/sunrise.c src/ui.c src/unapinet.c src/vdp.c src/wd2793.c src/z80.c
 test_overlay_CPPFLAGS = -I$(top_srcdir)/src
 test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_overlay_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS) -lm
@@ -1129,6 +1163,9 @@ test_rs232_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_serial_SOURCES = diagnostics/test_serial.c src/serial_8251.c src/serial_8251.h src/serial_8254.c src/serial_8254.h src/serial_timing.h
 test_serial_CPPFLAGS = -I$(top_srcdir)/src
 test_serial_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_rs232dev_SOURCES = diagnostics/test_rs232_dev.c src/rs232.c src/rs232_dev.c src/serial_8251.c src/serial_8254.c
+test_rs232dev_CPPFLAGS = -I$(top_srcdir)/src
+test_rs232dev_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 desktopdir = $(datadir)/applications
 dist_desktop_DATA = io.github.salvogendut.Emulator1983.desktop
 metainfodir = $(datadir)/metainfo
@@ -1308,6 +1345,8 @@ src/1983-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-rs232.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-rs232_dev.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-scc.$(OBJEXT): src/$(am__dirstamp) \
@@ -1315,6 +1354,10 @@ src/1983-scc.$(OBJEXT): src/$(am__dirstamp) \
 src/1983-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-sd_mapper.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-serial_8251.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-serial_8254.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1589,6 +1632,10 @@ src/test_overlay-overlay.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-rs232.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-rs232_dev.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-scc.$(OBJEXT): src/$(am__dirstamp) \
@@ -1596,6 +1643,10 @@ src/test_overlay-scc.$(OBJEXT): src/$(am__dirstamp) \
 src/test_overlay-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-sd_mapper.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-serial_8251.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-serial_8254.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1669,6 +1720,21 @@ src/test_rs232-rs232.$(OBJEXT): src/$(am__dirstamp) \
 test-rs232$(EXEEXT): $(test_rs232_OBJECTS) $(test_rs232_DEPENDENCIES) $(EXTRA_test_rs232_DEPENDENCIES) 
 	@rm -f test-rs232$(EXEEXT)
 	$(AM_V_CCLD)$(test_rs232_LINK) $(test_rs232_OBJECTS) $(test_rs232_LDADD) $(LIBS)
+diagnostics/test_rs232dev-test_rs232_dev.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
+src/test_rs232dev-rs232.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_rs232dev-rs232_dev.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_rs232dev-serial_8251.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_rs232dev-serial_8254.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-rs232dev$(EXEEXT): $(test_rs232dev_OBJECTS) $(test_rs232dev_DEPENDENCIES) $(EXTRA_test_rs232dev_DEPENDENCIES) 
+	@rm -f test-rs232dev$(EXEEXT)
+	$(AM_V_CCLD)$(test_rs232dev_LINK) $(test_rs232dev_OBJECTS) $(test_rs232dev_LDADD) $(LIBS)
 diagnostics/test_rtc-test_rtc.$(OBJEXT): diagnostics/$(am__dirstamp) \
 	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_rtc-rtc.$(OBJEXT): src/$(am__dirstamp) \
@@ -1779,6 +1845,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_paste-test_paste.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_psg-test_psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_rs232-test_rs232.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_scc-test_scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po@am__quote@ # am--include-marker
@@ -1809,10 +1876,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-paste.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-rs232.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-rs232_dev.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sdcard.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-serial_8251.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-serial_8254.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-ui.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-unapinet.Po@am__quote@ # am--include-marker
@@ -1906,10 +1976,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-notify.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-overlay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-psg.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-rs232.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-rs232_dev.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sdcard.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-serial_8251.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-serial_8254.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-ui.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-unapinet.Po@am__quote@ # am--include-marker
@@ -1934,6 +2008,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-z80.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_psg-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_rs232-rs232.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_rs232dev-rs232.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_rs232dev-rs232_dev.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_rs232dev-serial_8251.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_rs232dev-serial_8254.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_rtc-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_scc-scc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po@am__quote@ # am--include-marker
@@ -2264,6 +2342,20 @@ src/1983-rs232.obj: src/rs232.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-rs232.obj `if test -f 'src/rs232.c'; then $(CYGPATH_W) 'src/rs232.c'; else $(CYGPATH_W) '$(srcdir)/src/rs232.c'; fi`
 
+src/1983-rs232_dev.o: src/rs232_dev.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-rs232_dev.o -MD -MP -MF src/$(DEPDIR)/1983-rs232_dev.Tpo -c -o src/1983-rs232_dev.o `test -f 'src/rs232_dev.c' || echo '$(srcdir)/'`src/rs232_dev.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-rs232_dev.Tpo src/$(DEPDIR)/1983-rs232_dev.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rs232_dev.c' object='src/1983-rs232_dev.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-rs232_dev.o `test -f 'src/rs232_dev.c' || echo '$(srcdir)/'`src/rs232_dev.c
+
+src/1983-rs232_dev.obj: src/rs232_dev.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-rs232_dev.obj -MD -MP -MF src/$(DEPDIR)/1983-rs232_dev.Tpo -c -o src/1983-rs232_dev.obj `if test -f 'src/rs232_dev.c'; then $(CYGPATH_W) 'src/rs232_dev.c'; else $(CYGPATH_W) '$(srcdir)/src/rs232_dev.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-rs232_dev.Tpo src/$(DEPDIR)/1983-rs232_dev.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rs232_dev.c' object='src/1983-rs232_dev.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-rs232_dev.obj `if test -f 'src/rs232_dev.c'; then $(CYGPATH_W) 'src/rs232_dev.c'; else $(CYGPATH_W) '$(srcdir)/src/rs232_dev.c'; fi`
+
 src/1983-rtc.o: src/rtc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-rtc.o -MD -MP -MF src/$(DEPDIR)/1983-rtc.Tpo -c -o src/1983-rtc.o `test -f 'src/rtc.c' || echo '$(srcdir)/'`src/rtc.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-rtc.Tpo src/$(DEPDIR)/1983-rtc.Po
@@ -2319,6 +2411,34 @@ src/1983-sd_mapper.obj: src/sd_mapper.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/1983-sd_mapper.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+
+src/1983-serial_8251.o: src/serial_8251.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-serial_8251.o -MD -MP -MF src/$(DEPDIR)/1983-serial_8251.Tpo -c -o src/1983-serial_8251.o `test -f 'src/serial_8251.c' || echo '$(srcdir)/'`src/serial_8251.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-serial_8251.Tpo src/$(DEPDIR)/1983-serial_8251.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8251.c' object='src/1983-serial_8251.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-serial_8251.o `test -f 'src/serial_8251.c' || echo '$(srcdir)/'`src/serial_8251.c
+
+src/1983-serial_8251.obj: src/serial_8251.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-serial_8251.obj -MD -MP -MF src/$(DEPDIR)/1983-serial_8251.Tpo -c -o src/1983-serial_8251.obj `if test -f 'src/serial_8251.c'; then $(CYGPATH_W) 'src/serial_8251.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8251.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-serial_8251.Tpo src/$(DEPDIR)/1983-serial_8251.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8251.c' object='src/1983-serial_8251.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-serial_8251.obj `if test -f 'src/serial_8251.c'; then $(CYGPATH_W) 'src/serial_8251.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8251.c'; fi`
+
+src/1983-serial_8254.o: src/serial_8254.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-serial_8254.o -MD -MP -MF src/$(DEPDIR)/1983-serial_8254.Tpo -c -o src/1983-serial_8254.o `test -f 'src/serial_8254.c' || echo '$(srcdir)/'`src/serial_8254.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-serial_8254.Tpo src/$(DEPDIR)/1983-serial_8254.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8254.c' object='src/1983-serial_8254.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-serial_8254.o `test -f 'src/serial_8254.c' || echo '$(srcdir)/'`src/serial_8254.c
+
+src/1983-serial_8254.obj: src/serial_8254.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-serial_8254.obj -MD -MP -MF src/$(DEPDIR)/1983-serial_8254.Tpo -c -o src/1983-serial_8254.obj `if test -f 'src/serial_8254.c'; then $(CYGPATH_W) 'src/serial_8254.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8254.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-serial_8254.Tpo src/$(DEPDIR)/1983-serial_8254.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8254.c' object='src/1983-serial_8254.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-serial_8254.obj `if test -f 'src/serial_8254.c'; then $(CYGPATH_W) 'src/serial_8254.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8254.c'; fi`
 
 src/1983-sunrise.o: src/sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-sunrise.o -MD -MP -MF src/$(DEPDIR)/1983-sunrise.Tpo -c -o src/1983-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
@@ -3790,6 +3910,34 @@ src/test_overlay-psg.obj: src/psg.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-psg.obj `if test -f 'src/psg.c'; then $(CYGPATH_W) 'src/psg.c'; else $(CYGPATH_W) '$(srcdir)/src/psg.c'; fi`
 
+src/test_overlay-rs232.o: src/rs232.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-rs232.o -MD -MP -MF src/$(DEPDIR)/test_overlay-rs232.Tpo -c -o src/test_overlay-rs232.o `test -f 'src/rs232.c' || echo '$(srcdir)/'`src/rs232.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-rs232.Tpo src/$(DEPDIR)/test_overlay-rs232.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rs232.c' object='src/test_overlay-rs232.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-rs232.o `test -f 'src/rs232.c' || echo '$(srcdir)/'`src/rs232.c
+
+src/test_overlay-rs232.obj: src/rs232.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-rs232.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-rs232.Tpo -c -o src/test_overlay-rs232.obj `if test -f 'src/rs232.c'; then $(CYGPATH_W) 'src/rs232.c'; else $(CYGPATH_W) '$(srcdir)/src/rs232.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-rs232.Tpo src/$(DEPDIR)/test_overlay-rs232.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rs232.c' object='src/test_overlay-rs232.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-rs232.obj `if test -f 'src/rs232.c'; then $(CYGPATH_W) 'src/rs232.c'; else $(CYGPATH_W) '$(srcdir)/src/rs232.c'; fi`
+
+src/test_overlay-rs232_dev.o: src/rs232_dev.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-rs232_dev.o -MD -MP -MF src/$(DEPDIR)/test_overlay-rs232_dev.Tpo -c -o src/test_overlay-rs232_dev.o `test -f 'src/rs232_dev.c' || echo '$(srcdir)/'`src/rs232_dev.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-rs232_dev.Tpo src/$(DEPDIR)/test_overlay-rs232_dev.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rs232_dev.c' object='src/test_overlay-rs232_dev.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-rs232_dev.o `test -f 'src/rs232_dev.c' || echo '$(srcdir)/'`src/rs232_dev.c
+
+src/test_overlay-rs232_dev.obj: src/rs232_dev.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-rs232_dev.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-rs232_dev.Tpo -c -o src/test_overlay-rs232_dev.obj `if test -f 'src/rs232_dev.c'; then $(CYGPATH_W) 'src/rs232_dev.c'; else $(CYGPATH_W) '$(srcdir)/src/rs232_dev.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-rs232_dev.Tpo src/$(DEPDIR)/test_overlay-rs232_dev.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rs232_dev.c' object='src/test_overlay-rs232_dev.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-rs232_dev.obj `if test -f 'src/rs232_dev.c'; then $(CYGPATH_W) 'src/rs232_dev.c'; else $(CYGPATH_W) '$(srcdir)/src/rs232_dev.c'; fi`
+
 src/test_overlay-rtc.o: src/rtc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-rtc.o -MD -MP -MF src/$(DEPDIR)/test_overlay-rtc.Tpo -c -o src/test_overlay-rtc.o `test -f 'src/rtc.c' || echo '$(srcdir)/'`src/rtc.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-rtc.Tpo src/$(DEPDIR)/test_overlay-rtc.Po
@@ -3845,6 +3993,34 @@ src/test_overlay-sd_mapper.obj: src/sd_mapper.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/sd_mapper.c' object='src/test_overlay-sd_mapper.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-sd_mapper.obj `if test -f 'src/sd_mapper.c'; then $(CYGPATH_W) 'src/sd_mapper.c'; else $(CYGPATH_W) '$(srcdir)/src/sd_mapper.c'; fi`
+
+src/test_overlay-serial_8251.o: src/serial_8251.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-serial_8251.o -MD -MP -MF src/$(DEPDIR)/test_overlay-serial_8251.Tpo -c -o src/test_overlay-serial_8251.o `test -f 'src/serial_8251.c' || echo '$(srcdir)/'`src/serial_8251.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-serial_8251.Tpo src/$(DEPDIR)/test_overlay-serial_8251.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8251.c' object='src/test_overlay-serial_8251.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-serial_8251.o `test -f 'src/serial_8251.c' || echo '$(srcdir)/'`src/serial_8251.c
+
+src/test_overlay-serial_8251.obj: src/serial_8251.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-serial_8251.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-serial_8251.Tpo -c -o src/test_overlay-serial_8251.obj `if test -f 'src/serial_8251.c'; then $(CYGPATH_W) 'src/serial_8251.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8251.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-serial_8251.Tpo src/$(DEPDIR)/test_overlay-serial_8251.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8251.c' object='src/test_overlay-serial_8251.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-serial_8251.obj `if test -f 'src/serial_8251.c'; then $(CYGPATH_W) 'src/serial_8251.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8251.c'; fi`
+
+src/test_overlay-serial_8254.o: src/serial_8254.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-serial_8254.o -MD -MP -MF src/$(DEPDIR)/test_overlay-serial_8254.Tpo -c -o src/test_overlay-serial_8254.o `test -f 'src/serial_8254.c' || echo '$(srcdir)/'`src/serial_8254.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-serial_8254.Tpo src/$(DEPDIR)/test_overlay-serial_8254.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8254.c' object='src/test_overlay-serial_8254.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-serial_8254.o `test -f 'src/serial_8254.c' || echo '$(srcdir)/'`src/serial_8254.c
+
+src/test_overlay-serial_8254.obj: src/serial_8254.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-serial_8254.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-serial_8254.Tpo -c -o src/test_overlay-serial_8254.obj `if test -f 'src/serial_8254.c'; then $(CYGPATH_W) 'src/serial_8254.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8254.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-serial_8254.Tpo src/$(DEPDIR)/test_overlay-serial_8254.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8254.c' object='src/test_overlay-serial_8254.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-serial_8254.obj `if test -f 'src/serial_8254.c'; then $(CYGPATH_W) 'src/serial_8254.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8254.c'; fi`
 
 src/test_overlay-sunrise.o: src/sunrise.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-sunrise.o -MD -MP -MF src/$(DEPDIR)/test_overlay-sunrise.Tpo -c -o src/test_overlay-sunrise.o `test -f 'src/sunrise.c' || echo '$(srcdir)/'`src/sunrise.c
@@ -4223,6 +4399,76 @@ src/test_rs232-rs232.obj: src/rs232.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rs232.c' object='src/test_rs232-rs232.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232_CPPFLAGS) $(CPPFLAGS) $(test_rs232_CFLAGS) $(CFLAGS) -c -o src/test_rs232-rs232.obj `if test -f 'src/rs232.c'; then $(CYGPATH_W) 'src/rs232.c'; else $(CYGPATH_W) '$(srcdir)/src/rs232.c'; fi`
+
+diagnostics/test_rs232dev-test_rs232_dev.o: diagnostics/test_rs232_dev.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -MT diagnostics/test_rs232dev-test_rs232_dev.o -MD -MP -MF diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Tpo -c -o diagnostics/test_rs232dev-test_rs232_dev.o `test -f 'diagnostics/test_rs232_dev.c' || echo '$(srcdir)/'`diagnostics/test_rs232_dev.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Tpo diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_rs232_dev.c' object='diagnostics/test_rs232dev-test_rs232_dev.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -c -o diagnostics/test_rs232dev-test_rs232_dev.o `test -f 'diagnostics/test_rs232_dev.c' || echo '$(srcdir)/'`diagnostics/test_rs232_dev.c
+
+diagnostics/test_rs232dev-test_rs232_dev.obj: diagnostics/test_rs232_dev.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -MT diagnostics/test_rs232dev-test_rs232_dev.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Tpo -c -o diagnostics/test_rs232dev-test_rs232_dev.obj `if test -f 'diagnostics/test_rs232_dev.c'; then $(CYGPATH_W) 'diagnostics/test_rs232_dev.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_rs232_dev.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Tpo diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_rs232_dev.c' object='diagnostics/test_rs232dev-test_rs232_dev.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -c -o diagnostics/test_rs232dev-test_rs232_dev.obj `if test -f 'diagnostics/test_rs232_dev.c'; then $(CYGPATH_W) 'diagnostics/test_rs232_dev.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_rs232_dev.c'; fi`
+
+src/test_rs232dev-rs232.o: src/rs232.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -MT src/test_rs232dev-rs232.o -MD -MP -MF src/$(DEPDIR)/test_rs232dev-rs232.Tpo -c -o src/test_rs232dev-rs232.o `test -f 'src/rs232.c' || echo '$(srcdir)/'`src/rs232.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_rs232dev-rs232.Tpo src/$(DEPDIR)/test_rs232dev-rs232.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rs232.c' object='src/test_rs232dev-rs232.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -c -o src/test_rs232dev-rs232.o `test -f 'src/rs232.c' || echo '$(srcdir)/'`src/rs232.c
+
+src/test_rs232dev-rs232.obj: src/rs232.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -MT src/test_rs232dev-rs232.obj -MD -MP -MF src/$(DEPDIR)/test_rs232dev-rs232.Tpo -c -o src/test_rs232dev-rs232.obj `if test -f 'src/rs232.c'; then $(CYGPATH_W) 'src/rs232.c'; else $(CYGPATH_W) '$(srcdir)/src/rs232.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_rs232dev-rs232.Tpo src/$(DEPDIR)/test_rs232dev-rs232.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rs232.c' object='src/test_rs232dev-rs232.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -c -o src/test_rs232dev-rs232.obj `if test -f 'src/rs232.c'; then $(CYGPATH_W) 'src/rs232.c'; else $(CYGPATH_W) '$(srcdir)/src/rs232.c'; fi`
+
+src/test_rs232dev-rs232_dev.o: src/rs232_dev.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -MT src/test_rs232dev-rs232_dev.o -MD -MP -MF src/$(DEPDIR)/test_rs232dev-rs232_dev.Tpo -c -o src/test_rs232dev-rs232_dev.o `test -f 'src/rs232_dev.c' || echo '$(srcdir)/'`src/rs232_dev.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_rs232dev-rs232_dev.Tpo src/$(DEPDIR)/test_rs232dev-rs232_dev.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rs232_dev.c' object='src/test_rs232dev-rs232_dev.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -c -o src/test_rs232dev-rs232_dev.o `test -f 'src/rs232_dev.c' || echo '$(srcdir)/'`src/rs232_dev.c
+
+src/test_rs232dev-rs232_dev.obj: src/rs232_dev.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -MT src/test_rs232dev-rs232_dev.obj -MD -MP -MF src/$(DEPDIR)/test_rs232dev-rs232_dev.Tpo -c -o src/test_rs232dev-rs232_dev.obj `if test -f 'src/rs232_dev.c'; then $(CYGPATH_W) 'src/rs232_dev.c'; else $(CYGPATH_W) '$(srcdir)/src/rs232_dev.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_rs232dev-rs232_dev.Tpo src/$(DEPDIR)/test_rs232dev-rs232_dev.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rs232_dev.c' object='src/test_rs232dev-rs232_dev.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -c -o src/test_rs232dev-rs232_dev.obj `if test -f 'src/rs232_dev.c'; then $(CYGPATH_W) 'src/rs232_dev.c'; else $(CYGPATH_W) '$(srcdir)/src/rs232_dev.c'; fi`
+
+src/test_rs232dev-serial_8251.o: src/serial_8251.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -MT src/test_rs232dev-serial_8251.o -MD -MP -MF src/$(DEPDIR)/test_rs232dev-serial_8251.Tpo -c -o src/test_rs232dev-serial_8251.o `test -f 'src/serial_8251.c' || echo '$(srcdir)/'`src/serial_8251.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_rs232dev-serial_8251.Tpo src/$(DEPDIR)/test_rs232dev-serial_8251.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8251.c' object='src/test_rs232dev-serial_8251.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -c -o src/test_rs232dev-serial_8251.o `test -f 'src/serial_8251.c' || echo '$(srcdir)/'`src/serial_8251.c
+
+src/test_rs232dev-serial_8251.obj: src/serial_8251.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -MT src/test_rs232dev-serial_8251.obj -MD -MP -MF src/$(DEPDIR)/test_rs232dev-serial_8251.Tpo -c -o src/test_rs232dev-serial_8251.obj `if test -f 'src/serial_8251.c'; then $(CYGPATH_W) 'src/serial_8251.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8251.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_rs232dev-serial_8251.Tpo src/$(DEPDIR)/test_rs232dev-serial_8251.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8251.c' object='src/test_rs232dev-serial_8251.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -c -o src/test_rs232dev-serial_8251.obj `if test -f 'src/serial_8251.c'; then $(CYGPATH_W) 'src/serial_8251.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8251.c'; fi`
+
+src/test_rs232dev-serial_8254.o: src/serial_8254.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -MT src/test_rs232dev-serial_8254.o -MD -MP -MF src/$(DEPDIR)/test_rs232dev-serial_8254.Tpo -c -o src/test_rs232dev-serial_8254.o `test -f 'src/serial_8254.c' || echo '$(srcdir)/'`src/serial_8254.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_rs232dev-serial_8254.Tpo src/$(DEPDIR)/test_rs232dev-serial_8254.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8254.c' object='src/test_rs232dev-serial_8254.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -c -o src/test_rs232dev-serial_8254.o `test -f 'src/serial_8254.c' || echo '$(srcdir)/'`src/serial_8254.c
+
+src/test_rs232dev-serial_8254.obj: src/serial_8254.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -MT src/test_rs232dev-serial_8254.obj -MD -MP -MF src/$(DEPDIR)/test_rs232dev-serial_8254.Tpo -c -o src/test_rs232dev-serial_8254.obj `if test -f 'src/serial_8254.c'; then $(CYGPATH_W) 'src/serial_8254.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8254.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_rs232dev-serial_8254.Tpo src/$(DEPDIR)/test_rs232dev-serial_8254.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/serial_8254.c' object='src/test_rs232dev-serial_8254.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rs232dev_CPPFLAGS) $(CPPFLAGS) $(test_rs232dev_CFLAGS) $(CFLAGS) -c -o src/test_rs232dev-serial_8254.obj `if test -f 'src/serial_8254.c'; then $(CYGPATH_W) 'src/serial_8254.c'; else $(CYGPATH_W) '$(srcdir)/src/serial_8254.c'; fi`
 
 diagnostics/test_rtc-test_rtc.o: diagnostics/test_rtc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_rtc_CPPFLAGS) $(CPPFLAGS) $(test_rtc_CFLAGS) $(CFLAGS) -MT diagnostics/test_rtc-test_rtc.o -MD -MP -MF diagnostics/$(DEPDIR)/test_rtc-test_rtc.Tpo -c -o diagnostics/test_rtc-test_rtc.o `test -f 'diagnostics/test_rtc.c' || echo '$(srcdir)/'`diagnostics/test_rtc.c
@@ -5149,6 +5395,13 @@ test-rs232.log: test-rs232$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-rs232dev.log: test-rs232dev$(EXEEXT)
+	@p='test-rs232dev$(EXEEXT)'; \
+	b='test-rs232dev'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-serial.log: test-serial$(EXEEXT)
 	@p='test-serial$(EXEEXT)'; \
 	b='test-serial'; \
@@ -5425,6 +5678,7 @@ distclean: distclean-am
 	-rm -f diagnostics/$(DEPDIR)/test_paste-test_paste.Po
 	-rm -f diagnostics/$(DEPDIR)/test_psg-test_psg.Po
 	-rm -f diagnostics/$(DEPDIR)/test_rs232-test_rs232.Po
+	-rm -f diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Po
 	-rm -f diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po
 	-rm -f diagnostics/$(DEPDIR)/test_scc-test_scc.Po
 	-rm -f diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
@@ -5455,10 +5709,13 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-paste.Po
 	-rm -f src/$(DEPDIR)/1983-psg.Po
 	-rm -f src/$(DEPDIR)/1983-rs232.Po
+	-rm -f src/$(DEPDIR)/1983-rs232_dev.Po
 	-rm -f src/$(DEPDIR)/1983-rtc.Po
 	-rm -f src/$(DEPDIR)/1983-scc.Po
 	-rm -f src/$(DEPDIR)/1983-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/1983-sdcard.Po
+	-rm -f src/$(DEPDIR)/1983-serial_8251.Po
+	-rm -f src/$(DEPDIR)/1983-serial_8254.Po
 	-rm -f src/$(DEPDIR)/1983-sunrise.Po
 	-rm -f src/$(DEPDIR)/1983-ui.Po
 	-rm -f src/$(DEPDIR)/1983-unapinet.Po
@@ -5552,10 +5809,14 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_overlay-notify.Po
 	-rm -f src/$(DEPDIR)/test_overlay-overlay.Po
 	-rm -f src/$(DEPDIR)/test_overlay-psg.Po
+	-rm -f src/$(DEPDIR)/test_overlay-rs232.Po
+	-rm -f src/$(DEPDIR)/test_overlay-rs232_dev.Po
 	-rm -f src/$(DEPDIR)/test_overlay-rtc.Po
 	-rm -f src/$(DEPDIR)/test_overlay-scc.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sdcard.Po
+	-rm -f src/$(DEPDIR)/test_overlay-serial_8251.Po
+	-rm -f src/$(DEPDIR)/test_overlay-serial_8254.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_overlay-ui.Po
 	-rm -f src/$(DEPDIR)/test_overlay-unapinet.Po
@@ -5580,6 +5841,10 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_paste-z80.Po
 	-rm -f src/$(DEPDIR)/test_psg-psg.Po
 	-rm -f src/$(DEPDIR)/test_rs232-rs232.Po
+	-rm -f src/$(DEPDIR)/test_rs232dev-rs232.Po
+	-rm -f src/$(DEPDIR)/test_rs232dev-rs232_dev.Po
+	-rm -f src/$(DEPDIR)/test_rs232dev-serial_8251.Po
+	-rm -f src/$(DEPDIR)/test_rs232dev-serial_8254.Po
 	-rm -f src/$(DEPDIR)/test_rtc-rtc.Po
 	-rm -f src/$(DEPDIR)/test_scc-scc.Po
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po
@@ -5660,6 +5925,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f diagnostics/$(DEPDIR)/test_paste-test_paste.Po
 	-rm -f diagnostics/$(DEPDIR)/test_psg-test_psg.Po
 	-rm -f diagnostics/$(DEPDIR)/test_rs232-test_rs232.Po
+	-rm -f diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Po
 	-rm -f diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po
 	-rm -f diagnostics/$(DEPDIR)/test_scc-test_scc.Po
 	-rm -f diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
@@ -5690,10 +5956,13 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-paste.Po
 	-rm -f src/$(DEPDIR)/1983-psg.Po
 	-rm -f src/$(DEPDIR)/1983-rs232.Po
+	-rm -f src/$(DEPDIR)/1983-rs232_dev.Po
 	-rm -f src/$(DEPDIR)/1983-rtc.Po
 	-rm -f src/$(DEPDIR)/1983-scc.Po
 	-rm -f src/$(DEPDIR)/1983-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/1983-sdcard.Po
+	-rm -f src/$(DEPDIR)/1983-serial_8251.Po
+	-rm -f src/$(DEPDIR)/1983-serial_8254.Po
 	-rm -f src/$(DEPDIR)/1983-sunrise.Po
 	-rm -f src/$(DEPDIR)/1983-ui.Po
 	-rm -f src/$(DEPDIR)/1983-unapinet.Po
@@ -5787,10 +6056,14 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_overlay-notify.Po
 	-rm -f src/$(DEPDIR)/test_overlay-overlay.Po
 	-rm -f src/$(DEPDIR)/test_overlay-psg.Po
+	-rm -f src/$(DEPDIR)/test_overlay-rs232.Po
+	-rm -f src/$(DEPDIR)/test_overlay-rs232_dev.Po
 	-rm -f src/$(DEPDIR)/test_overlay-rtc.Po
 	-rm -f src/$(DEPDIR)/test_overlay-scc.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sdcard.Po
+	-rm -f src/$(DEPDIR)/test_overlay-serial_8251.Po
+	-rm -f src/$(DEPDIR)/test_overlay-serial_8254.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_overlay-ui.Po
 	-rm -f src/$(DEPDIR)/test_overlay-unapinet.Po
@@ -5815,6 +6088,10 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_paste-z80.Po
 	-rm -f src/$(DEPDIR)/test_psg-psg.Po
 	-rm -f src/$(DEPDIR)/test_rs232-rs232.Po
+	-rm -f src/$(DEPDIR)/test_rs232dev-rs232.Po
+	-rm -f src/$(DEPDIR)/test_rs232dev-rs232_dev.Po
+	-rm -f src/$(DEPDIR)/test_rs232dev-serial_8251.Po
+	-rm -f src/$(DEPDIR)/test_rs232dev-serial_8254.Po
 	-rm -f src/$(DEPDIR)/test_rtc-rtc.Po
 	-rm -f src/$(DEPDIR)/test_scc-scc.Po
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po
