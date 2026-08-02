@@ -35,6 +35,7 @@ firmware choice in the per-user `1983.conf`.
 --megaflash-rom + --megaflash-sd-a/--megaflash-sd-b  MegaFlashROM, --sd-mode
 --unapi                   optional openMSXnet host bridge on NMS 8250
 --rs232                   RS-232C interface on ports 80h-87h (PTY /tmp/1983-rs232)
+--rs232-rom PATH          user-provided RS-232C EXTBIO/driver ROM
 --headless --unthrottled --exit-after N   deterministic runs
 --gif-out FILE            capture GIF on startup
 --screenshot              (see Controls / F4)

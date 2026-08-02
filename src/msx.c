@@ -11,6 +11,9 @@
 #include <strings.h>
 #endif
 
+static int read_rom_file(const char *path, size_t maximum_size,
+                         u8 **data_out, size_t *size_out);
+
 static const MsxProfile profiles[MSX_MODEL_COUNT] = {
     [MSX_MODEL_GENERIC_MSX1] = {
         .model = MSX_MODEL_GENERIC_MSX1,
@@ -638,6 +641,7 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     msx->megaflash_slot = -1;
     msx->sd_mapper_slot = -1;
     msx->sunrise_slot = -1;
+    msx->rs232_slot = -1;
     z80_init(&msx->cpu);
     vdp_init(&msx->vdp);
     psg_init(&msx->psg, PSG_VARIANT_AY8910);
@@ -665,6 +669,7 @@ void msx_destroy(MsxMachine *msx) {
     msx->megaflash_slot = -1;
     msx->sd_mapper_slot = -1;
     msx->sunrise_slot = -1;
+    msx->rs232_slot = -1;
     if (msx->ram && msx->ram != msx->internal_ram)
         free(msx->ram);
     msx->ram = NULL;
@@ -1183,6 +1188,56 @@ int msx_install_cartridge_slot(MsxMachine *msx, unsigned slot,
     return 0;
 }
 
+/* MSX RS-232C interface cartridge. The RS232.ROM carries the MSX-serial
+ * driver: its INIT routine installs the EXTBIO hook at FFCAH (function 08H
+ * = RS-232C device table) and its jump table programs the 8251/8254 on the
+ * standard RS-232C I/O ports 80H-87H, which rs232_dev implements. The ROM is
+ * a plain 16KB cartridge, so we install it through the generic cartridge
+ * path and just remember which slot holds it. */
+int msx_install_rs232(MsxMachine *msx, unsigned slot,
+                      const u8 *data, size_t size) {
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS)
+        return -1;
+    if (msx_install_cartridge_slot(msx, slot, data, size,
+                                   MSX_CART_MAPPER_LINEAR) != 0)
+        return -1;
+    msx->rs232_slot = (int)slot;
+    return 0;
+}
+
+int msx_load_rs232(MsxMachine *msx, unsigned slot,
+                   const char *path) {
+    u8 *data;
+    size_t size;
+    int result;
+
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        read_rom_file(path, MSX_CART_MAX_SIZE, &data, &size) != 0)
+        return -1;
+    result = msx_install_rs232(msx, slot, data, size);
+    free(data);
+    return result;
+}
+
+int msx_eject_rs232(MsxMachine *msx) {
+    if (!msx || msx->rs232_slot < 0)
+        return 0;
+    int slot = msx->rs232_slot;
+    msx->rs232_slot = -1;
+    msx_cartridge_eject(&msx->cartridges[slot]);
+    msx_reset(msx);
+    return 0;
+}
+
+bool msx_rs232_connected(const MsxMachine *msx) {
+    return msx && msx->rs232_slot >= 0 &&
+           msx->rs232_slot < (int)MSX_CARTRIDGE_SLOTS;
+}
+
+int msx_rs232_slot(const MsxMachine *msx) {
+    return msx_rs232_connected(msx) ? msx->rs232_slot : -1;
+}
+
 typedef int (*RomInstaller)(MsxMachine *, const u8 *, size_t);
 
 static int read_rom_file(const char *path, size_t maximum_size,
@@ -1350,6 +1405,7 @@ int msx_eject_sunrise_ide(MsxMachine *msx) {
     if (sunrise_eject_rom(&msx->sunrise) != 0)
         return -1;
     msx->sunrise_slot = -1;
+    msx->rs232_slot = -1;
     msx_reset(msx);
     return 0;
 }

@@ -76,6 +76,7 @@ typedef struct {
     char disk_rom_path[PATH_MAX];
     char sunrise_rom_path[PATH_MAX];
     char sd_mapper_rom_path[PATH_MAX];
+    char rs232_rom_path[PATH_MAX];
     char sd_card_path[MSX_SD_MAPPER_CARDS][PATH_MAX];
     char megaflash_rom_path[PATH_MAX];
     char megaflash_card_path[MSX_MEGAFLASH_CARDS][PATH_MAX];

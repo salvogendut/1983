@@ -82,6 +82,9 @@ tcpip_unapi = false
 # MSX RS-232C interface on ports 80h-87h (8251 USART + 8254 timer).
 # On Linux/BSD the host side is a PTY at /tmp/1983-rs232 for picocom/minicom.
 rs232 = false
+# User-provided RS-232C cartridge ROM (EXTBIO/MSX-serial driver). Required
+# for MSX-BASIC "OPEN \"COM0:\"" auto-detection; not bundled with 1983.
+rs232_rom =
 scc = false
 msx_music = false
 kanji_rom = false

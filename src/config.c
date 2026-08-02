@@ -365,6 +365,9 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "sd_mapper_rom") == 0)
             snprintf(config->sd_mapper_rom_path,
                      sizeof(config->sd_mapper_rom_path), "%s", value);
+        else if (strcmp(key, "rs232_rom") == 0)
+            snprintf(config->rs232_rom_path,
+                     sizeof(config->rs232_rom_path), "%s", value);
         else if (strcmp(key, "sd_card_a") == 0)
             snprintf(config->sd_card_path[0],
                      sizeof(config->sd_card_path[0]), "%s", value);
@@ -519,6 +522,7 @@ int config_save(const Config *config) {
     fprintf(file, "sd_mapper = %s\n", bool_name(config->sd_mapper));
     fprintf(file, "sd_mapper_rom = %s\n",
             config->sd_mapper_rom_path);
+    fprintf(file, "rs232_rom = %s\n", config->rs232_rom_path);
     fprintf(file, "sd_mapper_ram = %s\n",
             bool_name(config->sd_mapper_ram));
     fprintf(file, "sd_mapper_alternate_driver = %s\n",
@@ -692,7 +696,8 @@ unsigned config_cartridge_extension_count(const Config *config) {
            (config->sd_mapper ? 1u : 0u) +
            (config->megaflash ? 1u : 0u) +
            (config->scc ? 1u : 0u) +
-           (config->msx_music ? 1u : 0u);
+           (config->msx_music ? 1u : 0u) +
+           (config->rs232 ? 1u : 0u);
 }
 
 const char *config_cartridge_slot_owner(const Config *config,
@@ -712,6 +717,8 @@ const char *config_cartridge_slot_owner(const Config *config,
         extensions[count++] = "Konami SCC";
     if (config->msx_music && count < MSX_CARTRIDGE_SLOTS)
         extensions[count++] = "MSX-MUSIC";
+    if (config->rs232 && count < MSX_CARTRIDGE_SLOTS)
+        extensions[count++] = "RS-232C";
 
     /*
      * Keep cartridge 1 available for ordinary software until a second
