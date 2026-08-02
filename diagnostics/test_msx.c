@@ -146,7 +146,7 @@ static void test_dual_cartridge_slots_and_mapper_reset(void) {
 }
 
 static void test_sunrise_cartridge_slot_bus(void) {
-    const char *replacement_path = "tests/test-sunrise-replace.tmp";
+    const char *replacement_path = "diagnostics/test-sunrise-replace.tmp";
     MsxMachine msx;
     u8 rom[MSX_SUNRISE_ROM_SIZE];
 
@@ -176,7 +176,7 @@ static void test_sunrise_cartridge_slot_bus(void) {
     memset(rom, 0x42, sizeof(rom));
     write_fixture(replacement_path, rom, sizeof(rom));
     assert(msx_replace_sunrise_ide(
-               &msx, replacement_path, "tests/missing-ide.img",
+               &msx, replacement_path, "diagnostics/missing-ide.img",
                ATA_IMAGE_READ_ONLY) != 0);
     assert(msx_sunrise_connected(&msx));
     assert(msx_sunrise_slot(&msx) == 1);
@@ -196,7 +196,7 @@ static void test_sunrise_cartridge_slot_bus(void) {
 }
 
 static void test_sd_mapper_expanded_cartridge_bus(void) {
-    const char *replacement_path = "tests/test-sd-mapper-replace.tmp";
+    const char *replacement_path = "diagnostics/test-sd-mapper-replace.tmp";
     MsxMachine msx;
     u8 *rom = malloc(MSX_SD_MAPPER_ROM_SIZE);
 
@@ -242,7 +242,7 @@ static void test_sd_mapper_expanded_cartridge_bus(void) {
     memset(rom, 0x69, MSX_SD_MAPPER_ROM_SIZE);
     write_fixture(replacement_path, rom, MSX_SD_MAPPER_ROM_SIZE);
     assert(msx_replace_sd_mapper(
-               &msx, replacement_path, "tests/missing-sd.img", "",
+               &msx, replacement_path, "diagnostics/missing-sd.img", "",
                SD_IMAGE_READ_ONLY, true, false) != 0);
     assert(msx_sd_mapper_connected(&msx));
     assert(msx_sd_mapper_slot(&msx) == 0);
@@ -264,9 +264,9 @@ static void test_sd_mapper_expanded_cartridge_bus(void) {
 }
 
 static void test_megaflash_expanded_cartridge_bus(void) {
-    const char *replacement_path = "tests/test-megaflash-replace.tmp";
-    const char *state_path = "tests/test-megaflash-state.tmp";
-    const char *pending_path = "tests/test-megaflash-state.pending.tmp";
+    const char *replacement_path = "diagnostics/test-megaflash-replace.tmp";
+    const char *state_path = "diagnostics/test-megaflash-state.tmp";
+    const char *pending_path = "diagnostics/test-megaflash-state.pending.tmp";
     MsxMachine msx;
     u8 *flash = malloc(MSX_MEGAFLASH_FLASH_SIZE);
 
@@ -298,7 +298,7 @@ static void test_megaflash_expanded_cartridge_bus(void) {
     write_fixture(replacement_path, flash, MSX_MEGAFLASH_FLASH_SIZE);
     assert(msx_replace_megaflash(
                &msx, replacement_path, pending_path, true,
-               "tests/missing-megaflash-sd.img", "",
+               "diagnostics/missing-megaflash-sd.img", "",
                SD_IMAGE_READ_ONLY) != 0);
     assert(msx_megaflash_connected(&msx));
     assert(msx_megaflash_slot(&msx) == 0);

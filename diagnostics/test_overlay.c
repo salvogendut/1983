@@ -235,19 +235,19 @@ int main(void) {
         0xea, 0xea, 0xea, 0xea, 0xea,
         0xea, 0xea, 0xea, 0xea, 0xea, 0x1a
     };
-    const char *editor_path = "tests/test-model-editor.tmp";
-    const char *machine_bios_path = "tests/test-machine-bios.tmp";
-    const char *machine_subrom_path = "tests/test-machine-subrom.tmp";
-    const char *sunrise_rom_path = "tests/test-sunrise-rom.tmp";
-    const char *sunrise_rom_path_2 = "tests/test-sunrise-rom-2.tmp";
-    const char *ide_image_path = "tests/test-sunrise-disk.tmp";
-    const char *sd_mapper_rom_path = "tests/test-sd-mapper-rom.tmp";
-    const char *sd_image_path = "tests/test-sd-card.tmp";
-    const char *megaflash_rom_path = "tests/test-megaflash-rom.tmp";
-    const char *megaflash_rom_path_2 = "tests/test-megaflash-rom-2.tmp";
+    const char *editor_path = "diagnostics/test-model-editor.tmp";
+    const char *machine_bios_path = "diagnostics/test-machine-bios.tmp";
+    const char *machine_subrom_path = "diagnostics/test-machine-subrom.tmp";
+    const char *sunrise_rom_path = "diagnostics/test-sunrise-rom.tmp";
+    const char *sunrise_rom_path_2 = "diagnostics/test-sunrise-rom-2.tmp";
+    const char *ide_image_path = "diagnostics/test-sunrise-disk.tmp";
+    const char *sd_mapper_rom_path = "diagnostics/test-sd-mapper-rom.tmp";
+    const char *sd_image_path = "diagnostics/test-sd-card.tmp";
+    const char *megaflash_rom_path = "diagnostics/test-megaflash-rom.tmp";
+    const char *megaflash_rom_path_2 = "diagnostics/test-megaflash-rom-2.tmp";
     const char *megaflash_config_path =
-        "tests/test-overlay-state/config.ini";
-    const char *cassette_path = "tests/test-cassette.tmp";
+        "diagnostics/test-overlay-state/config.ini";
+    const char *cassette_path = "diagnostics/test-cassette.tmp";
     Config config;
     ModelCatalog models;
     MsxMachine msx;
@@ -529,7 +529,7 @@ int main(void) {
              "%s", sunrise_rom_path_2);
     overlay.dialog_ready = true;
     overlay_tick(&overlay);
-    assert(strcmp(config.last_media_dir, "tests") == 0);
+    assert(strcmp(config.last_media_dir, "diagnostics") == 0);
     send_key(&overlay, SDLK_ESCAPE);
     assert(strcmp(config.last_media_dir,
                   "before-extension-edit") == 0);
@@ -556,7 +556,7 @@ int main(void) {
                   sunrise_rom_path) == 0);
     snprintf(overlay.pending_sunrise_rom_path,
              sizeof(overlay.pending_sunrise_rom_path),
-             "tests/missing-sunrise.rom");
+             "diagnostics/missing-sunrise.rom");
     overlay.sunrise_setup_row = 2;
     send_key(&overlay, SDLK_RETURN);
     assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);
@@ -1244,7 +1244,7 @@ int main(void) {
         overlay.machine_row = (int)model_index;
         snprintf(models.entries[model_index].bios_path,
                  sizeof(models.entries[model_index].bios_path),
-                 "tests/missing-machine-bios.rom");
+                 "diagnostics/missing-machine-bios.rom");
         send_key(&overlay, SDLK_RETURN);
         assert(overlay.state == OVERLAY_STATE_MACHINE);
         assert(overlay.dialog_target == OVERLAY_DIALOG_NONE);
@@ -1301,8 +1301,8 @@ int main(void) {
     assert(remove(megaflash_rom_path_2) == 0);
     assert(remove(megaflash_config_path) == 0);
     assert(remove(megaflash_state_path) == 0);
-    assert(TEST_RMDIR("tests/test-overlay-state/flash") == 0);
-    assert(TEST_RMDIR("tests/test-overlay-state") == 0);
+    assert(TEST_RMDIR("diagnostics/test-overlay-state/flash") == 0);
+    assert(TEST_RMDIR("diagnostics/test-overlay-state") == 0);
     assert(remove(cassette_path) == 0);
 
     display_quit(&display);

@@ -1,14 +1,14 @@
 #!/bin/sh
 set -eu
 
-log=tests/test-cli-output.tmp
-config=tests/test-cli-config.tmp
-sunrise=tests/test-cli-sunrise.tmp
-sdrom=tests/test-cli-sdmapper.tmp
-sdimage=tests/test-cli-sdcard.tmp
-megaflash=tests/test-cli-megaflash.tmp
-cassette=tests/test-cli-cassette.tmp
-first_run=tests/test-cli-first-run.tmp
+log=diagnostics/test-cli-output.tmp
+config=diagnostics/test-cli-config.tmp
+sunrise=diagnostics/test-cli-sunrise.tmp
+sdrom=diagnostics/test-cli-sdmapper.tmp
+sdimage=diagnostics/test-cli-sdcard.tmp
+megaflash=diagnostics/test-cli-megaflash.tmp
+cassette=diagnostics/test-cli-cassette.tmp
+first_run=diagnostics/test-cli-first-run.tmp
 source_root=${srcdir:-.}
 trap 'rm -f "$log" "$config" "$sunrise" "$sdrom" "$sdimage" "$megaflash" "$cassette" "$first_run"' EXIT HUP INT TERM
 

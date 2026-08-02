@@ -22,8 +22,8 @@
 /test-gamepad
 /test-overlay
 /test-gifcap
-/tests/test-*.log
-/tests/test-*.trs
+/diagnostics/test-*.log
+/diagnostics/test-*.trs
 /Makefile
 /config.log
 /config.status
@@ -37,9 +37,9 @@
 /rtc/
 /DOS/*
 /src/.deps/
-/tests/.deps/
+/diagnostics/.deps/
 /src/.dirstamp
-/tests/.dirstamp
+/diagnostics/.dirstamp
 /dist/
 /.flatpak-builder/
 /flatpak_app/
