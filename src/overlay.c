@@ -3205,16 +3205,44 @@ static void activate_item(Overlay *overlay) {
                                 ? "enabled; run UNAPINET.COM in Nextor"
                                 : "disabled");
                     break;
-                case EXTENSION_RS232:
-                    config->rs232 = !config->rs232;
+                case EXTENSION_RS232: {
+                    bool want = !config->rs232;
+
+                    if (want) {
+                        /* Toggle first so the slot-owner table includes
+                         * "RS-232C"; revert if the ROM cannot load. */
+                        config->rs232 = true;
+                        if (!config->rs232_rom_path[0]) {
+                            /* The EXTBIO/driver ROM is user-provided. Enable
+                             * the port device without it; EXTBIO 08H
+                             * detection stays unavailable until a ROM is
+                             * configured (rs232_rom / --rs232-rom). */
+                        } else {
+                            int rs232_slot =
+                                cartridge_extension_slot(
+                                    config, "RS-232C");
+
+                            if (rs232_slot < 0 ||
+                                msx_load_rs232(
+                                    overlay->msx,
+                                    (unsigned)rs232_slot,
+                                    config->rs232_rom_path) != 0) {
+                                config->rs232 = false;
+                                notify_post(
+                                    "Could not load the RS-232C ROM");
+                                break;
+                            }
+                        }
+                    } else {
+                        (void)msx_eject_rs232(overlay->msx);
+                        config->rs232 = false;
+                    }
                     if (overlay->rs232dev)
                         rs232dev_set_enabled(
                             overlay->rs232dev, config->rs232);
                     notify_post(
-                        "MSX RS-232C interface %s%s",
-                        config->rs232 ? "enabled" : "disabled",
-                        config->rs232 ? " at "
-                          : "");
+                        "MSX RS-232C interface %s",
+                        config->rs232 ? "enabled" : "disabled");
                     if (config->rs232) {
                         const char *host = rs232dev_host_device(
                             overlay->rs232dev);
@@ -3222,6 +3250,7 @@ static void activate_item(Overlay *overlay) {
                                     host[0] ? host : "no host link");
                     }
                     break;
+                }
                 case EXTENSION_KONAMI_SCC:
                     if (!toggle_cartridge_extension(
                             overlay, &config->scc,

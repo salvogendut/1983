@@ -248,6 +248,7 @@ int main(void) {
     const char *megaflash_config_path =
         "diagnostics/test-overlay-state/config.ini";
     const char *cassette_path = "diagnostics/test-cassette.tmp";
+    const char *rs232_rom_path = "diagnostics/test-rs232-rom.tmp";
     Config config;
     ModelCatalog models;
     MsxMachine msx;
@@ -346,6 +347,19 @@ int main(void) {
     assert(fwrite(cassette_image, 1, sizeof(cassette_image), fixture) ==
            sizeof(cassette_image));
     assert(fclose(fixture) == 0);
+    {
+        /* A 16 KB stand-in RS-232C cartridge ROM (gitignored in ROMS/). */
+        u8 rs232_rom[0x4000];
+
+        memset(rs232_rom, 0x00, sizeof(rs232_rom));
+        rs232_rom[0] = 'A';
+        rs232_rom[1] = 'B';
+        fixture = fopen(rs232_rom_path, "wb");
+        assert(fixture);
+        assert(fwrite(rs232_rom, 1, sizeof(rs232_rom), fixture) ==
+               sizeof(rs232_rom));
+        assert(fclose(fixture) == 0);
+    }
     model_catalog_defaults(&models);
     {
         size_t cbios_index = model_catalog_index(&models, "cbios");
@@ -866,6 +880,8 @@ int main(void) {
     assert(!config.rtc_persistence);
 
     /* RS-232C is the last Extensions row; toggling flips the device. */
+    snprintf(config.rs232_rom_path, sizeof(config.rs232_rom_path),
+             "%s", rs232_rom_path);
     send_key(&overlay, SDLK_UP);
     send_key(&overlay, SDLK_LEFT);
     assert(overlay.section == OVERLAY_EXTENSIONS);
@@ -875,8 +891,10 @@ int main(void) {
     assert(!config.rs232);
     send_key(&overlay, SDLK_RETURN);
     assert(config.rs232);
+    assert(msx_rs232_connected(&msx));
     send_key(&overlay, SDLK_RETURN);
     assert(!config.rs232);
+    assert(!msx_rs232_connected(&msx));
 
     /* SD Mapper setup keeps controller firmware separate from card media. */
     config_defaults(&config);
@@ -1317,6 +1335,7 @@ int main(void) {
     assert(TEST_RMDIR("diagnostics/test-overlay-state/flash") == 0);
     assert(TEST_RMDIR("diagnostics/test-overlay-state") == 0);
     assert(remove(cassette_path) == 0);
+    assert(remove(rs232_rom_path) == 0);
 
     display_quit(&display);
     msx_destroy(&msx);

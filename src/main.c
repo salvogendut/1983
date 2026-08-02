@@ -44,6 +44,7 @@ typedef struct {
     const char *sd_mapper_rom_path;
     const char *sd_card_path[MSX_SD_MAPPER_CARDS];
     const char *megaflash_rom_path;
+    const char *rs232_rom_path;
     const char *megaflash_card_path[MSX_MEGAFLASH_CARDS];
     const char *drive_a_path;
     const char *drive_b_path;
@@ -228,6 +229,7 @@ static const char *usage =
     "  --no-unapi          disable the MSX TCP/IP UNAPI host bridge\n"
     "  --rs232             enable the MSX RS-232C serial interface\n"
     "  --no-rs232          disable the MSX RS-232C serial interface\n"
+    "  --rs232-rom PATH    load a user-provided RS-232C EXTBIO/driver ROM\n"
     "  --sd-mode MODE       SD access: read-only (default) or read-write\n"
     "  --disk-a PATH       insert a raw MSX DSK image in Drive A\n"
     "  --disk-b PATH       insert a raw MSX DSK image in Drive B\n"
@@ -403,6 +405,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--megaflash-rom") == 0 ||
              strcmp(argument, "--megaflash-sd-a") == 0 ||
              strcmp(argument, "--megaflash-sd-b") == 0 ||
+             strcmp(argument, "--rs232-rom") == 0 ||
              strcmp(argument, "--sd-mode") == 0 ||
              strcmp(argument, "--disk-a") == 0 ||
              strcmp(argument, "--disk-b") == 0 ||
@@ -454,6 +457,8 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->megaflash_card_path[0] = argv[++i];
         } else if (strcmp(argument, "--megaflash-sd-b") == 0) {
             cli->megaflash_card_path[1] = argv[++i];
+        } else if (strcmp(argument, "--rs232-rom") == 0) {
+            cli->rs232_rom_path = argv[++i];
         } else if (strcmp(argument, "--sd-mode") == 0) {
             cli->sd_image_mode = parse_sd_mode(argv[++i]);
             if (cli->sd_image_mode < 0)
@@ -795,6 +800,13 @@ int main(int argc, char **argv) {
         config.extra_hardware = true;
         config.megaflash = true;
     }
+    if (cli.rs232_rom_path) {
+        snprintf(config.rs232_rom_path,
+                 sizeof(config.rs232_rom_path),
+                 "%s", cli.rs232_rom_path);
+        config.extra_hardware = true;
+        config.rs232 = true;
+    }
     for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
         if (!cli.megaflash_card_path[card])
             continue;
@@ -1095,6 +1107,39 @@ int main(int argc, char **argv) {
                     msx_destroy(&msx);
                     return 1;
                 }
+            }
+        }
+    }
+    if (config.rs232) {
+        /* The RS-232C EXTBIO/driver ROM is user-provided (rs232_rom in the
+         * config or --rs232-rom). Without it the port device still works,
+         * but EXTBIO 08H auto-detection is unavailable. */
+        if (config.rs232_rom_path[0]) {
+            int rs232_slot = -1;
+
+            for (unsigned slot = 0;
+                 slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+                const char *owner =
+                    config_cartridge_slot_owner(&config, slot);
+
+                if (owner && strcmp(owner, "RS-232C") == 0) {
+                    rs232_slot = (int)slot;
+                    break;
+                }
+            }
+            if (rs232_slot < 0 ||
+                msx_load_rs232(
+                    &msx, (unsigned)rs232_slot,
+                    config.rs232_rom_path) != 0) {
+                fprintf(stderr,
+                        "cannot load RS-232C ROM: %s\n",
+                        config.rs232_rom_path);
+                if (cli.rs232_rom_path) {
+                    msx_destroy(&msx);
+                    return 1;
+                }
+                config.rs232 = false;
+                config_normalize(&config);
             }
         }
     }

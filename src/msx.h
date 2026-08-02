@@ -127,6 +127,7 @@ typedef struct {
     int megaflash_slot;
     int sd_mapper_slot;
     int sunrise_slot;
+    int rs232_slot;
     bool bios_loaded;
     bool logo_loaded;
     bool subrom_loaded;
@@ -223,6 +224,13 @@ int msx_install_cartridge(MsxMachine *msx, const u8 *data, size_t size);
 int msx_install_cartridge_slot(MsxMachine *msx, unsigned slot,
                                const u8 *data, size_t size,
                                MsxCartridgeMapper mapper);
+int msx_install_rs232(MsxMachine *msx, unsigned slot,
+                      const u8 *data, size_t size);
+int msx_load_rs232(MsxMachine *msx, unsigned slot,
+                   const char *path);
+int msx_eject_rs232(MsxMachine *msx);
+bool msx_rs232_connected(const MsxMachine *msx);
+int msx_rs232_slot(const MsxMachine *msx);
 int msx_load_bios(MsxMachine *msx, const char *path);
 int msx_load_logo(MsxMachine *msx, const char *path);
 int msx_load_subrom(MsxMachine *msx, const char *path);
