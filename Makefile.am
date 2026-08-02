@@ -55,6 +55,7 @@ noinst_HEADERS = \
 	src/sdcard.h \
 	src/sd_mapper.h \
 	src/sunrise.h \
+	src/shutter_wav.h \
 	src/types.h \
 	src/ui.h \
 	src/unapinet.h \
