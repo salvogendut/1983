@@ -20,6 +20,7 @@
 #include "notify.h"
 #include "overlay.h"
 #include "paste.h"
+#include "shutter_wav.h"
 #include "ui.h"
 #include "unapinet.h"
 
@@ -626,6 +627,9 @@ int main(int argc, char **argv) {
     Paste paste;
     static Display display;
     AudioOutput audio;
+    SDL_AudioStream *sfx_stream;
+    Uint8  *sfx_buf;
+    Uint32  sfx_buf_len;
     GamepadInput gamepad;
     Overlay overlay;
     GifCapture capture;
@@ -1112,6 +1116,24 @@ int main(int argc, char **argv) {
     audio_output_init(&audio, !cli.headless && !cli.unthrottled);
     window_id = SDL_GetWindowID(display.window);
 
+    /* Camera-shutter SFX for F4, matching 1984/1985. Decode the embedded
+     * WAV once and open a dedicated stream so the shutter can replay over
+     * overlapping AY audio. */
+    sfx_stream = NULL;
+    sfx_buf = NULL;
+    sfx_buf_len = 0;
+    if (!cli.headless) {
+        SDL_AudioSpec sfx_spec;
+        SDL_IOStream *io = SDL_IOFromConstMem(shutter_wav, shutter_wav_len);
+        if (io && SDL_LoadWAV_IO(io, true, &sfx_spec,
+                                 &sfx_buf, &sfx_buf_len)) {
+            sfx_stream = SDL_OpenAudioDeviceStream(
+                SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &sfx_spec, NULL, NULL);
+            if (sfx_stream)
+                SDL_ResumeAudioStreamDevice(sfx_stream);
+        }
+    }
+
     notify_init();
     notify_set_mode(config.notifications);
     leds_init();
@@ -1423,6 +1445,11 @@ int main(int argc, char **argv) {
                         notify_post("Screenshot saved: %s", path);
                     else
                         notify_post("Screenshot failed: %s", path);
+                    if (sfx_stream && sfx_buf) {
+                        SDL_ClearAudioStream(sfx_stream);
+                        SDL_PutAudioStreamData(
+                            sfx_stream, sfx_buf, (int)sfx_buf_len);
+                    }
                     break;
                 }
                 case SDLK_F5:
@@ -1657,6 +1684,10 @@ int main(int argc, char **argv) {
         shutdown_status = 1;
     }
     audio_output_quit(&audio);
+    if (sfx_stream)
+        SDL_DestroyAudioStream(sfx_stream);
+    if (sfx_buf)
+        SDL_free(sfx_buf);
     gamepad_input_destroy(&gamepad);
     paste_cancel(&paste, &msx);
     set_mouse_capture(&display, &msx, false);

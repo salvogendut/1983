@@ -176,7 +176,7 @@ checkpoints, the GeoBench/Nextor target, and licensing boundaries.
 
 | Key | Action |
 |-----|--------|
-| F4 | Save a PPM screenshot |
+| F4 | Save a PPM screenshot (with a camera-shutter sound) |
 | F5 | Reset |
 | F6 | Start or stop animated GIF recording |
 | F8 | Monitor/disassembler placeholder |
