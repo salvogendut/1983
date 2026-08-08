@@ -24,6 +24,28 @@
 #define MODEL_EDITOR_FIELDS 7
 #define MODEL_EDITOR_VISIBLE_ROWS 15
 
+#define OVERLAY_ABOUT_TEXT "1983 MSX/MSX2 emulator (c) 2026 salvogendut"
+
+typedef struct {
+    float x, y, w, h;               /* outer dialog box */
+    float ok_x, ok_y, ok_w, ok_h;   /* OK button */
+} OverlayAboutRects;
+
+/* About dialog geometry in logical pixels (debug-font cell ≈ 8px). Shared
+ * by the renderer and the mouse hit-test so the OK button is detected
+ * exactly where it is drawn. */
+static void about_rects(float lw, float lh, OverlayAboutRects *a) {
+    float tw = strlen(OVERLAY_ABOUT_TEXT) * 8;
+    a->w = tw + 24;
+    a->h = 8 + 6 + (8 + 8) + 16;
+    a->x = (lw - a->w) / 2.0f;
+    a->y = (lh - a->h) / 2.0f;
+    a->ok_w = 2 * 8 + 16;
+    a->ok_h = 8 + 8;
+    a->ok_x = a->x + (a->w - a->ok_w) / 2.0f;
+    a->ok_y = a->y + 8 + 8 + 6;
+}
+
 enum {
     GENERAL_MACHINE = 0,
     GENERAL_VIDEO_STANDARD,
@@ -35,6 +57,7 @@ enum {
     GENERAL_JOY_PORT_B,
     GENERAL_EXTRA_HARDWARE,
     GENERAL_TINKER,
+    GENERAL_ABOUT,
     GENERAL_ROWS
 };
 
@@ -623,6 +646,9 @@ static void item_text(const Overlay *overlay, int row,
                     snprintf(label, label_size, "Tinker");
                     snprintf(value, value_size, "%s",
                              toggle_name(config->tinker));
+                    break;
+                case GENERAL_ABOUT:
+                    snprintf(label, label_size, "About");
                     break;
             }
             break;
@@ -3070,6 +3096,9 @@ static void activate_item(Overlay *overlay) {
                 case GENERAL_TINKER:
                     config->tinker = !config->tinker;
                     break;
+                case GENERAL_ABOUT:
+                    overlay->state = OVERLAY_STATE_ABOUT;
+                    return;
             }
             break;
         case OVERLAY_MEDIA: {
@@ -3464,6 +3493,50 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
         }
         return true;
     }
+
+    /* About dialog: clicking its OK button closes it (Enter/Esc also work).
+     * Mirrors the viewport/scale math used in overlay_render so the hit
+     * region lines up exactly with where the button is drawn. */
+    if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+        overlay->state == OVERLAY_STATE_ABOUT &&
+        event->button.button == SDL_BUTTON_LEFT &&
+        overlay->display) {
+        DisplayLayout layout;
+        SDL_Renderer *renderer = overlay->display->renderer;
+        OverlayAboutRects a;
+        float scale;
+        float fit_scale;
+        float view_w;
+        float view_h;
+        float mx;
+        float my;
+        int output_w;
+        int output_h;
+
+        if (SDL_GetRenderOutputSize(renderer, &output_w, &output_h))
+            SDL_GetWindowSize(overlay->display->window,
+                              &output_w, &output_h);
+        display_calculate_layout(output_w, output_h, &layout);
+        fit_scale = (float)layout.screen_w / (float)DISPLAY_LOGICAL_W;
+        if ((float)layout.screen_h / (float)DISPLAY_LOGICAL_H < fit_scale)
+            fit_scale =
+                (float)layout.screen_h / (float)DISPLAY_LOGICAL_H;
+        scale = OVERLAY_RENDER_SCALE;
+        if (scale > fit_scale)
+            scale = fit_scale;
+        if (scale <= 0.0f)
+            scale = 1.0f;
+        view_w = (float)layout.screen_w / scale;
+        view_h = (float)layout.screen_h / scale;
+        mx = ((float)event->button.x - (float)layout.screen_x) / scale;
+        my = ((float)event->button.y - (float)layout.screen_y) / scale;
+        about_rects(view_w, view_h, &a);
+        if (mx >= a.ok_x && mx < a.ok_x + a.ok_w &&
+            my >= a.ok_y && my < a.ok_y + a.ok_h)
+            overlay->state = OVERLAY_STATE_MENU;
+        return true;
+    }
+
     if (event->type != SDL_EVENT_KEY_DOWN)
         return true;
 
@@ -3475,6 +3548,14 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
         } else if (key == SDLK_ESCAPE || key == SDLK_N) {
             close_overlay(overlay, false);
         }
+        return true;
+    }
+
+    /* ---- About dialog ---- */
+    if (overlay->state == OVERLAY_STATE_ABOUT) {
+        if (key == SDLK_RETURN || key == SDLK_KP_ENTER ||
+            key == SDLK_ESCAPE)
+            overlay->state = OVERLAY_STATE_MENU;
         return true;
     }
     if (overlay->state == OVERLAY_STATE_MACHINE) {
@@ -5127,6 +5208,35 @@ static void overlay_render_content(const Overlay *overlay,
         ui_draw_text(renderer,
                      box_x + (box_w - (float)strlen(line2) * 8.0f) * 0.5f,
                      box_y + 36.0f, line2, 220, 220, 120);
+    }
+
+    /* ---- About dialog ---- */
+    if (overlay->state == OVERLAY_STATE_ABOUT) {
+        OverlayAboutRects a;
+        about_rects(view_w, view_h, &a);
+
+        /* Dim everything behind the dialog */
+        ui_fill_rect(renderer, 0.0f, 0.0f, view_w, view_h,
+                     0, 0, 0, 140);
+        ui_fill_rect(renderer, a.x, a.y, a.w, a.h,
+                     25, 25, 60, 255);
+        ui_draw_rect(renderer, a.x, a.y, a.w, a.h,
+                     70, 90, 200);
+
+        ui_draw_text(renderer,
+                     a.x + (a.w - (float)strlen(OVERLAY_ABOUT_TEXT) * 8.0f) *
+                               0.5f,
+                     a.y + 8.0f, OVERLAY_ABOUT_TEXT,
+                     255, 255, 255);
+
+        /* OK button — closes the dialog when clicked (or Enter/Esc). */
+        ui_fill_rect(renderer, a.ok_x, a.ok_y, a.ok_w, a.ok_h,
+                     50, 60, 120, 255);
+        ui_draw_rect(renderer, a.ok_x, a.ok_y, a.ok_w, a.ok_h,
+                     120, 140, 220);
+        ui_draw_text(renderer,
+                     a.ok_x + (a.ok_w - 16.0f) * 0.5f,
+                     a.ok_y + 4.0f, "OK", 255, 255, 255);
     }
 }
 
