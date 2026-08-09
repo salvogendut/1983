@@ -15,8 +15,9 @@ and staying as multiplatform as SDL3 allows.
 > **Status:** MSX1 and MSX2 firmware and cartridge software run, with
 > TMS9918-family/V9938 video, AY/YM PSG audio, the international keyboard
 > matrix, dual cartridge slots, expanded slots, memory mapper, RTC, and
-> battery-backed CMOS. Native support covers the Philips WD2793 floppy and
-> raw DSK images, Sunrise IDE disks, and the SD Mapper V2 and MegaFlashROM
+> battery-backed CMOS. Native support covers catalogue-configured Philips
+> WD2793 floppy controllers with raw DSK images, Sunrise IDE disks, and the
+> SD Mapper V2 and MegaFlashROM
 > SCC+ SD cartridges — the official Nextor kernels boot GeoBench and other
 > media. An optional openMSXnet host bridge adds TCP/IP UNAPI under
 > `UNAPINET.COM`. Protected floppy formats, cassette recording, MSX-MUSIC,
@@ -37,7 +38,7 @@ and staying as multiplatform as SDL3 allows.
 - RP-5C01 clock with persistent per-machine CMOS and offline continuity.
 - Sunrise IDE, SD Mapper V2, and MegaFlashROM SCC+ SD cartridges with safe
   read-only/read-write raw images and Nextor boot.
-- WG2793 floppy, CAS cassette playback, GIF capture, and an optional
+- Philips WD2793 floppy, CAS cassette playback, GIF capture, and an optional
   openMSXnet TCP/IP bridge.
 - Headless execution plus deterministic component and firmware tests.
 

@@ -63,6 +63,9 @@ typedef struct {
     bool msx_music;
     bool kanji_rom;
 
+    /* Derived from the selected entry in 1983-models.conf. */
+    MsxFloppyConfig floppy;
+
     bool       tinker;
     bool       rtc_persistence;
     bool       cassette_audible_monitor;

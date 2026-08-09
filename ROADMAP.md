@@ -53,8 +53,9 @@ the 1984 and 1985 sibling emulators.
    Nextor/GeoBench boot checkpoint and GUI media workflow.
 9. Standard MSX CAS playback with cycle-timed transport, firmware-visible
    motor/comparator signals, persistent GUI/CLI media workflow, and Tape LED.
-10. Philips NMS 8250 WD2793 emulation with conventional raw DSK images,
-    safe sector writes/ejection, and optional Floppy B.
+10. Catalogue-configured Philips WD2793 emulation for NMS 8250 and generic
+    MSX/MSX2 layouts, with conventional raw DSK images, safe sector
+    writes/ejection, optional Floppy B, and cartridge-port reservation.
 11. Complete RP-5C01 control/test/calendar behavior with validated,
     atomically saved per-machine CMOS and offline clock continuity.
 12. Composite MSX SD Mapper V2 cartridge with expanded subslots, dual SPI SD

@@ -34,6 +34,17 @@ static void write_fixture(const char *path, const u8 *data, size_t size) {
     assert(fclose(file) == 0);
 }
 
+static void configure_philips_floppy(MsxMachine *msx) {
+    const MsxFloppyConfig config = {
+        .controller = MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793,
+        .primary_slot = 3,
+        .secondary_slot = 3,
+    };
+
+    assert(msx_configure_floppy(msx, &config) == 0);
+    assert(msx_floppy_supported(msx));
+}
+
 static void test_slot_bus_and_cpu(void) {
     MsxMachine *msx = malloc(sizeof(*msx));
     u8 bios[MSX_BIOS_SIZE];
@@ -448,18 +459,48 @@ static void test_atomic_firmware_set_and_eject(void) {
     assert(remove(bad_path) == 0);
 }
 
-static void test_msx2_expanded_slots_and_firmware(void) {
+static void test_msx2_configured_floppy_slots_and_firmware(void) {
+    static const char *image_path =
+        "diagnostics/test-msx2-configured-floppy.tmp";
     MsxMachine *msx = malloc(sizeof(*msx));
     u8 subrom[MSX_SUBROM_SIZE];
     u8 disk_rom[MSX_DISK_ROM_SIZE];
+    u8 first_sector[FLOPPY_SECTOR_SIZE];
+    FILE *image;
 
     assert(msx);
     for (size_t i = 0; i < sizeof(subrom); ++i)
         subrom[i] = (u8)(i ^ 0x5a);
     for (size_t i = 0; i < sizeof(disk_rom); ++i)
         disk_rom[i] = (u8)(i ^ 0xa5);
+    image = fopen(image_path, "wb");
+    assert(image);
+    for (unsigned logical = 0; logical < 1440; ++logical) {
+        u8 sector[FLOPPY_SECTOR_SIZE];
 
-    msx_init(msx, MSX_MODEL_PHILIPS_NMS8250, MSX_REGION_PAL, 128);
+        for (size_t i = 0; i < sizeof(sector); ++i)
+            sector[i] = (u8)(logical * 7u + i * 3u + 0x21u);
+        if (logical == 0) {
+            sector[11] = 0;
+            sector[12] = 2;
+            sector[19] = 0xa0;
+            sector[20] = 5;
+            sector[24] = 9;
+            sector[25] = 0;
+            sector[26] = 2;
+            sector[27] = 0;
+            memcpy(first_sector, sector, sizeof(first_sector));
+        }
+        assert(fwrite(sector, 1, sizeof(sector), image) ==
+               sizeof(sector));
+    }
+    assert(fclose(image) == 0);
+
+    msx_init(msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
+    assert(!msx_floppy_supported(msx));
+    assert(msx_mount_drive_a(
+               msx, image_path, FLOPPY_IMAGE_READ_ONLY) != 0);
+    configure_philips_floppy(msx);
     assert(msx_install_subrom(msx, subrom, sizeof(subrom)) == 0);
     assert(msx_install_disk_rom(msx, disk_rom, sizeof(disk_rom)) == 0);
     assert(msx->subrom_loaded);
@@ -467,7 +508,7 @@ static void test_msx2_expanded_slots_and_firmware(void) {
     assert(msx_install_subrom(msx, subrom, sizeof(subrom) - 1) < 0);
     assert(msx_install_disk_rom(msx, disk_rom, sizeof(disk_rom) - 1) < 0);
 
-    /* NMS 8250 primary slot 3 is expanded. Its reset selection exposes
+    /* MSX2 primary slot 3 is expanded. Its reset selection exposes
      * secondary slot 0, where the 16 KB Sub-ROM is mirrored on every page. */
     msx_io_write(msx, 0xa8, 0xff);
     assert(msx_memory_read(msx, 0x0000) == subrom[0]);
@@ -489,6 +530,21 @@ static void test_msx2_expanded_slots_and_firmware(void) {
     assert(msx_memory_read(msx, 0x7ff8) &
            WD2793_STATUS_NOT_READY);
     assert(msx_memory_read(msx, 0x7fff) == 0xff);
+
+    /* The configured generic MSX2 reaches real media through the same
+     * memory-mapped controller path as the stock NMS catalogue entry. */
+    assert(msx_mount_drive_a(
+               msx, image_path, FLOPPY_IMAGE_READ_ONLY) == 0);
+    msx_memory_write(msx, 0x7ffd, 0x80);
+    msx_memory_write(msx, 0x7ff9, 0);
+    msx_memory_write(msx, 0x7ffa, 1);
+    msx_memory_write(msx, 0x7ffc, 0);
+    msx_memory_write(msx, 0x7ff8, 0x80);
+    assert(msx_memory_read(msx, 0x7ff8) & WD2793_STATUS_BUSY);
+    for (size_t i = 0; i < sizeof(first_sector); ++i)
+        assert(msx_memory_read(msx, 0x7ffb) == first_sector[i]);
+    assert(!(msx_memory_read(msx, 0x7ff8) & WD2793_STATUS_BUSY));
+    assert(msx_drive_a_take_activity(msx));
     assert(msx_memory_read(msx, 0x8000) == subrom[0]);
     msx_memory_write(msx, 0xc000, 0x44);
     assert(msx_memory_read(msx, 0xc000) == 0x44);
@@ -530,6 +586,7 @@ static void test_msx2_expanded_slots_and_firmware(void) {
     assert(msx->ram[0x1c000] == 0);
     msx_destroy(msx);
     free(msx);
+    assert(remove(image_path) == 0);
 }
 
 static void test_vdp_ports_and_renderer(void) {
@@ -1141,6 +1198,7 @@ static void test_nms8250_checkpoint_if_available(void) {
     msx = malloc(sizeof(*msx));
     assert(msx);
     msx_init(msx, MSX_MODEL_PHILIPS_NMS8250, MSX_REGION_PAL, 128);
+    configure_philips_floppy(msx);
     assert(msx_load_bios(msx, bios_path) == 0);
     assert(msx_load_subrom(msx, subrom_path) == 0);
     assert(msx_load_disk_rom(msx, disk_rom_path) == 0);
@@ -1258,6 +1316,7 @@ static void test_nms8250_floppy_checkpoint_if_available(void) {
     assert(msx);
     msx_init(msx, MSX_MODEL_PHILIPS_NMS8250,
              MSX_REGION_PAL, 128);
+    configure_philips_floppy(msx);
     assert(msx_load_firmware_set(
                msx, bios_path, "", subrom_path,
                disk_rom_path) == 0);
@@ -1331,10 +1390,8 @@ static void test_nextor_sunrise_checkpoint_if_available(void) {
     msx_init(msx, MSX_MODEL_PHILIPS_NMS8250, MSX_REGION_PAL, 128);
     assert(msx_load_bios(msx, bios_path) == 0);
     assert(msx_load_subrom(msx, subrom_path) == 0);
-    /*
-     * The NMS 8250 disk ROM expects a WD2793, which is a separate future
-     * device. Keep it absent so the external Sunrise kernel owns boot.
-     */
+    /* Keep the built-in controller and disk ROM absent so the external
+     * Sunrise kernel owns this boot path. */
     assert(!msx->disk_rom_loaded);
     assert(msx_load_sunrise_ide(msx, 1, sunrise_path) == 0);
     assert(msx_mount_sunrise_disk(msx, image_path) == 0);
@@ -1564,7 +1621,7 @@ int main(void) {
     test_megaflash_expanded_cartridge_bus();
     test_ascii8_cpu_boot_checkpoint();
     test_atomic_firmware_set_and_eject();
-    test_msx2_expanded_slots_and_firmware();
+    test_msx2_configured_floppy_slots_and_firmware();
     test_vdp_ports_and_renderer();
     test_msx2_vdp_extended_ports();
     test_rtc_ports_and_reset_persistence();

@@ -20,6 +20,37 @@ always writes a per-user catalogue, seeding it with the complete active
 catalogue on the first saved edit so installed or repository copies remain
 untouched.
 
+Floppy hardware belongs to each catalogue model instead of being inferred
+from its display name or compiled hardware layout. A controller-equipped
+entry adds these keys alongside its disk ROM:
+
+```ini
+[model my-floppy-msx2]
+name = My floppy MSX2
+hardware = msx2
+bios = ROMS/MSX2.ROM
+subrom = ROMS/MSX2EXT.ROM
+disk_rom = ROMS/my-disk.rom
+floppy_controller = philips-wd2793
+floppy_primary_slot = 3
+floppy_secondary_slot = 3
+```
+
+`floppy_controller` is currently `none` or `philips-wd2793`. Primary slot 1
+or 2 represents a controller connected through that physical cartridge port
+and uses `floppy_secondary_slot = none`; the occupied port is then unavailable
+to other cartridges and extensions. On the expanded MSX2 layouts, primary
+slot 3 may instead use free secondary slot 1 or 3 for built-in hardware.
+Primary slot 0 and the RAM/Sub-ROM subslots are rejected because they would
+overlap existing machine devices. A disk ROM without a controller, a
+controller without its 16 KiB disk ROM, and incompatible slot mappings are
+reported by the model editor.
+
+Older catalogue entries using the NMS 8250 hardware layout are migrated in
+memory to the Philips controller at slot 3-3. Saving the catalogue writes the
+explicit keys. The selected model remains the source of this topology; it is
+not duplicated in `1983.conf`.
+
 ## Guest DOS files
 
 The local `DOS/` directory is reserved for guest DOS files. Its contents,

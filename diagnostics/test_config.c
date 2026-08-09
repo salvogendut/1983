@@ -33,6 +33,9 @@ int main(void) {
     assert(!config.drive_a_path[0]);
     assert(!config.drive_b_path[0]);
     assert(config.floppy_image_mode == FLOPPY_IMAGE_READ_ONLY);
+    assert(config.floppy.controller == MSX_FLOPPY_CONTROLLER_NONE);
+    assert(config.floppy.primary_slot == -1);
+    assert(config.floppy.secondary_slot == -1);
     assert(!config.ide_image_path[0]);
     assert(config.ide_image_mode == ATA_IMAGE_READ_ONLY);
     assert(!config.cassette_path[0]);
@@ -177,6 +180,9 @@ int main(void) {
                   "/disks/game-b.dsk") == 0);
     assert(loaded.floppy_image_mode ==
            FLOPPY_IMAGE_READ_WRITE);
+    /* The controller comes from the selected machine catalogue entry,
+     * rather than being duplicated in 1983.conf. */
+    assert(loaded.floppy.controller == MSX_FLOPPY_CONTROLLER_NONE);
     assert(strcmp(loaded.cassette_path,
                   "/tapes/software.cas") == 0);
     assert(loaded.sd_mapper);
@@ -241,6 +247,27 @@ int main(void) {
     config_normalize(&loaded);
     assert(loaded.main_input == INPUT_PORT_A);
     assert(loaded.joy_port_device[0] == JOY_PORT_JOYSTICK);
+
+    /* A catalogue-defined controller can occupy either physical
+     * cartridge port. The remaining port still accepts one extension. */
+    loaded.sunrise_ide = true;
+    loaded.sd_mapper = true;
+    loaded.megaflash = true;
+    loaded.floppy.controller =
+        MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
+    loaded.floppy.primary_slot = 2;
+    loaded.floppy.secondary_slot = -1;
+    config_normalize(&loaded);
+    assert(loaded.sunrise_ide);
+    assert(!loaded.sd_mapper);
+    assert(!loaded.megaflash);
+    assert(config_cartridge_extension_count(&loaded) == 2);
+    assert(strcmp(config_cartridge_slot_owner(&loaded, 0),
+                  "Sunrise IDE") == 0);
+    assert(strcmp(config_cartridge_slot_owner(&loaded, 1),
+                  "Floppy controller") == 0);
+    assert(!config_cartridge_slot_available(&loaded, 0));
+    assert(!config_cartridge_slot_available(&loaded, 1));
     assert(remove(path) == 0);
 
     puts("configuration media tests passed");

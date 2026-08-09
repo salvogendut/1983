@@ -238,6 +238,8 @@ int main(void) {
     const char *editor_path = "diagnostics/test-model-editor.tmp";
     const char *machine_bios_path = "diagnostics/test-machine-bios.tmp";
     const char *machine_subrom_path = "diagnostics/test-machine-subrom.tmp";
+    const char *machine_disk_rom_path =
+        "diagnostics/test-machine-disk-rom.tmp";
     const char *sunrise_rom_path = "diagnostics/test-sunrise-rom.tmp";
     const char *sunrise_rom_path_2 = "diagnostics/test-sunrise-rom-2.tmp";
     const char *ide_image_path = "diagnostics/test-sunrise-disk.tmp";
@@ -304,6 +306,11 @@ int main(void) {
     assert(fixture);
     assert(fwrite(sunrise_rom, 1, MSX_SUBROM_SIZE, fixture) ==
            MSX_SUBROM_SIZE);
+    assert(fclose(fixture) == 0);
+    fixture = fopen(machine_disk_rom_path, "wb");
+    assert(fixture);
+    assert(fwrite(sunrise_rom, 1, MSX_DISK_ROM_SIZE, fixture) ==
+           MSX_DISK_ROM_SIZE);
     assert(fclose(fixture) == 0);
     fixture = fopen(ide_image_path, "wb");
     assert(fixture);
@@ -377,19 +384,31 @@ int main(void) {
         snprintf(models.entries[nms8250_index].subrom_path,
                  sizeof(models.entries[nms8250_index].subrom_path), "%s",
                  machine_subrom_path);
+        snprintf(models.entries[nms8250_index].disk_rom_path,
+                 sizeof(models.entries[nms8250_index].disk_rom_path),
+                 "diagnostics/missing-machine-disk-rom.rom");
     }
     snprintf(models.entries[models.count].id,
-             sizeof(models.entries[models.count].id), "custom-nms8250");
+             sizeof(models.entries[models.count].id),
+             "custom-floppy-msx2");
     snprintf(models.entries[models.count].name,
-             sizeof(models.entries[models.count].name), "Custom NMS 8250");
+             sizeof(models.entries[models.count].name),
+             "Custom floppy MSX2");
     models.entries[models.count].hardware =
-        MSX_MODEL_PHILIPS_NMS8250;
+        MSX_MODEL_GENERIC_MSX2;
+    models.entries[models.count].floppy.controller =
+        MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
+    models.entries[models.count].floppy.primary_slot = 2;
+    models.entries[models.count].floppy.secondary_slot = -1;
     snprintf(models.entries[models.count].bios_path,
              sizeof(models.entries[models.count].bios_path), "%s",
              machine_bios_path);
     snprintf(models.entries[models.count].subrom_path,
              sizeof(models.entries[models.count].subrom_path), "%s",
              machine_subrom_path);
+    snprintf(models.entries[models.count].disk_rom_path,
+             sizeof(models.entries[models.count].disk_rom_path), "%s",
+             machine_disk_rom_path);
     ++models.count;
     snprintf(models.edit_path, sizeof(models.edit_path),
              "%s", editor_path);
@@ -830,6 +849,29 @@ int main(void) {
                       &models, "new-model")->name,
                   "Test model") == 0);
 
+    /* The editor exposes controller topology independently of the
+     * hardware profile and refuses an incomplete controller model. */
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_MODEL_EDIT);
+    send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.model_edit_field == 2);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.model_edit.hardware == MSX_MODEL_GENERIC_MSX2);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.model_edit_field == 3);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.model_edit.floppy.controller ==
+           MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793);
+    assert(overlay.model_edit.floppy.primary_slot == 3);
+    assert(overlay.model_edit.floppy.secondary_slot == 3);
+    send_key(&overlay, SDLK_F2);
+    assert(overlay.state == OVERLAY_STATE_MODEL_EDIT);
+    assert(strstr(overlay.model_editor_error, "disk ROM"));
+    send_key(&overlay, SDLK_LEFT);
+    send_key(&overlay, SDLK_F2);
+    assert(overlay.state == OVERLAY_STATE_MODEL_LIST);
+
     send_key(&overlay, SDLK_ESCAPE);
     assert(overlay.state == OVERLAY_STATE_MENU);
     send_key(&overlay, SDLK_ESCAPE);
@@ -843,10 +885,13 @@ int main(void) {
     config_defaults(&config);
     config.model = MSX_MODEL_PHILIPS_NMS8250;
     snprintf(config.machine_id, sizeof(config.machine_id), "nms8250");
+    config.floppy = models.entries[
+        model_catalog_index(&models, "nms8250")].floppy;
     config.extra_hardware = true;
     config.tinker = true;
     msx_configure(&msx, config.model, config.region, 128);
     overlay_init(&overlay, &config, &models, &display, &msx, NULL, NULL);
+    assert(msx_floppy_supported(&msx));
     send_key(&overlay, SDLK_F9);
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.section == OVERLAY_MEDIA);
@@ -1213,7 +1258,7 @@ int main(void) {
     /* General applies an editor-defined firmware set without file pickers. */
     {
         size_t model_index = model_catalog_index(
-            &models, "custom-nms8250");
+            &models, "custom-floppy-msx2");
         size_t cbios_index = model_catalog_index(&models, "cbios");
         size_t nms8250_index = model_catalog_index(&models, "nms8250");
         char custom_bios_path[PATH_MAX];
@@ -1229,6 +1274,12 @@ int main(void) {
         config.tinker = true;
         msx_configure(&msx, config.model, config.region,
                       config.memory_kb);
+        assert(msx_install_cartridge_slot(
+                   &msx, 1, cartridge, sizeof(cartridge),
+                   MSX_CART_MAPPER_LINEAR) == 0);
+        snprintf(config.cartridge_path[1],
+                 sizeof(config.cartridge_path[1]),
+                 "test-cartridge-2.rom");
         overlay_init(&overlay, &config, &models, &display, &msx, NULL, NULL);
         send_key(&overlay, SDLK_F9);
         send_key(&overlay, SDLK_RETURN);
@@ -1237,13 +1288,19 @@ int main(void) {
         send_key(&overlay, SDLK_RETURN);
         assert(overlay.state == OVERLAY_STATE_MENU);
         assert(overlay.dialog_target == OVERLAY_DIALOG_NONE);
-        assert(config.model == MSX_MODEL_PHILIPS_NMS8250);
-        assert(strcmp(config.machine_id, "custom-nms8250") == 0);
+        assert(config.model == MSX_MODEL_GENERIC_MSX2);
+        assert(strcmp(config.machine_id, "custom-floppy-msx2") == 0);
         assert(config.memory_kb == 128);
         assert(msx.bios_loaded);
         assert(msx.subrom_loaded);
-        assert(!msx.disk_rom_loaded);
-        assert(!config.disk_rom_path[0]);
+        assert(msx.disk_rom_loaded);
+        assert(msx_floppy_supported(&msx));
+        assert(strcmp(config.disk_rom_path,
+                      models.entries[model_index].disk_rom_path) == 0);
+        assert(strcmp(config_cartridge_slot_owner(&config, 1),
+                      "Floppy controller") == 0);
+        assert(!config.cartridge_path[1][0]);
+        assert(!msx_get_cartridge(&msx, 1)->loaded);
 
         snprintf(loaded_bios_path, sizeof(loaded_bios_path), "%s",
                  config.bios_path);
@@ -1295,8 +1352,8 @@ int main(void) {
                  custom_bios_path);
         send_key(&overlay, SDLK_RETURN);
         assert(overlay.state == OVERLAY_STATE_MENU);
-        assert(config.model == MSX_MODEL_PHILIPS_NMS8250);
-        assert(strcmp(config.machine_id, "custom-nms8250") == 0);
+        assert(config.model == MSX_MODEL_GENERIC_MSX2);
+        assert(strcmp(config.machine_id, "custom-floppy-msx2") == 0);
         memcpy(active_bios, msx.bios, sizeof(active_bios));
         snprintf(blocked_rtc_path, sizeof(blocked_rtc_path), "%s/rtc",
                  machine_bios_path);
@@ -1313,9 +1370,9 @@ int main(void) {
         send_key(&overlay, SDLK_RETURN);
         assert(overlay.state == OVERLAY_STATE_MACHINE);
         assert(overlay.dialog_target == OVERLAY_DIALOG_NONE);
-        assert(config.model == MSX_MODEL_PHILIPS_NMS8250);
-        assert(strcmp(config.machine_id, "custom-nms8250") == 0);
-        assert(msx.profile->model == MSX_MODEL_PHILIPS_NMS8250);
+        assert(config.model == MSX_MODEL_GENERIC_MSX2);
+        assert(strcmp(config.machine_id, "custom-floppy-msx2") == 0);
+        assert(msx.profile->model == MSX_MODEL_GENERIC_MSX2);
         assert(memcmp(active_bios, msx.bios, sizeof(active_bios)) == 0);
         assert(overlay.dirty == active_dirty);
     }
@@ -1323,6 +1380,7 @@ int main(void) {
     assert(remove(editor_path) == 0);
     assert(remove(machine_bios_path) == 0);
     assert(remove(machine_subrom_path) == 0);
+    assert(remove(machine_disk_rom_path) == 0);
     assert(remove(sunrise_rom_path) == 0);
     assert(remove(sunrise_rom_path_2) == 0);
     assert(remove(ide_image_path) == 0);

@@ -445,6 +445,87 @@ bool msx_model_is_msx2(MsxModel model) {
            model == MSX_MODEL_PHILIPS_NMS8250;
 }
 
+const char *msx_floppy_controller_name(MsxFloppyController controller) {
+    switch (controller) {
+        case MSX_FLOPPY_CONTROLLER_NONE:
+            return "None";
+        case MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793:
+            return "Philips WD2793";
+        case MSX_FLOPPY_CONTROLLER_COUNT:
+            break;
+    }
+    return "Unsupported";
+}
+
+const char *msx_floppy_controller_config_name(
+    MsxFloppyController controller) {
+    switch (controller) {
+        case MSX_FLOPPY_CONTROLLER_NONE:
+            return "none";
+        case MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793:
+            return "philips-wd2793";
+        case MSX_FLOPPY_CONTROLLER_COUNT:
+            break;
+    }
+    return "none";
+}
+
+bool msx_floppy_controller_from_name(
+    const char *name, MsxFloppyController *controller) {
+    if (!name || !controller)
+        return false;
+    if (strcasecmp(name, "none") == 0 ||
+        strcasecmp(name, "off") == 0) {
+        *controller = MSX_FLOPPY_CONTROLLER_NONE;
+        return true;
+    }
+    if (strcasecmp(name, "philips-wd2793") == 0 ||
+        strcasecmp(name, "philips") == 0 ||
+        strcasecmp(name, "wd2793") == 0) {
+        *controller = MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
+        return true;
+    }
+    return false;
+}
+
+bool msx_floppy_config_valid(MsxModel model,
+                             const MsxFloppyConfig *config) {
+    const MsxProfile *profile;
+    bool expanded;
+
+    if (!config ||
+        (unsigned)config->controller >= MSX_FLOPPY_CONTROLLER_COUNT)
+        return false;
+    if (config->controller == MSX_FLOPPY_CONTROLLER_NONE)
+        return true;
+    if (config->primary_slot == 1 || config->primary_slot == 2)
+        return config->secondary_slot == -1;
+    profile = msx_profile(model);
+    expanded = profile->expanded_slots && config->primary_slot == 3;
+    if (expanded)
+        return config->secondary_slot == 1 ||
+               config->secondary_slot == 3;
+    return false;
+}
+
+int msx_configure_floppy(MsxMachine *msx,
+                         const MsxFloppyConfig *config) {
+    if (!msx || !config ||
+        !msx_floppy_config_valid(msx->profile->model, config))
+        return -1;
+    msx->floppy_config = *config;
+    if (config->controller == MSX_FLOPPY_CONTROLLER_NONE) {
+        msx->floppy_config.primary_slot = -1;
+        msx->floppy_config.secondary_slot = -1;
+    }
+    wd2793_reset(&msx->fdc);
+    return 0;
+}
+
+const MsxFloppyConfig *msx_floppy_config(const MsxMachine *msx) {
+    return msx ? &msx->floppy_config : NULL;
+}
+
 const char *msx_region_name(MsxRegion region) {
     return region == MSX_REGION_NTSC ? "NTSC 60 Hz" : "PAL 50 Hz";
 }
@@ -604,6 +685,13 @@ void msx_configure(MsxMachine *msx, MsxModel model, MsxRegion region,
     if (!msx)
         return;
     msx->profile = msx_profile(model);
+    if (!msx_floppy_config_valid(
+            msx->profile->model, &msx->floppy_config)) {
+        msx->floppy_config.controller =
+            MSX_FLOPPY_CONTROLLER_NONE;
+        msx->floppy_config.primary_slot = -1;
+        msx->floppy_config.secondary_slot = -1;
+    }
     psg_set_variant(&msx->psg, msx->profile->psg_variant);
     msx->region = region == MSX_REGION_NTSC
                 ? MSX_REGION_NTSC : MSX_REGION_PAL;
@@ -638,6 +726,9 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     sd_mapper_init(&msx->sd_mapper);
     sunrise_init(&msx->sunrise);
     wd2793_init(&msx->fdc);
+    msx->floppy_config.controller = MSX_FLOPPY_CONTROLLER_NONE;
+    msx->floppy_config.primary_slot = -1;
+    msx->floppy_config.secondary_slot = -1;
     msx->megaflash_slot = -1;
     msx->sd_mapper_slot = -1;
     msx->sunrise_slot = -1;
@@ -735,6 +826,20 @@ static unsigned selected_subslot(const MsxMachine *msx, unsigned primary,
     return (msx->secondary_slot[primary] >> (page * 2)) & 3;
 }
 
+static bool floppy_slot_selected(const MsxMachine *msx,
+                                 unsigned primary, u16 address) {
+    const MsxFloppyConfig *config = &msx->floppy_config;
+
+    if (config->controller == MSX_FLOPPY_CONTROLLER_NONE ||
+        primary != (unsigned)config->primary_slot)
+        return false;
+    if (!slot_is_expanded(msx, primary))
+        return config->secondary_slot == -1;
+    return config->secondary_slot >= 0 &&
+           selected_subslot(msx, primary, address) ==
+               (unsigned)config->secondary_slot;
+}
+
 static size_t mapper_ram_size(const MsxMachine *msx) {
     size_t size = (size_t)msx->ram_kb * 1024;
 
@@ -793,6 +898,14 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
             return megaflash_secondary_read(&msx->megaflash);
         return msx->secondary_slot[primary] ^ 0xff;
     }
+    if (floppy_slot_selected(msx, primary, address)) {
+        if (wd2793_handles_address(address))
+            return wd2793_read_memory(&msx->fdc, address);
+        if (msx->disk_rom_loaded &&
+            address >= 0x4000 && address < 0x8000)
+            return msx->disk_rom[address - 0x4000];
+        return 0xff;
+    }
 
     switch (primary) {
         case 0:
@@ -826,13 +939,6 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
                 return msx->subrom[address & 0x3fff];
             if (secondary == 2 && msx_has_memory_mapper(msx))
                 return msx->ram[mapper_address(msx, address)];
-            if (secondary == 3 &&
-                msx_floppy_supported(msx) &&
-                wd2793_handles_address(address))
-                return wd2793_read_memory(&msx->fdc, address);
-            if (secondary == 3 && msx->disk_rom_loaded &&
-                address >= 0x4000 && address < 0x8000)
-                return msx->disk_rom[address - 0x4000];
             break;
         }
         default:
@@ -857,6 +963,11 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
             megaflash_secondary_write(&msx->megaflash, value);
         else
             msx->secondary_slot[primary] = value;
+        return;
+    }
+    if (floppy_slot_selected(msx, primary, address)) {
+        if (wd2793_handles_address(address))
+            wd2793_write_memory(&msx->fdc, address, value);
         return;
     }
     if (primary == 1 || primary == 2) {
@@ -885,10 +996,6 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
     secondary = selected_subslot(msx, primary, address);
     if (secondary == 2 && msx_has_memory_mapper(msx))
         msx->ram[mapper_address(msx, address)] = value;
-    else if (secondary == 3 &&
-             msx_floppy_supported(msx) &&
-             wd2793_handles_address(address))
-        wd2793_write_memory(&msx->fdc, address, value);
 }
 
 u8 msx_io_read(MsxMachine *msx, u16 port) {
@@ -1957,8 +2064,9 @@ const char *msx_rtc_persistence_path(const MsxMachine *msx) {
 }
 
 bool msx_floppy_supported(const MsxMachine *msx) {
-    return msx && msx->profile &&
-           msx->profile->model == MSX_MODEL_PHILIPS_NMS8250;
+    return msx &&
+           msx->floppy_config.controller !=
+               MSX_FLOPPY_CONTROLLER_NONE;
 }
 
 int msx_mount_drive_a(MsxMachine *msx, const char *path,

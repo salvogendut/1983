@@ -21,7 +21,7 @@
 #define OVERLAY_VALUE_X 188
 #define OVERLAY_FIRST_Y 48
 #define OVERLAY_RENDER_SCALE 1.5f
-#define MODEL_EDITOR_FIELDS 7
+#define MODEL_EDITOR_FIELDS 10
 #define MODEL_EDITOR_VISIBLE_ROWS 15
 
 #define OVERLAY_ABOUT_TEXT "1983 MSX/MSX2 emulator (c) 2026 salvogendut"
@@ -107,6 +107,9 @@ enum {
     MODEL_FIELD_ID = 0,
     MODEL_FIELD_NAME,
     MODEL_FIELD_HARDWARE,
+    MODEL_FIELD_FLOPPY_CONTROLLER,
+    MODEL_FIELD_FLOPPY_PRIMARY_SLOT,
+    MODEL_FIELD_FLOPPY_SECONDARY_SLOT,
     MODEL_FIELD_BIOS,
     MODEL_FIELD_LOGO,
     MODEL_FIELD_SUBROM,
@@ -400,8 +403,7 @@ static void drive_a_text(const Overlay *overlay,
     const char *path = overlay->config->drive_a_path;
 
     if (!msx_floppy_supported(overlay->msx)) {
-        snprintf(value, value_size,
-                 "[requires Philips NMS 8250]");
+        snprintf(value, value_size, "[no floppy controller]");
     } else if (msx_drive_a_mounted(overlay->msx)) {
         const char *state =
             msx_drive_a_has_error(overlay->msx)
@@ -428,8 +430,7 @@ static void drive_b_text(const Overlay *overlay,
     const char *path = overlay->config->drive_b_path;
 
     if (!msx_floppy_supported(overlay->msx)) {
-        snprintf(value, value_size,
-                 "[requires Philips NMS 8250]");
+        snprintf(value, value_size, "[no floppy controller]");
     } else if (msx_drive_b_mounted(overlay->msx)) {
         const char *state =
             msx_drive_b_has_error(overlay->msx)
@@ -891,8 +892,9 @@ static void configure_leds(const Config *config, const MsxMachine *msx) {
     }
     leds_set_enabled(LED_CAPS, true);
     leds_set_enabled(LED_KANA, true);
-    leds_set_enabled(LED_FDC_A, true);
-    leds_set_enabled(LED_FDC_B, config->second_drive);
+    leds_set_enabled(LED_FDC_A, msx_floppy_supported(msx));
+    leds_set_enabled(LED_FDC_B,
+                     msx_floppy_supported(msx) && config->second_drive);
     leds_set_enabled(LED_TAPE, true);
     leds_set_enabled(LED_IDE, config->sunrise_ide);
     leds_set_enabled(LED_SD_A,
@@ -943,12 +945,21 @@ static bool sync_rtc_persistence(Overlay *overlay) {
 static void apply_config(Overlay *overlay) {
     Config *config = overlay->config;
     MsxMachine *msx = overlay->msx;
-    bool machine_changed =
+    const MsxFloppyConfig *active_floppy;
+    bool machine_changed;
+    bool floppy_changed;
+
+    config_normalize(config);
+    active_floppy = msx_floppy_config(msx);
+    machine_changed =
         msx->profile->model != config->model ||
         msx->region != config->region ||
         msx->ram_kb != config->memory_kb;
-
-    config_normalize(config);
+    floppy_changed =
+        !active_floppy ||
+        active_floppy->controller != config->floppy.controller ||
+        active_floppy->primary_slot != config->floppy.primary_slot ||
+        active_floppy->secondary_slot != config->floppy.secondary_slot;
     if (machine_changed) {
         if (msx_set_rtc_persistence(
                 msx, "", rtc_host_seconds()) != 0) {
@@ -962,6 +973,14 @@ static void apply_config(Overlay *overlay) {
         display_prepare_scaffold(overlay->display, msx);
         display_set_title(overlay->display, msx,
                           selected_model_name(overlay));
+    }
+    if ((machine_changed || floppy_changed) &&
+        msx_configure_floppy(msx, &config->floppy) != 0) {
+        notify_post("Invalid floppy controller configuration");
+        config->floppy.controller = MSX_FLOPPY_CONTROLLER_NONE;
+        config->floppy.primary_slot = -1;
+        config->floppy.secondary_slot = -1;
+        (void)msx_configure_floppy(msx, &config->floppy);
     }
     (void)sync_rtc_persistence(overlay);
     display_set_smoothing(overlay->display, config->smoothing);
@@ -1311,7 +1330,7 @@ static bool restore_floppies(Overlay *overlay) {
                     msx_drive_b_error(overlay->msx));
         return false;
     }
-    if (saved->model != MSX_MODEL_PHILIPS_NMS8250)
+    if (saved->floppy.controller == MSX_FLOPPY_CONTROLLER_NONE)
         return true;
     if (saved->drive_a_path[0] &&
         msx_mount_drive_a(
@@ -1536,7 +1555,7 @@ static void open_drive_a_dialog(Overlay *overlay) {
         ? overlay->config->last_media_dir : NULL;
 
     if (!msx_floppy_supported(overlay->msx)) {
-        notify_post("Floppy A requires the Philips NMS 8250 model");
+        notify_post("The selected machine has no floppy controller");
         return;
     }
     if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
@@ -1561,11 +1580,11 @@ static void open_drive_b_dialog(Overlay *overlay) {
         ? overlay->config->last_media_dir : NULL;
 
     if (!overlay->config->second_drive) {
-        notify_post("Enable the second floppy in Advanced first");
+        notify_post("Enable the second floppy in Extensions first");
         return;
     }
     if (!msx_floppy_supported(overlay->msx)) {
-        notify_post("Floppy B requires the Philips NMS 8250 model");
+        notify_post("The selected machine has no floppy controller");
         return;
     }
     if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
@@ -1845,6 +1864,23 @@ static bool ide_image_file_is_valid(const char *path) {
     return valid;
 }
 
+static const char *model_transition_disabled_extension(
+    const Config *current, const Config *target) {
+    if (current->sunrise_ide && !target->sunrise_ide)
+        return "Sunrise IDE";
+    if (current->sd_mapper && !target->sd_mapper)
+        return "SD Mapper V2";
+    if (current->megaflash && !target->megaflash)
+        return "MegaFlashROM SCC+ SD";
+    if (current->scc && !target->scc)
+        return "Konami SCC";
+    if (current->msx_music && !target->msx_music)
+        return "MSX-MUSIC";
+    if (current->rs232 && !target->rs232)
+        return "RS-232C";
+    return NULL;
+}
+
 static void select_machine(Overlay *overlay) {
     const ModelDefinition *definition =
         &overlay->models->entries[overlay->machine_row];
@@ -1852,10 +1888,13 @@ static void select_machine(Overlay *overlay) {
     Config *config = overlay->config;
     Config target_config = *config;
     char target_rtc_path[PATH_MAX];
+    char model_error[160];
+    const char *blocked_extension;
     int target_ram = msx_default_ram_kb(definition->hardware);
     bool rtc_changed;
 
     target_config.model = definition->hardware;
+    target_config.floppy = definition->floppy;
     snprintf(target_config.machine_id, sizeof(target_config.machine_id),
              "%s", definition->id);
     target_config.memory_kb = target_ram;
@@ -1868,6 +1907,23 @@ static void select_machine(Overlay *overlay) {
     }
     rtc_changed = strcmp(
         msx_rtc_persistence_path(overlay->msx), target_rtc_path) != 0;
+
+    if (!model_definition_validate(
+            overlay->models, definition,
+            (size_t)overlay->machine_row, false,
+            model_error, sizeof(model_error))) {
+        notify_post("Invalid %s model: %s",
+                    definition->name, model_error);
+        return;
+    }
+    config_normalize(&target_config);
+    blocked_extension = model_transition_disabled_extension(
+        config, &target_config);
+    if (blocked_extension) {
+        notify_post("Disconnect %s before selecting %s",
+                    blocked_extension, definition->name);
+        return;
+    }
 
     if (!firmware_file_has_size(definition->bios_path, MSX_BIOS_SIZE)) {
         notify_post("Invalid BIOS for %s; edit the machine model",
@@ -1911,7 +1967,27 @@ static void select_machine(Overlay *overlay) {
         return;
     }
 
+    for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+        const char *old_owner =
+            config_cartridge_slot_owner(config, slot);
+        const char *new_owner =
+            config_cartridge_slot_owner(&target_config, slot);
+
+        if (!new_owner ||
+            (old_owner && strcmp(old_owner, new_owner) == 0))
+            continue;
+        if (config->cartridge_path[slot][0] ||
+            msx_get_cartridge(overlay->msx, slot)->loaded) {
+            msx_eject_cartridge(overlay->msx, slot);
+            config->cartridge_path[slot][0] = '\0';
+            notify_post("%s reserved cartridge slot %u; "
+                        "mounted cartridge ejected",
+                        new_owner, slot + 1);
+        }
+    }
+
     config->model = definition->hardware;
+    config->floppy = definition->floppy;
     snprintf(config->machine_id, sizeof(config->machine_id),
               "%s", definition->id);
     config->memory_kb = target_ram;
@@ -1926,6 +2002,7 @@ static void select_machine(Overlay *overlay) {
     overlay->dirty = true;
     overlay->state = OVERLAY_STATE_MENU;
     apply_config(overlay);
+    reconcile_extension_slots(overlay);
     display_prepare_scaffold(overlay->display, overlay->msx);
     display_set_title(overlay->display, overlay->msx,
                       definition->name);
@@ -2027,8 +2104,105 @@ static void begin_model_edit(Overlay *overlay, int index,
         snprintf(overlay->model_edit.name,
                  sizeof(overlay->model_edit.name), "New model");
         overlay->model_edit.hardware = MSX_MODEL_GENERIC_MSX1;
+        overlay->model_edit.floppy.controller =
+            MSX_FLOPPY_CONTROLLER_NONE;
+        overlay->model_edit.floppy.primary_slot = -1;
+        overlay->model_edit.floppy.secondary_slot = -1;
     }
     overlay->state = OVERLAY_STATE_MODEL_EDIT;
+}
+
+static void normalize_model_edit_floppy(ModelDefinition *definition) {
+    const MsxProfile *profile;
+
+    if (definition->floppy.controller ==
+            MSX_FLOPPY_CONTROLLER_NONE) {
+        definition->floppy.primary_slot = -1;
+        definition->floppy.secondary_slot = -1;
+        return;
+    }
+    profile = msx_profile(definition->hardware);
+    if (definition->floppy.primary_slot == 1 ||
+        definition->floppy.primary_slot == 2) {
+        definition->floppy.secondary_slot = -1;
+    } else if (profile->expanded_slots) {
+        definition->floppy.primary_slot = 3;
+        if (definition->floppy.secondary_slot != 1 &&
+            definition->floppy.secondary_slot != 3)
+            definition->floppy.secondary_slot = 3;
+    } else {
+        definition->floppy.primary_slot = 2;
+        definition->floppy.secondary_slot = -1;
+    }
+}
+
+static bool model_field_is_choice(int field) {
+    return field == MODEL_FIELD_HARDWARE ||
+           field == MODEL_FIELD_FLOPPY_CONTROLLER ||
+           field == MODEL_FIELD_FLOPPY_PRIMARY_SLOT ||
+           field == MODEL_FIELD_FLOPPY_SECONDARY_SLOT;
+}
+
+static void change_model_choice(Overlay *overlay, int direction) {
+    ModelDefinition *definition = &overlay->model_edit;
+
+    switch (overlay->model_edit_field) {
+        case MODEL_FIELD_HARDWARE: {
+            int hardware = (int)definition->hardware + direction;
+
+            if (hardware < 0)
+                hardware = MSX_MODEL_COUNT - 1;
+            if (hardware >= MSX_MODEL_COUNT)
+                hardware = 0;
+            definition->hardware = (MsxModel)hardware;
+            normalize_model_edit_floppy(definition);
+            break;
+        }
+        case MODEL_FIELD_FLOPPY_CONTROLLER: {
+            int controller =
+                (int)definition->floppy.controller + direction;
+
+            if (controller < 0)
+                controller = MSX_FLOPPY_CONTROLLER_COUNT - 1;
+            if (controller >= MSX_FLOPPY_CONTROLLER_COUNT)
+                controller = 0;
+            definition->floppy.controller =
+                (MsxFloppyController)controller;
+            normalize_model_edit_floppy(definition);
+            break;
+        }
+        case MODEL_FIELD_FLOPPY_PRIMARY_SLOT:
+            if (definition->floppy.controller ==
+                    MSX_FLOPPY_CONTROLLER_NONE)
+                break;
+            if (msx_profile(definition->hardware)->expanded_slots) {
+                definition->floppy.primary_slot += direction;
+                if (definition->floppy.primary_slot < 1)
+                    definition->floppy.primary_slot = 3;
+                if (definition->floppy.primary_slot > 3)
+                    definition->floppy.primary_slot = 1;
+            } else {
+                definition->floppy.primary_slot =
+                    definition->floppy.primary_slot == 1 ? 2 : 1;
+            }
+            normalize_model_edit_floppy(definition);
+            break;
+        case MODEL_FIELD_FLOPPY_SECONDARY_SLOT: {
+            const MsxProfile *profile =
+                msx_profile(definition->hardware);
+
+            if (definition->floppy.controller ==
+                    MSX_FLOPPY_CONTROLLER_NONE ||
+                !profile->expanded_slots ||
+                definition->floppy.primary_slot != 3)
+                break;
+            definition->floppy.secondary_slot =
+                definition->floppy.secondary_slot == 1 ? 3 : 1;
+            break;
+        }
+        default:
+            break;
+    }
 }
 
 static char *model_edit_text_field(Overlay *overlay, int field,
@@ -2254,6 +2428,7 @@ static bool toggle_cartridge_extension(Overlay *overlay,
                                        bool *enabled,
                                        const char *name) {
     Config before = *overlay->config;
+    bool slot_available = false;
 
     if (*enabled) {
         *enabled = false;
@@ -2261,8 +2436,10 @@ static bool toggle_cartridge_extension(Overlay *overlay,
         notify_post("%s disconnected", name);
         return true;
     }
-    if (config_cartridge_extension_count(overlay->config) >=
-        MSX_CARTRIDGE_SLOTS) {
+    for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot)
+        if (config_cartridge_slot_available(overlay->config, slot))
+            slot_available = true;
+    if (!slot_available) {
         notify_post("Cannot connect %s: both cartridge slots are in use",
                     name);
         return false;
@@ -3008,7 +3185,7 @@ static bool toggle_second_floppy(Overlay *overlay) {
         return true;
     }
     if (!msx_floppy_supported(overlay->msx)) {
-        notify_post("Second floppy requires the Philips NMS 8250 model");
+        notify_post("The selected machine has no floppy controller");
         return false;
     }
     config->second_drive = true;
@@ -3773,17 +3950,10 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
             if (overlay->model_edit_field >= MODEL_EDITOR_FIELDS)
                 overlay->model_edit_field = 0;
         } else if ((key == SDLK_LEFT || key == SDLK_RIGHT) &&
-                   overlay->model_edit_field ==
-                       MODEL_FIELD_HARDWARE) {
-            int direction = key == SDLK_RIGHT ? 1 : -1;
-            int hardware =
-                (int)overlay->model_edit.hardware + direction;
-
-            if (hardware < 0)
-                hardware = MSX_MODEL_COUNT - 1;
-            if (hardware >= MSX_MODEL_COUNT)
-                hardware = 0;
-            overlay->model_edit.hardware = (MsxModel)hardware;
+                   model_field_is_choice(
+                       overlay->model_edit_field)) {
+            change_model_choice(
+                overlay, key == SDLK_RIGHT ? 1 : -1);
         } else if (key == SDLK_F2) {
             save_model_edit(overlay);
         } else if (key == SDLK_RETURN ||
@@ -3795,10 +3965,10 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                         overlay, overlay->model_edit_field);
                     break;
                 case MODEL_FIELD_HARDWARE:
-                    overlay->model_edit.hardware =
-                        (MsxModel)(
-                            (overlay->model_edit.hardware + 1) %
-                            MSX_MODEL_COUNT);
+                case MODEL_FIELD_FLOPPY_CONTROLLER:
+                case MODEL_FIELD_FLOPPY_PRIMARY_SLOT:
+                case MODEL_FIELD_FLOPPY_SECONDARY_SLOT:
+                    change_model_choice(overlay, 1);
                     break;
                 case MODEL_FIELD_BIOS:
                     open_model_firmware_dialog(
@@ -3818,8 +3988,8 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                     break;
             }
         } else if (key == SDLK_E &&
-                   overlay->model_edit_field !=
-                       MODEL_FIELD_HARDWARE) {
+                   !model_field_is_choice(
+                       overlay->model_edit_field)) {
             begin_model_text_edit(
                 overlay, overlay->model_edit_field);
         } else if (key == SDLK_DELETE &&
@@ -4504,6 +4674,12 @@ static const char *model_field_name(int field) {
         case MODEL_FIELD_ID:       return "ID";
         case MODEL_FIELD_NAME:     return "Display name";
         case MODEL_FIELD_HARDWARE: return "Hardware";
+        case MODEL_FIELD_FLOPPY_CONTROLLER:
+            return "Floppy controller";
+        case MODEL_FIELD_FLOPPY_PRIMARY_SLOT:
+            return "FDC primary slot";
+        case MODEL_FIELD_FLOPPY_SECONDARY_SLOT:
+            return "FDC secondary slot";
         case MODEL_FIELD_BIOS:     return "BIOS";
         case MODEL_FIELD_LOGO:     return "Logo ROM";
         case MODEL_FIELD_SUBROM:   return "Sub-ROM";
@@ -4528,6 +4704,25 @@ static void model_field_value(const Overlay *overlay, int field,
                      msx_model_name(overlay->model_edit.hardware),
                      msx_model_config_name(
                          overlay->model_edit.hardware));
+            break;
+        case MODEL_FIELD_FLOPPY_CONTROLLER:
+            snprintf(value, value_size, "%s",
+                     msx_floppy_controller_name(
+                         overlay->model_edit.floppy.controller));
+            break;
+        case MODEL_FIELD_FLOPPY_PRIMARY_SLOT:
+            if (overlay->model_edit.floppy.primary_slot >= 0)
+                snprintf(value, value_size, "%d",
+                         overlay->model_edit.floppy.primary_slot);
+            else
+                snprintf(value, value_size, "[not mapped]");
+            break;
+        case MODEL_FIELD_FLOPPY_SECONDARY_SLOT:
+            if (overlay->model_edit.floppy.secondary_slot >= 0)
+                snprintf(value, value_size, "%d",
+                         overlay->model_edit.floppy.secondary_slot);
+            else
+                snprintf(value, value_size, "none");
             break;
         case MODEL_FIELD_BIOS:
             editor_shorten(value, value_size,
@@ -4634,18 +4829,18 @@ static void render_model_edit(const Overlay *overlay,
                  (float)DISPLAY_LOGICAL_W,
                  (float)DISPLAY_LOGICAL_H,
                  0, 0, 0, 150);
-    ui_fill_rect(renderer, 10.0f, 34.0f, 620.0f, 392.0f,
+    ui_fill_rect(renderer, 10.0f, 18.0f, 620.0f, 444.0f,
                  12, 14, 34, 255);
-    ui_draw_rect(renderer, 10.0f, 34.0f, 620.0f, 392.0f,
+    ui_draw_rect(renderer, 10.0f, 18.0f, 620.0f, 444.0f,
                  80, 100, 210);
     ui_draw_text(renderer,
                  ((float)DISPLAY_LOGICAL_W -
                   (float)strlen(title) * 8.0f) * 0.5f,
-                 48.0f, title, 255, 255, 255);
+                 30.0f, title, 255, 255, 255);
 
     for (int field = 0; field < MODEL_EDITOR_FIELDS; ++field) {
         char value[PATH_MAX + 64];
-        float y = 80.0f + (float)field * 36.0f;
+        float y = 56.0f + (float)field * 29.0f;
         bool selected = field == overlay->model_edit_field;
 
         model_field_value(overlay, field, value, sizeof(value));
@@ -4662,17 +4857,17 @@ static void render_model_edit(const Overlay *overlay,
                      selected ? 255 : 210,
                      selected ? 70 : 225);
     }
-    ui_draw_text(renderer, 22.0f, 340.0f,
-                 "Enter edit/choose   E edit text   Delete clears ROM path",
-                 175, 190, 220);
     ui_draw_text(renderer, 22.0f, 358.0f,
-                 "Left/Right changes hardware   F2 saves   Esc cancels",
+                 "Enter choose/open   E edits text   Delete clears ROM path",
+                 175, 190, 220);
+    ui_draw_text(renderer, 22.0f, 378.0f,
+                 "Left/Right changes choices   F2 saves   Esc cancels",
                  150, 170, 205);
-    ui_draw_text(renderer, 22.0f, 382.0f,
-                 "Blank optional ROM fields leave that component disconnected.",
+    ui_draw_text(renderer, 22.0f, 404.0f,
+                 "A floppy controller requires its matching 16 KB disk ROM.",
                  120, 190, 150);
     if (overlay->model_editor_error[0])
-        ui_draw_text(renderer, 22.0f, 404.0f,
+        ui_draw_text(renderer, 22.0f, 434.0f,
                      overlay->model_editor_error,
                      255, 120, 120);
 }
@@ -5162,12 +5357,16 @@ static void overlay_render_content(const Overlay *overlay,
             char line[160];
             bool selected = model == overlay->machine_row;
             bool has_subrom = definition->subrom_path[0];
-            bool has_disk_rom = definition->disk_rom_path[0];
+            bool has_floppy =
+                definition->floppy.controller !=
+                    MSX_FLOPPY_CONTROLLER_NONE;
 
             snprintf(line, sizeof(line), "%s%s",
                      definition->name,
-                     has_disk_rom
-                     ? "  [BIOS + Sub-ROM + disk ROM]" :
+                     has_floppy && has_subrom
+                     ? "  [BIOS + Sub-ROM + floppy]" :
+                     has_floppy
+                     ? "  [BIOS + floppy]" :
                      has_subrom
                      ? "  [BIOS + Sub-ROM]" : "  [BIOS]");
             if (selected)

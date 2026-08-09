@@ -111,7 +111,8 @@ Each cartridge can be linear, ASCII8, ASCII16, Konami, or Konami SCC.
 
 `1983-models.conf` provides the data-driven layer above these hardware
 profiles. A `[model id]` entry supplies `name`, `hardware`, `bios`, `logo`,
-`subrom`, and `disk_rom`. Paths are resolved relative to that file. A user
+`subrom`, `disk_rom`, `floppy_controller`, `floppy_primary_slot`, and
+`floppy_secondary_slot`. Paths are resolved relative to that file. A user
 can add any number of named models which reuse an implemented hardware layout
 without recompiling 1983. The parser caps the catalogue at 64 valid entries,
 ignores unknown hardware layouts and duplicate IDs, and falls back to four
@@ -130,8 +131,11 @@ primary slots 1 and 2, and expanded primary slot 3 containing the MSX2
 sub-ROM in secondary slot 0, the 128 KB internal mapper in slot 2, and the
 built-in disk ROM in slot 3/page 1. The expanded-slot register and mapper
 ports, V9938 CPU interface, bitmap renderer, command engine, and RTC are
-implemented. The disk subslot also exposes the Philips memory-mapped WD2793
-and one or two raw-image-backed floppy drives. The external Sunrise
+implemented. Its catalogue entry maps the Philips memory-mapped WD2793 and
+disk ROM into subslot 3; the controller and one or two raw-image-backed
+drives are no longer inferred from the NMS hardware identifier. Generic MSX2
+entries can use the same internal mapping, while a generic MSX1 entry may put
+the controller in cartridge slot 1 or 2. The external Sunrise
 IDE/Nextor cartridge is implemented independently, and the current GeoBench
 checkpoint boots on the internal 128 KiB mapper. The SD Mapper V2 cartridge
 adds a separate 512 KiB mapper as one half of its real composite hardware,
@@ -282,16 +286,19 @@ and optional card remain local test inputs.
 selection, active-low IRQ/DRQ reporting, and complete-sector transfer
 buffers. `src/floppy.c` knows nothing about MSX slots or controller commands;
 it validates conventional raw DSK geometry and owns host file I/O. The MSX
-bus exposes the Philips registers only when the NMS 8250 disk subslot is
-selected. This keeps future machine-specific controller wiring separate from
-the reusable image backend.
+bus exposes the Philips registers only when the catalogue-configured
+slot/subslot is selected. Mapping the device into primary slot 1 or 2 also
+reserves that physical cartridge port. This keeps machine-specific controller
+wiring separate from the reusable image backend and provides the boundary for
+future external disk-interface cartridges.
 
 Both images start read-only unless read/write is explicitly selected.
 Completed writes become dirty in the image backend, while reset can discard
 an incomplete controller transfer without changing the host file. Image
 replacement and ejection flush and synchronize dirty data. Failure preserves
-the attached image and error state. Advanced owns the second-drive and access
-controls; Media owns insertion and safe ejection.
+the attached image and error state. Extensions owns the optional second-drive
+control; Advanced owns the access mode, while Media owns insertion and safe
+ejection.
 
 ## RTC and CMOS boundaries
 
