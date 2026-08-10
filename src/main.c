@@ -1811,11 +1811,14 @@ int main(int argc, char **argv) {
                 msx_drive_b_error(&msx));
         shutdown_status = 1;
     }
-    audio_output_quit(&audio);
     if (sfx_stream)
         SDL_DestroyAudioStream(sfx_stream);
     if (sfx_buf)
         SDL_free(sfx_buf);
+    /* audio_output_quit() tears down SDL_INIT_AUDIO. Destroy the separate
+     * shutter stream first; SDL no longer owns a valid audio device after
+     * the subsystem has stopped. */
+    audio_output_quit(&audio);
     gamepad_input_destroy(&gamepad);
     paste_cancel(&paste, &msx);
     set_mouse_capture(&display, &msx, false);
