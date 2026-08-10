@@ -22,6 +22,16 @@ grep -q 'cbios_main_msx1\.rom$' "$first_run"
 grep -q 'cbios_logo_msx1\.rom$' "$first_run"
 grep -q 'BIOS loaded, logo ROM loaded' "$log"
 
+# Exercise the normal GUI/audio initialization path without a host window.
+# Unlike --headless, this opens both PSG and shutter streams. Shutdown must
+# destroy every stream before SDL_INIT_AUDIO is released.
+if test "$(uname -s)" = Linux; then
+    SDL_VIDEODRIVER=offscreen SDL_AUDIODRIVER=dummy \
+        ./1983 --config "$first_run" \
+        --models "$source_root/1983-models.conf" --exit-after 0 \
+        >"$log" 2>&1
+fi
+
 if ./1983 --mapper definitely-not-a-mapper >"$log" 2>&1; then
     echo "invalid mapper was accepted" >&2
     exit 1
