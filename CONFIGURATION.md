@@ -46,6 +46,12 @@ overlap existing machine devices. A disk ROM without a controller, a
 controller without its 16 KiB disk ROM, and incompatible slot mappings are
 reported by the model editor.
 
+The NMS 8250 entry's `ROMS/nms8250_disk.rom` is only its supplied default.
+To use another compatible ROM, enable Tinker, open **Advanced > Machine model
+editor**, edit the model, highlight **FDC Disk ROM**, press Enter, and select
+the replacement 16 KiB file. F2 saves that path in the per-user model
+catalogue; the ROM may live outside the project's `ROMS` directory.
+
 Older catalogue entries using the NMS 8250 hardware layout are migrated in
 memory to the Philips controller at slot 3-3. Saving the catalogue writes the
 explicit keys. The selected model remains the source of this topology; it is

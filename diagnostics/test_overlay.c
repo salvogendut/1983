@@ -868,9 +868,18 @@ int main(void) {
     send_key(&overlay, SDLK_F2);
     assert(overlay.state == OVERLAY_STATE_MODEL_EDIT);
     assert(strstr(overlay.model_editor_error, "disk ROM"));
-    send_key(&overlay, SDLK_LEFT);
+    overlay.dialog_target = OVERLAY_DIALOG_MODEL_DISK_ROM;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", machine_disk_rom_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(strcmp(overlay.model_edit.disk_rom_path,
+                  machine_disk_rom_path) == 0);
     send_key(&overlay, SDLK_F2);
     assert(overlay.state == OVERLAY_STATE_MODEL_LIST);
+    assert(strstr(model_catalog_find(
+                      &models, "new-model")->disk_rom_path,
+                  "test-machine-disk-rom.tmp"));
 
     send_key(&overlay, SDLK_ESCAPE);
     assert(overlay.state == OVERLAY_STATE_MENU);

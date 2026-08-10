@@ -4683,7 +4683,7 @@ static const char *model_field_name(int field) {
         case MODEL_FIELD_BIOS:     return "BIOS";
         case MODEL_FIELD_LOGO:     return "Logo ROM";
         case MODEL_FIELD_SUBROM:   return "Sub-ROM";
-        case MODEL_FIELD_DISK_ROM: return "Disk ROM";
+        case MODEL_FIELD_DISK_ROM: return "FDC Disk ROM";
     }
     return "";
 }
@@ -4864,7 +4864,7 @@ static void render_model_edit(const Overlay *overlay,
                  "Left/Right changes choices   F2 saves   Esc cancels",
                  150, 170, 205);
     ui_draw_text(renderer, 22.0f, 404.0f,
-                 "A floppy controller requires its matching 16 KB disk ROM.",
+                 "FDC Disk ROM is per-model; Enter selects any matching 16 KB ROM.",
                  120, 190, 150);
     if (overlay->model_editor_error[0])
         ui_draw_text(renderer, 22.0f, 434.0f,
