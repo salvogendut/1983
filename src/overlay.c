@@ -4675,7 +4675,7 @@ static const char *model_field_name(int field) {
         case MODEL_FIELD_NAME:     return "Display name";
         case MODEL_FIELD_HARDWARE: return "Hardware";
         case MODEL_FIELD_FLOPPY_CONTROLLER:
-            return "Floppy controller";
+            return "FDC controller";
         case MODEL_FIELD_FLOPPY_PRIMARY_SLOT:
             return "FDC slot 1";
         case MODEL_FIELD_FLOPPY_SECONDARY_SLOT:
