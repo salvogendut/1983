@@ -20,6 +20,7 @@ typedef struct {
     char logo_path[PATH_MAX];
     char subrom_path[PATH_MAX];
     char disk_rom_path[PATH_MAX];
+    MsxFloppyConfig floppy;
 } ModelDefinition;
 
 typedef struct {

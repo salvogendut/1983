@@ -157,6 +157,9 @@ void config_defaults(Config *config) {
     config->notifications = NOTIFY_MODE_SCREEN;
     config->rtc_persistence = true;
     config->floppy_image_mode = FLOPPY_IMAGE_READ_ONLY;
+    config->floppy.controller = MSX_FLOPPY_CONTROLLER_NONE;
+    config->floppy.primary_slot = -1;
+    config->floppy.secondary_slot = -1;
     config->ide_image_mode = ATA_IMAGE_READ_ONLY;
     config->sd_image_mode = SD_IMAGE_READ_ONLY;
     config->sd_mapper_ram = true;
@@ -169,8 +172,10 @@ void config_normalize(Config *config) {
         &config->megaflash,
         &config->scc,
         &config->msx_music,
+        &config->rs232,
     };
     unsigned connected = 0;
+    unsigned cartridge_capacity = MSX_CARTRIDGE_SLOTS;
 
     if ((unsigned)config->model >= MSX_MODEL_COUNT)
         config->model = MSX_MODEL_GENERIC_MSX1;
@@ -196,6 +201,18 @@ void config_normalize(Config *config) {
         config->sd_image_mode = SD_IMAGE_READ_ONLY;
     if (config->floppy_image_mode != FLOPPY_IMAGE_READ_WRITE)
         config->floppy_image_mode = FLOPPY_IMAGE_READ_ONLY;
+    if (!msx_floppy_config_valid(config->model, &config->floppy)) {
+        config->floppy.controller = MSX_FLOPPY_CONTROLLER_NONE;
+        config->floppy.primary_slot = -1;
+        config->floppy.secondary_slot = -1;
+    } else if (config->floppy.controller ==
+                   MSX_FLOPPY_CONTROLLER_NONE) {
+        config->floppy.primary_slot = -1;
+        config->floppy.secondary_slot = -1;
+    } else if (config->floppy.primary_slot == 1 ||
+               config->floppy.primary_slot == 2) {
+        --cartridge_capacity;
+    }
     if (config->main_input != INPUT_PORT_B)
         config->main_input = INPUT_PORT_A;
     for (unsigned port = 0; port < 2; ++port) {
@@ -215,7 +232,7 @@ void config_normalize(Config *config) {
          ++i) {
         if (!*cartridge_extensions[i])
             continue;
-        if (connected >= MSX_CARTRIDGE_SLOTS)
+        if (connected >= cartridge_capacity)
             *cartridge_extensions[i] = false;
         else
             ++connected;
@@ -692,7 +709,10 @@ int config_megaflash_pending_state_path(const Config *config,
 unsigned config_cartridge_extension_count(const Config *config) {
     if (!config)
         return 0;
-    return (config->sunrise_ide ? 1u : 0u) +
+    return (config->floppy.controller != MSX_FLOPPY_CONTROLLER_NONE &&
+            (config->floppy.primary_slot == 1 ||
+             config->floppy.primary_slot == 2) ? 1u : 0u) +
+           (config->sunrise_ide ? 1u : 0u) +
            (config->sd_mapper ? 1u : 0u) +
            (config->megaflash ? 1u : 0u) +
            (config->scc ? 1u : 0u) +
@@ -702,34 +722,42 @@ unsigned config_cartridge_extension_count(const Config *config) {
 
 const char *config_cartridge_slot_owner(const Config *config,
                                         unsigned slot) {
+    const char *owners[MSX_CARTRIDGE_SLOTS] = { NULL, NULL };
     const char *extensions[MSX_CARTRIDGE_SLOTS];
-    unsigned count = 0;
+    unsigned extension_count = 0;
 
     if (!config || slot >= MSX_CARTRIDGE_SLOTS)
         return NULL;
-    if (config->sunrise_ide && count < MSX_CARTRIDGE_SLOTS)
-        extensions[count++] = "Sunrise IDE";
-    if (config->sd_mapper && count < MSX_CARTRIDGE_SLOTS)
-        extensions[count++] = "SD Mapper V2";
-    if (config->megaflash && count < MSX_CARTRIDGE_SLOTS)
-        extensions[count++] = "MegaFlashROM SCC+ SD";
-    if (config->scc && count < MSX_CARTRIDGE_SLOTS)
-        extensions[count++] = "Konami SCC";
-    if (config->msx_music && count < MSX_CARTRIDGE_SLOTS)
-        extensions[count++] = "MSX-MUSIC";
-    if (config->rs232 && count < MSX_CARTRIDGE_SLOTS)
-        extensions[count++] = "RS-232C";
+    if (config->floppy.controller != MSX_FLOPPY_CONTROLLER_NONE &&
+        (config->floppy.primary_slot == 1 ||
+         config->floppy.primary_slot == 2))
+        owners[config->floppy.primary_slot - 1] = "Floppy controller";
+    if (config->sunrise_ide && extension_count < MSX_CARTRIDGE_SLOTS)
+        extensions[extension_count++] = "Sunrise IDE";
+    if (config->sd_mapper && extension_count < MSX_CARTRIDGE_SLOTS)
+        extensions[extension_count++] = "SD Mapper V2";
+    if (config->megaflash && extension_count < MSX_CARTRIDGE_SLOTS)
+        extensions[extension_count++] = "MegaFlashROM SCC+ SD";
+    if (config->scc && extension_count < MSX_CARTRIDGE_SLOTS)
+        extensions[extension_count++] = "Konami SCC";
+    if (config->msx_music && extension_count < MSX_CARTRIDGE_SLOTS)
+        extensions[extension_count++] = "MSX-MUSIC";
+    if (config->rs232 && extension_count < MSX_CARTRIDGE_SLOTS)
+        extensions[extension_count++] = "RS-232C";
 
     /*
      * Keep cartridge 1 available for ordinary software until a second
-     * extension is connected. This also gives every valid configuration a
-     * deterministic physical-port assignment.
+     * extension is connected. A controller mapped into primary slot 1 or 2
+     * reserves that exact physical port first.
      */
-    if (slot == 1 && count >= 1)
-        return extensions[0];
-    if (slot == 0 && count >= 2)
-        return extensions[1];
-    return NULL;
+    for (unsigned extension = 0;
+         extension < extension_count; ++extension) {
+        unsigned destination = owners[1] == NULL ? 1u : 0u;
+
+        if (owners[destination] == NULL)
+            owners[destination] = extensions[extension];
+    }
+    return owners[slot];
 }
 
 bool config_cartridge_slot_available(const Config *config,

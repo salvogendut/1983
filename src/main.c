@@ -217,7 +217,7 @@ static const char *usage =
     "  --bios PATH         load a 32 KB MSX BIOS ROM\n"
     "  --logo PATH         load a 16 KB C-BIOS logo ROM in slot 0/page 2\n"
     "  --subrom PATH       load a 16 KB MSX2 Sub-ROM in slot 3-0\n"
-    "  --disk-rom PATH     load a 16 KB disk ROM in slot 3-3/page 1\n"
+    "  --disk-rom PATH     load a 16 KB floppy-controller disk ROM\n"
     "  --sunrise-rom PATH  load a 128 KB Sunrise IDE/Nextor kernel ROM\n"
     "  --sd-mapper-rom PATH load a 128/256 KB MSX SD Mapper V2 ROM\n"
     "  --sd-a PATH          insert a raw image in SD Mapper card A\n"
@@ -714,6 +714,7 @@ int main(int argc, char **argv) {
         definition = model_catalog_find_hardware(&models, config.model);
     if (definition) {
         config.model = definition->hardware;
+        config.floppy = definition->floppy;
         snprintf(config.machine_id, sizeof(config.machine_id),
                  "%s", definition->id);
         if (!config.bios_path[0])
@@ -742,6 +743,7 @@ int main(int argc, char **argv) {
             return 1;
         }
         config.model = definition->hardware;
+        config.floppy = definition->floppy;
         snprintf(config.machine_id, sizeof(config.machine_id),
                  "%s", definition->id);
         config.memory_kb = msx_default_ram_kb(config.model);
@@ -879,6 +881,13 @@ int main(int argc, char **argv) {
     }
 
     msx_init(&msx, config.model, config.region, config.memory_kb);
+    if (msx_configure_floppy(&msx, &config.floppy) != 0) {
+        fprintf(stderr,
+                "cannot configure floppy controller for %s\n",
+                config.machine_id);
+        msx_destroy(&msx);
+        return 1;
+    }
     if (config_rtc_path(&config, rtc_path, sizeof(rtc_path)) != 0) {
         fprintf(stderr, "warning: RTC persistence path is too long\n");
     } else if (rtc_path[0] &&
@@ -925,7 +934,7 @@ int main(int argc, char **argv) {
                     ? "read/write" : "read-only",
                     msx_floppy_supported(&msx)
                     ? msx_drive_a_error(&msx)
-                    : "selected machine has no Philips WD2793");
+                    : "selected machine has no floppy controller");
             if (cli.drive_a_path) {
                 msx_destroy(&msx);
                 return 1;
@@ -945,7 +954,7 @@ int main(int argc, char **argv) {
                     ? "read/write" : "read-only",
                     msx_floppy_supported(&msx)
                     ? msx_drive_b_error(&msx)
-                    : "selected machine has no Philips WD2793");
+                    : "selected machine has no floppy controller");
             if (cli.drive_b_path) {
                 msx_destroy(&msx);
                 return 1;

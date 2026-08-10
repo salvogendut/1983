@@ -65,6 +65,18 @@ typedef enum {
     MSX_REGION_NTSC
 } MsxRegion;
 
+typedef enum {
+    MSX_FLOPPY_CONTROLLER_NONE = 0,
+    MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793,
+    MSX_FLOPPY_CONTROLLER_COUNT
+} MsxFloppyController;
+
+typedef struct {
+    MsxFloppyController controller;
+    int primary_slot;
+    int secondary_slot;
+} MsxFloppyConfig;
+
 typedef struct {
     MsxModel   model;
     const char *name;
@@ -124,6 +136,7 @@ typedef struct {
     MsxSdMapper sd_mapper;
     MsxSunriseIde sunrise;
     Wd2793 fdc;
+    MsxFloppyConfig floppy_config;
     int megaflash_slot;
     int sd_mapper_slot;
     int sunrise_slot;
@@ -334,6 +347,16 @@ bool msx_rtc_persistence_dirty(const MsxMachine *msx);
 bool msx_rtc_persistence_has_error(const MsxMachine *msx);
 const char *msx_rtc_persistence_error(const MsxMachine *msx);
 const char *msx_rtc_persistence_path(const MsxMachine *msx);
+const char *msx_floppy_controller_name(MsxFloppyController controller);
+const char *msx_floppy_controller_config_name(
+    MsxFloppyController controller);
+bool msx_floppy_controller_from_name(
+    const char *name, MsxFloppyController *controller);
+bool msx_floppy_config_valid(MsxModel model,
+                             const MsxFloppyConfig *config);
+int msx_configure_floppy(MsxMachine *msx,
+                         const MsxFloppyConfig *config);
+const MsxFloppyConfig *msx_floppy_config(const MsxMachine *msx);
 bool msx_floppy_supported(const MsxMachine *msx);
 int msx_mount_drive_a(MsxMachine *msx, const char *path,
                       FloppyImageMode mode);

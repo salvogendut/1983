@@ -16,9 +16,10 @@ primary slots through PPI port `0xA8`.
 
 The Philips NMS 8250 layout implements expanded primary slot 3, its inverted
 secondary-slot register at `0xFFFF`, the MSX2 Sub-ROM, 128 KiB internal
-mapper RAM, and the disk ROM. Memory-mapper segment registers are exposed at
-ports `0xFC` through `0xFF`. Its disk subslot also exposes the Philips
-memory-mapped WD2793 register block and drive-control lines.
+mapper RAM, and RTC. Memory-mapper segment registers are exposed at ports
+`0xFC` through `0xFF`. Floppy topology is supplied separately by the selected
+catalogue entry, so the same Philips memory-mapped WD2793 and disk ROM can be
+wired into either the NMS 8250 or a compatible generic layout.
 
 The General RAM control offers power-of-two mapper capacities through
 4096 KiB (plus the smaller 16/32 KiB MSX1 layouts). Capacity above 128 KiB is
@@ -52,6 +53,9 @@ bios = ROMS/my-bios.rom
 logo =
 subrom = ROMS/my-subrom.rom
 disk_rom =
+floppy_controller = none
+floppy_primary_slot =
+floppy_secondary_slot =
 ```
 
 `hardware` must currently be `msx1`, `msx2`, or `nms8250`. A catalogue may
@@ -65,6 +69,10 @@ count. It validates and atomically loads the selected definition exactly as
 saved, without opening firmware file pickers. Blank optional fields remain
 disconnected; missing or invalid required firmware preserves the previous
 machine and reports that the definition must be fixed in the model editor.
+The catalogue also validates controller/disk-ROM pairing and slot conflicts.
+The supported `philips-wd2793` controller may occupy external primary slot 1
+or 2, or free secondary slot 1/3 beneath expanded primary slot 3. An external
+mapping reserves the corresponding physical cartridge port.
 
 With Tinker enabled, Advanced > Machine model editor provides catalogue
 list, add, edit, duplicate, and delete workflows. IDs are restricted to
@@ -120,7 +128,9 @@ General > Extra Hardware reveals the Extensions section. Sunrise IDE, SD
 Mapper V2, MegaFlashROM SCC+ SD, SCC, and MSX-MUSIC are treated as
 cartridge-connected devices:
 the first enabled device reserves cartridge slot 2 and the second reserves
-slot 1. A third is refused. Mounting, ejecting, mapper changes, asynchronous
+slot 1. A catalogue floppy controller mapped to slot 1 or 2 reserves that
+exact port before extensions are assigned; a configuration exceeding the
+remaining capacity is refused. Mounting, ejecting, mapper changes, asynchronous
 picker completion, and command-line startup all honor the same reservation
 state. Enabling an extension ejects and forgets media in the newly reserved
 slot.
@@ -197,13 +207,17 @@ the synthesized waveform in emulated CPU time and mixes it into the
 behind the tape head into a translucent oscilloscope with transport time and
 command guidance. Recording, WAV input, and seeking are not implemented.
 
-## Philips WD2793 and floppy storage
+## Configurable Philips WD2793 and floppy storage
 
-The Philips NMS 8250 disk subslot maps the WD2793 command/status, track,
+The model catalogue maps the WD2793 command/status, track,
 sector, and data registers at offsets `3FF8` through `3FFB`, mirrored in all
 four 16 KiB pages. Offsets `3FFC` and `3FFD` select side, drive, and motor;
 `3FFF` exposes the active-low IRQ and DRQ lines expected by the Philips disk
-ROM. The controller implements restore, seek and step operations, single and
+ROM. Its 16 KiB disk ROM is visible in page 1 of the same selected
+slot/subslot. The stock NMS 8250 uses expanded slot 3-3, but generic MSX2
+definitions can choose the same mapping and MSX1 definitions can connect the
+device through primary cartridge slot 1 or 2. The controller implements
+restore, seek and step operations, single and
 multiple sector reads/writes, read address, and force interrupt. Reset
 discards an incomplete transfer but preserves inserted media and completed
 dirty sectors.
@@ -216,7 +230,8 @@ Replacement and ejection flush completed sectors; a host flush error leaves
 the dirty image attached and visible instead of claiming a successful
 ejection.
 
-Media always exposes Floppy A for the NMS 8250. With Extra Hardware enabled,
+Media exposes Floppy A when the active model has a configured controller;
+models without one reject floppy mounting. With Extra Hardware enabled,
 Extensions > Second floppy adds Floppy B and its independent image selector.
 The Philips drive register chooses between the two devices. Advanced >
 Floppy access mode applies the explicit read-only/read-write policy to

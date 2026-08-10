@@ -174,6 +174,9 @@ static void add_default(ModelCatalog *catalog, const char *id,
     snprintf(definition->id, sizeof(definition->id), "%s", id);
     snprintf(definition->name, sizeof(definition->name), "%s", name);
     definition->hardware = hardware;
+    definition->floppy.controller = MSX_FLOPPY_CONTROLLER_NONE;
+    definition->floppy.primary_slot = -1;
+    definition->floppy.secondary_slot = -1;
 }
 
 void model_catalog_defaults(ModelCatalog *catalog) {
@@ -202,6 +205,18 @@ void model_catalog_defaults(ModelCatalog *catalog) {
     add_default(catalog, "msx2", "MSX2", MSX_MODEL_GENERIC_MSX2);
     add_default(catalog, "nms8250", "Philips NMS 8250",
                 MSX_MODEL_PHILIPS_NMS8250);
+    catalog->entries[catalog->count - 1].floppy.controller =
+        MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
+    catalog->entries[catalog->count - 1].floppy.primary_slot = 3;
+    catalog->entries[catalog->count - 1].floppy.secondary_slot = 3;
+    if (PKGDATADIR[0])
+        snprintf(catalog->entries[catalog->count - 1].disk_rom_path,
+                 sizeof(catalog->entries[catalog->count - 1].disk_rom_path),
+                 "%s/ROMS/nms8250_disk.rom", PKGDATADIR);
+    else
+        snprintf(catalog->entries[catalog->count - 1].disk_rom_path,
+                 sizeof(catalog->entries[catalog->count - 1].disk_rom_path),
+                 "ROMS/nms8250_disk.rom");
 }
 
 static bool executable_directory(char *directory, size_t directory_size) {
@@ -293,13 +308,28 @@ static ModelDefinition *begin_definition(ModelCatalog *catalog,
     memset(definition, 0, sizeof(*definition));
     snprintf(definition->id, sizeof(definition->id), "%s", id);
     definition->hardware = MSX_MODEL_COUNT;
+    definition->floppy.controller = MSX_FLOPPY_CONTROLLER_COUNT;
+    definition->floppy.primary_slot = -1;
+    definition->floppy.secondary_slot = -1;
     return definition;
+}
+
+static int parse_slot(const char *value) {
+    char *end;
+    long slot;
+
+    if (!value || !value[0] || strcasecmp(value, "none") == 0)
+        return -1;
+    slot = strtol(value, &end, 10);
+    return *end == '\0' && slot >= 0 && slot <= 3
+           ? (int)slot : -2;
 }
 
 static void set_definition_value(ModelDefinition *definition,
                                  const char *directory,
                                  const char *key, const char *value) {
     MsxModel hardware;
+    MsxFloppyController controller;
 
     if (!definition)
         return;
@@ -320,6 +350,16 @@ static void set_definition_value(ModelDefinition *definition,
     } else if (strcasecmp(key, "disk_rom") == 0) {
         resolve_path(definition->disk_rom_path,
                      sizeof(definition->disk_rom_path), directory, value);
+    } else if (strcasecmp(key, "floppy_controller") == 0) {
+        if (msx_floppy_controller_from_name(value, &controller))
+            definition->floppy.controller = controller;
+        else
+            definition->floppy.controller =
+                (MsxFloppyController)(MSX_FLOPPY_CONTROLLER_COUNT + 1);
+    } else if (strcasecmp(key, "floppy_primary_slot") == 0) {
+        definition->floppy.primary_slot = parse_slot(value);
+    } else if (strcasecmp(key, "floppy_secondary_slot") == 0) {
+        definition->floppy.secondary_slot = parse_slot(value);
     }
 }
 
@@ -332,6 +372,25 @@ static void compact_catalog(ModelCatalog *catalog) {
 
         if (definition->hardware == MSX_MODEL_COUNT)
             continue;
+        /* Catalogues written before issue #82 implied the NMS 8250's
+         * Philips controller from the hardware name, but some custom NMS
+         * profiles deliberately omitted the disk ROM. Only migrate legacy
+         * entries that actually provide one; keep the others diskless. */
+        if (definition->floppy.controller ==
+                MSX_FLOPPY_CONTROLLER_COUNT) {
+            if (definition->hardware == MSX_MODEL_PHILIPS_NMS8250 &&
+                definition->disk_rom_path[0]) {
+                definition->floppy.controller =
+                    MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
+                definition->floppy.primary_slot = 3;
+                definition->floppy.secondary_slot = 3;
+            } else {
+                definition->floppy.controller =
+                    MSX_FLOPPY_CONTROLLER_NONE;
+                definition->floppy.primary_slot = -1;
+                definition->floppy.secondary_slot = -1;
+            }
+        }
         if (!definition->name[0])
             snprintf(definition->name, sizeof(definition->name),
                      "%s", definition->id);
@@ -487,8 +546,31 @@ bool model_definition_validate(const ModelCatalog *catalog,
             return validation_error(error, error_size,
                                     "Machine ID is already in use");
     }
-    if (!check_firmware)
+    if (!check_firmware) {
+        if ((unsigned)definition->floppy.controller >=
+            MSX_FLOPPY_CONTROLLER_COUNT)
+            return validation_error(
+                error, error_size,
+                "Unsupported floppy controller");
+        if (definition->floppy.controller ==
+                MSX_FLOPPY_CONTROLLER_NONE &&
+            definition->disk_rom_path[0])
+            return validation_error(
+                error, error_size,
+                "Disk ROM requires a floppy controller");
+        if (definition->floppy.controller !=
+                MSX_FLOPPY_CONTROLLER_NONE &&
+            !definition->disk_rom_path[0])
+            return validation_error(
+                error, error_size,
+                "Floppy controller requires a disk ROM");
+        if (!msx_floppy_config_valid(
+                definition->hardware, &definition->floppy))
+            return validation_error(
+                error, error_size,
+                "Floppy slot mapping is incompatible with this hardware");
         return true;
+    }
     if (!file_has_size(definition->bios_path, MSX_BIOS_SIZE))
         return validation_error(
             error, error_size,
@@ -540,7 +622,8 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
     }
     fputs("# 1983 machine catalogue\n"
           "# Managed by Advanced > Machine model editor.\n"
-          "# Blank optional firmware fields leave components disconnected.\n\n",
+          "# Blank optional firmware fields leave components disconnected.\n"
+          "# Floppy controllers are explicit machine hardware, not model names.\n\n",
           file);
     for (size_t i = 0; i < catalog->count; ++i) {
         const ModelDefinition *definition = &catalog->entries[i];
@@ -548,6 +631,8 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
         char logo[PATH_MAX];
         char subrom[PATH_MAX];
         char disk_rom[PATH_MAX];
+        char floppy_primary[16] = "";
+        char floppy_secondary[16] = "";
 
         if (!model_definition_validate(
                 catalog, definition, i, false, NULL, 0)) {
@@ -560,6 +645,17 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
         save_path(definition->subrom_path, subrom, sizeof(subrom));
         save_path(definition->disk_rom_path,
                   disk_rom, sizeof(disk_rom));
+        if (definition->floppy.controller !=
+                MSX_FLOPPY_CONTROLLER_NONE) {
+            snprintf(floppy_primary, sizeof(floppy_primary), "%d",
+                     definition->floppy.primary_slot);
+            if (definition->floppy.secondary_slot >= 0)
+                snprintf(floppy_secondary, sizeof(floppy_secondary), "%d",
+                         definition->floppy.secondary_slot);
+            else
+                snprintf(floppy_secondary, sizeof(floppy_secondary),
+                         "none");
+        }
         fprintf(file,
                 "[model %s]\n"
                 "name = %s\n"
@@ -567,10 +663,16 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
                 "bios = %s\n"
                 "logo = %s\n"
                 "subrom = %s\n"
-                "disk_rom = %s\n\n",
+                "disk_rom = %s\n"
+                "floppy_controller = %s\n"
+                "floppy_primary_slot = %s\n"
+                "floppy_secondary_slot = %s\n\n",
                 definition->id, definition->name,
                 msx_model_config_name(definition->hardware),
-                bios, logo, subrom, disk_rom);
+                bios, logo, subrom, disk_rom,
+                msx_floppy_controller_config_name(
+                    definition->floppy.controller),
+                floppy_primary, floppy_secondary);
     }
     if (fclose(file) != 0) {
         remove(temporary);

@@ -29,7 +29,7 @@ firmware choice in the per-user `1983.conf`.
 --bios FILE / --logo FILE explicit C-BIOS main and logo ROMs
 --cart FILE              insert a cartridge
 --cassette FILE          insert a CAS tape
---disk-a/--disk-b FILE   floppy images (NMS 8250), --floppy-mode access
+--disk-a/--disk-b FILE   floppy images (controller model), --floppy-mode access
 --sunrise-rom + --ide    Sunrise IDE controller ROM and image, --ide-mode
 --sd-mapper-rom + --sd-a/--sd-b      SD Mapper V2, --sd-mode
 --megaflash-rom + --megaflash-sd-a/--megaflash-sd-b  MegaFlashROM, --sd-mode
@@ -70,15 +70,22 @@ point its firmware paths at files you are entitled to use (the Git-ignored
 `ROMS/` directory is the default place). Optional firmware fields may be left
 blank. With **General > Tinker** enabled, the **Advanced > Machine model
 editor** provides graphical add/edit/duplicate/delete over the catalogue.
+The editor also configures an optional Philips WD2793, its primary/secondary
+slot, and matching 16 KiB disk ROM. This means either a generic MSX/MSX2
+definition or the supplied NMS 8250 definition can provide floppy support.
 
 See [`BOOT_TARGETS.md`](BOOT_TARGETS.md) for firmware lanes, checkpoints, and
 the GeoBench/Nextor targets.
 
 ## Media
 
-### Floppy (NMS 8250)
+### Floppy
 
-**Media > Floppy A / B** inserts a raw `.dsk` image; Delete safely ejects it.
+For a machine model with a configured controller, **Media > Floppy A / B**
+inserts a raw `.dsk` image; Delete safely ejects it. Models without a
+controller reject floppy insertion cleanly. A controller mapped to primary
+slot 1 or 2 reserves the matching cartridge port; an internal MSX2 controller
+normally uses expanded slot 3-3 instead.
 With Tinker, **Advanced > Floppy access mode** selects read-only or read/write
 (read-only is default). Sector writes flush on replacement, ejection, and
 shutdown; reset discards only an incomplete transfer. Backend accepts raw 320,
