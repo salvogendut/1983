@@ -52,10 +52,11 @@ editor**, edit the model, highlight **FDC Disk ROM**, press Enter, and select
 the replacement 16 KiB file. F2 saves that path in the per-user model
 catalogue; the ROM may live outside the project's `ROMS` directory.
 
-Older catalogue entries using the NMS 8250 hardware layout are migrated in
-memory to the Philips controller at slot 3-3. Saving the catalogue writes the
-explicit keys. The selected model remains the source of this topology; it is
-not duplicated in `1983.conf`.
+Older catalogue entries using the NMS 8250 hardware layout and a non-empty
+disk ROM are migrated in memory to the Philips controller at slot 3-3. Legacy
+NMS entries without a disk ROM remain diskless. Saving the catalogue writes
+the explicit keys. The selected model remains the source of this topology;
+it is not duplicated in `1983.conf`.
 
 ## Guest DOS files
 

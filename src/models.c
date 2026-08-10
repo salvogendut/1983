@@ -373,11 +373,13 @@ static void compact_catalog(ModelCatalog *catalog) {
         if (definition->hardware == MSX_MODEL_COUNT)
             continue;
         /* Catalogues written before issue #82 implied the NMS 8250's
-         * Philips controller from the hardware name. Migrate that one
-         * legacy case while keeping every other model explicitly diskless. */
+         * Philips controller from the hardware name, but some custom NMS
+         * profiles deliberately omitted the disk ROM. Only migrate legacy
+         * entries that actually provide one; keep the others diskless. */
         if (definition->floppy.controller ==
                 MSX_FLOPPY_CONTROLLER_COUNT) {
-            if (definition->hardware == MSX_MODEL_PHILIPS_NMS8250) {
+            if (definition->hardware == MSX_MODEL_PHILIPS_NMS8250 &&
+                definition->disk_rom_path[0]) {
                 definition->floppy.controller =
                     MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
                 definition->floppy.primary_slot = 3;

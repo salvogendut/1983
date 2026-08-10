@@ -60,6 +60,13 @@ int main(void) {
           "subrom = firmware/nms-sub.rom\n"
           "disk_rom = firmware/nms-disk.rom\n"
           "\n"
+          "[model legacy-diskless-nms]\n"
+          "name = Legacy diskless NMS catalogue entry\n"
+          "hardware = nms8250\n"
+          "bios = firmware/nms.rom\n"
+          "subrom = firmware/nms-sub.rom\n"
+          "disk_rom =\n"
+          "\n"
           "[model unsupported]\n"
           "name = Not selectable\n"
           "hardware = msx3\n",
@@ -67,7 +74,7 @@ int main(void) {
     assert(fclose(file) == 0);
 
     assert(model_catalog_load(&catalog, path) == 0);
-    assert(catalog.count == 3);
+    assert(catalog.count == 4);
     model = model_catalog_find(&catalog, "CUSTOM-MSX");
     assert(model);
     assert(strcmp(model->name, "My custom MSX") == 0);
@@ -94,6 +101,12 @@ int main(void) {
            MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793);
     assert(model->floppy.primary_slot == 3);
     assert(model->floppy.secondary_slot == 3);
+    model = model_catalog_find(&catalog, "legacy-diskless-nms");
+    assert(model);
+    assert(model->floppy.controller ==
+           MSX_FLOPPY_CONTROLLER_NONE);
+    assert(model->floppy.primary_slot == -1);
+    assert(model->floppy.secondary_slot == -1);
     assert(!model_catalog_find(&catalog, "unsupported"));
     assert(model_catalog_index(&catalog, "custom-msx2") == 1);
 
