@@ -58,6 +58,10 @@ bool wd2793_handles_address(u16 address);
 u8 wd2793_read_memory(Wd2793 *fdc, u16 address);
 void wd2793_write_memory(Wd2793 *fdc, u16 address, u8 value);
 
+/* Port-mapped cartridge FDC (CDX-2 / disk type 5, ports D0-D3). */
+u8 wd2793_read_port(Wd2793 *fdc, u8 reg);
+void wd2793_write_port(Wd2793 *fdc, u8 reg, u8 value);
+
 int wd2793_mount_drive_a(Wd2793 *fdc, const char *path,
                          FloppyImageMode mode);
 int wd2793_flush_drive_a(Wd2793 *fdc);

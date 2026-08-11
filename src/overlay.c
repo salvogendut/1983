@@ -78,6 +78,7 @@ enum {
     EXTENSION_MSX_MUSIC,
     EXTENSION_SECOND_FLOPPY,
     EXTENSION_RS232,
+    EXTENSION_CDX2,
     EXTENSION_ROWS
 };
 
@@ -738,6 +739,11 @@ static void item_text(const Overlay *overlay, int row,
                         snprintf(value, value_size, "On (no host link)");
                     break;
                 }
+                case EXTENSION_CDX2:
+                    snprintf(label, label_size, "CDX-2 FDC");
+                    snprintf(value, value_size, "%s",
+                             toggle_name(config->cdx2));
+                    break;
                 case EXTENSION_KONAMI_SCC:
                     snprintf(label, label_size, "Konami SCC");
                     cartridge_extension_text(
@@ -3457,6 +3463,12 @@ static void activate_item(Overlay *overlay) {
                     }
                     break;
                 }
+                case EXTENSION_CDX2:
+                    config->cdx2 = !config->cdx2;
+                    msx_set_cdx2_enabled(overlay->msx, config->cdx2);
+                    notify_post("Microsol CDX-2 FDC %s",
+                                config->cdx2 ? "enabled" : "disabled");
+                    break;
                 case EXTENSION_KONAMI_SCC:
                     if (!toggle_cartridge_extension(
                             overlay, &config->scc,

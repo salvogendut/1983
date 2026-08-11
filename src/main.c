@@ -62,6 +62,7 @@ typedef struct {
     int sd_image_mode;
     int tcpip_unapi;
     int rs232;
+    int cdx2;
     int scale;
     int exit_after;
     const char *paste_text;
@@ -230,6 +231,9 @@ static const char *usage =
     "  --rs232             enable the MSX RS-232C serial interface\n"
     "  --no-rs232          disable the MSX RS-232C serial interface\n"
     "  --rs232-rom PATH    load a user-provided RS-232C EXTBIO/driver ROM\n"
+    "  --cdx2              enable the Microsol CDX-2 port-based FDC\n"
+    "  --no-cdx2           disable the Microsol CDX-2 port-based FDC\n"
+    "  --rs232-rom PATH    load a user-provided RS-232C EXTBIO/driver ROM\n"
     "  --sd-mode MODE       SD access: read-only (default) or read-write\n"
     "  --disk-a PATH       insert a raw MSX DSK image in Drive A\n"
     "  --disk-b PATH       insert a raw MSX DSK image in Drive B\n"
@@ -346,6 +350,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
     cli->sd_image_mode = -1;
     cli->tcpip_unapi = -1;
     cli->rs232 = -1;
+    cli->cdx2 = -1;
     cli->scale = -1;
     cli->exit_after = -1;
     cli->paste_at = 60;
@@ -388,6 +393,14 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
         }
         if (strcmp(argument, "--no-rs232") == 0) {
             cli->rs232 = 0;
+            continue;
+        }
+        if (strcmp(argument, "--cdx2") == 0) {
+            cli->cdx2 = 1;
+            continue;
+        }
+        if (strcmp(argument, "--no-cdx2") == 0) {
+            cli->cdx2 = 0;
             continue;
         }
         if ((strcmp(argument, "--config") == 0 ||
@@ -854,6 +867,11 @@ int main(int argc, char **argv) {
         if (config.rs232)
             config.extra_hardware = true;
     }
+    if (cli.cdx2 >= 0) {
+        config.cdx2 = cli.cdx2 != 0;
+        if (config.cdx2)
+            config.extra_hardware = true;
+    }
     if (cli.cassette_path)
         snprintf(config.cassette_path,
                  sizeof(config.cassette_path),
@@ -1227,6 +1245,7 @@ int main(int argc, char **argv) {
         rs232dev_set_enabled(rs232dev, true);
     else
         rs232dev_set_enabled(rs232dev, false);
+    msx_set_cdx2_enabled(&msx, config.cdx2);
     definition = model_catalog_find(&models, config.machine_id);
     if (display_init(&display, &config, &msx,
                      definition ? definition->name : NULL) < 0) {
