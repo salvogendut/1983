@@ -283,6 +283,7 @@ canvas.mouse-captured { cursor: none; }
 .screen-frame.dragging .drop-hint { opacity: 1; transform: translate(-50%, 0); color: var(--amber); }
 .screen-frame.dragging .screen-hint { display: none; }
 .screen-badge { display: flex; justify-content: space-between; margin: 10px 4px 0; color: #808481; font: 700 9px/1 ui-monospace, monospace; letter-spacing: .13em; text-transform: uppercase; }
+.trinitron-mark, .trinitron-console { display: none; }
 
 .control-deck {
   display: grid;

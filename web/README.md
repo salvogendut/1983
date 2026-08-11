@@ -7,9 +7,11 @@ Build the browser edition with Emscripten and serve the publish directory:
     python3 -m http.server 8080 --directory web/dist
 
 Open `http://localhost:8080/` in a modern browser. The interface defaults to
-the **SONYHB-F1XD** theme: a charcoal, red-accented machine and matching CRT
-monitor inspired by 1980s Japanese electronics. Its full MSX keyboard is
-collapsed by default; use **Show keyboard** to reveal it.
+the **SONYHB-F1XD** theme: a charcoal, red-accented machine and compact
+Trinitron/PVM-inspired monitor with a recessed tube and period control fascia.
+The treatment is CSS-native and inspired by 1980s Japanese electronics rather
+than reproducing one specific monitor model. Its full MSX keyboard is collapsed
+by default; use **Show keyboard** to reveal it.
 
 The theme picker also retains Retro CRT, Sapporo and Sapporo Dark. A theme can
 be selected directly with a case-insensitive query parameter:
