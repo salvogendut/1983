@@ -27,6 +27,9 @@ be selected directly with a case-insensitive query parameter:
 - Video rendered from the VDP framebuffer (256x192 MSX1 / 512x212 MSX2) scaled
   to a 4:3 canvas. Keyboard, PSG audio (schedule-ahead WebAudio), floppy DSK,
   cassette CAS, cartridge ROM and USB gamepad input.
+- Emulation pacing follows the core's reported 50/60 Hz rate. The Web Audio
+  queue uses only samples actually produced by the machine, with bounded
+  catch-up after browser stalls and no silence-padding between buffers.
 - Physical keyboard input and the collapsible on-screen MSX keyboard, including
   F1-F5, SELECT, STOP, GRAPH, CODE, cursor keys and numeric keypad.
 - `poc_init_model(1, ...)` selects MSX2, which needs a real MSX2 BIOS
