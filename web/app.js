@@ -205,9 +205,6 @@ $("fullscreen").addEventListener("click", async () => {
     setStatus("Fullscreen unavailable: " + error.message);
   }
 });
-$("expansion").addEventListener("click", () => {
-  showToast("Expansion bay reserved for future browser devices");
-});
 setScreenScale(100);
 updatePixelMode();
 let savedDisplayMode = "color";
@@ -231,26 +228,36 @@ create1983().then(m => {
   frameW = m._poc_width();
   frameH = m._poc_height();
   const frameClock = JS1983Audio.createFrameClock(m._poc_frame_hz());
+  const peripherals = JS1983Hardware.createPeripheralState();
   const modelEl = $("model");
+  const frameRateLabelEl = $("frameRateLabel");
   const resetEl = $("reset");
+  const diskSlotEl = $("diskSlot");
   const diskfileEl = $("diskfile");
   const disknameEl = $("diskname");
   const diskEjectEl = $("diskEject");
-  const cartfileEl = $("cartfile");
-  const cartnameEl = $("cartname");
-  const cartEjectEl = $("cartEject");
+  const cartridgeUi = [0, 1].map(slot => ({
+    slot: $("cartSlot" + (slot + 1)),
+    file: $("cartfile" + (slot + 1)),
+    name: $("cartname" + (slot + 1)),
+    load: $("cartLoad" + (slot + 1)),
+    eject: $("cartEject" + (slot + 1)),
+  }));
   const cassfileEl = $("cassfile");
   const cassnameEl = $("cassname");
   const cassEjectEl = $("cassEject");
-  const joytoggleEl = $("joytoggle");
+  const inputDeviceEl = $("inputDevice");
+  const inputActionEl = $("joydetect");
   const joystatusEl = $("joystatus");
   const joymatrixEl = $("joymatrix");
+  const screenHintEl = $("screenHint");
+  const expansionEl = $("expansion");
 
   let currentModel = 0;
   let audioCtx = null;
   let audioScheduler = null;
   let prevGamepad = null;
-  let joyEnabled = true;
+  let extensionReservationEnabled = false;
   let ledState = 0;
   const heldKeys = new Map();
   const virtualKeys = new Set();
@@ -376,10 +383,19 @@ create1983().then(m => {
     diskfileEl.value = "";
   }
 
-  function clearCartUi() {
-    cartnameEl.textContent = "No cartridge loaded";
-    cartEjectEl.disabled = true;
-    cartfileEl.value = "";
+  function clearCartUi(slot) {
+    const ui = cartridgeUi[slot];
+    const owner = peripherals.cartridgeSlotOwner(slot);
+    ui.name.textContent = owner
+      ? "Reserved by " + owner
+      : "No cartridge loaded";
+    ui.eject.disabled = true;
+    ui.file.value = "";
+  }
+
+  function clearAllCartUi() {
+    clearCartUi(0);
+    clearCartUi(1);
   }
 
   function clearCassUi() {
@@ -389,9 +405,38 @@ create1983().then(m => {
   }
 
   function releaseAllJoy() {
-    for (let column = 0; column < 8; column++)
+    for (let column = 0; column < 6; column++)
       m._poc_joy(column, 0);
     prevGamepad = null;
+  }
+
+  function updateFrameRateLabel() {
+    frameRateLabelEl.textContent = "WASM / " + m._poc_frame_hz() + " HZ";
+  }
+
+  function updateFloppyUi() {
+    const available = Boolean(m._poc_has_floppy());
+    diskSlotEl.classList.toggle("media-slot-disabled", !available);
+    diskSlotEl.setAttribute("aria-disabled", String(!available));
+    diskfileEl.disabled = !available;
+    const load = diskSlotEl.querySelector('label[for="diskfile"]');
+    load.setAttribute("aria-disabled", String(!available));
+    if (!available) {
+      clearDiskUi();
+      disknameEl.textContent = "Unavailable on this machine";
+    }
+  }
+
+  function updateCartridgeAvailability() {
+    for (let slot = 0; slot < cartridgeUi.length; ++slot) {
+      const ui = cartridgeUi[slot];
+      const available = peripherals.cartridgeSlotAvailable(slot);
+      ui.slot.classList.toggle("media-slot-disabled", !available);
+      ui.slot.setAttribute("aria-disabled", String(!available));
+      ui.file.disabled = !available;
+      ui.load.setAttribute("aria-disabled", String(!available));
+      if (!available) clearCartUi(slot);
+    }
   }
 
   function resetAudioQueue() {
@@ -399,12 +444,10 @@ create1983().then(m => {
     else m._poc_audio_reset();
   }
 
-  function reinit(model, cartridge) {
-    const rc = cartridge !== undefined
-      ? m.ccall("poc_load_cartridge", "number", ["string"], [cartridge])
-      : m._poc_init_model(model, 0);
+  function reinit(model) {
+    const rc = m._poc_init_model(model, 0);
     if (rc !== 0) {
-      setStatus("Machine initialization failed (MSX2 needs a real MSX2.ROM)");
+      setStatus("Machine initialization failed: embedded firmware unavailable");
       return false;
     }
     currentModel = model;
@@ -414,21 +457,29 @@ create1983().then(m => {
     frameH = m._poc_height();
     resetAudioQueue();
     frameClock.setRate(m._poc_frame_hz());
+    frameClock.reset();
     releaseAllJoy();
     releaseAllVirtualKeys();
     clearDiskUi();
-    if (cartridge === undefined) clearCartUi();
+    clearAllCartUi();
     clearCassUi();
+    updateFrameRateLabel();
+    updateFloppyUi();
+    updateCartridgeAvailability();
+    applyInputDevice(peripherals.getInputDevice(), false);
     updateScreenModeReadout();
-    setStatus("Machine reset");
+    setStatus(model === 1
+      ? "Philips NMS 8250 ready - RainBIOS + WD2793"
+      : "MSX1 ready - C-BIOS");
     return true;
   }
 
   modelEl.addEventListener("change", () => {
     const model = Number(modelEl.value);
     if (reinit(model)) {
-      clearCartUi();
-      showToast(model === 1 ? "MSX2 selected" : "MSX1 selected");
+      showToast(model === 1
+        ? "Philips NMS 8250 selected"
+        : "MSX1 (C-BIOS) selected");
     } else {
       modelEl.value = String(currentModel);
     }
@@ -445,16 +496,25 @@ create1983().then(m => {
     canvas.focus();
   });
 
-  function mountCartridge(data, name, path) {
+  function mountCartridge(data, name, path, slot = 0) {
+    if (!peripherals.cartridgeSlotAvailable(slot))
+      throw new Error("cartridge slot " + (slot + 1) + " is reserved by an extension");
     m.FS.writeFile(path, data);
-    const rc = m.ccall("poc_load_cartridge", "number", ["string"], [path]);
+    const rc = m.ccall(
+      "poc_load_cartridge_slot",
+      "number",
+      ["number", "string"],
+      [slot, path]
+    );
     if (rc !== 0) throw new Error("unsupported or damaged cartridge ROM");
     resetAudioQueue();
     frameClock.setRate(m._poc_frame_hz());
-    cartnameEl.textContent = name;
-    cartEjectEl.disabled = false;
-    setStatus("Cartridge: " + name);
-    showToast("Cartridge loaded");
+    frameClock.reset();
+    releaseAllJoy();
+    cartridgeUi[slot].name.textContent = name;
+    cartridgeUi[slot].eject.disabled = false;
+    setStatus("Cartridge " + (slot + 1) + ": " + name);
+    showToast("Cartridge " + (slot + 1) + " loaded");
   }
 
   function mountDisk(data, name, path) {
@@ -477,11 +537,11 @@ create1983().then(m => {
     showToast("Cassette loaded");
   }
 
-  async function loadCartridgeFile(file) {
+  async function loadCartridgeFile(file, slot = 0) {
     if (!file) return;
     try {
       const data = new Uint8Array(await file.arrayBuffer());
-      mountCartridge(data, file.name, "/uploaded.rom");
+      mountCartridge(data, file.name, "/uploaded-" + (slot + 1) + ".rom", slot);
     } catch (error) {
       setStatus("Cartridge load failed: " + error.message);
       showToast("Could not load " + file.name);
@@ -510,15 +570,18 @@ create1983().then(m => {
     }
   }
 
-  cartfileEl.addEventListener("change", () => loadCartridgeFile(cartfileEl.files[0]));
-  cartEjectEl.addEventListener("click", () => {
-    m._poc_reset();
-    resetAudioQueue();
-    frameClock.reset();
-    releaseAllJoy();
-    clearCartUi();
-    setStatus("Cartridge ejected");
-  });
+  for (let slot = 0; slot < cartridgeUi.length; ++slot) {
+    const ui = cartridgeUi[slot];
+    ui.file.addEventListener("change", () => loadCartridgeFile(ui.file.files[0], slot));
+    ui.eject.addEventListener("click", () => {
+      m._poc_eject_cartridge(slot);
+      resetAudioQueue();
+      frameClock.reset();
+      releaseAllJoy();
+      clearCartUi(slot);
+      setStatus("Cartridge " + (slot + 1) + " ejected");
+    });
+  }
   diskfileEl.addEventListener("change", () => loadDiskFile(diskfileEl.files[0]));
   diskEjectEl.addEventListener("click", () => {
     m._poc_eject_disk();
@@ -531,6 +594,36 @@ create1983().then(m => {
     clearCassUi();
     setStatus("Cassette ejected");
   });
+
+  function setExtensionReservation(enabled, announce = true) {
+    extensionReservationEnabled = Boolean(enabled);
+    if (extensionReservationEnabled && m._poc_cartridge_loaded(1)) {
+      m._poc_eject_cartridge(1);
+      resetAudioQueue();
+      frameClock.reset();
+      releaseAllJoy();
+    }
+    peripherals.setExtensions(
+      extensionReservationEnabled ? ["expansion hardware"] : []
+    );
+    expansionEl.setAttribute("aria-pressed", String(extensionReservationEnabled));
+    expansionEl.querySelector("small").textContent =
+      extensionReservationEnabled ? "Enabled" : "Extension";
+    updateCartridgeAvailability();
+    setStatus(extensionReservationEnabled
+      ? "Expansion enabled - cartridge II reserved"
+      : "Expansion disabled - cartridge II available");
+    if (announce) {
+      showToast(extensionReservationEnabled
+        ? "Cartridge II reserved by expansion hardware"
+        : "Cartridge II released");
+    }
+  }
+
+  expansionEl.addEventListener("click", () => {
+    setExtensionReservation(!extensionReservationEnabled);
+  });
+  setExtensionReservation(false, false);
 
   async function fetchServerMedia(url, kind) {
     const name = JS1983Media.filenameFromUrl(url, kind);
@@ -555,12 +648,23 @@ create1983().then(m => {
       showToast("Invalid server media URL");
       return;
     }
-    if (!media.disk && !media.cartridge) return;
+    if (!media.disk && !media.cartridge && !media.cartridge2) return;
 
     try {
+      if (media.disk && !m._poc_has_floppy() && !reinit(1))
+        throw new Error("could not select the NMS 8250 floppy profile");
       if (media.cartridge) {
         const cartridge = await fetchServerMedia(media.cartridge, "cartridge");
         mountCartridge(cartridge.data, cartridge.name, "/server-cartridge.rom");
+      }
+      if (media.cartridge2) {
+        const cartridge = await fetchServerMedia(media.cartridge2, "cartridge");
+        mountCartridge(
+          cartridge.data,
+          cartridge.name,
+          "/server-cartridge-2.rom",
+          1
+        );
       }
       if (media.disk) {
         const disk = await fetchServerMedia(media.disk, "disk");
@@ -616,14 +720,38 @@ create1983().then(m => {
 
   window.addEventListener("pointerdown", startAudio, { once: true });
 
-  function setJoystickEnabled(enabled) {
-    joyEnabled = enabled;
-    joytoggleEl.checked = enabled;
-    if (!enabled) releaseAllJoy();
-    joystatusEl.textContent = enabled ? "Joystick: enabled" : "Joystick: disabled";
+  function mouseInputSelected() {
+    return peripherals.getInputDevice() === JS1983Hardware.INPUT_MOUSE;
   }
 
-  joytoggleEl.addEventListener("change", () => setJoystickEnabled(joytoggleEl.checked));
+  function applyInputDevice(device, announce = true) {
+    const selected = peripherals.setInputDevice(device);
+    const mouse = selected === JS1983Hardware.INPUT_MOUSE;
+    if (m._poc_set_input_device(mouse ? 1 : 0) !== 0)
+      throw new Error("core rejected input device " + selected);
+    inputDeviceEl.value = selected;
+    releaseAllJoy();
+    canvas.classList.toggle("mouse-ready", mouse);
+    screenHintEl.textContent = mouse
+      ? "Click display to capture mouse - Ctrl+Enter releases"
+      : "Click display for keyboard";
+    inputActionEl.textContent = mouse ? "Capture mouse" : "Detect controller";
+    if (mouse) {
+      joystatusEl.textContent = "Mouse: click display to capture";
+      joymatrixEl.textContent = "MSX mouse: idle on port 1";
+      if (announce) showToast("Mouse selected on joystick port 1");
+    } else {
+      if (document.pointerLockElement === canvas) document.exitPointerLock();
+      m._poc_mouse_clear();
+      joystatusEl.textContent = "Joystick: enabled";
+      updateMsxJoyStatus();
+      if (announce) showToast("Joystick selected on port 1");
+    }
+  }
+
+  inputDeviceEl.addEventListener("change", () => {
+    applyInputDevice(inputDeviceEl.value);
+  });
 
   function gamepadUnavailableReason() {
     if (!window.isSecureContext)
@@ -638,14 +766,15 @@ create1983().then(m => {
 
   function updateMsxJoyStatus() {
     const row = m._poc_joy_matrix() & 0xff;
-    const names = ["UP", "DOWN", "LEFT", "RIGHT", "-", "-", "A", "B"];
+    const names = ["UP", "DOWN", "LEFT", "RIGHT", "A", "B"];
     const active = names.filter((_, column) => !(row & (1 << column)));
     joymatrixEl.textContent = "MSX joystick: " +
       (active.length ? active.join(" ") : "idle") +
-      " (row 7 = 0x" + row.toString(16).padStart(2, "0").toUpperCase() + ")";
+      " (port 1 = 0x" + row.toString(16).padStart(2, "0").toUpperCase() + ")";
   }
 
   function pollGamepad() {
+    if (mouseInputSelected()) return;
     const unavailable = gamepadUnavailableReason();
     if (unavailable) {
       joystatusEl.textContent = "Joystick unavailable: " + unavailable;
@@ -675,11 +804,6 @@ create1983().then(m => {
     const mapped = JS1983Gamepad.mapGamepad(gamepad);
     const state = mapped.state;
     const names = ["UP", "DOWN", "LEFT", "RIGHT", "A", "B"];
-    if (!joyEnabled) {
-      if (prevGamepad) releaseAllJoy();
-      return;
-    }
-
     if (state.some(Boolean)) {
       joystatusEl.textContent = "Joystick [" + mapped.profile + "]: " +
         names.filter((_, column) => state[column]).join(" ");
@@ -702,28 +826,109 @@ create1983().then(m => {
   }
 
   window.addEventListener("gamepadconnected", event => {
+    if (mouseInputSelected()) return;
     joystatusEl.textContent = "Joystick: connected " + event.gamepad.id;
     showToast("Game controller connected");
   });
   window.addEventListener("gamepaddisconnected", () => {
     releaseAllJoy();
-    joystatusEl.textContent = "Joystick: disconnected";
+    if (!mouseInputSelected()) joystatusEl.textContent = "Joystick: disconnected";
   });
   window.addEventListener("focus", pollGamepad);
-  $("joydetect").addEventListener("click", () => {
+  inputActionEl.addEventListener("click", () => {
     startAudio();
-    pollGamepad();
-    showToast("Scanning browser game controllers");
+    if (mouseInputSelected()) {
+      requestMouseCapture();
+    } else {
+      pollGamepad();
+      showToast("Scanning browser game controllers");
+    }
   });
   setInterval(pollGamepad, 100);
+
+  function requestMouseCapture() {
+    if (!mouseInputSelected()) return;
+    canvas.focus();
+    startAudio();
+    if (document.pointerLockElement === canvas) return;
+    if (typeof canvas.requestPointerLock !== "function") {
+      setStatus("Mouse capture is unavailable in this browser");
+      showToast("Mouse capture unavailable");
+      return;
+    }
+    const request = canvas.requestPointerLock();
+    if (request && typeof request.catch === "function") {
+      request.catch(error => {
+        setStatus("Mouse capture failed: " + error.message);
+        showToast("Browser denied mouse capture");
+      });
+    }
+  }
+
+  function mouseButton(event) {
+    if (event.button === 0) return 0;
+    if (event.button === 2) return 1;
+    return -1;
+  }
+
+  document.addEventListener("pointerlockchange", () => {
+    const captured = document.pointerLockElement === canvas;
+    canvas.classList.toggle("mouse-captured", captured);
+    if (!mouseInputSelected()) return;
+    if (captured) {
+      joystatusEl.textContent = "Mouse: captured - Ctrl+Enter releases";
+      joymatrixEl.textContent = "MSX mouse: active on port 1";
+      showToast("MSX mouse captured");
+    } else {
+      m._poc_mouse_clear();
+      joystatusEl.textContent = "Mouse: click display to capture";
+      joymatrixEl.textContent = "MSX mouse: idle on port 1";
+    }
+  });
+  document.addEventListener("pointerlockerror", () => {
+    if (!mouseInputSelected()) return;
+    setStatus("Mouse capture is unavailable in this browser context");
+    showToast("Mouse capture unavailable");
+  });
+  document.addEventListener("mousemove", event => {
+    if (!mouseInputSelected() || document.pointerLockElement !== canvas) return;
+    if (event.movementX || event.movementY) {
+      m._poc_mouse_motion(event.movementX, event.movementY);
+      pulseInputLed();
+    }
+  });
+  canvas.addEventListener("mousedown", event => {
+    if (!mouseInputSelected()) return;
+    const button = mouseButton(event);
+    if (button < 0) return;
+    event.preventDefault();
+    requestMouseCapture();
+    m._poc_mouse_button(button, 1);
+    pulseInputLed();
+  });
+  document.addEventListener("mouseup", event => {
+    if (!mouseInputSelected()) return;
+    const button = mouseButton(event);
+    if (button >= 0) m._poc_mouse_button(button, 0);
+  });
+  window.addEventListener("blur", () => {
+    if (mouseInputSelected()) m._poc_mouse_clear();
+  });
 
   canvas.addEventListener("click", () => {
     canvas.focus();
     startAudio();
+    if (mouseInputSelected()) requestMouseCapture();
   });
   canvas.addEventListener("contextmenu", event => event.preventDefault());
 
   window.addEventListener("keydown", event => {
+    if (event.ctrlKey && event.code === "Enter" &&
+        document.pointerLockElement === canvas) {
+      event.preventDefault();
+      document.exitPointerLock();
+      return;
+    }
     const scancode = CODE2SCAN[event.code];
     if (scancode === undefined || document.activeElement !== canvas) return;
     event.preventDefault();
@@ -772,7 +977,7 @@ create1983().then(m => {
     if (lowerName.endsWith(".dsk")) loadDiskFile(file);
     else if (lowerName.endsWith(".cas")) loadCassetteFile(file);
     else if (lowerName.endsWith(".rom") || lowerName.endsWith(".mx1") ||
-             lowerName.endsWith(".mx2")) loadCartridgeFile(file);
+             lowerName.endsWith(".mx2")) loadCartridgeFile(file, 0);
     else showToast("Use a ROM, DSK or CAS image");
   });
 
@@ -838,6 +1043,11 @@ create1983().then(m => {
     requestAnimationFrame(frame);
   }
 
+  updateFrameRateLabel();
+  updateFloppyUi();
+  updateCartridgeAvailability();
+  applyInputDevice(JS1983Hardware.INPUT_JOYSTICK, false);
+  setStatus("MSX1 (C-BIOS) ready - select NMS 8250 for floppy support");
   requestAnimationFrame(frame);
   bootstrapServerMedia();
 }).catch(error => {

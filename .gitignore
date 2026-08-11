@@ -32,8 +32,12 @@
 /.local/
 /ROMS/*
 !/ROMS/README.C-BIOS
+!/ROMS/README-RainBIOS
 !/ROMS/cbios_logo_msx1.rom
 !/ROMS/cbios_main_msx1.rom
+!/ROMS/rainbios_msx2.rom
+!/ROMS/rainbios_msx2_sub.rom
+!/ROMS/rainbios_nms8250_disk.rom
 /rtc/
 /DOS/*
 /src/.deps/

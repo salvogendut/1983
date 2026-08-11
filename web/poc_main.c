@@ -5,7 +5,8 @@
  *   - poc_step():           run one emulated frame (CPU + VDP + PSG)
  *   - poc_pixels():         pointer to the VDP framebuffer (u32 0x00RRGGBB)
  *   - poc_key():            SDL_Scancode key down/up through the MSX matrix
- *   - poc_load_cartridge(): install a game ROM into cartridge slot 1
+ *   - poc_load_cartridge_slot(): install a game ROM into either cartridge
+ *     slot
  *   - poc_load_disk():      mount a .dsk into drive A from the virtual FS
  *   - poc_load_cassette():  load a CAS tape from the virtual FS
  *   - poc_autorun():        queue RUN"file" after a frame-counted boot delay
@@ -30,6 +31,9 @@ static Paste g_paste;
 static int g_autorun_frames;
 static char g_autorun_command[256];
 static bool g_initialized;
+static bool g_machine_initialized;
+static u8 g_joy_pressed;
+static int g_input_device;
 
 static void poc_cancel_paste(void) {
     paste_cancel(&g_paste, &g_msx);
@@ -69,12 +73,16 @@ EMSCRIPTEN_KEEPALIVE void poc_audio_advance(int n) {
 }
 
 /* ---- emulator lifecycle ----
- * model 0 = MSX1 (C-BIOS), 1 = MSX2 (needs a real MSX2.ROM in the virtual
- * FS; returns -1 when the firmware is absent). May be called repeatedly to
- * switch machines. */
+ * model 0 = MSX1 (C-BIOS), 1 = Philips NMS 8250 (RainBIOS main, Sub-ROM and
+ * disk ROM). May be called repeatedly to switch machines. */
 EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
     MsxModel m;
     MsxRegion region = MSX_REGION_NTSC;
+    MsxFloppyConfig floppy = {
+        .controller = MSX_FLOPPY_CONTROLLER_NONE,
+        .primary_slot = -1,
+        .secondary_slot = -1,
+    };
 
     poc_cancel_paste();
     if (!g_initialized) {
@@ -82,24 +90,42 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
         paste_init(&g_paste);
         g_initialized = true;
     }
+    if (g_machine_initialized)
+        msx_destroy(&g_msx);
 
     if (model == 1) {
-        m = MSX_MODEL_GENERIC_MSX2;
+        m = MSX_MODEL_PHILIPS_NMS8250;
+        region = MSX_REGION_PAL;
+        floppy.controller = MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
+        floppy.primary_slot = 3;
+        floppy.secondary_slot = 3;
     } else {
         m = MSX_MODEL_GENERIC_MSX1;
     }
-    msx_init(&g_msx, m, region, 64);
+    msx_init(&g_msx, m, region, msx_default_ram_kb(m));
+    g_machine_initialized = true;
+    g_joy_pressed = 0;
+    if (msx_configure_floppy(&g_msx, &floppy) != 0)
+        return -1;
 
     if (model == 1) {
-        if (msx_load_bios(&g_msx, "roms/MSX2.ROM") != 0)
+        if (msx_load_firmware_set(
+                &g_msx,
+                "roms/rainbios_msx2.rom", NULL,
+                "roms/rainbios_msx2_sub.rom",
+                "roms/rainbios_nms8250_disk.rom") != 0)
             return -1;
     } else {
-        if (msx_load_bios(&g_msx, "roms/cbios_main_msx1.rom") != 0)
+        if (msx_load_firmware_set(
+                &g_msx,
+                "roms/cbios_main_msx1.rom",
+                "roms/cbios_logo_msx1.rom", NULL, NULL) != 0)
             return -1;
-        (void)msx_load_logo(&g_msx, "roms/cbios_logo_msx1.rom");
     }
+    msx_mouse_set_enabled(&g_msx, 0, g_input_device == 1);
     if (cartridge && cartridge[0] &&
-        msx_load_cartridge(&g_msx, cartridge) != 0)
+        msx_load_cartridge_slot(
+            &g_msx, 0, cartridge, MSX_CART_MAPPER_AUTO) != 0)
         return -1;
     return msx_can_boot(&g_msx) ? 0 : -1;
 }
@@ -107,9 +133,37 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
 EMSCRIPTEN_KEEPALIVE int poc_init(void) { return poc_init_model(0, NULL); }
 
 EMSCRIPTEN_KEEPALIVE int poc_load_cartridge(const char *path) {
-    if (msx_load_cartridge(&g_msx, path) != 0)
+    if (msx_load_cartridge_slot(
+            &g_msx, 0, path, MSX_CART_MAPPER_AUTO) != 0)
         return -1;
+    g_joy_pressed = 0;
     return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_load_cartridge_slot(int slot,
+                                                 const char *path) {
+    if (slot < 0 || slot >= (int)MSX_CARTRIDGE_SLOTS ||
+        msx_load_cartridge_slot(
+            &g_msx, (unsigned)slot, path, MSX_CART_MAPPER_AUTO) != 0)
+        return -1;
+    g_joy_pressed = 0;
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE void poc_eject_cartridge(int slot) {
+    if (slot < 0 || slot >= (int)MSX_CARTRIDGE_SLOTS)
+        return;
+    msx_eject_cartridge(&g_msx, (unsigned)slot);
+    g_joy_pressed = 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_cartridge_loaded(int slot) {
+    const MsxCartridge *cartridge;
+
+    if (slot < 0 || slot >= (int)MSX_CARTRIDGE_SLOTS)
+        return 0;
+    cartridge = msx_get_cartridge(&g_msx, (unsigned)slot);
+    return cartridge && cartridge->loaded ? 1 : 0;
 }
 
 /* Warm reset of the current machine (keeps loaded ROMs/cartridge). */
@@ -117,6 +171,7 @@ EMSCRIPTEN_KEEPALIVE void poc_reset(void) {
     poc_cancel_paste();
     kbd_release_all(&g_kbd, &g_msx);
     msx_reset(&g_msx);
+    g_joy_pressed = 0;
 }
 
 EMSCRIPTEN_KEEPALIVE int poc_step(void) {
@@ -157,28 +212,64 @@ EMSCRIPTEN_KEEPALIVE void poc_key_mod(int scancode, int pressed, int mod) {
     kbd_handle(&g_kbd, &g_msx, &event);
 }
 
-/* MSX joystick 1: up/down/left/right = matrix row 7, cols 0-3; button A = row
- * 7 col 6, button B = row 7 col 7. The browser maps a gamepad into this. */
-#define MSX_JOY_ROW 7
-#define MSX_JOY_COL_A 6
-#define MSX_JOY_COL_B 7
+/* The browser maps gamepad directions and buttons onto joystick port 1. */
 EMSCRIPTEN_KEEPALIVE void poc_joy(int col, int pressed) {
-    if (col < 0 || col > 7)
+    u8 mask;
+
+    if (col < 0 || col > 5 || g_input_device != 0)
         return;
-    if (pressed) msx_keyboard_press(&g_msx, MSX_JOY_ROW, (unsigned)col);
-    else         msx_keyboard_release(&g_msx, MSX_JOY_ROW, (unsigned)col);
+    mask = (u8)(1u << col);
+    if (pressed)
+        g_joy_pressed |= mask;
+    else
+        g_joy_pressed &= (u8)~mask;
+    msx_joystick_set_pressed(&g_msx, 0, g_joy_pressed);
 }
 
 /* Diagnostic readback used by the browser to distinguish Gamepad API mapping
- * failures from MSX-side input failures. Row 7 is active low. */
+ * failures from MSX-side input failures. The returned port is active low. */
 EMSCRIPTEN_KEEPALIVE int poc_joy_matrix(void) {
-    return g_msx.keyboard_rows[MSX_JOY_ROW];
+    return msx_joystick_read_port(&g_msx, 0);
+}
+
+/* device 0 = joystick, 1 = mouse, both on joystick port 1. */
+EMSCRIPTEN_KEEPALIVE int poc_set_input_device(int device) {
+    if (device != 0 && device != 1)
+        return -1;
+    g_input_device = device;
+    g_joy_pressed = 0;
+    msx_joystick_set_pressed(&g_msx, 0, 0);
+    msx_mouse_set_enabled(&g_msx, 0, device == 1);
+    msx_mouse_clear_input(&g_msx, 0);
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE void poc_mouse_motion(int delta_x, int delta_y) {
+    if (g_input_device == 1)
+        msx_mouse_add_host_motion(&g_msx, 0, delta_x, delta_y);
+}
+
+EMSCRIPTEN_KEEPALIVE void poc_mouse_button(int button, int pressed) {
+    if (g_input_device == 1 && button >= 0 && button <= 1)
+        msx_mouse_set_button(
+            &g_msx, 0, (unsigned)button, pressed != 0);
+}
+
+EMSCRIPTEN_KEEPALIVE void poc_mouse_clear(void) {
+    msx_mouse_clear_input(&g_msx, 0);
 }
 
 EMSCRIPTEN_KEEPALIVE int poc_load_disk(const char *path) {
     if (msx_mount_drive_a(&g_msx, path, FLOPPY_IMAGE_READ_WRITE) != 0)
         return -1;
     return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_has_floppy(void) {
+    const MsxFloppyConfig *floppy = msx_floppy_config(&g_msx);
+
+    return floppy &&
+           floppy->controller != MSX_FLOPPY_CONTROLLER_NONE ? 1 : 0;
 }
 
 EMSCRIPTEN_KEEPALIVE void poc_eject_disk(void) {

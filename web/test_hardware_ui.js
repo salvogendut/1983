@@ -1,0 +1,32 @@
+'use strict';
+
+const assert = require('assert');
+const {
+  INPUT_JOYSTICK,
+  INPUT_MOUSE,
+  normalizeInputDevice,
+  createPeripheralState,
+} = require('./hardware-ui.js');
+
+const state = createPeripheralState();
+assert.strictEqual(state.getInputDevice(), INPUT_JOYSTICK);
+assert.strictEqual(state.cartridgeSlotAvailable(0), true);
+assert.strictEqual(state.cartridgeSlotAvailable(1), true);
+
+assert.strictEqual(state.setInputDevice(INPUT_MOUSE), INPUT_MOUSE);
+assert.strictEqual(state.getInputDevice(), INPUT_MOUSE);
+assert.throws(() => normalizeInputDevice('lightpen'), /unsupported/);
+
+assert.deepStrictEqual(
+  state.setExtensions(['Sunrise IDE', 'Sunrise IDE', 'MSX TCP/IP UNAPI']),
+  ['Sunrise IDE', 'MSX TCP/IP UNAPI']
+);
+assert.strictEqual(state.cartridgeSlotAvailable(0), true);
+assert.strictEqual(state.cartridgeSlotAvailable(1), false);
+assert.strictEqual(state.cartridgeSlotOwner(1), 'Sunrise IDE');
+
+state.setExtensions([]);
+assert.strictEqual(state.cartridgeSlotAvailable(1), true);
+assert.throws(() => state.cartridgeSlotAvailable(2), /unsupported/);
+
+console.log('web hardware UI tests passed');

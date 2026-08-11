@@ -331,6 +331,8 @@ canvas.mouse-captured { cursor: none; }
   transition: opacity .2s;
 }
 .media-slot-disabled { opacity: .44; }
+.media-slot[aria-disabled="true"] { filter: grayscale(.8); }
+.media-slot[aria-disabled="true"] .media-actions label { pointer-events: none; }
 .cassette-window { display: flex; align-items: center; justify-content: space-evenly; height: 40px; padding: 0 7px; border: 1px solid #050606; border-radius: 3px; color: #a8aaa5; background: linear-gradient(#090a0b, #181a1b); box-shadow: inset 0 2px 7px #000; font: 800 8px/1 ui-monospace, monospace; }
 .cassette-window i { width: 16px; height: 16px; border: 4px dotted #777a77; border-radius: 50%; }
 .cartridge-window span { padding: 7px 13px; border: 1px solid #555; border-radius: 2px; color: var(--amber); background: #111; }
@@ -343,6 +345,10 @@ canvas.mouse-captured { cursor: none; }
 button:disabled, [aria-disabled="true"] { opacity: .42; cursor: not-allowed; }
 
 .input-switches { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.input-device-picker { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; margin-bottom: 12px; }
+.input-device-picker > span:first-child { color: #858987; font: 700 8px/1 ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; }
+.input-device-picker .select-shell { display: block; min-width: 0; }
+.input-device-picker select { min-height: 30px; font-size: 10px; }
 .toggle-control { display: flex; align-items: center; gap: 9px; min-width: 0; cursor: pointer; }
 .toggle-control > input { position: absolute; opacity: 0; pointer-events: none; }
 .toggle-track { position: relative; flex: 0 0 auto; width: 33px; height: 17px; border: 1px solid #070808; border-radius: 10px; background: #0d0f10; box-shadow: inset 0 1px 4px #000, 0 1px rgba(255,255,255,.08); }
@@ -381,6 +387,7 @@ button:disabled, [aria-disabled="true"] { opacity: .42; cursor: not-allowed; }
 .color-mode-key small { margin-top: 4px; color: #8d918e; font: 500 7px/1 ui-monospace, monospace; text-transform: none; }
 .mode-lamp { flex: 0 0 auto; width: 14px; height: 14px; border: 2px solid #090a0a; border-radius: 50%; background: conic-gradient(#e94132, #e2c732, #3bb36e, #377ed2, #e94132); box-shadow: inset 0 0 2px #fff, 0 0 5px rgba(255,255,255,.18); }
 .color-mode-key.active .mode-lamp { background: #70ef91; box-shadow: inset 0 0 2px #fff, 0 0 9px rgba(112,239,145,.85); }
+.expansion-key[aria-pressed="true"] { outline: 2px solid var(--amber); outline-offset: -3px; }
 
 .sony-msx-keyboard { display: none; }
 

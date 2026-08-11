@@ -30,6 +30,7 @@
     const media = {
       disk: resolveHttpUrl(params.get('disk'), baseUrl, 'disk'),
       cartridge: resolveHttpUrl(params.get('cartridge'), baseUrl, 'cartridge'),
+      cartridge2: resolveHttpUrl(params.get('cartridge2'), baseUrl, 'cartridge2'),
       autorun: validateAutorun(params.get('autorun')),
     };
     if (media.autorun && !media.disk)
