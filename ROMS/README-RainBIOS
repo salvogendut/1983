@@ -1,0 +1,51 @@
+RainBIOS firmware for Javascript 1983
+=====================================
+
+These redistributable ROM images provide the browser edition's Philips
+NMS 8250 profile:
+
+  rainbios_msx2.rom           MSX2 main BIOS, 32 KiB
+  rainbios_msx2_sub.rom       MSX2 Sub-ROM, 16 KiB
+  rainbios_nms8250_disk.rom   Philips WD2793 disk ROM, 16 KiB
+
+They were built from RainBIOS commit
+fae75a2410e84f564e12e0755f936fccf9de42d9:
+
+  https://github.com/salvogendut/rainbios
+
+SHA-256:
+
+  55acd7142ece592fa1dcf253b13bc0f05c5d5acdafa80e22019c8136f15ae939  rainbios_msx2.rom
+  f8230c25f45db88d4c032e59dd714c4bf65c1b3300000fc20a046fa32ef984ed  rainbios_msx2_sub.rom
+  c27dcab0edd8f4918c89993d5d798246eed21e01a3cedb9e2bb95b0cf3b73488  rainbios_nms8250_disk.rom
+
+RainBIOS is distributed under the BSD 3-Clause License:
+
+Copyright (c) 2026, RainBIOS contributors
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

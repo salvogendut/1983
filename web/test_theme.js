@@ -34,5 +34,13 @@ assert(
   /\.trinitron-mark\s*\{[^}]*display:\s*flex;/s.test(sonyCss),
   'the Sony theme must enable the Trinitron mark'
 );
+assert(
+  html.includes('class="trinitron-sony">THONY</strong>'),
+  'the monitor fascia must use the THONY parody mark'
+);
+assert(
+  sonyCss.includes('content: "THONY     HB-F1XD     MSX2";'),
+  'the machine body must use the THONY parody mark'
+);
 
 console.log('web theme tests passed');

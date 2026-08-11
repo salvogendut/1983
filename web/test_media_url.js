@@ -12,6 +12,7 @@ let media = parseStartupMedia(
 assert.deepStrictEqual(media, {
   disk: 'https://example.test/1983/media/thisdisk.dsk',
   cartridge: null,
+  cartridge2: null,
   autorun: 'disc.bas',
 });
 
@@ -21,7 +22,15 @@ media = parseStartupMedia(
 );
 assert.strictEqual(media.disk, null);
 assert.strictEqual(media.cartridge, 'https://cdn.example.test/games/Sonic.cpr');
+assert.strictEqual(media.cartridge2, null);
 assert.strictEqual(media.autorun, null);
+
+media = parseStartupMedia(
+  '?cartridge=media%2Fslot1.rom&cartridge2=media%2Fslot2.rom',
+  base
+);
+assert.strictEqual(media.cartridge, 'https://example.test/1983/media/slot1.rom');
+assert.strictEqual(media.cartridge2, 'https://example.test/1983/media/slot2.rom');
 
 assert.strictEqual(
   filenameFromUrl('https://example.test/media/Bomb%20Jack.dsk', 'disk.dsk'),
@@ -30,6 +39,7 @@ assert.strictEqual(
 assert.deepStrictEqual(parseStartupMedia('?theme=default', base), {
   disk: null,
   cartridge: null,
+  cartridge2: null,
   autorun: null,
 });
 

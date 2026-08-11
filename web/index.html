@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="masthead-meta">
-      <span>WASM / 60 HZ</span>
+      <span id="frameRateLabel">WASM / 60 HZ</span>
       <div class="theme-picker">
         <button id="themeButton" class="theme-button" type="button"
                 aria-haspopup="true" aria-expanded="false" aria-controls="themeMenu">
@@ -58,7 +58,7 @@
         <div class="select-shell">
           <select id="model">
             <option value="0">MSX1 (C-BIOS)</option>
-            <option value="1">MSX2</option>
+            <option value="1">Philips NMS 8250 (RainBIOS)</option>
           </select>
         </div>
       </div>
@@ -110,7 +110,7 @@
             <span><small>Contr</small><i></i></span>
             <span><small>Volume</small><i></i></span>
           </div>
-          <strong class="trinitron-sony">SONY</strong>
+          <strong class="trinitron-sony">THONY</strong>
           <div class="trinitron-power"><small>Power</small><i></i></div>
         </div>
       </div>
@@ -132,8 +132,9 @@
           <button id="fitScreen" class="deck-key" type="button">
             <span class="key-icon">FIT</span><small>Size</small>
           </button>
-          <button id="expansion" class="deck-key expansion-key" type="button">
-            <span class="key-icon">AUX</span><small>Expansion</small>
+          <button id="expansion" class="deck-key expansion-key" type="button"
+                  aria-pressed="false" title="Toggle expansion slot reservation">
+            <span class="key-icon">AUX</span><small>Extension</small>
           </button>
         </div>
       </section>
@@ -144,19 +145,35 @@
           <small>Virtual transport</small>
         </div>
         <div class="media-slots">
-          <article id="cartSlot" class="media-slot">
+          <article id="cartSlot1" class="media-slot">
             <div class="cassette-window cartridge-window" aria-hidden="true">
-              <span>ROM</span>
+              <span>ROM I</span>
             </div>
             <div class="media-copy">
-              <strong>Cartridge</strong>
-              <span id="cartname">No cartridge loaded</span>
+              <strong>Cartridge I</strong>
+              <span id="cartname1">No cartridge loaded</span>
             </div>
             <div class="media-actions">
-              <label id="cartLoad" class="small-key" for="cartfile">Load</label>
-              <button id="cartEject" class="small-key" type="button" disabled>Eject</button>
+              <label id="cartLoad1" class="small-key" for="cartfile1">Load</label>
+              <button id="cartEject1" class="small-key" type="button" disabled>Eject</button>
             </div>
-            <input class="visually-hidden" type="file" id="cartfile"
+            <input class="visually-hidden" type="file" id="cartfile1"
+                   accept=".rom,.ROM,.mx1,.mx2">
+          </article>
+
+          <article id="cartSlot2" class="media-slot">
+            <div class="cassette-window cartridge-window" aria-hidden="true">
+              <span>ROM II</span>
+            </div>
+            <div class="media-copy">
+              <strong>Cartridge II</strong>
+              <span id="cartname2">No cartridge loaded</span>
+            </div>
+            <div class="media-actions">
+              <label id="cartLoad2" class="small-key" for="cartfile2">Load</label>
+              <button id="cartEject2" class="small-key" type="button" disabled>Eject</button>
+            </div>
+            <input class="visually-hidden" type="file" id="cartfile2"
                    accept=".rom,.ROM,.mx1,.mx2">
           </article>
 
@@ -197,13 +214,15 @@
           <span id="input-title">Input channel</span>
           <small>Port 1</small>
         </div>
-        <div class="input-switches">
-          <label class="toggle-control">
-            <input type="checkbox" id="joytoggle" checked>
-            <span class="toggle-track"><i></i></span>
-            <span><strong>Joystick</strong><small>USB gamepad</small></span>
-          </label>
-        </div>
+        <label class="input-device-picker" for="inputDevice">
+          <span>Device</span>
+          <span class="select-shell">
+            <select id="inputDevice">
+              <option value="joystick">Joystick</option>
+              <option value="mouse">Mouse</option>
+            </select>
+          </span>
+        </label>
         <button id="joydetect" class="wide-key" type="button">Detect controller</button>
         <div class="input-readout">
           <span id="joystatus">Joystick: waiting for gamepad...</span>
@@ -367,6 +386,7 @@
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="audio-scheduler.js"></script>
 <script src="gamepad.js"></script>
+<script src="hardware-ui.js"></script>
 <script src="media-url.js"></script>
 <script src="1983.js"></script>
 <script src="app.js"></script>
