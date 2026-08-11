@@ -678,6 +678,16 @@ void msx_set_io_extension_advance(MsxMachine *msx, void *context,
     msx->io_extension_advance = advance_handler;
 }
 
+void msx_set_cdx2_enabled(MsxMachine *msx, bool enabled) {
+    if (!msx)
+        return;
+    msx->cdx2_enabled = enabled;
+}
+
+bool msx_cdx2_enabled(const MsxMachine *msx) {
+    return msx && msx->cdx2_enabled;
+}
+
 void msx_configure(MsxMachine *msx, MsxModel model, MsxRegion region,
                    int ram_kb) {
     int normalized_ram;
@@ -1004,6 +1014,24 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
 
     if (!msx)
         return 0xff;
+    if (msx->cdx2_enabled) {
+        u8 low = (u8)port;
+
+        if (low >= 0xd0 && low <= 0xd4) {
+            if (low == 0xd4) {
+                /* CDX-2 status (D4 read): 0x3F | !DRQ | IRQ */
+                u8 result = 0x3f;
+
+                if (msx->fdc.irq)
+                    result |= 0x80;
+                if (!msx->fdc.drq)
+                    result |= 0x40;
+                return result;
+            }
+            return wd2793_read_port(
+                &msx->fdc, (u8)(low - 0xd0));
+        }
+    }
     if (msx->io_extension_read &&
         msx->io_extension_read(
             msx->io_extension_context, port, &extension_value))
@@ -1070,6 +1098,29 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
 
     if (!msx)
         return;
+    if (msx->cdx2_enabled) {
+        u8 low = (u8)port;
+
+        if (low >= 0xd0 && low <= 0xd4) {
+            if (low == 0xd4) {
+                /* CDX-2 control (D4 write): drive, side, motor */
+                u8 select = value & 0x0f;
+
+                if (select == 1)
+                    msx->fdc.selected_drive = 0;
+                else if (select == 2)
+                    msx->fdc.selected_drive = 1;
+                else
+                    msx->fdc.selected_drive = -1;
+                msx->fdc.side_reg = (value & 0x10) != 0;
+                msx->fdc.motor = !(value & 0x20);
+                return;
+            }
+            wd2793_write_port(
+                &msx->fdc, (u8)(low - 0xd0), value);
+            return;
+        }
+    }
     if (msx->io_extension_write &&
         msx->io_extension_write(
             msx->io_extension_context, port, value))

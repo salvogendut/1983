@@ -387,6 +387,48 @@ void wd2793_write_memory(Wd2793 *fdc, u16 address, u8 value) {
     }
 }
 
+/* Port-mapped cartridge FDC access (CDX-2 / disk type 5, ports D0-D3). */
+u8 wd2793_read_port(Wd2793 *fdc, u8 reg) {
+    if (!fdc)
+        return 0xff;
+    reg &= 3;
+    switch (reg) {
+        case 0: {
+            u8 status = status_register(fdc);
+
+            fdc->irq = false;
+            return status;
+        }
+        case 1:
+            return fdc->track;
+        case 2:
+            return fdc->sector;
+        case 3:
+            return read_data_register(fdc);
+    }
+    return 0xff;
+}
+
+void wd2793_write_port(Wd2793 *fdc, u8 reg, u8 value) {
+    if (!fdc)
+        return;
+    reg &= 3;
+    switch (reg) {
+        case 0:
+            execute_command(fdc, value);
+            break;
+        case 1:
+            fdc->track = value;
+            break;
+        case 2:
+            fdc->sector = value;
+            break;
+        case 3:
+            write_data_register(fdc, value);
+            break;
+    }
+}
+
 int wd2793_mount_drive_a(Wd2793 *fdc, const char *path,
                          FloppyImageMode mode) {
     return fdc ? floppy_image_mount(&fdc->drive_a, path, mode) : -1;

@@ -88,6 +88,8 @@ rs232_rom =
 scc = false
 msx_music = false
 kanji_rom = false
+# Microsol CDX-2 port-based floppy controller (WD2793 on ports D0h-D4h)
+cdx2 = false
 
 [advanced]
 tinker = false

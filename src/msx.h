@@ -165,6 +165,11 @@ typedef struct {
     MsxIoExtensionReset io_extension_reset;
     MsxIoExtensionAdvance io_extension_advance;
 
+    /* Port-based cartridge floppy controller (Microsol CDX-2 / disk type 5).
+     * Uses the same Wd2793 FDC chip as the built-in controller but at I/O
+     * ports D0h-D4h instead of the memory-mapped 3FF8h-3FFFh. */
+    bool cdx2_enabled;
+
     u64 cycles;
     u64 instructions;
     unsigned cycle_fraction;
@@ -196,6 +201,9 @@ void msx_set_io_extension(MsxMachine *msx, void *context,
                           MsxIoExtensionReset reset_handler);
 void msx_set_io_extension_advance(MsxMachine *msx, void *context,
                                   MsxIoExtensionAdvance advance_handler);
+
+void msx_set_cdx2_enabled(MsxMachine *msx, bool enabled);
+bool msx_cdx2_enabled(const MsxMachine *msx);
 
 u8   msx_memory_read(MsxMachine *msx, u16 address);
 void msx_memory_write(MsxMachine *msx, u16 address, u8 value);
