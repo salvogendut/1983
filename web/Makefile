@@ -39,7 +39,7 @@ CORE_OBJS = $(patsubst ../src/%.c,$(BUILD_DIR)/%.o,$(SRCS))
 OBJS = $(CORE_OBJS) $(BUILD_DIR)/poc_main.o $(BUILD_DIR)/stubs.o
 WASM_ASSETS = $(DIST_DIR)/1983.js $(DIST_DIR)/1983.wasm
 BRAND_ICON = ../icons/512x512/apps/io.github.salvogendut.Emulator1983.png
-STYLE_ASSETS = styles.css theme-default.css theme-retro-crt.css \
+STYLE_ASSETS = styles.css theme-sonyhb-f1xd.css theme-retro-crt.css \
 	theme-sapporo.css theme-sapporo-dark.css
 
 all: $(DIST_DIR)/index.html $(addprefix $(DIST_DIR)/,$(STYLE_ASSETS)) $(DIST_DIR)/app.js \

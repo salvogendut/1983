@@ -6,6 +6,17 @@ Build the browser edition with Emscripten and serve the publish directory:
     make -C web
     python3 -m http.server 8080 --directory web/dist
 
+Open `http://localhost:8080/` in a modern browser. The interface defaults to
+the **SONYHB-F1XD** theme: a charcoal, red-accented machine and matching CRT
+monitor inspired by 1980s Japanese electronics. Its full MSX keyboard is
+collapsed by default; use **Show keyboard** to reveal it.
+
+The theme picker also retains Retro CRT, Sapporo and Sapporo Dark. A theme can
+be selected directly with a case-insensitive query parameter:
+
+    http://localhost:8080/?theme=SONYHB-F1XD
+    http://localhost:8080/?theme=retro-crt
+
 ## What works
 
 - The MSX core compiles to WebAssembly (z80, VDP, PSG, floppy, cassette,
@@ -16,6 +27,8 @@ Build the browser edition with Emscripten and serve the publish directory:
 - Video rendered from the VDP framebuffer (256x192 MSX1 / 512x212 MSX2) scaled
   to a 4:3 canvas. Keyboard, PSG audio (schedule-ahead WebAudio), floppy DSK,
   cassette CAS, cartridge ROM and USB gamepad input.
+- Physical keyboard input and the collapsible on-screen MSX keyboard, including
+  F1-F5, SELECT, STOP, GRAPH, CODE, cursor keys and numeric keypad.
 - `poc_init_model(1, ...)` selects MSX2, which needs a real MSX2 BIOS
   (`MSX2.ROM`) in the emscripten virtual FS — not bundled.
 

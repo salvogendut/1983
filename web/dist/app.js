@@ -10,7 +10,7 @@ const CODE2SCAN = {
   Enter:40, Escape:41, Backspace:42, Tab:43, Space:44,
   Minus:45, Equal:46, BracketLeft:47, BracketRight:48, Backslash:49,
   Semicolon:51, Quote:52, Backquote:53, Comma:54, Period:55, Slash:56,
-  Insert:73, Home:74, Delete:76,
+  CapsLock:57, Insert:73, Home:74, Delete:76,
   ArrowRight:79, ArrowLeft:80, ArrowDown:81, ArrowUp:82,
   F1:58, F2:59, F3:60, F4:61, F5:62, F6:63, F7:64, F8:65, F9:66,
   NumpadEnter:88, NumpadAdd:87, NumpadSubtract:86, NumpadMultiply:85,
@@ -54,7 +54,7 @@ function showToast(message) {
 }
 
 const THEMES = {
-  "default": "Default",
+  "sonyhb-f1xd": "SONYHB-F1XD",
   "retro-crt": "Retro CRT",
   "sapporo": "Sapporo",
   "sapporo-dark": "Sapporo Dark",
@@ -70,8 +70,16 @@ function setThemeMenu(open) {
   themeButtonEl.setAttribute("aria-expanded", String(open));
 }
 
+function resolveTheme(theme) {
+  if (!theme) return "sonyhb-f1xd";
+  const requested = String(theme).toLowerCase();
+  return Object.keys(THEMES).find(key =>
+    key.toLowerCase() === requested || THEMES[key].toLowerCase() === requested
+  ) || "sonyhb-f1xd";
+}
+
 function applyTheme(theme, persist = true) {
-  const selected = Object.hasOwn(THEMES, theme) ? theme : "default";
+  const selected = resolveTheme(theme);
   document.documentElement.dataset.theme = selected;
   themeNameEl.textContent = THEMES[selected];
   for (const option of themeMenuEl.querySelectorAll("[data-theme]"))
@@ -85,9 +93,9 @@ function applyTheme(theme, persist = true) {
   }
 }
 
-let savedTheme = "default";
+let savedTheme = "sonyhb-f1xd";
 try {
-  savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "default";
+  savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "sonyhb-f1xd";
 } catch (_) {
   // Keep the default theme when storage access is unavailable.
 }
@@ -115,6 +123,22 @@ themePickerEl.addEventListener("keydown", event => {
 document.addEventListener("click", event => {
   if (!themePickerEl.contains(event.target)) setThemeMenu(false);
 });
+
+const msxKeyboardEl = document.querySelector(".sony-msx-keyboard");
+const msxKeyboardKeysEl = $("msxKeyboardKeys");
+const msxKeyboardToggleEl = $("msxKeyboardToggle");
+
+function setMsxKeyboardOpen(open) {
+  msxKeyboardEl.dataset.keyboardOpen = String(open);
+  msxKeyboardKeysEl.hidden = !open;
+  msxKeyboardToggleEl.setAttribute("aria-expanded", String(open));
+  msxKeyboardToggleEl.textContent = open ? "Hide keyboard" : "Show keyboard";
+}
+
+msxKeyboardToggleEl.addEventListener("click", () => {
+  setMsxKeyboardOpen(msxKeyboardKeysEl.hidden);
+});
+setMsxKeyboardOpen(false);
 
 function pulseInputLed() {
   ledInputEl.classList.add("on");
@@ -228,7 +252,123 @@ create1983().then(m => {
   let prevGamepad = null;
   let joyEnabled = true;
   let ledState = 0;
-  const heldKeys = new Set();
+  const heldKeys = new Map();
+  const virtualKeys = new Set();
+  const latchedVirtualModifiers = new Set();
+
+  function isGuestFunctionScancode(scancode) {
+    return (scancode >= 58 && scancode <= 62) || scancode === 64 || scancode === 65;
+  }
+
+  function sendMsxKey(scancode, pressed) {
+    const mod = isGuestFunctionScancode(scancode) ? SDL_KMOD_SHIFT : 0;
+    m._poc_key_mod(scancode, pressed ? 1 : 0, mod);
+  }
+
+  function pressVirtualKey(scancode) {
+    if (virtualKeys.has(scancode)) return;
+    const alreadyPressed = heldKeys.has(scancode);
+    virtualKeys.add(scancode);
+    if (!alreadyPressed) sendMsxKey(scancode, true);
+  }
+
+  function releaseVirtualKey(scancode) {
+    if (!virtualKeys.delete(scancode)) return;
+    if (!heldKeys.has(scancode)) sendMsxKey(scancode, false);
+  }
+
+  function setModifierUi(scancode, active) {
+    for (const button of msxKeyboardKeysEl.querySelectorAll(
+      `[data-modifier][data-scancode="${scancode}"]`
+    )) {
+      button.classList.toggle("latched", active);
+      button.setAttribute("aria-pressed", String(active));
+    }
+  }
+
+  function releaseLatchedModifiers() {
+    for (const scancode of latchedVirtualModifiers) {
+      releaseVirtualKey(scancode);
+      setModifierUi(scancode, false);
+    }
+    latchedVirtualModifiers.clear();
+  }
+
+  function toggleVirtualModifier(scancode) {
+    if (latchedVirtualModifiers.delete(scancode)) {
+      releaseVirtualKey(scancode);
+      setModifierUi(scancode, false);
+    } else {
+      latchedVirtualModifiers.add(scancode);
+      pressVirtualKey(scancode);
+      setModifierUi(scancode, true);
+    }
+  }
+
+  function releaseAllVirtualKeys() {
+    for (const scancode of [...virtualKeys]) releaseVirtualKey(scancode);
+    latchedVirtualModifiers.clear();
+    for (const button of msxKeyboardKeysEl.querySelectorAll("[data-scancode]")) {
+      button.classList.remove("active", "latched");
+      if (button.hasAttribute("data-modifier"))
+        button.setAttribute("aria-pressed", "false");
+    }
+  }
+
+  function virtualKeyButton(target) {
+    return target.closest("button[data-scancode]");
+  }
+
+  msxKeyboardKeysEl.addEventListener("pointerdown", event => {
+    const button = virtualKeyButton(event.target);
+    if (!button) return;
+    event.preventDefault();
+    startAudio();
+    const scancode = Number(button.dataset.scancode);
+    if (button.hasAttribute("data-modifier")) {
+      toggleVirtualModifier(scancode);
+    } else {
+      pressVirtualKey(scancode);
+      button.classList.add("active");
+      button.setPointerCapture(event.pointerId);
+    }
+    pulseInputLed();
+  });
+
+  function finishVirtualPointer(event) {
+    const button = virtualKeyButton(event.target);
+    if (!button || button.hasAttribute("data-modifier")) return;
+    releaseVirtualKey(Number(button.dataset.scancode));
+    button.classList.remove("active");
+    releaseLatchedModifiers();
+  }
+
+  msxKeyboardKeysEl.addEventListener("pointerup", finishVirtualPointer);
+  msxKeyboardKeysEl.addEventListener("pointercancel", finishVirtualPointer);
+  msxKeyboardKeysEl.addEventListener("lostpointercapture", finishVirtualPointer);
+  msxKeyboardKeysEl.addEventListener("click", event => {
+    if (event.detail !== 0) return;
+    const button = virtualKeyButton(event.target);
+    if (!button) return;
+    startAudio();
+    const scancode = Number(button.dataset.scancode);
+    if (button.hasAttribute("data-modifier")) {
+      toggleVirtualModifier(scancode);
+    } else {
+      pressVirtualKey(scancode);
+      button.classList.add("active");
+      setTimeout(() => {
+        releaseVirtualKey(scancode);
+        button.classList.remove("active");
+        releaseLatchedModifiers();
+      }, 90);
+    }
+    pulseInputLed();
+  });
+  msxKeyboardToggleEl.addEventListener("click", () => {
+    if (msxKeyboardKeysEl.hidden) releaseAllVirtualKeys();
+  });
+  window.addEventListener("blur", releaseAllVirtualKeys);
 
   function clearDiskUi() {
     disknameEl.textContent = "No disk loaded";
@@ -270,6 +410,7 @@ create1983().then(m => {
     m._poc_audio_reset();
     if (audioCtx) nextAudioStart = audioCtx.currentTime + 0.3;
     releaseAllJoy();
+    releaseAllVirtualKeys();
     clearDiskUi();
     if (cartridge === undefined) clearCartUi();
     clearCassUi();
@@ -293,6 +434,7 @@ create1983().then(m => {
     m._poc_audio_reset();
     if (audioCtx) nextAudioStart = audioCtx.currentTime + 0.3;
     releaseAllJoy();
+    releaseAllVirtualKeys();
     setStatus("Warm reset complete");
     showToast("MSX reset");
     canvas.focus();
@@ -595,13 +737,13 @@ create1983().then(m => {
     if (scancode === undefined || document.activeElement !== canvas) return;
     event.preventDefault();
     startAudio();
-    // MSX function keys F1..F5 are the Shift+F1..F5 chords (kbd.c).
-    const isFunctionKey = event.code.startsWith("F") &&
-      Number(event.code.slice(1)) >= 1 && Number(event.code.slice(1)) <= 5;
-    const mod = isFunctionKey && event.shiftKey ? SDL_KMOD_SHIFT : 0;
+    // Guest F1..F5, SELECT and STOP are the documented Shift+Fn chords.
+    const guestFunction = isGuestFunctionScancode(scancode);
+    const mod = guestFunction && event.shiftKey ? SDL_KMOD_SHIFT : 0;
     if (!heldKeys.has(scancode)) {
-      heldKeys.add(scancode);
-      m._poc_key_mod(scancode, 1, mod);
+      const alreadyPressed = virtualKeys.has(scancode);
+      heldKeys.set(scancode, mod);
+      if (!alreadyPressed) m._poc_key_mod(scancode, 1, mod);
       pulseInputLed();
     }
   });
@@ -609,14 +751,14 @@ create1983().then(m => {
     const scancode = CODE2SCAN[event.code];
     if (scancode === undefined || !heldKeys.has(scancode)) return;
     event.preventDefault();
+    const mod = heldKeys.get(scancode);
     heldKeys.delete(scancode);
-    const isFunctionKey = event.code.startsWith("F") &&
-      Number(event.code.slice(1)) >= 1 && Number(event.code.slice(1)) <= 5;
-    const mod = isFunctionKey && event.shiftKey ? SDL_KMOD_SHIFT : 0;
-    m._poc_key_mod(scancode, 0, mod);
+    if (!virtualKeys.has(scancode)) m._poc_key_mod(scancode, 0, mod);
   });
   canvas.addEventListener("blur", () => {
-    for (const scancode of heldKeys) m._poc_key(scancode, 0);
+    for (const [scancode, mod] of heldKeys) {
+      if (!virtualKeys.has(scancode)) m._poc_key_mod(scancode, 0, mod);
+    }
     heldKeys.clear();
   });
 

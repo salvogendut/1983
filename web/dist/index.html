@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="default">
+<html lang="en" data-theme="sonyhb-f1xd">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#121416">
 <title>Javascript 1983</title>
 <link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="theme-default.css">
 <link rel="stylesheet" href="theme-retro-crt.css">
 <link rel="stylesheet" href="theme-sapporo.css">
 <link rel="stylesheet" href="theme-sapporo-dark.css">
+<link rel="stylesheet" href="theme-sonyhb-f1xd.css">
 </head>
 <body>
 <main class="workbench">
@@ -26,12 +26,12 @@
       <div class="theme-picker">
         <button id="themeButton" class="theme-button" type="button"
                 aria-haspopup="true" aria-expanded="false" aria-controls="themeMenu">
-          Theme: <strong id="themeName">Default</strong>
+          Theme: <strong id="themeName">SONYHB-F1XD</strong>
         </button>
         <div id="themeMenu" class="theme-menu" role="menu" hidden>
-          <button type="button" role="menuitemradio" aria-checked="true" data-theme="default">
-            <i class="theme-swatch swatch-default" aria-hidden="true"></i>
-            <span><strong>Default</strong><small>Hi-fi receiver</small></span>
+          <button type="button" role="menuitemradio" aria-checked="true" data-theme="sonyhb-f1xd">
+            <i class="theme-swatch swatch-sonyhb-f1xd" aria-hidden="true"></i>
+            <span><strong>SONYHB-F1XD</strong><small>Japanese electronics</small></span>
           </button>
           <button type="button" role="menuitemradio" aria-checked="false" data-theme="retro-crt">
             <i class="theme-swatch swatch-crt" aria-hidden="true"></i>
@@ -211,6 +211,127 @@
           <span><strong id="colorModeName">Color display</strong><small>Switch to green monochrome</small></span>
         </button>
       </section>
+    </div>
+
+    <div class="sony-msx-keyboard" data-keyboard-open="false">
+      <div class="msx-keyboard-bar">
+        <span><strong>HB-F1XD</strong> optional on-screen keyboard</span>
+        <button id="msxKeyboardToggle" type="button" aria-expanded="false"
+                aria-controls="msxKeyboardKeys">Show keyboard</button>
+      </div>
+
+      <div id="msxKeyboardKeys" class="msx-keyboard-layout" role="group"
+           aria-label="MSX keyboard" hidden>
+        <div class="msx-keybed">
+          <div class="msx-key-row msx-function-row">
+            <button type="button" class="msx-key msx-key-red" data-scancode="41">ESC</button>
+            <button type="button" class="msx-key msx-key-function" data-scancode="58" data-msx-function>F1<small>F6</small></button>
+            <button type="button" class="msx-key msx-key-function" data-scancode="59" data-msx-function>F2<small>F7</small></button>
+            <button type="button" class="msx-key msx-key-function" data-scancode="60" data-msx-function>F3<small>F8</small></button>
+            <button type="button" class="msx-key msx-key-function" data-scancode="61" data-msx-function>F4<small>F9</small></button>
+            <button type="button" class="msx-key msx-key-function" data-scancode="62" data-msx-function>F5<small>F10</small></button>
+            <span class="msx-key-spacer" aria-hidden="true"></span>
+            <button type="button" class="msx-key msx-key-system" data-scancode="74">HOME</button>
+            <button type="button" class="msx-key msx-key-system" data-scancode="73">INS</button>
+            <button type="button" class="msx-key msx-key-system" data-scancode="76">DEL</button>
+            <button type="button" class="msx-key msx-key-amber" data-scancode="65" data-msx-function>STOP</button>
+            <button type="button" class="msx-key msx-key-amber" data-scancode="64" data-msx-function>SELECT</button>
+          </div>
+          <div class="msx-key-row">
+            <button type="button" class="msx-key" data-scancode="53">`<small>~</small></button>
+            <button type="button" class="msx-key" data-scancode="30">1<small>!</small></button>
+            <button type="button" class="msx-key" data-scancode="31">2<small>@</small></button>
+            <button type="button" class="msx-key" data-scancode="32">3<small>#</small></button>
+            <button type="button" class="msx-key" data-scancode="33">4<small>$</small></button>
+            <button type="button" class="msx-key" data-scancode="34">5<small>%</small></button>
+            <button type="button" class="msx-key" data-scancode="35">6<small>^</small></button>
+            <button type="button" class="msx-key" data-scancode="36">7<small>&amp;</small></button>
+            <button type="button" class="msx-key" data-scancode="37">8<small>*</small></button>
+            <button type="button" class="msx-key" data-scancode="38">9<small>(</small></button>
+            <button type="button" class="msx-key" data-scancode="39">0<small>)</small></button>
+            <button type="button" class="msx-key" data-scancode="45">-<small>_</small></button>
+            <button type="button" class="msx-key" data-scancode="46">=<small>+</small></button>
+            <button type="button" class="msx-key msx-key-wide" data-scancode="42">BACK SPACE</button>
+          </div>
+          <div class="msx-key-row">
+            <button type="button" class="msx-key msx-key-wide" data-scancode="43">TAB</button>
+            <button type="button" class="msx-key" data-scancode="20">Q</button>
+            <button type="button" class="msx-key" data-scancode="26">W</button>
+            <button type="button" class="msx-key" data-scancode="8">E</button>
+            <button type="button" class="msx-key" data-scancode="21">R</button>
+            <button type="button" class="msx-key" data-scancode="23">T</button>
+            <button type="button" class="msx-key" data-scancode="28">Y</button>
+            <button type="button" class="msx-key" data-scancode="24">U</button>
+            <button type="button" class="msx-key" data-scancode="12">I</button>
+            <button type="button" class="msx-key" data-scancode="18">O</button>
+            <button type="button" class="msx-key" data-scancode="19">P</button>
+            <button type="button" class="msx-key" data-scancode="47">[<small>{</small></button>
+            <button type="button" class="msx-key" data-scancode="48">]<small>}</small></button>
+            <button type="button" class="msx-key" data-scancode="49" aria-label="Backslash">\<small>|</small></button>
+          </div>
+          <div class="msx-key-row">
+            <button type="button" class="msx-key msx-key-wide" data-scancode="224" data-modifier aria-pressed="false">CTRL</button>
+            <button type="button" class="msx-key" data-scancode="4">A</button>
+            <button type="button" class="msx-key" data-scancode="22">S</button>
+            <button type="button" class="msx-key" data-scancode="7">D</button>
+            <button type="button" class="msx-key" data-scancode="9">F</button>
+            <button type="button" class="msx-key" data-scancode="10">G</button>
+            <button type="button" class="msx-key" data-scancode="11">H</button>
+            <button type="button" class="msx-key" data-scancode="13">J</button>
+            <button type="button" class="msx-key" data-scancode="14">K</button>
+            <button type="button" class="msx-key" data-scancode="15">L</button>
+            <button type="button" class="msx-key" data-scancode="51">;<small>:</small></button>
+            <button type="button" class="msx-key" data-scancode="52">'<small>&quot;</small></button>
+            <button type="button" class="msx-key msx-key-return" data-scancode="40">RETURN</button>
+          </div>
+          <div class="msx-key-row">
+            <button type="button" class="msx-key msx-key-wide" data-scancode="225" data-modifier aria-pressed="false">SHIFT</button>
+            <button type="button" class="msx-key" data-scancode="29">Z</button>
+            <button type="button" class="msx-key" data-scancode="27">X</button>
+            <button type="button" class="msx-key" data-scancode="6">C</button>
+            <button type="button" class="msx-key" data-scancode="25">V</button>
+            <button type="button" class="msx-key" data-scancode="5">B</button>
+            <button type="button" class="msx-key" data-scancode="17">N</button>
+            <button type="button" class="msx-key" data-scancode="16">M</button>
+            <button type="button" class="msx-key" data-scancode="54">,<small>&lt;</small></button>
+            <button type="button" class="msx-key" data-scancode="55">.<small>&gt;</small></button>
+            <button type="button" class="msx-key" data-scancode="56">/<small>?</small></button>
+            <button type="button" class="msx-key msx-key-wide" data-scancode="225" data-modifier aria-pressed="false">SHIFT</button>
+          </div>
+          <div class="msx-key-row msx-key-row-space">
+            <button type="button" class="msx-key msx-key-accent" data-scancode="57">CAPS</button>
+            <button type="button" class="msx-key msx-key-accent" data-scancode="226" data-modifier aria-pressed="false">GRAPH</button>
+            <button type="button" class="msx-key msx-key-space" data-scancode="44">SPACE</button>
+            <button type="button" class="msx-key msx-key-accent" data-scancode="230" data-modifier aria-pressed="false">CODE</button>
+            <span class="msx-arrow-cluster">
+              <button type="button" class="msx-key" data-scancode="80" aria-label="Left arrow">&#9664;</button>
+              <button type="button" class="msx-key" data-scancode="82" aria-label="Up arrow">&#9650;</button>
+              <button type="button" class="msx-key" data-scancode="81" aria-label="Down arrow">&#9660;</button>
+              <button type="button" class="msx-key" data-scancode="79" aria-label="Right arrow">&#9654;</button>
+            </span>
+          </div>
+        </div>
+
+        <div class="msx-numpad" aria-label="Numeric keypad">
+          <span class="numpad-label">TEN KEY</span>
+          <button type="button" class="msx-key" data-scancode="84">/</button>
+          <button type="button" class="msx-key" data-scancode="85">*</button>
+          <button type="button" class="msx-key" data-scancode="86">-</button>
+          <button type="button" class="msx-key" data-scancode="95">7</button>
+          <button type="button" class="msx-key" data-scancode="96">8</button>
+          <button type="button" class="msx-key" data-scancode="97">9</button>
+          <button type="button" class="msx-key msx-key-plus" data-scancode="87">+</button>
+          <button type="button" class="msx-key" data-scancode="92">4</button>
+          <button type="button" class="msx-key" data-scancode="93">5</button>
+          <button type="button" class="msx-key" data-scancode="94">6</button>
+          <button type="button" class="msx-key" data-scancode="89">1</button>
+          <button type="button" class="msx-key" data-scancode="90">2</button>
+          <button type="button" class="msx-key" data-scancode="91">3</button>
+          <button type="button" class="msx-key msx-key-enter" data-scancode="88">ENTER</button>
+          <button type="button" class="msx-key msx-key-zero" data-scancode="98">0</button>
+          <button type="button" class="msx-key" data-scancode="99">.</button>
+        </div>
+      </div>
     </div>
 
     <footer class="receiver-footer">
