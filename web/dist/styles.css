@@ -125,7 +125,7 @@ label.small-key:focus-within {
 .theme-menu strong { font: 700 10px/1.2 ui-monospace, monospace; text-transform: uppercase; }
 .theme-menu small { margin-top: 3px; color: #777b79; font: 500 8px/1 ui-monospace, monospace; }
 .theme-swatch { display: block; width: 34px; height: 25px; border: 2px solid #090a0a; border-radius: 3px; box-shadow: 0 1px 2px #000; }
-.swatch-default { background: linear-gradient(135deg, #363a3c 0 48%, #0b0d0e 49% 72%, #ffb743 73% 78%, #1c1f21 79%); }
+.swatch-sonyhb-f1xd { background: linear-gradient(135deg, #393b3c 0 48%, #151719 49% 65%, #e5252e 66% 83%, #f0b63b 84% 89%, #202324 90%); }
 .swatch-crt { background: radial-gradient(ellipse, #15362b 0 42%, #22231f 43% 58%, #c7b995 59%); }
 .swatch-sapporo { background: linear-gradient(135deg, #ffdf00 0 42%, #101314 43% 65%, #008c6b 66% 76%, #1b58a8 77% 88%, #d63a31 89%); }
 .swatch-sapporo-dark { background: linear-gradient(135deg, #002b36 0 42%, #b58900 43% 62%, #2aa198 63% 75%, #268bd2 76% 87%, #dc322f 88%); }
@@ -380,6 +380,8 @@ button:disabled, [aria-disabled="true"] { opacity: .42; cursor: not-allowed; }
 .color-mode-key small { margin-top: 4px; color: #8d918e; font: 500 7px/1 ui-monospace, monospace; text-transform: none; }
 .mode-lamp { flex: 0 0 auto; width: 14px; height: 14px; border: 2px solid #090a0a; border-radius: 50%; background: conic-gradient(#e94132, #e2c732, #3bb36e, #377ed2, #e94132); box-shadow: inset 0 0 2px #fff, 0 0 5px rgba(255,255,255,.18); }
 .color-mode-key.active .mode-lamp { background: #70ef91; box-shadow: inset 0 0 2px #fff, 0 0 9px rgba(112,239,145,.85); }
+
+.sony-msx-keyboard { display: none; }
 
 .receiver-footer { display: flex; justify-content: space-between; gap: 20px; padding: 11px clamp(16px, 2.5vw, 32px); border-top: 1px solid #343738; color: #666a68; background: #121416; font: 700 8px/1 ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; }
 

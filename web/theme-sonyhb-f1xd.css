@@ -1,0 +1,576 @@
+html[data-theme="sonyhb-f1xd"] {
+  --ink: #efefeb;
+  --muted: #9a9c9a;
+  --panel: #353739;
+  --panel-deep: #151719;
+  --panel-edge: #656769;
+  --metal: #c5c6c1;
+  --metal-dark: #6d6f6e;
+  --amber: #f0b63b;
+  --amber-soft: #9d6a18;
+  --red: #e32630;
+  --green: #72c382;
+  font-family: "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+}
+
+html[data-theme="sonyhb-f1xd"] body {
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 50% -16%, rgba(121,126,128,.22), transparent 48%),
+    linear-gradient(116deg, rgba(255,255,255,.025), transparent 28% 72%, rgba(255,255,255,.018)),
+    #121415;
+}
+
+html[data-theme="sonyhb-f1xd"] body::before {
+  opacity: .24;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 4px),
+    linear-gradient(90deg, transparent, rgba(255,255,255,.025) 50%, transparent);
+  background-size: auto, 100% 100%;
+  mask-image: linear-gradient(#000, rgba(0,0,0,.6) 72%, transparent);
+}
+
+html[data-theme="sonyhb-f1xd"] .workbench {
+  width: min(1540px, 100%);
+  padding-top: 24px;
+}
+
+html[data-theme="sonyhb-f1xd"] .masthead {
+  align-items: center;
+  margin-bottom: 13px;
+  padding: 0 3px 9px;
+  border-bottom: 1px solid #595b5c;
+  box-shadow: 0 1px #080909;
+}
+
+html[data-theme="sonyhb-f1xd"] .brand-mark {
+  grid-template-columns: 5px 13px 5px;
+  gap: 3px;
+  height: 29px;
+}
+
+html[data-theme="sonyhb-f1xd"] .brand-mark i {
+  width: 100%;
+  background: #df242d;
+  box-shadow: none;
+}
+
+html[data-theme="sonyhb-f1xd"] .brand-mark i:nth-child(1),
+html[data-theme="sonyhb-f1xd"] .brand-mark i:nth-child(3) { height: 7px; }
+html[data-theme="sonyhb-f1xd"] .brand-mark i:nth-child(2) { height: 29px; }
+
+html[data-theme="sonyhb-f1xd"] .brand-lockup h1 {
+  color: #e8e8e5;
+  font-size: clamp(25px, 2.6vw, 37px);
+  font-weight: 700;
+  letter-spacing: .015em;
+  text-transform: uppercase;
+}
+
+html[data-theme="sonyhb-f1xd"] .brand-lockup h1 strong {
+  color: #ef2c36;
+  font-weight: 900;
+}
+
+html[data-theme="sonyhb-f1xd"] .eyebrow {
+  color: #999c9b;
+  font-size: 8px;
+  letter-spacing: .28em;
+}
+
+html[data-theme="sonyhb-f1xd"] .masthead-meta { color: #aeb0ad; }
+
+html[data-theme="sonyhb-f1xd"] .theme-button {
+  border-color: #080909 #080909 #555759;
+  border-radius: 1px;
+  color: #b8bab7;
+  background: linear-gradient(#444648, #282a2b 54%, #1c1e1f 55%);
+  box-shadow: inset 0 1px rgba(255,255,255,.16), 0 2px 0 #080909;
+}
+
+html[data-theme="sonyhb-f1xd"] .theme-button strong { color: #f1b83b; }
+html[data-theme="sonyhb-f1xd"] .theme-menu { border-radius: 1px; background: #27292a; }
+html[data-theme="sonyhb-f1xd"] .theme-menu::before { background: #27292a; }
+html[data-theme="sonyhb-f1xd"] .theme-menu button:hover { background: #383a3b; }
+html[data-theme="sonyhb-f1xd"] .theme-menu button[aria-checked="true"] { background: #3c3e3f; }
+
+html[data-theme="sonyhb-f1xd"] .receiver {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-theme="sonyhb-f1xd"] .receiver-top {
+  position: relative;
+  z-index: 2;
+  width: min(92%, 1220px);
+  margin: 0 auto;
+  padding: 17px clamp(18px, 2.6vw, 34px) 19px;
+  border: 1px solid #0a0b0b;
+  border-bottom-color: #555758;
+  border-radius: 12px 12px 0 0;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 14px, rgba(255,255,255,.045) 14px 15px, transparent 15px 22px) top 11px right 28px / 250px 5px no-repeat,
+    linear-gradient(#414345, #2d2f31 58%, #252729);
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.22),
+    inset 0 -2px #111213,
+    0 -3px 0 #202224,
+    0 9px 20px rgba(0,0,0,.35);
+}
+
+html[data-theme="sonyhb-f1xd"] .model-bank > label,
+html[data-theme="sonyhb-f1xd"] .display-label {
+  color: #d0d1cd;
+  font-size: 8px;
+  letter-spacing: .19em;
+}
+
+html[data-theme="sonyhb-f1xd"] select {
+  min-height: 34px;
+  border-radius: 1px;
+  color: #efefeb;
+  background: linear-gradient(#242627, #111213);
+  box-shadow: inset 0 2px 6px #050606, 0 1px rgba(255,255,255,.12);
+}
+
+html[data-theme="sonyhb-f1xd"] .select-shell::after { border-top-color: #e7252f; }
+
+html[data-theme="sonyhb-f1xd"] .display-panel {
+  border-radius: 1px;
+  background:
+    linear-gradient(rgba(87,130,91,.08), rgba(87,130,91,.02)),
+    #090d0b;
+}
+
+html[data-theme="sonyhb-f1xd"] #status {
+  color: #8fd29a;
+  font-size: 11px;
+  letter-spacing: .025em;
+  text-shadow: 0 0 8px rgba(114,195,130,.28);
+}
+
+html[data-theme="sonyhb-f1xd"] .activity-bank div {
+  color: #c0c1bd;
+  font-size: 8px;
+}
+
+html[data-theme="sonyhb-f1xd"] .led {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+}
+
+html[data-theme="sonyhb-f1xd"] .screen-stage {
+  width: min(100%, 1360px);
+  margin: 0 auto;
+  padding: clamp(25px, 3vw, 43px) clamp(34px, 5vw, 72px) clamp(36px, 4vw, 56px);
+  border: 1px solid #090a0b;
+  border-top-color: #616364;
+  border-radius: 5px 5px 22px 22px;
+  background:
+    repeating-linear-gradient(90deg, #17191a 0 7px, #3a3c3e 7px 9px, #17191a 9px 14px) top 17px right 7% / 245px 7px no-repeat,
+    linear-gradient(112deg, rgba(255,255,255,.06), transparent 18% 78%, rgba(255,255,255,.025)),
+    linear-gradient(#393b3d, #242628 68%, #191b1d);
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.18),
+    inset 0 -5px #101112,
+    0 18px 35px rgba(0,0,0,.55);
+}
+
+html[data-theme="sonyhb-f1xd"] .screen-stage::before {
+  position: absolute;
+  left: clamp(46px, 6vw, 90px);
+  bottom: 15px;
+  content: "SONY   RGB COLOR MONITOR";
+  color: #d8d9d4;
+  font: 800 9px/1 "Arial Narrow", Arial, sans-serif;
+  letter-spacing: .12em;
+}
+
+html[data-theme="sonyhb-f1xd"] .screen-stage::after {
+  position: absolute;
+  right: clamp(46px, 6vw, 90px);
+  bottom: 13px;
+  padding-left: 20px;
+  content: "POWER";
+  color: #a9aaa6;
+  font: 700 7px/1 ui-monospace, monospace;
+  letter-spacing: .12em;
+  background: radial-gradient(circle at 5px 50%, #73c983 0 3px, #143319 4px, transparent 5px);
+}
+
+html[data-theme="sonyhb-f1xd"] .screen-frame {
+  width: min(100%, calc(1050px * var(--screen-scale)));
+  padding: clamp(12px, 1.6vw, 21px) clamp(13px, 1.8vw, 24px) 13px;
+  border: 2px solid #0b0c0d;
+  border-radius: 17px / 13px;
+  background: linear-gradient(135deg, #242627, #101112 42%, #292b2c);
+  box-shadow:
+    0 12px 24px rgba(0,0,0,.75),
+    inset 0 1px rgba(255,255,255,.2),
+    inset 0 -2px #050606,
+    0 0 0 1px #555758;
+}
+
+html[data-theme="sonyhb-f1xd"] .screen-glass {
+  border-width: 3px;
+  border-radius: 4% / 5%;
+  box-shadow: inset 0 0 35px #000, 0 1px rgba(255,255,255,.13);
+}
+
+html[data-theme="sonyhb-f1xd"] .screen-glass::after {
+  background:
+    radial-gradient(ellipse at center, transparent 54%, rgba(0,0,0,.14) 100%),
+    linear-gradient(112deg, rgba(255,255,255,.05), transparent 23% 76%, rgba(255,255,255,.018));
+}
+
+html[data-theme="sonyhb-f1xd"] .scanline-overlay { opacity: .12; }
+
+html[data-theme="sonyhb-f1xd"] .screen-badge {
+  margin-top: 10px;
+  color: #a7a8a4;
+  font-size: 7px;
+}
+
+html[data-theme="sonyhb-f1xd"] .screen-badge span:first-child::before {
+  content: "TRINITRON  ";
+  color: #dc2530;
+}
+
+html[data-theme="sonyhb-f1xd"] .screen-brand {
+  right: clamp(43px, 5.7vw, 84px);
+  bottom: 38px;
+  left: auto;
+  width: clamp(72px, 7.5vw, 112px);
+  filter: drop-shadow(0 5px 5px rgba(0,0,0,.8));
+}
+
+html[data-theme="sonyhb-f1xd"] .control-deck {
+  position: relative;
+  grid-template-columns: .82fr 1.65fr 1.12fr .9fr;
+  margin-top: 28px;
+  padding-top: 66px;
+  border: 1px solid #090a0a;
+  border-radius: 10px 10px 3px 3px;
+  background:
+    repeating-linear-gradient(90deg, #141617 0 6px, #494b4c 6px 8px, #161819 8px 13px) 45% 23px / 295px 8px no-repeat,
+    linear-gradient(118deg, rgba(255,255,255,.065), transparent 18% 78%, rgba(255,255,255,.02)),
+    linear-gradient(#3c3e40, #292b2d 66%, #202224);
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.2),
+    inset 0 -4px #111213,
+    0 14px 28px rgba(0,0,0,.5);
+}
+
+html[data-theme="sonyhb-f1xd"] .control-deck::before {
+  position: absolute;
+  top: 20px;
+  left: 27px;
+  content: "SONY      HB-F1XD     MSX2";
+  color: #f0f0ec;
+  font: 900 13px/1 "Arial Narrow", Arial, sans-serif;
+  letter-spacing: .13em;
+  white-space: pre;
+}
+
+html[data-theme="sonyhb-f1xd"] .control-deck::after {
+  position: absolute;
+  top: 11px;
+  right: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 168px;
+  height: 42px;
+  padding: 0 13px;
+  content: "FDD   3.5\"";
+  border: 1px solid #781117;
+  color: #fff;
+  background: linear-gradient(110deg, #ed3038, #d81f29);
+  box-shadow: inset 0 1px rgba(255,255,255,.25), 0 2px 0 #111;
+  font: 900 18px/1 "Arial Narrow", Arial, sans-serif;
+  letter-spacing: .06em;
+}
+
+html[data-theme="sonyhb-f1xd"] .deck-module {
+  padding-top: 20px;
+  border-color: #101112;
+  box-shadow: inset -1px 0 rgba(255,255,255,.055), inset 0 1px rgba(255,255,255,.035);
+}
+
+html[data-theme="sonyhb-f1xd"] .module-heading {
+  color: #efefeb;
+  font-family: "Arial Narrow", Arial, sans-serif;
+  font-size: 9px;
+  letter-spacing: .2em;
+}
+
+html[data-theme="sonyhb-f1xd"] .module-heading small { color: #9a9c9a; }
+
+html[data-theme="sonyhb-f1xd"] .deck-key,
+html[data-theme="sonyhb-f1xd"] .small-key,
+html[data-theme="sonyhb-f1xd"] .wide-key {
+  border-radius: 1px;
+  color: #e4e4e0;
+  background: linear-gradient(#535557, #303234 50%, #222425 51%);
+  box-shadow: inset 0 1px rgba(255,255,255,.2), 0 3px 0 #0c0d0e, 0 5px 6px rgba(0,0,0,.35);
+}
+
+html[data-theme="sonyhb-f1xd"] .deck-key:hover,
+html[data-theme="sonyhb-f1xd"] .small-key:hover,
+html[data-theme="sonyhb-f1xd"] .wide-key:hover {
+  background: linear-gradient(#656769, #3a3c3e 50%, #292b2c 51%);
+}
+
+html[data-theme="sonyhb-f1xd"] .danger-key {
+  background: linear-gradient(#f1454d, #d9212b 52%, #9c1119 53%);
+}
+
+html[data-theme="sonyhb-f1xd"] .danger-key .key-icon { color: #fff; }
+html[data-theme="sonyhb-f1xd"] .expansion-key .key-icon { color: #f2bb42; }
+
+html[data-theme="sonyhb-f1xd"] .media-slot {
+  border-radius: 1px;
+  background: linear-gradient(100deg, #161819, #26282a);
+}
+
+html[data-theme="sonyhb-f1xd"] #diskSlot {
+  border-left: 4px solid #dc222c;
+  background: linear-gradient(100deg, rgba(218,34,44,.12), #242628 44%);
+}
+
+html[data-theme="sonyhb-f1xd"] .cassette-window { border-radius: 1px; }
+html[data-theme="sonyhb-f1xd"] .cartridge-window span { color: #efb63c; }
+html[data-theme="sonyhb-f1xd"] .input-readout { border-radius: 1px; color: #8dcc97; }
+html[data-theme="sonyhb-f1xd"] .toggle-track { border-radius: 2px; }
+html[data-theme="sonyhb-f1xd"] .toggle-track i { border-radius: 1px; }
+html[data-theme="sonyhb-f1xd"] .rotary { border-radius: 2px; background: linear-gradient(#4d4f51, #222425); }
+html[data-theme="sonyhb-f1xd"] .rotary::after { border-radius: 2px; }
+
+html[data-theme="sonyhb-f1xd"] .sony-msx-keyboard {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  margin-top: 18px;
+  border: 1px solid #080909;
+  border-radius: 7px 7px 16px 16px;
+  background:
+    repeating-linear-gradient(90deg, #131516 0 7px, #3c3e40 7px 9px, #131516 9px 14px) top 16px right 4% / 260px 7px no-repeat,
+    linear-gradient(118deg, rgba(255,255,255,.055), transparent 19% 80%, rgba(255,255,255,.02)),
+    linear-gradient(#3b3d3f, #292b2d 66%, #202223);
+  box-shadow: inset 0 1px rgba(255,255,255,.18), inset 0 -5px #111213, 0 16px 30px rgba(0,0,0,.45);
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-keyboard-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 54px;
+  padding: 10px 24px;
+  color: #bfc0bc;
+  font: 700 8px/1 ui-monospace, monospace;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-keyboard-bar strong {
+  margin-right: 12px;
+  color: #f0f0ec;
+  font-size: 12px;
+  letter-spacing: .18em;
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-keyboard-bar button {
+  min-width: 112px;
+  min-height: 28px;
+  border: 1px solid #090a0a;
+  border-radius: 1px;
+  color: #fff;
+  background: linear-gradient(#ec4149, #cf202a);
+  box-shadow: inset 0 1px rgba(255,255,255,.25), 0 2px 0 #101112;
+  cursor: pointer;
+  font: 800 8px/1 ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-keyboard-layout {
+  display: grid;
+  grid-template-columns: minmax(900px, 1fr) 205px;
+  gap: 20px;
+  overflow-x: auto;
+  padding: 25px 23px 31px;
+  border-top: 1px solid #111213;
+  background: linear-gradient(#1f2122, #17191a);
+  scrollbar-color: #df2630 #101112;
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-keyboard-layout[hidden] { display: none; }
+
+html[data-theme="sonyhb-f1xd"] .msx-keybed {
+  display: grid;
+  min-width: 900px;
+  gap: 7px;
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-key-row {
+  display: flex;
+  gap: 6px;
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-function-row {
+  margin-bottom: 9px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #3a3c3d;
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-key {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 42px;
+  padding: 5px 3px;
+  border: 1px solid #080909;
+  border-radius: 2px 2px 3px 3px;
+  color: #e7e7e3;
+  background: linear-gradient(145deg, #4b4d4e, #333536 46%, #262829 48%);
+  box-shadow:
+    inset 1px 1px rgba(255,255,255,.15),
+    inset -1px -1px rgba(0,0,0,.6),
+    0 4px 0 #0d0e0f,
+    0 5px 5px rgba(0,0,0,.4);
+  cursor: pointer;
+  touch-action: none;
+  font: 800 9px/1 "Arial Narrow", Arial, sans-serif;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-key small {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  color: #9c9e9b;
+  font: 700 6px/1 ui-monospace, monospace;
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-key:hover { color: #fff; background: linear-gradient(145deg, #5b5d5e, #3b3d3e 48%, #2c2e2f 49%); }
+html[data-theme="sonyhb-f1xd"] .msx-key.active,
+html[data-theme="sonyhb-f1xd"] .msx-key:active,
+html[data-theme="sonyhb-f1xd"] .msx-key.latched {
+  transform: translateY(3px);
+  color: #fff;
+  background: linear-gradient(#222425, #363839);
+  box-shadow: inset 0 2px 4px #080909, 0 1px 0 #080909;
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-key.latched {
+  outline: 2px solid #efb63c;
+  outline-offset: -3px;
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-key-wide { flex-grow: 1.7; font-size: 7px; }
+html[data-theme="sonyhb-f1xd"] .msx-key-return { flex-grow: 2.2; color: #fff; background: linear-gradient(#626465, #3c3e3f 50%, #292b2c 51%); }
+html[data-theme="sonyhb-f1xd"] .msx-key-space { flex-grow: 7.4; }
+html[data-theme="sonyhb-f1xd"] .msx-key-spacer { flex: 1.8 1 0; }
+html[data-theme="sonyhb-f1xd"] .msx-key-red { color: #fff; background: linear-gradient(#ee424b, #d5212b 53%, #9c1119 54%); }
+html[data-theme="sonyhb-f1xd"] .msx-key-amber { color: #171819; background: linear-gradient(#ffd266, #efb436 54%, #ad7416 55%); }
+html[data-theme="sonyhb-f1xd"] .msx-key-accent { color: #eeb73e; }
+html[data-theme="sonyhb-f1xd"] .msx-key-function { color: #f1f1ed; border-top-color: #b32027; }
+html[data-theme="sonyhb-f1xd"] .msx-key-system { font-size: 7px; color: #c6c7c3; }
+
+html[data-theme="sonyhb-f1xd"] .msx-arrow-cluster {
+  display: grid;
+  flex: 2.8 1 0;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 20px);
+  gap: 3px;
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-arrow-cluster .msx-key { min-height: 20px; font-size: 7px; }
+html[data-theme="sonyhb-f1xd"] .msx-arrow-cluster .msx-key:nth-child(1) { grid-column: 1; grid-row: 2; }
+html[data-theme="sonyhb-f1xd"] .msx-arrow-cluster .msx-key:nth-child(2) { grid-column: 2; grid-row: 1; }
+html[data-theme="sonyhb-f1xd"] .msx-arrow-cluster .msx-key:nth-child(3) { grid-column: 2; grid-row: 2; }
+html[data-theme="sonyhb-f1xd"] .msx-arrow-cluster .msx-key:nth-child(4) { grid-column: 3; grid-row: 2; }
+
+html[data-theme="sonyhb-f1xd"] .msx-numpad {
+  display: grid;
+  align-self: end;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 42px;
+  gap: 6px;
+  padding-left: 18px;
+  border-left: 1px solid #4a4c4d;
+}
+
+html[data-theme="sonyhb-f1xd"] .numpad-label {
+  grid-column: 1 / -1;
+  align-self: center;
+  color: #a8aaa7;
+  font: 800 7px/1 ui-monospace, monospace;
+  letter-spacing: .2em;
+}
+
+html[data-theme="sonyhb-f1xd"] .msx-numpad .msx-key { min-height: 42px; }
+html[data-theme="sonyhb-f1xd"] .msx-key-plus { grid-column: 4; grid-row: 3 / span 2; }
+html[data-theme="sonyhb-f1xd"] .msx-key-enter { grid-column: 4; grid-row: 5 / span 2; font-size: 7px; }
+html[data-theme="sonyhb-f1xd"] .msx-key-zero { grid-column: 1 / span 2; }
+
+html[data-theme="sonyhb-f1xd"] .receiver-footer {
+  margin: 0 16px;
+  border-top: 0;
+  color: #8c8e8c;
+  background: #161819;
+}
+
+html[data-theme="sonyhb-f1xd"] .toast {
+  border-color: #8d1b21;
+  border-radius: 1px;
+  color: #fff;
+  background: rgba(42,25,26,.97);
+}
+
+@media (max-width: 1180px) {
+  html[data-theme="sonyhb-f1xd"] .receiver-top { width: 96%; }
+  html[data-theme="sonyhb-f1xd"] .screen-stage { padding-bottom: 78px; }
+  html[data-theme="sonyhb-f1xd"] .screen-brand { right: 42px; bottom: 28px; width: 70px; }
+  html[data-theme="sonyhb-f1xd"] .control-deck { grid-template-columns: .8fr 1.6fr 1.2fr; }
+  html[data-theme="sonyhb-f1xd"] .screen-module { grid-column: 1 / -1; }
+}
+
+@media (max-width: 820px) {
+  html[data-theme="sonyhb-f1xd"] .receiver-top { grid-template-columns: 1fr 1fr; }
+  html[data-theme="sonyhb-f1xd"] .control-deck {
+    grid-template-columns: 1fr 1fr;
+    padding-top: 86px;
+  }
+  html[data-theme="sonyhb-f1xd"] .control-deck::after { top: 43px; right: 22px; height: 33px; }
+  html[data-theme="sonyhb-f1xd"] .control-deck::before { top: 19px; }
+  html[data-theme="sonyhb-f1xd"] .media-module { grid-column: 1 / -1; }
+  html[data-theme="sonyhb-f1xd"] .screen-module { grid-template-columns: 1fr; }
+  html[data-theme="sonyhb-f1xd"] .screen-stage::before { content: "SONY RGB MONITOR"; }
+  html[data-theme="sonyhb-f1xd"] .msx-keyboard-bar { padding-inline: 16px; }
+}
+
+@media (max-width: 560px) {
+  html[data-theme="sonyhb-f1xd"] .workbench { padding-top: 13px; }
+  html[data-theme="sonyhb-f1xd"] .masthead-meta { gap: 8px; }
+  html[data-theme="sonyhb-f1xd"] .theme-button { padding-inline: 7px; font-size: 7px; white-space: nowrap; }
+  html[data-theme="sonyhb-f1xd"] .receiver-top { width: 100%; grid-template-columns: 1fr; }
+  html[data-theme="sonyhb-f1xd"] .screen-stage { padding: 15px 9px 64px; border-radius: 2px 2px 13px 13px; }
+  html[data-theme="sonyhb-f1xd"] .screen-stage::before { left: 20px; font-size: 7px; }
+  html[data-theme="sonyhb-f1xd"] .screen-stage::after { right: 18px; }
+  html[data-theme="sonyhb-f1xd"] .screen-frame { padding: 7px; }
+  html[data-theme="sonyhb-f1xd"] .screen-brand { right: 18px; bottom: 26px; left: auto; width: 48px; }
+  html[data-theme="sonyhb-f1xd"] .control-deck { grid-template-columns: 1fr; padding-top: 96px; }
+  html[data-theme="sonyhb-f1xd"] .control-deck::before { left: 16px; font-size: 10px; }
+  html[data-theme="sonyhb-f1xd"] .control-deck::after { top: 45px; right: 16px; width: 145px; }
+  html[data-theme="sonyhb-f1xd"] .media-module { grid-column: auto; }
+  html[data-theme="sonyhb-f1xd"] .msx-keyboard-bar { align-items: flex-start; gap: 10px; }
+  html[data-theme="sonyhb-f1xd"] .msx-keyboard-bar span { line-height: 1.5; }
+  html[data-theme="sonyhb-f1xd"] .msx-keyboard-bar strong { display: block; margin-bottom: 4px; }
+}
