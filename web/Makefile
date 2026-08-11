@@ -46,7 +46,7 @@ all: $(DIST_DIR)/index.html $(addprefix $(DIST_DIR)/,$(STYLE_ASSETS)) $(DIST_DIR
 	$(DIST_DIR)/audio-scheduler.js $(DIST_DIR)/gamepad.js $(DIST_DIR)/media-url.js \
 	$(DIST_DIR)/brand-1983.png $(WASM_ASSETS)
 
-test: test-audio-scheduler test-gamepad test-media-url
+test: test-audio-scheduler test-gamepad test-media-url test-theme
 
 test-audio-scheduler:
 	node test_audio_scheduler.js
@@ -56,6 +56,9 @@ test-gamepad:
 
 test-media-url:
 	node test_media_url.js
+
+test-theme:
+	node test_theme.js
 
 $(WASM_ASSETS) &: $(OBJS) | $(DIST_DIR)
 	$(EMCC) $(CFLAGS) $(OBJS) -o $(DIST_DIR)/1983.js \
