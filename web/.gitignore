@@ -1,0 +1,9 @@
+# WASM build products and intermediates.
+/build/
+/dist/
+/*.o
+/*.ppm
+/poc.js
+/poc.wasm
+/1983.js
+/1983.wasm
