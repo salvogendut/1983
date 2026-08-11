@@ -136,6 +136,7 @@ EMSCRIPTEN_KEEPALIVE unsigned int *poc_pixels(void) {
 
 EMSCRIPTEN_KEEPALIVE int poc_width(void)  { return (int)g_msx.vdp.render_width; }
 EMSCRIPTEN_KEEPALIVE int poc_height(void) { return (int)g_msx.vdp.render_height; }
+EMSCRIPTEN_KEEPALIVE int poc_frame_hz(void) { return g_msx.frame_hz; }
 
 EMSCRIPTEN_KEEPALIVE void poc_key(int scancode, int pressed) {
     poc_key_mod(scancode, pressed, 0);

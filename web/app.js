@@ -230,6 +230,7 @@ create1983().then(m => {
   framebufferPtr = m._poc_pixels();
   frameW = m._poc_width();
   frameH = m._poc_height();
+  const frameClock = JS1983Audio.createFrameClock(m._poc_frame_hz());
   const modelEl = $("model");
   const resetEl = $("reset");
   const diskfileEl = $("diskfile");
@@ -247,8 +248,7 @@ create1983().then(m => {
 
   let currentModel = 0;
   let audioCtx = null;
-  let audioState = null;
-  let nextAudioStart = 0;
+  let audioScheduler = null;
   let prevGamepad = null;
   let joyEnabled = true;
   let ledState = 0;
@@ -394,6 +394,11 @@ create1983().then(m => {
     prevGamepad = null;
   }
 
+  function resetAudioQueue() {
+    if (audioScheduler) audioScheduler.reset();
+    else m._poc_audio_reset();
+  }
+
   function reinit(model, cartridge) {
     const rc = cartridge !== undefined
       ? m.ccall("poc_load_cartridge", "number", ["string"], [cartridge])
@@ -407,8 +412,8 @@ create1983().then(m => {
     framebufferPtr = m._poc_pixels();
     frameW = m._poc_width();
     frameH = m._poc_height();
-    m._poc_audio_reset();
-    if (audioCtx) nextAudioStart = audioCtx.currentTime + 0.3;
+    resetAudioQueue();
+    frameClock.setRate(m._poc_frame_hz());
     releaseAllJoy();
     releaseAllVirtualKeys();
     clearDiskUi();
@@ -431,8 +436,8 @@ create1983().then(m => {
 
   resetEl.addEventListener("click", () => {
     m._poc_reset();
-    m._poc_audio_reset();
-    if (audioCtx) nextAudioStart = audioCtx.currentTime + 0.3;
+    resetAudioQueue();
+    frameClock.reset();
     releaseAllJoy();
     releaseAllVirtualKeys();
     setStatus("Warm reset complete");
@@ -444,6 +449,8 @@ create1983().then(m => {
     m.FS.writeFile(path, data);
     const rc = m.ccall("poc_load_cartridge", "number", ["string"], [path]);
     if (rc !== 0) throw new Error("unsupported or damaged cartridge ROM");
+    resetAudioQueue();
+    frameClock.setRate(m._poc_frame_hz());
     cartnameEl.textContent = name;
     cartEjectEl.disabled = false;
     setStatus("Cartridge: " + name);
@@ -506,7 +513,8 @@ create1983().then(m => {
   cartfileEl.addEventListener("change", () => loadCartridgeFile(cartfileEl.files[0]));
   cartEjectEl.addEventListener("click", () => {
     m._poc_reset();
-    m._poc_audio_reset();
+    resetAudioQueue();
+    frameClock.reset();
     releaseAllJoy();
     clearCartUi();
     setStatus("Cartridge ejected");
@@ -559,8 +567,8 @@ create1983().then(m => {
         mountDisk(disk.data, disk.name, "/server-disk.dsk");
         if (media.autorun) {
           m._poc_reset();
-          m._poc_audio_reset();
-          if (audioCtx) nextAudioStart = audioCtx.currentTime + 0.3;
+          resetAudioQueue();
+          frameClock.reset();
           releaseAllJoy();
           const rc = m.ccall(
             "poc_autorun",
@@ -581,46 +589,29 @@ create1983().then(m => {
     }
   }
 
-  // The emulator fills a mono ring at 60 Hz. Schedule short buffers ahead
-  // of the Web Audio clock so canvas work cannot starve playback.
-  const AUDIO_CHUNK = 2048;
+  // Keep a modest queue ahead of Web Audio. The scheduler sizes the final
+  // buffer to the samples actually available instead of padding it with
+  // silence, and cancels queued sources whenever the emulated machine resets.
   function startAudio() {
     if (audioCtx) {
       audioCtx.resume();
       return;
     }
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    m._poc_audio_reset();
-    audioState = { ringPtr: m._poc_audio_buffer(), ringSize: 44100 * 4 };
-    nextAudioStart = audioCtx.currentTime + 0.3;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+      latencyHint: "interactive",
+    });
+    audioScheduler = JS1983Audio.createScheduler({
+      emulator: m,
+      context: audioCtx,
+      ringPtr: m._poc_audio_buffer(),
+      ringSize: JS1983Audio.DEFAULT_SAMPLE_RATE * 4,
+    });
+    audioScheduler.reset();
     audioCtx.resume().then(() => ledAudioEl.classList.add("on"));
   }
 
   function scheduleAudio() {
-    if (!audioCtx || audioCtx.state !== "running") return;
-    if (nextAudioStart < audioCtx.currentTime + 0.05)
-      nextAudioStart = audioCtx.currentTime + 0.05;
-    while (nextAudioStart - audioCtx.currentTime < 0.25) {
-      const available = m._poc_audio_avail();
-      const frames = Math.min(AUDIO_CHUNK, available);
-      if (frames === 0) break;
-      const readPosition = m._poc_audio_read_pos();
-      const samples = new Int16Array(
-        m.HEAPU8.buffer,
-        audioState.ringPtr,
-        audioState.ringSize
-      );
-      const buffer = audioCtx.createBuffer(1, AUDIO_CHUNK, 44100);
-      const mono = buffer.getChannelData(0);
-      for (let i = 0; i < frames; i++)
-        mono[i] = samples[(readPosition + i) % audioState.ringSize] / 32768;
-      m._poc_audio_advance(frames);
-      const source = audioCtx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioCtx.destination);
-      source.start(nextAudioStart);
-      nextAudioStart += AUDIO_CHUNK / 44100;
-    }
+    if (audioScheduler) audioScheduler.schedule();
   }
 
   window.addEventListener("pointerdown", startAudio, { once: true });
@@ -806,15 +797,13 @@ create1983().then(m => {
     image = offctx.createImageData(w, h);
   }
 
-  let lastFrame = 0;
   function frame(time) {
-    while (time - lastFrame >= 20) {
+    const framesToRun = frameClock.consume(time);
+    for (let frameNumber = 0; frameNumber < framesToRun; ++frameNumber)
       m._poc_step();
-      lastFrame += 20;
-      scheduleAudio();
-      pollGamepad();
-      updateLed();
-    }
+    scheduleAudio();
+    pollGamepad();
+    updateLed();
 
     const w = m._poc_width();
     const h = m._poc_height();
