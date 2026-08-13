@@ -954,6 +954,7 @@ static void apply_config(Overlay *overlay) {
     const MsxFloppyConfig *active_floppy;
     bool machine_changed;
     bool floppy_changed;
+    bool cdx2_changed;
 
     config_normalize(config);
     active_floppy = msx_floppy_config(msx);
@@ -966,6 +967,7 @@ static void apply_config(Overlay *overlay) {
         active_floppy->controller != config->floppy.controller ||
         active_floppy->primary_slot != config->floppy.primary_slot ||
         active_floppy->secondary_slot != config->floppy.secondary_slot;
+    cdx2_changed = msx_cdx2_enabled(msx) != config->cdx2;
     if (machine_changed) {
         if (msx_set_rtc_persistence(
                 msx, "", rtc_host_seconds()) != 0) {
@@ -980,13 +982,25 @@ static void apply_config(Overlay *overlay) {
         display_set_title(overlay->display, msx,
                           selected_model_name(overlay));
     }
-    if ((machine_changed || floppy_changed) &&
-        msx_configure_floppy(msx, &config->floppy) != 0) {
-        notify_post("Invalid floppy controller configuration");
-        config->floppy.controller = MSX_FLOPPY_CONTROLLER_NONE;
-        config->floppy.primary_slot = -1;
-        config->floppy.secondary_slot = -1;
-        (void)msx_configure_floppy(msx, &config->floppy);
+    if (machine_changed || floppy_changed) {
+        if (msx_configure_floppy(msx, &config->floppy) != 0) {
+            notify_post("Invalid floppy controller configuration");
+            config->floppy.controller = MSX_FLOPPY_CONTROLLER_NONE;
+            config->floppy.primary_slot = -1;
+            config->floppy.secondary_slot = -1;
+            (void)msx_configure_floppy(msx, &config->floppy);
+        }
+        /*
+         * Reboot only after the new controller topology is installed.  A
+         * WD2793 reset alone cannot make already-running firmware discover
+         * a controller (or notice that one disappeared).
+         */
+        if (floppy_changed)
+            overlay->machine_reset_requested = true;
+    }
+    if (cdx2_changed) {
+        msx_set_cdx2_enabled(msx, config->cdx2);
+        overlay->machine_reset_requested = true;
     }
     (void)sync_rtc_persistence(overlay);
     display_set_smoothing(overlay->display, config->smoothing);
@@ -1887,7 +1901,7 @@ static const char *model_transition_disabled_extension(
     return NULL;
 }
 
-static void select_machine(Overlay *overlay) {
+static bool select_machine(Overlay *overlay, bool preserve_runtime_ram) {
     const ModelDefinition *definition =
         &overlay->models->entries[overlay->machine_row];
     const MsxProfile *profile = msx_profile(definition->hardware);
@@ -1896,7 +1910,10 @@ static void select_machine(Overlay *overlay) {
     char target_rtc_path[PATH_MAX];
     char model_error[160];
     const char *blocked_extension;
-    int target_ram = msx_default_ram_kb(definition->hardware);
+    int target_ram = preserve_runtime_ram &&
+                     definition->hardware == config->model
+                   ? config->memory_kb
+                   : msx_default_ram_kb(definition->hardware);
     bool rtc_changed;
 
     target_config.model = definition->hardware;
@@ -1909,7 +1926,7 @@ static void select_machine(Overlay *overlay) {
             sizeof(target_rtc_path)) != 0) {
         notify_post("RTC persistence path is too long for %s",
                     definition->name);
-        return;
+        return false;
     }
     rtc_changed = strcmp(
         msx_rtc_persistence_path(overlay->msx), target_rtc_path) != 0;
@@ -1920,7 +1937,7 @@ static void select_machine(Overlay *overlay) {
             model_error, sizeof(model_error))) {
         notify_post("Invalid %s model: %s",
                     definition->name, model_error);
-        return;
+        return false;
     }
     config_normalize(&target_config);
     blocked_extension = model_transition_disabled_extension(
@@ -1928,39 +1945,39 @@ static void select_machine(Overlay *overlay) {
     if (blocked_extension) {
         notify_post("Disconnect %s before selecting %s",
                     blocked_extension, definition->name);
-        return;
+        return false;
     }
 
     if (!firmware_file_has_size(definition->bios_path, MSX_BIOS_SIZE)) {
         notify_post("Invalid BIOS for %s; edit the machine model",
                     definition->name);
-        return;
+        return false;
     }
     if (definition->logo_path[0] &&
         !firmware_file_has_size(definition->logo_path, MSX_LOGO_SIZE)) {
         notify_post("Invalid logo ROM for %s; edit the machine model",
                     definition->name);
-        return;
+        return false;
     }
     if ((profile->requires_subrom || definition->subrom_path[0]) &&
         !firmware_file_has_size(
             definition->subrom_path, MSX_SUBROM_SIZE)) {
         notify_post("Invalid Sub-ROM for %s; edit the machine model",
                     definition->name);
-        return;
+        return false;
     }
     if (definition->disk_rom_path[0] &&
         !firmware_file_has_size(
             definition->disk_rom_path, MSX_DISK_ROM_SIZE)) {
         notify_post("Invalid disk ROM for %s; edit the machine model",
                     definition->name);
-        return;
+        return false;
     }
     if (rtc_changed && msx_set_rtc_persistence(
             overlay->msx, "", rtc_host_seconds()) != 0) {
         notify_post("Could not save RTC CMOS: %s",
                     msx_rtc_persistence_error(overlay->msx));
-        return;
+        return false;
     }
     if (msx_load_firmware_set(
             overlay->msx, definition->bios_path,
@@ -1970,7 +1987,7 @@ static void select_machine(Overlay *overlay) {
             (void)sync_rtc_persistence(overlay);
         notify_post("Could not load %s firmware; check ROM sizes",
                     definition->name);
-        return;
+        return false;
     }
 
     for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
@@ -2014,6 +2031,7 @@ static void select_machine(Overlay *overlay) {
                       definition->name);
     notify_post("%s firmware loaded: %s", definition->name,
                  path_basename(config->bios_path));
+    return true;
 }
 
 static void change_cartridge_mapper(Overlay *overlay, unsigned slot) {
@@ -2352,7 +2370,7 @@ static bool install_model_catalog(Overlay *overlay,
 static void save_model_edit(Overlay *overlay) {
     ModelCatalog *updated;
     char old_id[MODEL_ID_MAX] = "";
-    bool current_renamed = false;
+    bool editing_active = false;
 
     if (!validate_model_edit(overlay))
         return;
@@ -2381,18 +2399,24 @@ static void save_model_edit(Overlay *overlay) {
     }
     if (install_model_catalog(
             overlay, updated, overlay->model_edit.id)) {
-        current_renamed =
-            old_id[0] &&
-            strcmp(old_id, overlay->model_edit.id) != 0 &&
+        editing_active = old_id[0] &&
             strcmp(overlay->config->machine_id, old_id) == 0;
-        if (current_renamed) {
-            snprintf(overlay->config->machine_id,
-                     sizeof(overlay->config->machine_id),
-                     "%s", overlay->model_edit.id);
-            overlay->dirty = true;
+        if (editing_active) {
+            overlay->machine_row = (int)model_catalog_index(
+                overlay->models, overlay->model_edit.id);
+            if (select_machine(overlay, true)) {
+                notify_post(
+                    "Machine catalogue saved; active model applied");
+            } else {
+                overlay->state = OVERLAY_STATE_MODEL_LIST;
+                notify_post(
+                    "Machine catalogue saved; active model not applied");
+            }
+        } else {
+            overlay->state = OVERLAY_STATE_MODEL_LIST;
+            notify_post(
+                "Machine catalogue saved; select a model to apply it");
         }
-        overlay->state = OVERLAY_STATE_MODEL_LIST;
-        notify_post("Machine catalogue saved; select a model to apply it");
     }
     free(updated);
 }
@@ -3186,6 +3210,7 @@ static bool toggle_second_floppy(Overlay *overlay) {
             return false;
         }
         config->second_drive = false;
+        overlay->machine_reset_requested = true;
         overlay->dirty = true;
         notify_post("Second floppy disabled");
         return true;
@@ -3195,6 +3220,7 @@ static bool toggle_second_floppy(Overlay *overlay) {
         return false;
     }
     config->second_drive = true;
+    overlay->machine_reset_requested = true;
     overlay->dirty = true;
     if (config->drive_b_path[0] &&
         msx_mount_drive_b(
@@ -3465,7 +3491,6 @@ static void activate_item(Overlay *overlay) {
                 }
                 case EXTENSION_CDX2:
                     config->cdx2 = !config->cdx2;
-                    msx_set_cdx2_enabled(overlay->msx, config->cdx2);
                     notify_post("Microsol CDX-2 FDC %s",
                                 config->cdx2 ? "enabled" : "disabled");
                     break;
@@ -3618,6 +3643,18 @@ void overlay_init(Overlay *overlay, Config *config,
     overlay->unapinet = unapinet;
     overlay->rs232dev = rs232dev;
     apply_config(overlay);
+    /* Initialization finishes before the first guest instruction. */
+    overlay->machine_reset_requested = false;
+}
+
+bool overlay_take_machine_reset_request(Overlay *overlay) {
+    bool requested;
+
+    if (!overlay)
+        return false;
+    requested = overlay->machine_reset_requested;
+    overlay->machine_reset_requested = false;
+    return requested;
 }
 
 bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
@@ -3757,7 +3794,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
             if (overlay->machine_row >= (int)overlay->models->count)
                 overlay->machine_row = 0;
         } else if (key == SDLK_RETURN || key == SDLK_KP_ENTER) {
-            select_machine(overlay);
+            (void)select_machine(overlay, false);
         } else if (key == SDLK_ESCAPE) {
             overlay->state = OVERLAY_STATE_MENU;
         }

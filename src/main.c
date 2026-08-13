@@ -579,6 +579,19 @@ static void set_mouse_capture(Display *display, MsxMachine *msx,
         clear_mouse_input(msx);
 }
 
+static void reset_machine(MsxMachine *msx, const Config *config,
+                          Paste *paste, KbdHost *keyboard,
+                          Display *display, AudioOutput *audio) {
+    paste_cancel(paste, msx);
+    kbd_release_all(keyboard, msx);
+    set_mouse_capture(display, msx, false);
+    msx_reset(msx);
+    psg_set_volume(&msx->psg, config->audio_volume);
+    audio_output_clear(audio);
+    leds_set_state(LED_CAPS, false);
+    leds_set_state(LED_KANA, false);
+}
+
 static void track_led_mouse(Display *display, SDL_WindowID window_id,
                             const SDL_Event *event) {
     float x;
@@ -1596,14 +1609,8 @@ int main(int argc, char **argv) {
                     break;
                 }
                 case SDLK_F5:
-                    paste_cancel(&paste, &msx);
-                    kbd_release_all(&keyboard, &msx);
-                    set_mouse_capture(&display, &msx, false);
-                    msx_reset(&msx);
-                    psg_set_volume(&msx.psg, config.audio_volume);
-                    audio_output_clear(&audio);
-                    leds_set_state(LED_CAPS, false);
-                    leds_set_state(LED_KANA, false);
+                    reset_machine(&msx, &config, &paste, &keyboard,
+                                  &display, &audio);
                     notify_post("Machine reset");
                     break;
                 case SDLK_F6:
@@ -1636,6 +1643,11 @@ int main(int argc, char **argv) {
         }
 
         overlay_tick(&overlay);
+        if (overlay_take_machine_reset_request(&overlay)) {
+            reset_machine(&msx, &config, &paste, &keyboard,
+                          &display, &audio);
+            notify_post("Hardware changed; machine reset");
+        }
         for (unsigned port = 0; port < MSX_JOYSTICK_PORTS; ++port)
             msx_joystick_set_pressed(&msx, port, 0);
         {

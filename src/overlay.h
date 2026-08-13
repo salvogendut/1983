@@ -56,6 +56,7 @@ typedef enum {
 typedef struct {
     bool visible;
     bool dirty;
+    bool machine_reset_requested;
     OverlaySection section;
     OverlayState state;
     int row;
@@ -110,6 +111,7 @@ void overlay_init(Overlay *overlay, Config *config,
                   MsxMachine *msx, UnapiNet *unapinet,
                   Rs232Device *rs232dev);
 bool overlay_handle_event(Overlay *overlay, const SDL_Event *event);
+bool overlay_take_machine_reset_request(Overlay *overlay);
 void overlay_tick(Overlay *overlay);
 void overlay_render_cassette_scope(const Overlay *overlay);
 void overlay_render(const Overlay *overlay);
