@@ -8,9 +8,11 @@ sdrom=diagnostics/test-cli-sdmapper.tmp
 sdimage=diagnostics/test-cli-sdcard.tmp
 megaflash=diagnostics/test-cli-megaflash.tmp
 cassette=diagnostics/test-cli-cassette.tmp
+cdx2=diagnostics/test-cli-cdx2.tmp
+floppy=diagnostics/test-cli-floppy.tmp
 first_run=diagnostics/test-cli-first-run.tmp
 source_root=${srcdir:-.}
-trap 'rm -f "$log" "$config" "$sunrise" "$sdrom" "$sdimage" "$megaflash" "$cassette" "$first_run"' EXIT HUP INT TERM
+trap 'rm -f "$log" "$config" "$sunrise" "$sdrom" "$sdimage" "$megaflash" "$cassette" "$cdx2" "$floppy" "$first_run"' EXIT HUP INT TERM
 
 rm -f "$first_run"
 ./1983 --config "$first_run" \
@@ -146,6 +148,20 @@ if ./1983 --floppy-mode unsafe >"$log" 2>&1; then
 fi
 grep -q "expected read-only or read-write" "$log"
 
+# A CDX-2 is a cartridge, not just an I/O-port switch. Its ROM must be
+# installed before startup media is mounted, otherwise an MSX1 rejects the
+# floppy as having no controller.
+dd if=/dev/zero of="$cdx2" bs=16384 count=1 2>/dev/null
+dd if=/dev/zero of="$floppy" bs=512 count=1440 2>/dev/null
+./1983 --config /dev/null --cdx2-rom "$cdx2" --disk-a "$floppy" \
+    --headless --unthrottled --exit-after 0 >"$log" 2>&1
+if ./1983 --config /dev/null --cdx2-rom missing-cdx2.rom \
+        >"$log" 2>&1; then
+    echo "missing CDX-2 ROM was accepted" >&2
+    exit 1
+fi
+grep -q "cannot load 16 KB Microsol CDX-2 ROM" "$log"
+
 if ./1983 --config /dev/null --cassette missing.cas >"$log" 2>&1; then
     echo "missing cassette was accepted" >&2
     exit 1
@@ -178,6 +194,7 @@ grep -q -- "--no-unapi" "$log"
 grep -q -- "--disk-a PATH" "$log"
 grep -q -- "--disk-b PATH" "$log"
 grep -q -- "--floppy-mode MODE" "$log"
+grep -q -- "--cdx2-rom PATH" "$log"
 grep -q -- "--ide PATH" "$log"
 grep -q -- "--ide-mode MODE" "$log"
 grep -q -- "--cassette PATH" "$log"

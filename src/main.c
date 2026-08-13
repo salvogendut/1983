@@ -45,6 +45,7 @@ typedef struct {
     const char *sd_card_path[MSX_SD_MAPPER_CARDS];
     const char *megaflash_rom_path;
     const char *rs232_rom_path;
+    const char *cdx2_rom_path;
     const char *megaflash_card_path[MSX_MEGAFLASH_CARDS];
     const char *drive_a_path;
     const char *drive_b_path;
@@ -233,10 +234,10 @@ static const char *usage =
     "  --rs232-rom PATH    load a user-provided RS-232C EXTBIO/driver ROM\n"
     "  --cdx2              enable the Microsol CDX-2 port-based FDC\n"
     "  --no-cdx2           disable the Microsol CDX-2 port-based FDC\n"
-    "  --rs232-rom PATH    load a user-provided RS-232C EXTBIO/driver ROM\n"
+    "  --cdx2-rom PATH     load a user-provided 16 KB CDX-2 ROM\n"
     "  --sd-mode MODE       SD access: read-only (default) or read-write\n"
-    "  --disk-a PATH       insert a raw MSX DSK image in Drive A\n"
-    "  --disk-b PATH       insert a raw MSX DSK image in Drive B\n"
+    "  --disk-a PATH       insert a raw MSX or CPCEMU DSK in Drive A\n"
+    "  --disk-b PATH       insert a raw MSX or CPCEMU DSK in Drive B\n"
     "  --floppy-mode MODE  DSK access: read-only (default) or read-write\n"
     "  --ide PATH          mount a raw IDE disk image\n"
     "  --ide-mode MODE     image access: read-only (default) or read-write\n"
@@ -419,6 +420,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--megaflash-sd-a") == 0 ||
              strcmp(argument, "--megaflash-sd-b") == 0 ||
              strcmp(argument, "--rs232-rom") == 0 ||
+             strcmp(argument, "--cdx2-rom") == 0 ||
              strcmp(argument, "--sd-mode") == 0 ||
              strcmp(argument, "--disk-a") == 0 ||
              strcmp(argument, "--disk-b") == 0 ||
@@ -472,6 +474,8 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->megaflash_card_path[1] = argv[++i];
         } else if (strcmp(argument, "--rs232-rom") == 0) {
             cli->rs232_rom_path = argv[++i];
+        } else if (strcmp(argument, "--cdx2-rom") == 0) {
+            cli->cdx2_rom_path = argv[++i];
         } else if (strcmp(argument, "--sd-mode") == 0) {
             cli->sd_image_mode = parse_sd_mode(argv[++i]);
             if (cli->sd_image_mode < 0)
@@ -835,6 +839,13 @@ int main(int argc, char **argv) {
         config.extra_hardware = true;
         config.rs232 = true;
     }
+    if (cli.cdx2_rom_path) {
+        snprintf(config.cdx2_rom_path,
+                 sizeof(config.cdx2_rom_path),
+                 "%s", cli.cdx2_rom_path);
+        config.extra_hardware = true;
+        config.cdx2 = true;
+    }
     for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
         if (!cli.megaflash_card_path[card])
             continue;
@@ -941,6 +952,34 @@ int main(int argc, char **argv) {
             cli.model_name) {
             msx_destroy(&msx);
             return 1;
+        }
+    }
+    if (config.cdx2) {
+        int cdx2_slot = -1;
+
+        for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+            const char *owner =
+                config_cartridge_slot_owner(&config, slot);
+
+            if (owner && strcmp(owner, "CDX-2 FDC") == 0) {
+                cdx2_slot = (int)slot;
+                break;
+            }
+        }
+        if (cdx2_slot < 0 || !config.cdx2_rom_path[0] ||
+            msx_load_cdx2(
+                &msx, (unsigned)cdx2_slot,
+                config.cdx2_rom_path) != 0) {
+            fprintf(stderr,
+                    "cannot load 16 KB Microsol CDX-2 ROM: %s\n",
+                    config.cdx2_rom_path[0]
+                    ? config.cdx2_rom_path : "[not configured]");
+            if (cli.cdx2 > 0 || cli.cdx2_rom_path) {
+                msx_destroy(&msx);
+                return 1;
+            }
+            config.cdx2 = false;
+            config_normalize(&config);
         }
     }
     if (config.cassette_path[0] &&
@@ -1258,7 +1297,6 @@ int main(int argc, char **argv) {
         rs232dev_set_enabled(rs232dev, true);
     else
         rs232dev_set_enabled(rs232dev, false);
-    msx_set_cdx2_enabled(&msx, config.cdx2);
     definition = model_catalog_find(&models, config.machine_id);
     if (display_init(&display, &config, &msx,
                      definition ? definition->name : NULL) < 0) {

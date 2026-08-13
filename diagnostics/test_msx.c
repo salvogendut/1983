@@ -620,16 +620,34 @@ static void test_model_change_reset_preserves_floppy(void) {
     assert(msx.floppy_config.controller ==
            MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793);
 
-    /* Enabling the CDX-2 port-based controller also exposes the floppy. */
+    /* A real CDX-2 cartridge combines a 16 KiB driver ROM with the
+     * port-based controller and reserves its physical cartridge slot. */
     msx_configure(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
     assert(!msx_floppy_supported(&msx));
-    msx_set_cdx2_enabled(&msx, true);
+    {
+        u8 cdx2_rom[MSX_CDX2_ROM_SIZE] = { 0 };
+
+        cdx2_rom[0] = 'A';
+        cdx2_rom[1] = 'B';
+        cdx2_rom[2] = 0x00;
+        cdx2_rom[3] = 0x80;
+        assert(msx_install_cdx2(
+                   &msx, 1, cdx2_rom, sizeof(cdx2_rom)) == 0);
+    }
+    assert(msx_cdx2_connected(&msx));
+    assert(msx_cdx2_slot(&msx) == 1);
+    assert(msx_get_cartridge(&msx, 1)->base == 0x4000);
     assert(msx_floppy_supported(&msx));
+    msx_io_write(&msx, 0xd4, 0x21);
+    assert(msx.fdc.selected_drive == 0);
+    assert(msx.fdc.motor);
+    msx_io_write(&msx, 0xd4, 0x01);
+    assert(!msx.fdc.motor);
     msx_reset(&msx);
     assert(msx_floppy_supported(&msx));
     assert(msx_drive_a_mounted(&msx));
-    msx_set_cdx2_enabled(&msx, false);
-    msx_reset(&msx);
+    assert(msx_eject_cdx2(&msx) == 0);
+    assert(!msx_cdx2_connected(&msx));
     assert(!msx_floppy_supported(&msx));
     assert(msx_drive_a_mounted(&msx));
 

@@ -10,7 +10,7 @@ complete MSX hardware specification.
 |-------|----------------|
 | `src/main.c` | Process lifetime, command line, SDL event loop, and shared function-key bindings |
 | `src/ata.*` | Host-independent ATA task file, IDENTIFY/read/write/flush commands, and safe raw-image lifetime |
-| `src/floppy.*` | Host-independent raw DSK geometry, sector I/O, access mode, flush, and safe image lifetime |
+| `src/floppy.*` | Raw/CPCEMU DSK geometry and sector metadata, I/O, access mode, flush, and safe image lifetime |
 | `src/cartridge.*` | Host-independent cartridge image ownership, mapper detection, bank registers, and standard SCC integration |
 | `src/cassette.*` | Host-independent MSX CAS parser, type detection, waveform synthesis, motor-controlled transport, comparator, and monitor signal |
 | `src/audio.*` | SDL3 audio-stream lifetime and host sample submission |
@@ -37,7 +37,7 @@ complete MSX hardware specification.
 | `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, sprite-mode-2, and command engine |
 | `src/wd2793.*` | Philips memory-mapped WD2793 registers, commands, drive selection, IRQ/DRQ, and transfer state |
 | `diagnostics/test_ata.c` | ATA identify, sector reads, errors, reset, activity, and conservative mount checks |
-| `diagnostics/test_floppy.c` | Raw DSK geometry, read/write, failed replacement, flush failure, and safe ejection |
+| `diagnostics/test_floppy.c` | Raw and standard/extended CPCEMU DSK I/O, failed replacement, flush failure, and safe ejection |
 | `diagnostics/test_wd2793.c` | Commands, register mirrors, dual-drive selection, IRQ/DRQ, sector transfers, reset, and write protection |
 | `diagnostics/test_sunrise.c` | Sunrise banking, overlay decode, data latch, master/slave, soft reset, and disk lifetime |
 | `diagnostics/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/Nextor boot checks |
@@ -288,12 +288,15 @@ and optional card remain local test inputs.
 `src/wd2793.c` owns controller registers, commands, side/drive/motor
 selection, active-low IRQ/DRQ reporting, and complete-sector transfer
 buffers. `src/floppy.c` knows nothing about MSX slots or controller commands;
-it validates conventional raw DSK geometry and owns host file I/O. The MSX
+it validates conventional raw geometry, parses standard/extended CPCEMU DSK
+track and sector metadata, and owns host file I/O. The MSX
 bus exposes the Philips registers only when the catalogue-configured
 slot/subslot is selected. Mapping the device into primary slot 1 or 2 also
 reserves that physical cartridge port. This keeps machine-specific controller
 wiring separate from the reusable image backend and provides the boundary for
-future external disk-interface cartridges.
+external disk-interface cartridges. CDX-2 is the first such cartridge: its
+user-supplied 16 KiB ROM and D0h-D4h port gate share one lifecycle and reserve
+one physical cartridge slot.
 
 Both images start read-only unless read/write is explicitly selected.
 Completed writes become dirty in the image backend, while reset can discard

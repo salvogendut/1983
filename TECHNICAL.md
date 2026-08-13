@@ -222,9 +222,13 @@ multiple sector reads/writes, read address, and force interrupt. Reset
 discards an incomplete transfer but preserves inserted media and completed
 dirty sectors.
 
-The host-independent raw DSK backend accepts conventional 320, 360, 640, and
+The host-independent DSK backend accepts conventional raw 320, 360, 640, and
 720 KiB sector images. It prefers FAT BPB geometry when valid and otherwise
-uses known MSX geometries. Images default to read-only. Explicit read/write
+uses known MSX geometries. It also parses standard and extended CPCEMU DSK
+containers, retaining each track's sector IDs and data offsets; the current
+WD2793 path accepts their 512-byte sectors. Container support does not convert
+AMSDOS filesystems into MSX-DOS filesystems. Images default to read-only.
+Explicit read/write
 mode buffers a complete 512-byte sector before changing the host file.
 Replacement and ejection flush completed sectors; a host flush error leaves
 the dirty image attached and visible instead of claiming a successful
@@ -238,6 +242,13 @@ Floppy access mode applies the explicit read-only/read-write policy to
 inserted floppies. Paths, second-drive state, and access mode persist in
 `1983.conf`; `--disk-a`, `--disk-b`, and `--floppy-mode` provide the same
 startup controls. Sector access pulses the matching floppy LED.
+
+The optional Microsol CDX-2 uses the same WD2793 core through ports `D0h-D4h`.
+It is represented as a real cartridge extension: an exact 16 KiB,
+user-supplied controller ROM reserves one cartridge slot, while D4 selects
+drive/side/motor and reports IRQ/DRQ. The ROM is installed before saved floppy
+media so a generic MSX can mount its startup disk without stale capability
+gating.
 
 ## Sunrise IDE and ATA storage
 

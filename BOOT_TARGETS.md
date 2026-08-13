@@ -470,6 +470,8 @@ also provides:
 - a persistent standard MSX CAS cassette selector and transport under Media;
 - a persistent Floppy A selector for the NMS 8250;
 - an Extensions second-floppy switch which conditionally adds Floppy B;
+- a cartridge-slot-backed Microsol CDX-2 setup with a user-provided 16 KiB
+  controller ROM;
 - a persistent port-mapped MSX TCP/IP UNAPI host bridge which does not
   reserve a cartridge slot.
 

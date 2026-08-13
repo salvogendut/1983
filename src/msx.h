@@ -27,6 +27,7 @@
 #define MSX_LOGO_SIZE 0x4000u
 #define MSX_SUBROM_SIZE 0x4000u
 #define MSX_DISK_ROM_SIZE 0x4000u
+#define MSX_CDX2_ROM_SIZE 0x4000u
 #define MSX_RAM_INTERNAL_SIZE 0x20000u
 #define MSX_RAM_MAX_SIZE 0x400000u
 #define MSX_KEYBOARD_ROWS 11u
@@ -141,6 +142,7 @@ typedef struct {
     int sd_mapper_slot;
     int sunrise_slot;
     int rs232_slot;
+    int cdx2_slot;
     bool bios_loaded;
     bool logo_loaded;
     bool subrom_loaded;
@@ -202,8 +204,14 @@ void msx_set_io_extension(MsxMachine *msx, void *context,
 void msx_set_io_extension_advance(MsxMachine *msx, void *context,
                                   MsxIoExtensionAdvance advance_handler);
 
-void msx_set_cdx2_enabled(MsxMachine *msx, bool enabled);
-bool msx_cdx2_enabled(const MsxMachine *msx);
+int msx_install_cdx2(MsxMachine *msx, unsigned slot,
+                     const u8 *data, size_t size);
+int msx_load_cdx2(MsxMachine *msx, unsigned slot,
+                  const char *path);
+int msx_eject_cdx2(MsxMachine *msx);
+bool msx_cdx2_connected(const MsxMachine *msx);
+int msx_cdx2_slot(const MsxMachine *msx);
+void msx_reassign_cdx2_slot(MsxMachine *msx, int slot);
 
 u8   msx_memory_read(MsxMachine *msx, u16 address);
 void msx_memory_write(MsxMachine *msx, u16 address, u8 value);

@@ -104,14 +104,17 @@ static bool begin_write_sector(Wd2793 *fdc) {
 
 static bool continue_multiple(Wd2793 *fdc) {
     FloppyImage *image = selected_image(fdc);
+    unsigned next_sector;
 
     if (!fdc->multiple || !image)
         return false;
-    ++fdc->sector;
-    if (fdc->sector > image->sectors_per_track) {
+    if (!floppy_image_next_sector(
+            image, fdc->physical_track, fdc->side_reg & 1,
+            fdc->sector, &next_sector)) {
         command_error(fdc, WD2793_STATUS_RECORD_MISSING);
         return true;
     }
+    fdc->sector = (u8)next_sector;
     if (fdc->transfer == WD2793_TRANSFER_READ)
         (void)load_sector(fdc);
     else
@@ -204,12 +207,29 @@ static void execute_command(Wd2793 *fdc, u8 command) {
                 command_error(fdc, 0);
                 break;
             }
+            {
+                unsigned sector;
+                u8 size_code;
+
+                if (!floppy_image_first_sector(
+                        selected_image_const(fdc), fdc->physical_track,
+                        fdc->side_reg & 1, &sector) ||
+                    !floppy_image_sector_info(
+                        selected_image_const(fdc), fdc->physical_track,
+                        fdc->side_reg & 1, sector, &size_code,
+                        NULL, NULL)) {
+                    command_error(fdc, WD2793_STATUS_RECORD_MISSING);
+                    break;
+                }
             fdc->transfer_data[0] = fdc->physical_track;
             fdc->transfer_data[1] = fdc->side_reg & 1;
-            fdc->transfer_data[2] = fdc->sector ? fdc->sector : 1;
-            fdc->transfer_data[3] = 2;
-            fdc->transfer_data[4] = 0;
-            fdc->transfer_data[5] = 0;
+                fdc->transfer_data[2] = (u8)sector;
+                fdc->transfer_data[3] = size_code;
+                /* WD2793 Read Address returns the address-field CRC here,
+                 * not CPCEMU's NEC-style ST1/ST2 metadata. */
+                fdc->transfer_data[4] = 0;
+                fdc->transfer_data[5] = 0;
+            }
             fdc->transfer = WD2793_TRANSFER_READ;
             fdc->transfer_size = 6;
             fdc->transfer_offset = 0;
