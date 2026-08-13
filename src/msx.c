@@ -2116,8 +2116,9 @@ const char *msx_rtc_persistence_path(const MsxMachine *msx) {
 
 bool msx_floppy_supported(const MsxMachine *msx) {
     return msx &&
-           msx->floppy_config.controller !=
-               MSX_FLOPPY_CONTROLLER_NONE;
+           (msx->floppy_config.controller !=
+                MSX_FLOPPY_CONTROLLER_NONE ||
+            msx->cdx2_enabled);
 }
 
 int msx_mount_drive_a(MsxMachine *msx, const char *path,
