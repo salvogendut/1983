@@ -591,6 +591,15 @@ static void test_msx2_configured_floppy_slots_and_firmware(void) {
 
 static void test_model_change_reset_preserves_floppy(void) {
     MsxMachine msx;
+    const char *image_path = "diagnostics/test-hardware-reset.dsk";
+    u8 sector[FLOPPY_SECTOR_SIZE] = {0};
+    FILE *image = fopen(image_path, "wb");
+
+    assert(image);
+    for (unsigned logical = 0; logical < 1440; ++logical)
+        assert(fwrite(sector, 1, sizeof(sector), image) ==
+               sizeof(sector));
+    assert(fclose(image) == 0);
 
     /* A machine configured without a controller has no floppy support. */
     msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
@@ -602,9 +611,12 @@ static void test_model_change_reset_preserves_floppy(void) {
     assert(msx_floppy_supported(&msx));
     assert(msx.floppy_config.controller ==
            MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793);
+    assert(msx_mount_drive_a(
+               &msx, image_path, FLOPPY_IMAGE_READ_ONLY) == 0);
 
     msx_reset(&msx);
     assert(msx_floppy_supported(&msx));
+    assert(msx_drive_a_mounted(&msx));
     assert(msx.floppy_config.controller ==
            MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793);
 
@@ -615,8 +627,14 @@ static void test_model_change_reset_preserves_floppy(void) {
     assert(msx_floppy_supported(&msx));
     msx_reset(&msx);
     assert(msx_floppy_supported(&msx));
+    assert(msx_drive_a_mounted(&msx));
+    msx_set_cdx2_enabled(&msx, false);
+    msx_reset(&msx);
+    assert(!msx_floppy_supported(&msx));
+    assert(msx_drive_a_mounted(&msx));
 
     msx_destroy(&msx);
+    assert(remove(image_path) == 0);
 }
 
 static void test_vdp_ports_and_renderer(void) {

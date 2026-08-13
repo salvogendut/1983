@@ -122,8 +122,11 @@ file is available.
 **Advanced > Machine model editor**, behind the existing Tinker gate, writes
 the same format through `model_catalog_save()`. It edits a copy, validates
 the selected definition, atomically replaces the per-user catalogue, reloads
-that file, and only then replaces the live catalogue. Repository and
-installed catalogues therefore act as seed data and remain unchanged.
+that file, and only then replaces the live catalogue. Editing the currently
+selected definition also reloads its firmware and hardware into the running
+machine immediately; a floppy-controller topology change is followed by a
+full guest reset after the new mapping is installed. Repository and installed
+catalogues therefore act as seed data and remain unchanged.
 
 The first concrete MSX2 layout matches the Philips NMS 8250 used by
 `../geobench/tools/run_msx.sh`: BIOS/BASIC in primary slot 0, external

@@ -911,6 +911,8 @@ int main(void) {
     assert(overlay.row == 6);
     send_key(&overlay, SDLK_RETURN);
     assert(config.second_drive);
+    assert(overlay_take_machine_reset_request(&overlay));
+    assert(!overlay_take_machine_reset_request(&overlay));
     send_key(&overlay, SDLK_LEFT);
     assert(overlay.section == OVERLAY_MEDIA);
     send_key(&overlay, SDLK_UP);
@@ -921,6 +923,7 @@ int main(void) {
         send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(!config.second_drive);
+    assert(overlay_take_machine_reset_request(&overlay));
     send_key(&overlay, SDLK_LEFT);
     send_key(&overlay, SDLK_UP);
     assert(overlay.row == 5);
@@ -933,7 +936,7 @@ int main(void) {
     send_key(&overlay, SDLK_RETURN);
     assert(!config.rtc_persistence);
 
-    /* RS-232C is the last Extensions row; toggling flips the device. */
+    /* RS-232C toggling flips the device. */
     snprintf(config.rs232_rom_path, sizeof(config.rs232_rom_path),
              "%s", rs232_rom_path);
     send_key(&overlay, SDLK_UP);
@@ -949,6 +952,52 @@ int main(void) {
     send_key(&overlay, SDLK_RETURN);
     assert(!config.rs232);
     assert(!msx_rs232_connected(&msx));
+
+    /* Port-mapped FDC changes request a full guest reset only after the
+     * new I/O gate is active. */
+    config_defaults(&config);
+    config.extra_hardware = true;
+    config.tinker = true;
+    msx_configure(&msx, config.model, config.region,
+                  config.memory_kb);
+    overlay_init(&overlay, &config, &models, &display, &msx, NULL, NULL);
+    assert(!msx_floppy_supported(&msx));
+    assert(!overlay_take_machine_reset_request(&overlay));
+    send_key(&overlay, SDLK_F9);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_EXTENSIONS);
+    for (int row = 0; row < 8; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 8); /* EXTENSION_CDX2 */
+    msx.instructions = 123;
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.cdx2);
+    assert(msx_cdx2_enabled(&msx));
+    assert(msx_floppy_supported(&msx));
+    assert(msx.instructions == 123);
+    assert(overlay_take_machine_reset_request(&overlay));
+    msx_reset(&msx); /* main loop fulfils the request */
+    assert(msx.instructions == 0);
+    assert(msx_cdx2_enabled(&msx));
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.cdx2);
+    assert(!msx_cdx2_enabled(&msx));
+    assert(!msx_floppy_supported(&msx));
+    assert(overlay_take_machine_reset_request(&overlay));
+
+    /* Cancelling the overlay restores the live gate as well as Config. */
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.cdx2);
+    assert(msx_cdx2_enabled(&msx));
+    assert(overlay_take_machine_reset_request(&overlay));
+    send_key(&overlay, SDLK_ESCAPE);
+    assert(overlay.state == OVERLAY_STATE_CONFIRM);
+    send_key(&overlay, SDLK_N);
+    assert(!overlay.visible);
+    assert(!config.cdx2);
+    assert(!msx_cdx2_enabled(&msx));
+    assert(overlay_take_machine_reset_request(&overlay));
 
     /* SD Mapper setup keeps controller firmware separate from card media. */
     config_defaults(&config);
@@ -1332,6 +1381,63 @@ int main(void) {
         assert(!msx.subrom_loaded);
         assert(!msx.disk_rom_loaded);
 
+        /* Editing the selected catalogue entry applies its hardware to the
+         * live Config/MsxMachine instead of waiting for process restart,
+         * while preserving the user's runtime RAM expansion. */
+        config.memory_kb = 256;
+        msx_configure(&msx, config.model, config.region,
+                      config.memory_kb);
+        assert(msx.ram_kb == 256);
+        send_key(&overlay, SDLK_LEFT);
+        assert(overlay.section == OVERLAY_ADVANCED);
+        assert(overlay.row == 0);
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MODEL_LIST);
+        assert(overlay.model_editor_row == (int)cbios_index);
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MODEL_EDIT);
+        overlay.model_edit.floppy.controller =
+            MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
+        overlay.model_edit.floppy.primary_slot = 2;
+        overlay.model_edit.floppy.secondary_slot = -1;
+        snprintf(overlay.model_edit.disk_rom_path,
+                 sizeof(overlay.model_edit.disk_rom_path), "%s",
+                 machine_disk_rom_path);
+        msx.instructions = 123;
+        send_key(&overlay, SDLK_F2);
+        assert(overlay.state == OVERLAY_STATE_MENU);
+        assert(config.floppy.controller ==
+               MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793);
+        assert(msx_floppy_supported(&msx));
+        assert(msx.disk_rom_loaded);
+        assert(config.memory_kb == 256);
+        assert(msx.ram_kb == 256);
+        assert(msx.instructions == 0);
+        assert(overlay_take_machine_reset_request(&overlay));
+
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MODEL_LIST);
+        assert(overlay.model_editor_row == (int)cbios_index);
+        send_key(&overlay, SDLK_RETURN);
+        overlay.model_edit.floppy.controller =
+            MSX_FLOPPY_CONTROLLER_NONE;
+        overlay.model_edit.floppy.primary_slot = -1;
+        overlay.model_edit.floppy.secondary_slot = -1;
+        overlay.model_edit.disk_rom_path[0] = '\0';
+        msx.instructions = 123;
+        send_key(&overlay, SDLK_F2);
+        assert(overlay.state == OVERLAY_STATE_MENU);
+        assert(config.floppy.controller ==
+               MSX_FLOPPY_CONTROLLER_NONE);
+        assert(!msx_floppy_supported(&msx));
+        assert(!msx.disk_rom_loaded);
+        assert(config.memory_kb == 256);
+        assert(msx.ram_kb == 256);
+        assert(msx.instructions == 0);
+        assert(overlay_take_machine_reset_request(&overlay));
+        send_key(&overlay, SDLK_RIGHT);
+        assert(overlay.section == OVERLAY_GENERAL);
+
         snprintf(loaded_bios_path, sizeof(loaded_bios_path), "%s",
                  config.bios_path);
         memcpy(active_bios, msx.bios, sizeof(active_bios));
@@ -1347,7 +1453,7 @@ int main(void) {
         assert(overlay.dialog_target == OVERLAY_DIALOG_NONE);
         assert(config.model == MSX_MODEL_GENERIC_MSX1);
         assert(strcmp(config.machine_id, "cbios") == 0);
-        assert(config.memory_kb == 64);
+        assert(config.memory_kb == 256);
         assert(strcmp(config.bios_path, loaded_bios_path) == 0);
         assert(msx.profile->model == MSX_MODEL_GENERIC_MSX1);
         assert(msx.bios_loaded);
