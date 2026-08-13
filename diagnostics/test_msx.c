@@ -589,6 +589,36 @@ static void test_msx2_configured_floppy_slots_and_firmware(void) {
     assert(remove(image_path) == 0);
 }
 
+static void test_model_change_reset_preserves_floppy(void) {
+    MsxMachine msx;
+
+    /* A machine configured without a controller has no floppy support. */
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(!msx_floppy_supported(&msx));
+
+    /* "Change model" to a floppy-equipped MSX2 and reset (F5). */
+    msx_configure(&msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
+    configure_philips_floppy(&msx);
+    assert(msx_floppy_supported(&msx));
+    assert(msx.floppy_config.controller ==
+           MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793);
+
+    msx_reset(&msx);
+    assert(msx_floppy_supported(&msx));
+    assert(msx.floppy_config.controller ==
+           MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793);
+
+    /* Enabling the CDX-2 port-based controller also exposes the floppy. */
+    msx_configure(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
+    assert(!msx_floppy_supported(&msx));
+    msx_set_cdx2_enabled(&msx, true);
+    assert(msx_floppy_supported(&msx));
+    msx_reset(&msx);
+    assert(msx_floppy_supported(&msx));
+
+    msx_destroy(&msx);
+}
+
 static void test_vdp_ports_and_renderer(void) {
     MsxVdp vdp;
 
@@ -1622,6 +1652,7 @@ int main(void) {
     test_ascii8_cpu_boot_checkpoint();
     test_atomic_firmware_set_and_eject();
     test_msx2_configured_floppy_slots_and_firmware();
+    test_model_change_reset_preserves_floppy();
     test_vdp_ports_and_renderer();
     test_msx2_vdp_extended_ports();
     test_rtc_ports_and_reset_persistence();
