@@ -1,18 +1,27 @@
 # Javascript 1983
 
-Build the browser edition with Emscripten and serve the publish directory:
+Install the relay dependency once, then build and launch the browser edition:
 
     export PATH=/var/home/salvogendut/emsdk/upstream/emscripten:$PATH
-    make -C web
-    python3 -m http.server 8080 --directory web/dist
+    npm --prefix web/relay ci
+    make -C web serve
 
-Run the JavaScript unit tests and the built-WASM machine/peripheral smoke test
-with:
+Open `http://127.0.0.1:1983/`. The launcher serves the static browser application
+and its restricted UNAPI WebSocket relay on the same origin, so the default
+`/unapi` endpoint works without further configuration. Emulation and media
+handling still execute entirely in the browser; the companion relay exists only
+because browsers cannot open the raw TCP and UDP sockets used by MSX software.
+Choose another same-origin port when 1983 is already occupied with, for example,
+`make -C web serve UNAPI_PORT=19830`.
+
+Run the JavaScript unit tests, relay integration tests, and the built-WASM
+machine/peripheral smoke test with:
 
     make -C web test
+    make -C web test-relay
     make -C web check-wasm
 
-Open `http://localhost:8080/` in a modern browser. The interface defaults to
+The interface defaults to
 the **SONYHB-F1XD** theme: a charcoal, red-accented machine and compact
 Trinitron/PVM-inspired monitor with a recessed tube and period control fascia.
 The treatment is CSS-native and inspired by 1980s Japanese electronics rather

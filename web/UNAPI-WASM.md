@@ -15,22 +15,31 @@ uses this deliberately narrow path:
 DNS, outbound TCP clients, and outbound UDP are supported. Listening TCP
 sockets and fixed local UDP ports are not exposed by the browser bridge.
 
-## Run the relay locally
+## Run the browser application and relay locally
 
 Node.js 20 or later is required:
 
     npm --prefix web/relay ci
-    npm --prefix web/relay start
+    make -C web serve
 
-The default relay listens only on `127.0.0.1:1983`, accepts the `/unapi`
-WebSocket path, and permits browser origins on loopback. With the web frontend
-served separately from `http://127.0.0.1:8080`, set the AUX-panel endpoint to:
+Open `http://127.0.0.1:1983/`. This single process publishes the static files
+from `web/dist` and accepts the `/unapi` WebSocket on the same address. The AUX
+panel therefore reports **Relay online** as soon as the UNAPI extension is
+enabled; its endpoint needs no manual editing.
 
-    ws://127.0.0.1:1983/unapi
+If port 1983 is already occupied, choose another port for both services:
 
-It can instead be supplied without persisting it:
+    make -C web serve UNAPI_PORT=19830
 
-    http://127.0.0.1:8080/?unapiRelay=ws%3A%2F%2F127.0.0.1%3A1983%2Funapi
+The frontend is still an ordinary static browser application. To serve it
+separately, run only the relay on another port:
+
+    UNAPI_SERVE_STATIC=0 UNAPI_RELAY_PORT=1984 npm --prefix web/relay start
+
+Then set the AUX-panel endpoint to `ws://127.0.0.1:1984/unapi`, or supply it
+without persisting it:
+
+    http://127.0.0.1:1983/?unapiRelay=ws%3A%2F%2F127.0.0.1%3A1984%2Funapi
 
 The browser initially proposes the same-origin `ws(s)://host/unapi` endpoint,
 which is convenient when a reverse proxy serves the frontend and relay from
@@ -56,6 +65,8 @@ Relevant environment variables are:
 | `UNAPI_RELAY_HOST` | Listen address | `127.0.0.1` |
 | `UNAPI_RELAY_PORT` | Listen port | `1983` |
 | `UNAPI_RELAY_PATH` | WebSocket path | `/unapi` |
+| `UNAPI_SERVE_STATIC` | Set to `0` for relay-only mode | enabled |
+| `UNAPI_STATIC_ROOT` | Browser files served by the combined launcher | `web/dist` |
 | `UNAPI_ORIGINS` | Comma-separated allowed origins | loopback origins |
 | `UNAPI_TOKEN` | Optional URL query token | empty |
 | `UNAPI_TCP_PORTS` | Comma-separated TCP allowlist | `23,70,80,443,2323` |

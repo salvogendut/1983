@@ -2,6 +2,7 @@
 
 const assert = require("node:assert/strict");
 const dgram = require("node:dgram");
+const { request: httpRequest } = require("node:http");
 const net = require("node:net");
 const { after, before, test } = require("node:test");
 const WebSocket = require("ws");
@@ -40,6 +41,27 @@ function bind(socket, ...args) {
 function sendDatagram(socket, data, port, address) {
   return new Promise((resolve, reject) => {
     socket.send(data, port, address, error => error ? reject(error) : resolve());
+  });
+}
+
+function request(pathname, method = "GET") {
+  return new Promise((resolve, reject) => {
+    const req = httpRequest({
+      host: "127.0.0.1",
+      port: relayAddress.port,
+      path: pathname,
+      method,
+    }, response => {
+      const chunks = [];
+      response.on("data", chunk => chunks.push(chunk));
+      response.on("end", () => resolve({
+        status: response.statusCode,
+        headers: response.headers,
+        body: Buffer.concat(chunks),
+      }));
+    });
+    req.on("error", reject);
+    req.end();
   });
 }
 
@@ -117,6 +139,28 @@ test("private and reserved IPv4 ranges are denied by default", () => {
   assert.equal(isPublicIPv4("192.168.1.5"), false);
   assert.equal(isPublicIPv4("169.254.1.1"), false);
   assert.equal(isPublicIPv4("8.8.8.8"), true);
+});
+
+test("combined server publishes the static frontend and health endpoint", async () => {
+  let response = await request("/");
+  assert.equal(response.status, 200);
+  assert.match(response.headers["content-type"], /^text\/html/);
+  assert.match(response.body.toString(), /<title>Javascript 1983<\/title>/);
+
+  response = await request("/1983.wasm", "HEAD");
+  assert.equal(response.status, 200);
+  assert.equal(response.headers["content-type"], "application/wasm");
+  assert.equal(response.body.length, 0);
+
+  response = await request("/healthz");
+  assert.equal(response.status, 200);
+  assert.deepEqual(JSON.parse(response.body), {
+    service: "1983-unapi-relay",
+    status: "ok",
+  });
+
+  response = await request("/%2e%2e%2fpackage.json");
+  assert.equal(response.status, 403);
 });
 
 test("relay carries DNS, TCP and UDP operations", async () => {

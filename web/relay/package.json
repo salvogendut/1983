@@ -2,7 +2,7 @@
   "name": "1983-unapi-relay",
   "version": "1.0.0",
   "private": true,
-  "description": "Restricted WebSocket to TCP/UDP relay for Javascript 1983 UNAPI",
+  "description": "Local web server and restricted TCP/IP UNAPI relay for Javascript 1983",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

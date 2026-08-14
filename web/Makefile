@@ -14,6 +14,8 @@
 EMCC      = emcc
 BUILD_DIR = build
 DIST_DIR  = dist
+UNAPI_HOST ?= 127.0.0.1
+UNAPI_PORT ?= 1983
 CFLAGS    = -O2 -std=c11 -Wall -Wextra -I../src -Icompat -I.
 
 SRCS = \
@@ -150,7 +152,8 @@ $(BUILD_DIR) $(DIST_DIR):
 	mkdir -p $@
 
 serve: all
-	python3 -m http.server 8080 --directory $(DIST_DIR)
+	UNAPI_RELAY_HOST=$(UNAPI_HOST) UNAPI_RELAY_PORT=$(UNAPI_PORT) \
+		npm --prefix relay start
 
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)

@@ -3,13 +3,24 @@
 const crypto = require("node:crypto");
 const dgram = require("node:dgram");
 const dns = require("node:dns").promises;
+const fs = require("node:fs");
+const fsp = require("node:fs/promises");
 const http = require("node:http");
 const net = require("node:net");
+const nodePath = require("node:path");
 const { WebSocketServer } = require("ws");
 const P = require("../unapi-relay-protocol.js");
 
 const DEFAULT_TCP_PORTS = [23, 70, 80, 443, 2323];
 const DEFAULT_UDP_PORTS = [123];
+const STATIC_TYPES = new Map([
+  [".css", "text/css; charset=utf-8"],
+  [".html", "text/html; charset=utf-8"],
+  [".js", "text/javascript; charset=utf-8"],
+  [".json", "application/json; charset=utf-8"],
+  [".png", "image/png"],
+  [".wasm", "application/wasm"],
+]);
 
 function parsePortSet(value, fallback) {
   if (value instanceof Set) return new Set(value);
@@ -80,7 +91,28 @@ function payloadIPv4(payload, offset = 0) {
           payload[offset + 3]].join(".");
 }
 
+function staticFilename(root, pathname) {
+  let relative;
+  try {
+    relative = decodeURIComponent(pathname);
+  } catch (_) {
+    return null;
+  }
+  if (relative.includes("\0")) return null;
+  relative = relative.replace(/\\/g, "/").replace(/^\/+/, "");
+  if (!relative) relative = "index.html";
+  const filename = nodePath.resolve(root, relative);
+  const prefix = root.endsWith(nodePath.sep) ? root : root + nodePath.sep;
+  return filename.startsWith(prefix) ? filename : null;
+}
+
 function createRelayServer(options = {}) {
+  const serveStatic = options.staticRoot !== false &&
+    process.env.UNAPI_SERVE_STATIC !== "0";
+  const staticRoot = !serveStatic ? "" : nodePath.resolve(
+    options.staticRoot || process.env.UNAPI_STATIC_ROOT ||
+    nodePath.join(__dirname, "..", "dist")
+  );
   const config = {
     host: options.host || process.env.UNAPI_RELAY_HOST || "127.0.0.1",
     port: Number(options.port ?? process.env.UNAPI_RELAY_PORT ?? 1983),
@@ -106,6 +138,7 @@ function createRelayServer(options = {}) {
     handshakeTimeoutMs: Number(options.handshakeTimeoutMs || 10000),
     heartbeatMs: Number(options.heartbeatMs || 30000),
     idleTimeoutMs: Number(options.idleTimeoutMs || 120000),
+    staticRoot,
   };
 
   function addressAllowed(address) {
@@ -125,14 +158,75 @@ function createRelayServer(options = {}) {
     return answer.address;
   }
 
-  const server = http.createServer((request, response) => {
-    if (request.url === "/healthz") {
+  async function handleHttp(request, response) {
+    let url;
+    try {
+      url = new URL(request.url, "http://1983.invalid");
+    } catch (_) {
+      response.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Bad request\n");
+      return;
+    }
+    if (url.pathname === "/healthz") {
       response.writeHead(200, { "content-type": "application/json" });
       response.end(JSON.stringify({ service: "1983-unapi-relay", status: "ok" }));
       return;
     }
-    response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
-    response.end("Not found\n");
+    if (!config.staticRoot) {
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Not found\n");
+      return;
+    }
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      response.writeHead(405, {
+        "allow": "GET, HEAD",
+        "content-type": "text/plain; charset=utf-8",
+      });
+      response.end("Method not allowed\n");
+      return;
+    }
+    const filename = staticFilename(config.staticRoot, url.pathname);
+    if (!filename) {
+      response.writeHead(403, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Forbidden\n");
+      return;
+    }
+    let stat;
+    try {
+      stat = await fsp.stat(filename);
+    } catch (error) {
+      const status = error && error.code === "ENOENT" ? 404 : 500;
+      response.writeHead(status, { "content-type": "text/plain; charset=utf-8" });
+      response.end(status === 404 ? "Not found\n" : "Server error\n");
+      return;
+    }
+    if (!stat.isFile()) {
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Not found\n");
+      return;
+    }
+    response.writeHead(200, {
+      "cache-control": "no-cache",
+      "content-length": stat.size,
+      "content-type": STATIC_TYPES.get(nodePath.extname(filename).toLowerCase()) ||
+                      "application/octet-stream",
+      "x-content-type-options": "nosniff",
+    });
+    if (request.method === "HEAD") {
+      response.end();
+      return;
+    }
+    const stream = fs.createReadStream(filename);
+    stream.on("error", () => response.destroy());
+    stream.pipe(response);
+  }
+
+  const server = http.createServer((request, response) => {
+    void handleHttp(request, response).catch(() => {
+      if (!response.headersSent)
+        response.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Server error\n");
+    });
   });
 
   const wss = new WebSocketServer({
@@ -160,6 +254,9 @@ function createRelayServer(options = {}) {
       done(true);
     },
   });
+  /* ws mirrors underlying HTTP-listener errors onto the WebSocketServer. The
+   * listen() promise below owns and reports those errors to the caller. */
+  wss.on("error", () => {});
 
   function send(ws, type, channel = 0, request = 0, payload = new Uint8Array()) {
     if (ws.readyState !== 1 || ws.bufferedAmount > config.maxBufferedAmount)
@@ -498,9 +595,12 @@ function createRelayServer(options = {}) {
 if (require.main === module) {
   const relay = createRelayServer();
   relay.listen().then(address => {
-    console.log(`1983 UNAPI relay listening on ${address.address}:${address.port}${relay.config.path}`);
+    console.log(`Javascript 1983 ready at http://${address.address}:${address.port}/`);
+    console.log(`UNAPI relay ready at ws://${address.address}:${address.port}${relay.config.path}`);
   }).catch(error => {
-    console.error(error);
+    console.error(`Cannot start Javascript 1983: ${error.message}`);
+    if (error && error.code === "EADDRINUSE")
+      console.error("Choose another port with UNAPI_RELAY_PORT (or UNAPI_PORT when using make serve).");
     process.exitCode = 1;
   });
 }
