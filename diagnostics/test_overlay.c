@@ -251,6 +251,7 @@ int main(void) {
         "diagnostics/test-overlay-state/config.ini";
     const char *cassette_path = "diagnostics/test-cassette.tmp";
     const char *rs232_rom_path = "diagnostics/test-rs232-rom.tmp";
+    const char *cdx2_rom_path = "diagnostics/test-cdx2-rom.tmp";
     Config config;
     ModelCatalog models;
     MsxMachine msx;
@@ -365,6 +366,17 @@ int main(void) {
         assert(fixture);
         assert(fwrite(rs232_rom, 1, sizeof(rs232_rom), fixture) ==
                sizeof(rs232_rom));
+        assert(fclose(fixture) == 0);
+    }
+    {
+        u8 cdx2_rom[MSX_CDX2_ROM_SIZE] = { 0 };
+
+        cdx2_rom[0] = 'A';
+        cdx2_rom[1] = 'B';
+        fixture = fopen(cdx2_rom_path, "wb");
+        assert(fixture);
+        assert(fwrite(cdx2_rom, 1, sizeof(cdx2_rom), fixture) ==
+               sizeof(cdx2_rom));
         assert(fclose(fixture) == 0);
     }
     model_catalog_defaults(&models);
@@ -971,32 +983,65 @@ int main(void) {
         send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 8); /* EXTENSION_CDX2 */
     msx.instructions = 123;
-    send_key(&overlay, SDLK_RETURN);
+    overlay.dialog_target = OVERLAY_DIALOG_CDX2_ROM;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", cdx2_rom_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
     assert(config.cdx2);
-    assert(msx_cdx2_enabled(&msx));
+    assert(strcmp(config.cdx2_rom_path, cdx2_rom_path) == 0);
+    assert(msx_cdx2_connected(&msx));
+    assert(msx_cdx2_slot(&msx) == 1);
     assert(msx_floppy_supported(&msx));
-    assert(msx.instructions == 123);
+    /* Installing the cartridge ROM resets immediately; the main-loop
+     * request also guarantees a reset after the overlay transition. */
+    assert(msx.instructions == 0);
     assert(overlay_take_machine_reset_request(&overlay));
     msx_reset(&msx); /* main loop fulfils the request */
     assert(msx.instructions == 0);
-    assert(msx_cdx2_enabled(&msx));
+    assert(msx_cdx2_connected(&msx));
     send_key(&overlay, SDLK_RETURN);
     assert(!config.cdx2);
-    assert(!msx_cdx2_enabled(&msx));
+    assert(!msx_cdx2_connected(&msx));
     assert(!msx_floppy_supported(&msx));
     assert(overlay_take_machine_reset_request(&overlay));
 
     /* Cancelling the overlay restores the live gate as well as Config. */
     send_key(&overlay, SDLK_RETURN);
     assert(config.cdx2);
-    assert(msx_cdx2_enabled(&msx));
+    assert(msx_cdx2_connected(&msx));
     assert(overlay_take_machine_reset_request(&overlay));
     send_key(&overlay, SDLK_ESCAPE);
     assert(overlay.state == OVERLAY_STATE_CONFIRM);
     send_key(&overlay, SDLK_N);
     assert(!overlay.visible);
     assert(!config.cdx2);
-    assert(!msx_cdx2_enabled(&msx));
+    assert(!msx_cdx2_connected(&msx));
+    assert(overlay_take_machine_reset_request(&overlay));
+
+    /* The reverse rollback direction restores the ROM after generic
+     * cartridge reconciliation, so it is not immediately ejected again. */
+    config.cdx2 = true;
+    snprintf(config.cdx2_rom_path, sizeof(config.cdx2_rom_path),
+             "%s", cdx2_rom_path);
+    config_normalize(&config);
+    assert(msx_load_cdx2(
+               &msx, 1,
+               cdx2_rom_path) == 0);
+    send_key(&overlay, SDLK_F9);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_RIGHT);
+    for (int row = 0; row < 8; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.cdx2);
+    assert(!msx_cdx2_connected(&msx));
+    (void)overlay_take_machine_reset_request(&overlay);
+    send_key(&overlay, SDLK_ESCAPE);
+    send_key(&overlay, SDLK_N);
+    assert(config.cdx2);
+    assert(msx_cdx2_connected(&msx));
+    assert(msx_cdx2_slot(&msx) == 1);
     assert(overlay_take_machine_reset_request(&overlay));
 
     /* SD Mapper setup keeps controller firmware separate from card media. */
@@ -1509,6 +1554,7 @@ int main(void) {
     assert(TEST_RMDIR("diagnostics/test-overlay-state") == 0);
     assert(remove(cassette_path) == 0);
     assert(remove(rs232_rom_path) == 0);
+    assert(remove(cdx2_rom_path) == 0);
 
     display_quit(&display);
     msx_destroy(&msx);

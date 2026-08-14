@@ -134,6 +134,9 @@ enum {
     SUNRISE_SETUP_ROWS
 };
 
+static bool firmware_file_has_size(const char *path, long expected_size);
+static void open_cdx2_rom_dialog(Overlay *overlay);
+
 static const char *section_name(OverlaySection section) {
     switch (section) {
         case OVERLAY_GENERAL:    return "General";
@@ -254,6 +257,9 @@ static void reconcile_extension_slots(Overlay *overlay) {
         cartridge_extension_slot(overlay->config, "SD Mapper V2"),
         cartridge_extension_slot(
             overlay->config, "MegaFlashROM SCC+ SD"));
+    msx_reassign_cdx2_slot(
+        overlay->msx,
+        cartridge_extension_slot(overlay->config, "CDX-2 FDC"));
 }
 
 static void cartridge_extension_text(const Config *config,
@@ -341,6 +347,26 @@ static void megaflash_extension_text(const Overlay *overlay,
     } else {
         snprintf(value, value_size,
                  "On (Cartridge %d, 512 KB RAM)", slot + 1);
+    }
+}
+
+static void cdx2_extension_text(const Overlay *overlay,
+                                char *value, size_t value_size) {
+    const Config *config = overlay->config;
+    int slot = cartridge_extension_slot(config, "CDX-2 FDC");
+
+    if (!config->cdx2) {
+        snprintf(value, value_size, "%s",
+                 firmware_file_has_size(
+                     config->cdx2_rom_path, MSX_CDX2_ROM_SIZE)
+                 ? "Off (configured)" : "Off (setup required)");
+    } else if (slot < 0) {
+        snprintf(value, value_size, "Off (no free cartridge slot)");
+    } else if (!msx_cdx2_connected(overlay->msx)) {
+        snprintf(value, value_size,
+                 "On (Cartridge %d, ROM not loaded)", slot + 1);
+    } else {
+        snprintf(value, value_size, "On (Cartridge %d)", slot + 1);
     }
 }
 
@@ -741,8 +767,8 @@ static void item_text(const Overlay *overlay, int row,
                 }
                 case EXTENSION_CDX2:
                     snprintf(label, label_size, "CDX-2 FDC");
-                    snprintf(value, value_size, "%s",
-                             toggle_name(config->cdx2));
+                    cdx2_extension_text(
+                        overlay, value, value_size);
                     break;
                 case EXTENSION_KONAMI_SCC:
                     snprintf(label, label_size, "Konami SCC");
@@ -967,7 +993,7 @@ static void apply_config(Overlay *overlay) {
         active_floppy->controller != config->floppy.controller ||
         active_floppy->primary_slot != config->floppy.primary_slot ||
         active_floppy->secondary_slot != config->floppy.secondary_slot;
-    cdx2_changed = msx_cdx2_enabled(msx) != config->cdx2;
+    cdx2_changed = msx_cdx2_connected(msx) != config->cdx2;
     if (machine_changed) {
         if (msx_set_rtc_persistence(
                 msx, "", rtc_host_seconds()) != 0) {
@@ -999,7 +1025,22 @@ static void apply_config(Overlay *overlay) {
             overlay->machine_reset_requested = true;
     }
     if (cdx2_changed) {
-        msx_set_cdx2_enabled(msx, config->cdx2);
+        if (!config->cdx2) {
+            (void)msx_eject_cdx2(msx);
+        } else {
+            int slot = cartridge_extension_slot(config, "CDX-2 FDC");
+
+            if (slot < 0 ||
+                !firmware_file_has_size(
+                    config->cdx2_rom_path, MSX_CDX2_ROM_SIZE) ||
+                msx_load_cdx2(
+                    msx, (unsigned)slot,
+                    config->cdx2_rom_path) != 0) {
+                config->cdx2 = false;
+                config_normalize(config);
+                notify_post("Could not load the 16 KB CDX-2 ROM");
+            }
+        }
         overlay->machine_reset_requested = true;
     }
     (void)sync_rtc_persistence(overlay);
@@ -1119,6 +1160,32 @@ static bool restore_sunrise(Overlay *overlay) {
             saved->ide_image_mode) != 0) {
         notify_post("Could not restore Sunrise IDE disk: %s",
                     msx_sunrise_disk_error(overlay->msx));
+        return false;
+    }
+    return true;
+}
+
+static bool restore_cdx2(Overlay *overlay) {
+    const Config *saved = &overlay->saved;
+    int saved_slot = cartridge_extension_slot(saved, "CDX-2 FDC");
+    bool changed =
+        overlay->config->cdx2 != saved->cdx2 ||
+        strcmp(overlay->config->cdx2_rom_path,
+               saved->cdx2_rom_path) != 0 ||
+        msx_cdx2_slot(overlay->msx) !=
+            (saved->cdx2 ? saved_slot : -1);
+
+    if (!changed)
+        return true;
+    overlay->machine_reset_requested = true;
+    if (msx_eject_cdx2(overlay->msx) != 0)
+        return false;
+    if (!saved->cdx2 || saved_slot < 0)
+        return true;
+    if (msx_load_cdx2(
+            overlay->msx, (unsigned)saved_slot,
+            saved->cdx2_rom_path) != 0) {
+        notify_post("Could not restore the CDX-2 ROM");
         return false;
     }
     return true;
@@ -1350,7 +1417,8 @@ static bool restore_floppies(Overlay *overlay) {
                     msx_drive_b_error(overlay->msx));
         return false;
     }
-    if (saved->floppy.controller == MSX_FLOPPY_CONTROLLER_NONE)
+    if (saved->floppy.controller == MSX_FLOPPY_CONTROLLER_NONE &&
+        !saved->cdx2)
         return true;
     if (saved->drive_a_path[0] &&
         msx_mount_drive_a(
@@ -1421,6 +1489,8 @@ static void close_overlay(Overlay *overlay, bool save) {
         if (!restore_sunrise(overlay))
             return;
         restore_cartridges(overlay);
+        if (!restore_cdx2(overlay))
+            return;
         restore_cassette(overlay);
         restore_firmware(overlay);
         *overlay->config = overlay->saved;
@@ -1567,7 +1637,7 @@ static void open_cassette_dialog(Overlay *overlay) {
 
 static void open_drive_a_dialog(Overlay *overlay) {
     static const SDL_DialogFileFilter filters[] = {
-        { "Raw MSX floppy images", "dsk;DSK" },
+        { "MSX raw / CPCEMU floppy images", "dsk;DSK" },
         { "All files", "*" },
     };
     const char *location =
@@ -1592,7 +1662,7 @@ static void open_drive_a_dialog(Overlay *overlay) {
 
 static void open_drive_b_dialog(Overlay *overlay) {
     static const SDL_DialogFileFilter filters[] = {
-        { "Raw MSX floppy images", "dsk;DSK" },
+        { "MSX raw / CPCEMU floppy images", "dsk;DSK" },
         { "All files", "*" },
     };
     const char *location =
@@ -1635,6 +1705,28 @@ static void open_sunrise_rom_dialog(Overlay *overlay) {
     overlay->dialog_failed = false;
     overlay->dialog_error[0] = '\0';
     notify_post("Select the 128 KB Sunrise IDE kernel ROM");
+    SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
+                           overlay->display
+                           ? overlay->display->window : NULL,
+                           filters, 2, location, false);
+}
+
+static void open_cdx2_rom_dialog(Overlay *overlay) {
+    static const SDL_DialogFileFilter filters[] = {
+        { "16 KB Microsol CDX-2 ROM", "rom;ROM" },
+        { "All files", "*" },
+    };
+    const char *location =
+        overlay->config->last_media_dir[0]
+        ? overlay->config->last_media_dir : NULL;
+
+    if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
+        return;
+    overlay->dialog_target = OVERLAY_DIALOG_CDX2_ROM;
+    overlay->dialog_ready = false;
+    overlay->dialog_failed = false;
+    overlay->dialog_error[0] = '\0';
+    notify_post("Select the 16 KB Microsol CDX-2 controller ROM");
     SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
                            overlay->display
                            ? overlay->display->window : NULL,
@@ -2499,6 +2591,47 @@ static bool toggle_cartridge_extension(Overlay *overlay,
     return true;
 }
 
+static bool connect_cdx2(Overlay *overlay, const char *rom_path) {
+    Config *config = overlay->config;
+    char selected_rom[PATH_MAX];
+    int slot;
+
+    snprintf(selected_rom, sizeof(selected_rom), "%s",
+             rom_path ? rom_path : "");
+    if (!firmware_file_has_size(selected_rom, MSX_CDX2_ROM_SIZE)) {
+        notify_post("CDX-2 needs an exact 16 KB controller ROM");
+        return false;
+    }
+    if (!toggle_cartridge_extension(
+            overlay, &config->cdx2, "CDX-2 FDC"))
+        return false;
+    slot = cartridge_extension_slot(config, "CDX-2 FDC");
+    if (slot < 0 || msx_load_cdx2(
+            overlay->msx, (unsigned)slot, selected_rom) != 0) {
+        config->cdx2 = false;
+        reconcile_extension_slots(overlay);
+        notify_post("Could not load CDX-2 ROM: %s",
+                    path_basename(selected_rom));
+        return false;
+    }
+    snprintf(config->cdx2_rom_path,
+             sizeof(config->cdx2_rom_path), "%s", selected_rom);
+    overlay->machine_reset_requested = true;
+    notify_post("CDX-2 connected in cartridge slot %d", slot + 1);
+    return true;
+}
+
+static bool disconnect_cdx2(Overlay *overlay) {
+    if (msx_eject_cdx2(overlay->msx) != 0) {
+        notify_post("Could not disconnect CDX-2");
+        return false;
+    }
+    (void)toggle_cartridge_extension(
+        overlay, &overlay->config->cdx2, "CDX-2 FDC");
+    overlay->machine_reset_requested = true;
+    return true;
+}
+
 static void begin_extension_setup(Overlay *overlay, bool editing) {
     overlay->extension_setup_editing = editing;
     snprintf(overlay->extension_setup_media_dir,
@@ -3247,6 +3380,9 @@ static void edit_extension_settings(Overlay *overlay) {
         case EXTENSION_MEGAFLASH:
             begin_megaflash_setup(overlay, true);
             break;
+        case EXTENSION_CDX2:
+            open_cdx2_rom_dialog(overlay);
+            break;
         default:
             break;
     }
@@ -3490,9 +3626,19 @@ static void activate_item(Overlay *overlay) {
                     break;
                 }
                 case EXTENSION_CDX2:
-                    config->cdx2 = !config->cdx2;
-                    notify_post("Microsol CDX-2 FDC %s",
-                                config->cdx2 ? "enabled" : "disabled");
+                    if (config->cdx2) {
+                        if (!disconnect_cdx2(overlay))
+                            return;
+                    } else if (firmware_file_has_size(
+                                   config->cdx2_rom_path,
+                                   MSX_CDX2_ROM_SIZE)) {
+                        if (!connect_cdx2(
+                                overlay, config->cdx2_rom_path))
+                            return;
+                    } else {
+                        open_cdx2_rom_dialog(overlay);
+                        return;
+                    }
                     break;
                 case EXTENSION_KONAMI_SCC:
                     if (!toggle_cartridge_extension(
@@ -4270,6 +4416,15 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 overlay->dirty = true;
                 apply_config(overlay);
                 notify_post("MegaFlashROM settings cleared");
+            } else if (overlay->section == OVERLAY_EXTENSIONS &&
+                       overlay->row == EXTENSION_CDX2) {
+                if (overlay->config->cdx2 &&
+                    !disconnect_cdx2(overlay))
+                    break;
+                overlay->config->cdx2_rom_path[0] = '\0';
+                overlay->dirty = true;
+                apply_config(overlay);
+                notify_post("CDX-2 settings cleared");
             }
             break;
         case SDLK_ESCAPE:
@@ -4352,6 +4507,8 @@ void overlay_tick(Overlay *overlay) {
             notify_post("SD Mapper V2 ROM selection cancelled");
         else if (target == OVERLAY_DIALOG_MEGAFLASH_ROM)
             notify_post("MegaFlashROM image selection cancelled");
+        else if (target == OVERLAY_DIALOG_CDX2_ROM)
+            notify_post("CDX-2 ROM selection cancelled");
         else if (target == OVERLAY_DIALOG_SD_CARD_A ||
                  target == OVERLAY_DIALOG_SD_CARD_B ||
                  target == OVERLAY_DIALOG_MEGAFLASH_SD_A ||
@@ -4433,6 +4590,39 @@ void overlay_tick(Overlay *overlay) {
                     floppy_mode_name(
                         overlay->config->floppy_image_mode),
                     path_basename(overlay->dialog_path));
+        return;
+    }
+
+    if (target == OVERLAY_DIALOG_CDX2_ROM) {
+        int slot = msx_cdx2_slot(overlay->msx);
+
+        if (!firmware_file_has_size(
+                overlay->dialog_path, MSX_CDX2_ROM_SIZE)) {
+            notify_post("CDX-2 needs an exact 16 KB controller ROM");
+            return;
+        }
+        if (overlay->config->cdx2 && slot >= 0) {
+            if (msx_load_cdx2(
+                    overlay->msx, (unsigned)slot,
+                    overlay->dialog_path) != 0) {
+                notify_post("Could not replace the CDX-2 ROM");
+                return;
+            }
+            snprintf(overlay->config->cdx2_rom_path,
+                     sizeof(overlay->config->cdx2_rom_path), "%s",
+                     overlay->dialog_path);
+            overlay->machine_reset_requested = true;
+            notify_post("CDX-2 ROM updated: %s",
+                        path_basename(overlay->dialog_path));
+        } else if (!connect_cdx2(
+                       overlay, overlay->dialog_path)) {
+            return;
+        }
+        copy_dirname(overlay->config->last_media_dir,
+                     sizeof(overlay->config->last_media_dir),
+                     overlay->dialog_path);
+        overlay->dirty = true;
+        apply_config(overlay);
         return;
     }
 

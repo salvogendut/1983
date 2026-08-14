@@ -678,16 +678,6 @@ void msx_set_io_extension_advance(MsxMachine *msx, void *context,
     msx->io_extension_advance = advance_handler;
 }
 
-void msx_set_cdx2_enabled(MsxMachine *msx, bool enabled) {
-    if (!msx)
-        return;
-    msx->cdx2_enabled = enabled;
-}
-
-bool msx_cdx2_enabled(const MsxMachine *msx) {
-    return msx && msx->cdx2_enabled;
-}
-
 void msx_configure(MsxMachine *msx, MsxModel model, MsxRegion region,
                    int ram_kb) {
     int normalized_ram;
@@ -743,6 +733,7 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     msx->sd_mapper_slot = -1;
     msx->sunrise_slot = -1;
     msx->rs232_slot = -1;
+    msx->cdx2_slot = -1;
     z80_init(&msx->cpu);
     vdp_init(&msx->vdp);
     psg_init(&msx->psg, PSG_VARIANT_AY8910);
@@ -771,6 +762,7 @@ void msx_destroy(MsxMachine *msx) {
     msx->sd_mapper_slot = -1;
     msx->sunrise_slot = -1;
     msx->rs232_slot = -1;
+    msx->cdx2_slot = -1;
     if (msx->ram && msx->ram != msx->internal_ram)
         free(msx->ram);
     msx->ram = NULL;
@@ -1113,7 +1105,7 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
                 else
                     msx->fdc.selected_drive = -1;
                 msx->fdc.side_reg = (value & 0x10) != 0;
-                msx->fdc.motor = !(value & 0x20);
+                msx->fdc.motor = (value & 0x20) != 0;
                 return;
             }
             wd2793_write_port(
@@ -1339,11 +1331,89 @@ int msx_install_cartridge_slot(MsxMachine *msx, unsigned slot,
                                MsxCartridgeMapper mapper) {
     if (!msx || slot >= MSX_CARTRIDGE_SLOTS)
         return -1;
+    if (msx->cdx2_slot == (int)slot) {
+        msx->cdx2_slot = -1;
+        msx->cdx2_enabled = false;
+    }
     if (msx_cartridge_install(&msx->cartridges[slot], data, size,
                               mapper) != 0)
         return -1;
     msx_reset(msx);
     return 0;
+}
+
+/* Microsol CDX-2 is a 16 KiB cartridge ROM plus a WD2793 exposed at
+ * ports D0h-D4h. Keeping the ROM and port gate in one lifecycle prevents
+ * the impossible state where the controller is visible but its driver ROM
+ * is absent. */
+int msx_install_cdx2(MsxMachine *msx, unsigned slot,
+                     const u8 *data, size_t size) {
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        !data || size != MSX_CDX2_ROM_SIZE)
+        return -1;
+    if (msx_install_cartridge_slot(
+            msx, slot, data, size, MSX_CART_MAPPER_LINEAR) != 0)
+        return -1;
+    /* CDX-2 hardware decodes the ROM in page 1 regardless of header
+     * heuristics used for ordinary 16 KiB cartridges. */
+    msx->cartridges[slot].base = 0x4000;
+    msx->cdx2_slot = (int)slot;
+    msx->cdx2_enabled = true;
+    msx_reset(msx);
+    return 0;
+}
+
+int msx_load_cdx2(MsxMachine *msx, unsigned slot,
+                  const char *path) {
+    u8 *data;
+    size_t size;
+    int result;
+
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        read_rom_file(path, MSX_CDX2_ROM_SIZE, &data, &size) != 0)
+        return -1;
+    result = msx_install_cdx2(msx, slot, data, size);
+    free(data);
+    return result;
+}
+
+int msx_eject_cdx2(MsxMachine *msx) {
+    int slot;
+
+    if (!msx || msx->cdx2_slot < 0)
+        return 0;
+    slot = msx->cdx2_slot;
+    msx->cdx2_slot = -1;
+    msx->cdx2_enabled = false;
+    msx_cartridge_eject(&msx->cartridges[slot]);
+    msx_reset(msx);
+    return 0;
+}
+
+bool msx_cdx2_connected(const MsxMachine *msx) {
+    return msx && msx->cdx2_enabled &&
+           msx->cdx2_slot >= 0 &&
+           msx->cdx2_slot < (int)MSX_CARTRIDGE_SLOTS &&
+           msx->cartridges[msx->cdx2_slot].loaded;
+}
+
+int msx_cdx2_slot(const MsxMachine *msx) {
+    return msx_cdx2_connected(msx) ? msx->cdx2_slot : -1;
+}
+
+void msx_reassign_cdx2_slot(MsxMachine *msx, int slot) {
+    int old_slot;
+
+    if (!msx_cdx2_connected(msx) || slot < 0 ||
+        slot >= (int)MSX_CARTRIDGE_SLOTS ||
+        msx->cdx2_slot == slot)
+        return;
+    old_slot = msx->cdx2_slot;
+    msx_cartridge_destroy(&msx->cartridges[slot]);
+    msx->cartridges[slot] = msx->cartridges[old_slot];
+    msx_cartridge_init(&msx->cartridges[old_slot]);
+    msx->cdx2_slot = slot;
+    msx_reset(msx);
 }
 
 /* MSX RS-232C interface cartridge. The RS232.ROM carries the MSX-serial
@@ -2211,6 +2281,10 @@ int msx_set_cartridge_mapper(MsxMachine *msx, unsigned slot,
 void msx_eject_cartridge(MsxMachine *msx, unsigned slot) {
     if (!msx || slot >= MSX_CARTRIDGE_SLOTS)
         return;
+    if (msx->cdx2_slot == (int)slot) {
+        msx->cdx2_slot = -1;
+        msx->cdx2_enabled = false;
+    }
     msx_cartridge_eject(&msx->cartridges[slot]);
     msx_reset(msx);
 }
