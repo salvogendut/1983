@@ -10,6 +10,7 @@
 #include "rtc.h"
 #include "sd_mapper.h"
 #include "sunrise.h"
+#include "tc8566.h"
 #include "types.h"
 #include "vdp.h"
 #include "wd2793.h"
@@ -28,6 +29,7 @@
 #define MSX_SUBROM_SIZE 0x4000u
 #define MSX_DISK_ROM_SIZE 0x4000u
 #define MSX_CDX2_ROM_SIZE 0x4000u
+#define MSX_RDF600_ROM_SIZE 0x4000u
 #define MSX_RAM_INTERNAL_SIZE 0x20000u
 #define MSX_RAM_MAX_SIZE 0x400000u
 #define MSX_KEYBOARD_ROWS 11u
@@ -137,12 +139,14 @@ typedef struct {
     MsxSdMapper sd_mapper;
     MsxSunriseIde sunrise;
     Wd2793 fdc;
+    Tc8566 rdf600_fdc;
     MsxFloppyConfig floppy_config;
     int megaflash_slot;
     int sd_mapper_slot;
     int sunrise_slot;
     int rs232_slot;
     int cdx2_slot;
+    int rdf600_slot;
     bool bios_loaded;
     bool logo_loaded;
     bool subrom_loaded;
@@ -171,6 +175,9 @@ typedef struct {
      * Uses the same Wd2793 FDC chip as the built-in controller but at I/O
      * ports D0h-D4h instead of the memory-mapped 3FF8h-3FFFh. */
     bool cdx2_enabled;
+
+    /* TDC-600-compatible memory-mapped floppy-controller cartridge. */
+    bool rdf600_enabled;
 
     u64 cycles;
     u64 instructions;
@@ -212,6 +219,14 @@ int msx_eject_cdx2(MsxMachine *msx);
 bool msx_cdx2_connected(const MsxMachine *msx);
 int msx_cdx2_slot(const MsxMachine *msx);
 void msx_reassign_cdx2_slot(MsxMachine *msx, int slot);
+int msx_install_rdf600(MsxMachine *msx, unsigned slot,
+                       const u8 *data, size_t size);
+int msx_load_rdf600(MsxMachine *msx, unsigned slot,
+                    const char *path);
+int msx_eject_rdf600(MsxMachine *msx);
+bool msx_rdf600_connected(const MsxMachine *msx);
+int msx_rdf600_slot(const MsxMachine *msx);
+void msx_reassign_rdf600_slot(MsxMachine *msx, int slot);
 
 u8   msx_memory_read(MsxMachine *msx, u16 address);
 void msx_memory_write(MsxMachine *msx, u16 address, u8 value);

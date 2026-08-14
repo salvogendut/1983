@@ -252,6 +252,7 @@ int main(void) {
     const char *cassette_path = "diagnostics/test-cassette.tmp";
     const char *rs232_rom_path = "diagnostics/test-rs232-rom.tmp";
     const char *cdx2_rom_path = "diagnostics/test-cdx2-rom.tmp";
+    const char *rdf600_rom_path = "diagnostics/test-rdf600-rom.tmp";
     Config config;
     ModelCatalog models;
     MsxMachine msx;
@@ -377,6 +378,17 @@ int main(void) {
         assert(fixture);
         assert(fwrite(cdx2_rom, 1, sizeof(cdx2_rom), fixture) ==
                sizeof(cdx2_rom));
+        assert(fclose(fixture) == 0);
+    }
+    {
+        u8 rdf600_rom[MSX_RDF600_ROM_SIZE] = { 0 };
+
+        rdf600_rom[0] = 'A';
+        rdf600_rom[1] = 'B';
+        fixture = fopen(rdf600_rom_path, "wb");
+        assert(fixture);
+        assert(fwrite(rdf600_rom, 1, sizeof(rdf600_rom), fixture) ==
+               sizeof(rdf600_rom));
         assert(fclose(fixture) == 0);
     }
     model_catalog_defaults(&models);
@@ -1044,6 +1056,38 @@ int main(void) {
     assert(msx_cdx2_slot(&msx) == 1);
     assert(overlay_take_machine_reset_request(&overlay));
 
+    /* RDF600 follows the same cartridge-slot lifecycle while exposing a
+     * separate TC8566AF-compatible controller. */
+    assert(msx_eject_cdx2(&msx) == 0);
+    config_defaults(&config);
+    config.extra_hardware = true;
+    config.tinker = true;
+    msx_configure(&msx, config.model, config.region,
+                  config.memory_kb);
+    overlay_init(&overlay, &config, &models, &display, &msx, NULL, NULL);
+    send_key(&overlay, SDLK_F9);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_RIGHT);
+    for (int row = 0; row < 9; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 9); /* EXTENSION_RDF600 */
+    overlay.dialog_target = OVERLAY_DIALOG_RDF600_ROM;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", rdf600_rom_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(config.rdf600);
+    assert(strcmp(config.rdf600_rom_path, rdf600_rom_path) == 0);
+    assert(msx_rdf600_connected(&msx));
+    assert(msx_rdf600_slot(&msx) == 1);
+    assert(msx_floppy_supported(&msx));
+    assert(overlay_take_machine_reset_request(&overlay));
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.rdf600);
+    assert(!msx_rdf600_connected(&msx));
+    assert(!msx_floppy_supported(&msx));
+    assert(overlay_take_machine_reset_request(&overlay));
+
     /* SD Mapper setup keeps controller firmware separate from card media. */
     config_defaults(&config);
     config.extra_hardware = true;
@@ -1555,6 +1599,7 @@ int main(void) {
     assert(remove(cassette_path) == 0);
     assert(remove(rs232_rom_path) == 0);
     assert(remove(cdx2_rom_path) == 0);
+    assert(remove(rdf600_rom_path) == 0);
 
     display_quit(&display);
     msx_destroy(&msx);

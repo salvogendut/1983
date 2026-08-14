@@ -34,6 +34,7 @@ firmware choice in the per-user `1983.conf`.
 --sd-mapper-rom + --sd-a/--sd-b      SD Mapper V2, --sd-mode
 --megaflash-rom + --megaflash-sd-a/--megaflash-sd-b  MegaFlashROM, --sd-mode
  --cdx2-rom FILE         user-provided Microsol CDX-2 controller ROM
+ --rdf600-rom FILE       user-provided RDF600/TDC-600 controller ROM
  --unapi                   optional openMSXnet host bridge on NMS 8250
  --rs232                   RS-232C interface on ports 80h-87h (PTY /tmp/1983-rs232)
  --rs232-rom PATH          user-provided RS-232C EXTBIO/driver ROM
@@ -116,6 +117,16 @@ available at ports `D0h-D4h`. Enter selects the ROM on first connection;
 Space replaces it, and Delete disconnects and clears it. `--cdx2-rom FILE`
 provides the same startup setup. The firmware is not distributed with 1983.
 The inserted floppy must be a raw MSX-formatted disk image.
+
+### RDF600
+
+**Extensions > RDF600 FDC** models the RDF600 cartridge and the Talent
+TDC-600 hardware on which it is based. Select a user-provided exact 16 KiB
+RDF600/TDC-600 Disk ROM; the cartridge reserves one physical slot and exposes
+its TC8566AF-compatible command controller through the original mirrored
+memory windows. Space replaces the ROM and Delete disconnects and clears it.
+`--rdf600-rom FILE` provides the same startup setup. Firmware is not bundled.
+Floppy media remains a conventional raw MSX `.dsk` selected under Media.
 
 ### Sunrise IDE
 

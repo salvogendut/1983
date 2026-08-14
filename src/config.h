@@ -55,6 +55,7 @@ typedef struct {
     bool tcpip_unapi;
     bool rs232;
     bool cdx2;
+    bool rdf600;
     bool sd_mapper_ram;
     bool sd_mapper_alternate_driver;
     FloppyImageMode floppy_image_mode;
@@ -82,6 +83,7 @@ typedef struct {
     char sd_mapper_rom_path[PATH_MAX];
     char rs232_rom_path[PATH_MAX];
     char cdx2_rom_path[PATH_MAX];
+    char rdf600_rom_path[PATH_MAX];
     char sd_card_path[MSX_SD_MAPPER_CARDS][PATH_MAX];
     char megaflash_rom_path[PATH_MAX];
     char megaflash_card_path[MSX_MEGAFLASH_CARDS][PATH_MAX];

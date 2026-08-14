@@ -626,6 +626,7 @@ void msx_reset(MsxMachine *msx) {
     sd_mapper_reset(&msx->sd_mapper);
     sunrise_reset(&msx->sunrise);
     wd2793_reset(&msx->fdc);
+    tc8566_reset(&msx->rdf600_fdc);
     msx->paused = false;
     msx->caps_led = false;
     msx->kana_led = false;
@@ -727,6 +728,8 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     sd_mapper_init(&msx->sd_mapper);
     sunrise_init(&msx->sunrise);
     wd2793_init(&msx->fdc);
+    tc8566_init(&msx->rdf600_fdc,
+                &msx->fdc.drive_a, &msx->fdc.drive_b);
     msx->floppy_config.controller = MSX_FLOPPY_CONTROLLER_NONE;
     msx->floppy_config.primary_slot = -1;
     msx->floppy_config.secondary_slot = -1;
@@ -735,6 +738,7 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     msx->sunrise_slot = -1;
     msx->rs232_slot = -1;
     msx->cdx2_slot = -1;
+    msx->rdf600_slot = -1;
     z80_init(&msx->cpu);
     vdp_init(&msx->vdp);
     psg_init(&msx->psg, PSG_VARIANT_AY8910);
@@ -764,6 +768,7 @@ void msx_destroy(MsxMachine *msx) {
     msx->sunrise_slot = -1;
     msx->rs232_slot = -1;
     msx->cdx2_slot = -1;
+    msx->rdf600_slot = -1;
     if (msx->ram && msx->ram != msx->internal_ram)
         free(msx->ram);
     msx->ram = NULL;
@@ -921,6 +926,12 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
         case 2: {
             unsigned slot = primary - 1;
 
+            if (msx->rdf600_slot == (int)slot) {
+                if (address >= 0x4000 && address < 0x8000)
+                    return msx_cartridge_read(
+                        &msx->cartridges[slot], address);
+                return tc8566_read_memory(&msx->rdf600_fdc, address);
+            }
             if (msx->sd_mapper_slot == (int)slot)
                 return sd_mapper_read(&msx->sd_mapper, address);
             if (msx->megaflash_slot == (int)slot)
@@ -976,7 +987,9 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
     if (primary == 1 || primary == 2) {
         unsigned slot = primary - 1;
 
-        if (msx->sd_mapper_slot == (int)slot)
+        if (msx->rdf600_slot == (int)slot)
+            tc8566_write_memory(&msx->rdf600_fdc, address, value);
+        else if (msx->sd_mapper_slot == (int)slot)
             sd_mapper_write(&msx->sd_mapper, address, value);
         else if (msx->megaflash_slot == (int)slot)
             megaflash_write(&msx->megaflash, address, value);
@@ -1336,6 +1349,10 @@ int msx_install_cartridge_slot(MsxMachine *msx, unsigned slot,
         msx->cdx2_slot = -1;
         msx->cdx2_enabled = false;
     }
+    if (msx->rdf600_slot == (int)slot) {
+        msx->rdf600_slot = -1;
+        msx->rdf600_enabled = false;
+    }
     if (msx_cartridge_install(&msx->cartridges[slot], data, size,
                               mapper) != 0)
         return -1;
@@ -1414,6 +1431,78 @@ void msx_reassign_cdx2_slot(MsxMachine *msx, int slot) {
     msx->cartridges[slot] = msx->cartridges[old_slot];
     msx_cartridge_init(&msx->cartridges[old_slot]);
     msx->cdx2_slot = slot;
+    msx_reset(msx);
+}
+
+/* RDF600 is electrically compatible with the Talent TDC-600: a 16 KiB
+ * Disk ROM in page 1 plus a TC8566AF-compatible controller mirrored in
+ * 0000h-0FFFh/8000h-8FFFh, with its control register in the following
+ * 4 KiB window. */
+int msx_install_rdf600(MsxMachine *msx, unsigned slot,
+                       const u8 *data, size_t size) {
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        !data || size != MSX_RDF600_ROM_SIZE)
+        return -1;
+    if (msx_install_cartridge_slot(
+            msx, slot, data, size, MSX_CART_MAPPER_LINEAR) != 0)
+        return -1;
+    msx->cartridges[slot].base = 0x4000;
+    msx->rdf600_slot = (int)slot;
+    msx->rdf600_enabled = true;
+    msx_reset(msx);
+    return 0;
+}
+
+int msx_load_rdf600(MsxMachine *msx, unsigned slot,
+                    const char *path) {
+    u8 *data;
+    size_t size;
+    int result;
+
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
+        read_rom_file(path, MSX_RDF600_ROM_SIZE, &data, &size) != 0)
+        return -1;
+    result = msx_install_rdf600(msx, slot, data, size);
+    free(data);
+    return result;
+}
+
+int msx_eject_rdf600(MsxMachine *msx) {
+    int slot;
+
+    if (!msx || msx->rdf600_slot < 0)
+        return 0;
+    slot = msx->rdf600_slot;
+    msx->rdf600_slot = -1;
+    msx->rdf600_enabled = false;
+    msx_cartridge_eject(&msx->cartridges[slot]);
+    msx_reset(msx);
+    return 0;
+}
+
+bool msx_rdf600_connected(const MsxMachine *msx) {
+    return msx && msx->rdf600_enabled &&
+           msx->rdf600_slot >= 0 &&
+           msx->rdf600_slot < (int)MSX_CARTRIDGE_SLOTS &&
+           msx->cartridges[msx->rdf600_slot].loaded;
+}
+
+int msx_rdf600_slot(const MsxMachine *msx) {
+    return msx_rdf600_connected(msx) ? msx->rdf600_slot : -1;
+}
+
+void msx_reassign_rdf600_slot(MsxMachine *msx, int slot) {
+    int old_slot;
+
+    if (!msx_rdf600_connected(msx) || slot < 0 ||
+        slot >= (int)MSX_CARTRIDGE_SLOTS ||
+        msx->rdf600_slot == slot)
+        return;
+    old_slot = msx->rdf600_slot;
+    msx_cartridge_destroy(&msx->cartridges[slot]);
+    msx->cartridges[slot] = msx->cartridges[old_slot];
+    msx_cartridge_init(&msx->cartridges[old_slot]);
+    msx->rdf600_slot = slot;
     msx_reset(msx);
 }
 
@@ -2189,7 +2278,7 @@ bool msx_floppy_supported(const MsxMachine *msx) {
     return msx &&
            (msx->floppy_config.controller !=
                 MSX_FLOPPY_CONTROLLER_NONE ||
-            msx->cdx2_enabled);
+            msx->cdx2_enabled || msx->rdf600_enabled);
 }
 
 int msx_mount_drive_a(MsxMachine *msx, const char *path,
@@ -2285,6 +2374,10 @@ void msx_eject_cartridge(MsxMachine *msx, unsigned slot) {
     if (msx->cdx2_slot == (int)slot) {
         msx->cdx2_slot = -1;
         msx->cdx2_enabled = false;
+    }
+    if (msx->rdf600_slot == (int)slot) {
+        msx->rdf600_slot = -1;
+        msx->rdf600_enabled = false;
     }
     msx_cartridge_eject(&msx->cartridges[slot]);
     msx_reset(msx);

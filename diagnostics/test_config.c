@@ -24,6 +24,8 @@ int main(void) {
     assert(!config.tcpip_unapi);
     assert(!config.cdx2);
     assert(!config.cdx2_rom_path[0]);
+    assert(!config.rdf600);
+    assert(!config.rdf600_rom_path[0]);
     assert(!config.megaflash_rom_path[0]);
     assert(!config.megaflash_card_path[0][0]);
     assert(!config.megaflash_card_path[1][0]);
@@ -111,6 +113,9 @@ int main(void) {
     snprintf(config.cdx2_rom_path,
              sizeof(config.cdx2_rom_path),
              "/roms/cdx-2.rom");
+    snprintf(config.rdf600_rom_path,
+             sizeof(config.rdf600_rom_path),
+             "/roms/RDF600_1_0.rom");
     snprintf(config.ide_image_path,
              sizeof(config.ide_image_path),
              "/disks/GBMSX.IMG");
@@ -176,6 +181,8 @@ int main(void) {
                   "/roms/Nextor-2.1.1.SunriseIDE.ROM") == 0);
     assert(strcmp(loaded.cdx2_rom_path,
                   "/roms/cdx-2.rom") == 0);
+    assert(strcmp(loaded.rdf600_rom_path,
+                  "/roms/RDF600_1_0.rom") == 0);
     assert(strcmp(loaded.ide_image_path,
                   "/disks/GBMSX.IMG") == 0);
     assert(loaded.ide_image_mode == ATA_IMAGE_READ_WRITE);
@@ -251,6 +258,20 @@ int main(void) {
         assert(config_cartridge_extension_count(&cdx_config) == 1);
         assert(strcmp(config_cartridge_slot_owner(&cdx_config, 1),
                       "CDX-2 FDC") == 0);
+    }
+
+    {
+        Config rdf_config = loaded;
+
+        rdf_config.sunrise_ide = false;
+        rdf_config.sd_mapper = false;
+        rdf_config.megaflash = false;
+        rdf_config.cdx2 = false;
+        rdf_config.rdf600 = true;
+        config_normalize(&rdf_config);
+        assert(config_cartridge_extension_count(&rdf_config) == 1);
+        assert(strcmp(config_cartridge_slot_owner(&rdf_config, 1),
+                      "RDF600 FDC") == 0);
     }
 
     loaded.scc = true;

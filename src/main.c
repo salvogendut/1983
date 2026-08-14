@@ -46,6 +46,7 @@ typedef struct {
     const char *megaflash_rom_path;
     const char *rs232_rom_path;
     const char *cdx2_rom_path;
+    const char *rdf600_rom_path;
     const char *megaflash_card_path[MSX_MEGAFLASH_CARDS];
     const char *drive_a_path;
     const char *drive_b_path;
@@ -64,6 +65,7 @@ typedef struct {
     int tcpip_unapi;
     int rs232;
     int cdx2;
+    int rdf600;
     int scale;
     int exit_after;
     const char *paste_text;
@@ -235,6 +237,9 @@ static const char *usage =
     "  --cdx2              enable the Microsol CDX-2 port-based FDC\n"
     "  --no-cdx2           disable the Microsol CDX-2 port-based FDC\n"
     "  --cdx2-rom PATH     load a user-provided 16 KB CDX-2 ROM\n"
+    "  --rdf600            enable the RDF600/TDC-600-compatible FDC\n"
+    "  --no-rdf600         disable the RDF600 floppy controller\n"
+    "  --rdf600-rom PATH   load a user-provided 16 KB RDF600 ROM\n"
     "  --sd-mode MODE       SD access: read-only (default) or read-write\n"
     "  --disk-a PATH       insert a raw MSX DSK in Drive A\n"
     "  --disk-b PATH       insert a raw MSX DSK in Drive B\n"
@@ -352,6 +357,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
     cli->tcpip_unapi = -1;
     cli->rs232 = -1;
     cli->cdx2 = -1;
+    cli->rdf600 = -1;
     cli->scale = -1;
     cli->exit_after = -1;
     cli->paste_at = 60;
@@ -404,6 +410,14 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->cdx2 = 0;
             continue;
         }
+        if (strcmp(argument, "--rdf600") == 0) {
+            cli->rdf600 = 1;
+            continue;
+        }
+        if (strcmp(argument, "--no-rdf600") == 0) {
+            cli->rdf600 = 0;
+            continue;
+        }
         if ((strcmp(argument, "--config") == 0 ||
              strcmp(argument, "--models") == 0 ||
              strcmp(argument, "--model") == 0 ||
@@ -421,6 +435,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--megaflash-sd-b") == 0 ||
              strcmp(argument, "--rs232-rom") == 0 ||
              strcmp(argument, "--cdx2-rom") == 0 ||
+             strcmp(argument, "--rdf600-rom") == 0 ||
              strcmp(argument, "--sd-mode") == 0 ||
              strcmp(argument, "--disk-a") == 0 ||
              strcmp(argument, "--disk-b") == 0 ||
@@ -476,6 +491,8 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->rs232_rom_path = argv[++i];
         } else if (strcmp(argument, "--cdx2-rom") == 0) {
             cli->cdx2_rom_path = argv[++i];
+        } else if (strcmp(argument, "--rdf600-rom") == 0) {
+            cli->rdf600_rom_path = argv[++i];
         } else if (strcmp(argument, "--sd-mode") == 0) {
             cli->sd_image_mode = parse_sd_mode(argv[++i]);
             if (cli->sd_image_mode < 0)
@@ -846,6 +863,13 @@ int main(int argc, char **argv) {
         config.extra_hardware = true;
         config.cdx2 = true;
     }
+    if (cli.rdf600_rom_path) {
+        snprintf(config.rdf600_rom_path,
+                 sizeof(config.rdf600_rom_path),
+                 "%s", cli.rdf600_rom_path);
+        config.extra_hardware = true;
+        config.rdf600 = true;
+    }
     for (unsigned card = 0; card < MSX_MEGAFLASH_CARDS; ++card) {
         if (!cli.megaflash_card_path[card])
             continue;
@@ -894,6 +918,11 @@ int main(int argc, char **argv) {
     if (cli.cdx2 >= 0) {
         config.cdx2 = cli.cdx2 != 0;
         if (config.cdx2)
+            config.extra_hardware = true;
+    }
+    if (cli.rdf600 >= 0) {
+        config.rdf600 = cli.rdf600 != 0;
+        if (config.rdf600)
             config.extra_hardware = true;
     }
     if (cli.cassette_path)
@@ -979,6 +1008,34 @@ int main(int argc, char **argv) {
                 return 1;
             }
             config.cdx2 = false;
+            config_normalize(&config);
+        }
+    }
+    if (config.rdf600) {
+        int rdf600_slot = -1;
+
+        for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+            const char *owner =
+                config_cartridge_slot_owner(&config, slot);
+
+            if (owner && strcmp(owner, "RDF600 FDC") == 0) {
+                rdf600_slot = (int)slot;
+                break;
+            }
+        }
+        if (rdf600_slot < 0 || !config.rdf600_rom_path[0] ||
+            msx_load_rdf600(
+                &msx, (unsigned)rdf600_slot,
+                config.rdf600_rom_path) != 0) {
+            fprintf(stderr,
+                    "cannot load 16 KB RDF600 ROM: %s\n",
+                    config.rdf600_rom_path[0]
+                    ? config.rdf600_rom_path : "[not configured]");
+            if (cli.rdf600 > 0 || cli.rdf600_rom_path) {
+                msx_destroy(&msx);
+                return 1;
+            }
+            config.rdf600 = false;
             config_normalize(&config);
         }
     }
@@ -1383,6 +1440,10 @@ int main(int argc, char **argv) {
         startup_info(config.notifications,
                      "No BIOS loaded; use --bios PATH "
                      "(and --logo PATH for C-BIOS)\n");
+    if (msx_rdf600_connected(&msx))
+        startup_info(config.notifications,
+                     "RDF600 FDC loaded in cartridge slot %d\n",
+                     msx_rdf600_slot(&msx) + 1);
     if (msx_sunrise_connected(&msx))
         startup_info(config.notifications,
                      "Sunrise IDE loaded in cartridge slot %d%s\n",

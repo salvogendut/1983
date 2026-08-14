@@ -248,6 +248,15 @@ drive/side/motor and reports IRQ/DRQ. The ROM is installed before saved floppy
 media so a generic MSX can mount its startup disk without stale capability
 gating.
 
+The optional RDF600 is modelled as its own TDC-600-compatible cartridge. Its
+exact 16 KiB, user-supplied Disk ROM occupies page 1. When its primary slot is
+selected, TC8566AF main-status/data registers are mirrored through
+`0000h-0FFFh` and `8000h-8FFFh`; writes in `1000h-1FFFh` and
+`9000h-9FFFh` control drive selection and motors. The command engine implements
+specify, seek/recalibrate, sense interrupt/drive status, read ID, sector
+read/write, and format command/result phases. It shares the raw-image lifetime
+and corruption-safety policy with the WD2793 controllers.
+
 ## Sunrise IDE and ATA storage
 
 The Sunrise IDE extension is a real cartridge device rather than a generic

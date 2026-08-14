@@ -32,6 +32,7 @@ complete MSX hardware specification.
 | `src/sdcard.*` | Host-independent SPI SD command state, raw-card image lifetime, complete-sector writes, flush, errors, and activity |
 | `src/sd_mapper.*` | SD Mapper V2 expanded-slot, firmware banking, dual-card registers, timer, and independent 512 KiB mapper |
 | `src/sunrise.*` | Sunrise IDE cartridge ROM banking, address decode, 16-bit data latch, and ATA bridge |
+| `src/tc8566.*` | RDF600/TDC-600-compatible command/result FDC phases backed by raw MSX floppy images |
 | `src/unapinet.*` | openMSXnet v1 port protocol, bounded host TCP/UDP sockets, asynchronous DNS, and network lifecycle |
 | `src/z80.*` | Sibling Z80 core and host-independent bus callback contract |
 | `src/vdp.*` | TMS9918/TMS9929 renderer plus the V9938 register, palette, beam status, 128 KB VRAM, bitmap, sprite-mode-2, and command engine |
@@ -39,6 +40,7 @@ complete MSX hardware specification.
 | `diagnostics/test_ata.c` | ATA identify, sector reads, errors, reset, activity, and conservative mount checks |
 | `diagnostics/test_floppy.c` | Raw MSX DSK geometry, read/write, failed replacement, flush failure, and safe ejection |
 | `diagnostics/test_wd2793.c` | Commands, register mirrors, dual-drive selection, IRQ/DRQ, sector transfers, reset, and write protection |
+| `diagnostics/test_tc8566.c` | TC8566AF status, seek/sense, read/write, format, memory mirrors, and write protection |
 | `diagnostics/test_sunrise.c` | Sunrise banking, overlay decode, data latch, master/slave, soft reset, and disk lifetime |
 | `diagnostics/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/Nextor boot checks |
 | `diagnostics/test_cartridge.c` | Linear, ASCII8/16, Konami, Konami SCC, detection, bank wrapping, reset, and eject checks |
@@ -296,7 +298,9 @@ reserves that physical cartridge port. This keeps machine-specific controller
 wiring separate from the reusable image backend and provides the boundary for
 external disk-interface cartridges. CDX-2 is the first such cartridge: its
 user-supplied 16 KiB ROM and D0h-D4h port gate share one lifecycle and reserve
-one physical cartridge slot.
+one physical cartridge slot. RDF600 follows the same lifecycle but uses a
+separate TC8566AF command core and the TDC-600 memory decode; both controllers
+share only the raw-image and safe host-I/O layer.
 
 Both images start read-only unless read/write is explicitly selected.
 Completed writes become dirty in the image backend, while reset can discard
