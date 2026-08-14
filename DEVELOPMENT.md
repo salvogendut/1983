@@ -297,8 +297,9 @@ slot/subslot is selected. Mapping the device into primary slot 1 or 2 also
 reserves that physical cartridge port. This keeps machine-specific controller
 wiring separate from the reusable image backend and provides the boundary for
 external disk-interface cartridges. CDX-2 is the first such cartridge: its
-user-supplied 16 KiB ROM and D0h-D4h port gate share one lifecycle and reserve
-one physical cartridge slot. RDF600 follows the same lifecycle but uses a
+user-supplied 16 KiB ROM (or the jumper-selected half of a 32 KiB 27C256
+image) and D0h-D4h port gate share one lifecycle and reserve one physical
+cartridge slot. RDF600 follows the same lifecycle but uses a
 separate TC8566AF command core and the TDC-600 memory decode; both controllers
 share only the raw-image and safe host-I/O layer.
 

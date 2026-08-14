@@ -242,11 +242,14 @@ inserted floppies. Paths, second-drive state, and access mode persist in
 startup controls. Sector access pulses the matching floppy LED.
 
 The optional Microsol CDX-2 uses the same WD2793 core through ports `D0h-D4h`.
-It is represented as a real cartridge extension: an exact 16 KiB,
-user-supplied controller ROM reserves one cartridge slot, while D4 selects
-drive/side/motor and reports IRQ/DRQ. The ROM is installed before saved floppy
-media so a generic MSX can mount its startup disk without stale capability
-gating.
+It is represented as a real cartridge extension: a user-supplied 16 KiB ROM
+reserves one cartridge slot, while D4 selects drive/side/motor and reports
+IRQ/DRQ. Clone boards can carry a 27C256 with two independent 16 KiB Disk ROMs;
+their ROM_SW jumper ties EPROM A14 low or high. A 32 KiB image therefore
+remains two fixed ROM halves rather than a software-banked cartridge, and the
+emulated jumper selects one half before reset. The ROM is installed before
+saved floppy media so a generic MSX can mount its startup disk without stale
+capability gating.
 
 The optional RDF600 is modelled as its own TDC-600-compatible cartridge. Its
 exact 16 KiB, user-supplied Disk ROM occupies page 1. When its primary slot is

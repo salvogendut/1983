@@ -39,7 +39,8 @@ and staying as multiplatform as SDL3 allows.
 - RP-5C01 clock with persistent per-machine CMOS and offline continuity.
 - Sunrise IDE, SD Mapper V2, and MegaFlashROM SCC+ SD cartridges with safe
   read-only/read-write raw images and Nextor boot.
-- Philips/CDX-2 WD2793 and RDF600/TDC-600-compatible TC8566AF floppy,
+- Philips/CDX-2 WD2793 (including dual-ROM Angeisa/FAST! EPROM images) and
+  RDF600/TDC-600-compatible TC8566AF floppy,
   CAS cassette playback, GIF capture, and an optional openMSXnet TCP/IP bridge.
 - Headless execution plus deterministic component and firmware tests.
 

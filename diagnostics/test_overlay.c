@@ -370,10 +370,14 @@ int main(void) {
         assert(fclose(fixture) == 0);
     }
     {
-        u8 cdx2_rom[MSX_CDX2_ROM_SIZE] = { 0 };
+        u8 cdx2_rom[MSX_CDX2_COMBINED_ROM_SIZE] = { 0 };
 
         cdx2_rom[0] = 'A';
         cdx2_rom[1] = 'B';
+        cdx2_rom[4] = 0x11;
+        cdx2_rom[MSX_CDX2_ROM_SIZE] = 'A';
+        cdx2_rom[MSX_CDX2_ROM_SIZE + 1] = 'B';
+        cdx2_rom[MSX_CDX2_ROM_SIZE + 4] = 0x22;
         fixture = fopen(cdx2_rom_path, "wb");
         assert(fixture);
         assert(fwrite(cdx2_rom, 1, sizeof(cdx2_rom), fixture) ==
@@ -1004,6 +1008,8 @@ int main(void) {
     assert(strcmp(config.cdx2_rom_path, cdx2_rom_path) == 0);
     assert(msx_cdx2_connected(&msx));
     assert(msx_cdx2_slot(&msx) == 1);
+    assert(msx_cdx2_rom_bank(&msx) == 0);
+    assert(msx_get_cartridge(&msx, 1)->data[4] == 0x11);
     assert(msx_floppy_supported(&msx));
     /* Installing the cartridge ROM resets immediately; the main-loop
      * request also guarantees a reset after the overlay transition. */
@@ -1012,6 +1018,15 @@ int main(void) {
     msx_reset(&msx); /* main loop fulfils the request */
     assert(msx.instructions == 0);
     assert(msx_cdx2_connected(&msx));
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 9); /* EXTENSION_CDX2_ROM_SWITCH */
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.cdx2_rom_bank == 1);
+    assert(msx_cdx2_rom_bank(&msx) == 1);
+    assert(msx_get_cartridge(&msx, 1)->data[4] == 0x22);
+    assert(overlay_take_machine_reset_request(&overlay));
+    send_key(&overlay, SDLK_UP);
+    assert(overlay.row == 8); /* EXTENSION_CDX2 */
     send_key(&overlay, SDLK_RETURN);
     assert(!config.cdx2);
     assert(!msx_cdx2_connected(&msx));
@@ -1039,7 +1054,8 @@ int main(void) {
     config_normalize(&config);
     assert(msx_load_cdx2(
                &msx, 1,
-               cdx2_rom_path) == 0);
+               cdx2_rom_path,
+               config.cdx2_rom_bank) == 0);
     send_key(&overlay, SDLK_F9);
     send_key(&overlay, SDLK_RIGHT);
     send_key(&overlay, SDLK_RIGHT);
@@ -1068,9 +1084,9 @@ int main(void) {
     send_key(&overlay, SDLK_F9);
     send_key(&overlay, SDLK_RIGHT);
     send_key(&overlay, SDLK_RIGHT);
-    for (int row = 0; row < 9; ++row)
+    for (int row = 0; row < 10; ++row)
         send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 9); /* EXTENSION_RDF600 */
+    assert(overlay.row == 10); /* EXTENSION_RDF600 */
     overlay.dialog_target = OVERLAY_DIALOG_RDF600_ROM;
     snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
              "%s", rdf600_rom_path);

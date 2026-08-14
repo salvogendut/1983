@@ -90,8 +90,10 @@ msx_music = false
 kanji_rom = false
 # Microsol CDX-2 port-based floppy controller (WD2793 on ports D0h-D4h)
 cdx2 = false
-# User-supplied 16 KiB controller/driver ROM (not distributed by 1983).
+# User-supplied 16 KiB ROM or 32 KiB dual-ROM EPROM image (not distributed).
 cdx2_rom =
+# Physical EPROM A14 jumper for a 32 KiB image: 0=lower, 1=upper.
+cdx2_rom_bank = 0
 # RDF600 / Talent TDC-600-compatible memory-mapped floppy controller.
 rdf600 = false
 # User-supplied exact 16 KiB controller/driver ROM (not distributed by 1983).
