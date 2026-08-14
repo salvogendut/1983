@@ -220,16 +220,14 @@ device through primary cartridge slot 1 or 2. The controller implements
 restore, seek and step operations, single and
 multiple sector reads/writes, read address, and force interrupt. Reset
 discards an incomplete transfer but preserves inserted media and completed
-dirty sectors.
+dirty sectors. A mounted drive with its motor running generates a cycle-based
+300 rpm index pulse in Type-I status, as required by real CDX-2 firmware.
 
-The host-independent DSK backend accepts conventional raw 320, 360, 640, and
-720 KiB sector images. It prefers FAT BPB geometry when valid and otherwise
-uses known MSX geometries. It also parses standard and extended CPCEMU DSK
-containers, retaining each track's sector IDs and data offsets; the current
-WD2793 path accepts their 512-byte sectors. Container support does not convert
-AMSDOS filesystems into MSX-DOS filesystems. Images default to read-only.
-Explicit read/write
-mode buffers a complete 512-byte sector before changing the host file.
+The host-independent raw DSK backend accepts conventional 160, 180, 320, 360,
+640, and 720 KiB sector images. It prefers FAT BPB geometry when valid and
+otherwise uses known MSX geometries. Images default to read-only. Explicit
+read/write mode buffers a complete 512-byte sector before changing the host
+file.
 Replacement and ejection flush completed sectors; a host flush error leaves
 the dirty image attached and visible instead of claiming a successful
 ejection.

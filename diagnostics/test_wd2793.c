@@ -70,6 +70,12 @@ int main(void) {
     select_drive_a(&fdc);
     assert((wd2793_read_memory(&fdc, 0x7ffd) & 4) == 0);
     assert(wd2793_read_memory(&fdc, 0x7ffd) & 4);
+    assert(wd2793_read_memory(&fdc, 0x7ff8) & WD2793_STATUS_INDEX);
+    wd2793_advance(&fdc, WD2793_INDEX_PULSE_CYCLES);
+    assert(!(wd2793_read_memory(&fdc, 0x7ff8) & WD2793_STATUS_INDEX));
+    wd2793_advance(
+        &fdc, WD2793_INDEX_PERIOD_CYCLES - WD2793_INDEX_PULSE_CYCLES);
+    assert(wd2793_read_memory(&fdc, 0x7ff8) & WD2793_STATUS_INDEX);
     wd2793_write_memory(&fdc, 0x7ff9, 1);
     wd2793_write_memory(&fdc, 0x7ffa, 3);
     wd2793_write_memory(&fdc, 0x7ffc, 1);

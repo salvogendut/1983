@@ -336,6 +336,7 @@ static void advance_machine(MsxMachine *msx, int cycles) {
 
     msx->cycles += (unsigned)cycles;
     vdp_advance(&msx->vdp, (unsigned)cycles);
+    wd2793_advance(&msx->fdc, (unsigned)cycles);
     if (msx->io_extension_advance)
         msx->io_extension_advance(msx->io_extension_context,
                                   (unsigned)cycles);

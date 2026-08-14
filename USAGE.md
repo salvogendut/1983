@@ -83,20 +83,14 @@ the GeoBench/Nextor targets.
 ### Floppy
 
 For a machine model with a configured controller, **Media > Floppy A / B**
-inserts a raw MSX or standard/extended CPCEMU `.dsk` image; Delete safely
-ejects it. Models without a
+inserts a raw MSX `.dsk` image; Delete safely ejects it. Models without a
 controller reject floppy insertion cleanly. A controller mapped to primary
 slot 1 or 2 reserves the matching cartridge port; an internal MSX2 controller
 normally uses expanded slot 3-3 instead.
 With Tinker, **Advanced > Floppy access mode** selects read-only or read/write
 (read-only is default). Sector writes flush on replacement, ejection, and
 shutdown; reset discards only an incomplete transfer. The backend accepts raw
-320, 360, 640, and 720 KiB images and 512-byte-sector standard or extended
-CPCEMU containers with per-track sector IDs.
-
-CPCEMU is a physical disk-image container, not a filesystem converter. An
-Amstrad AMSDOS disk can now be read by software that understands its layout,
-but an MSX disk ROM will not boot it as MSX-DOS.
+160, 180, 320, 360, 640, and 720 KiB MSX disk images with 512-byte sectors.
 
 ### Cassette
 
@@ -121,6 +115,7 @@ user-provided exact 16 KiB ROM occupies a cartridge slot and its WD2793 is
 available at ports `D0h-D4h`. Enter selects the ROM on first connection;
 Space replaces it, and Delete disconnects and clears it. `--cdx2-rom FILE`
 provides the same startup setup. The firmware is not distributed with 1983.
+The inserted floppy must be a raw MSX-formatted disk image.
 
 ### Sunrise IDE
 

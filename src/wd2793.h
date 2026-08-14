@@ -13,8 +13,14 @@
 #define WD2793_STATUS_CRC_ERROR     0x08u
 #define WD2793_STATUS_TRACK_ZERO    0x04u
 #define WD2793_STATUS_LOST_DATA     0x04u
+#define WD2793_STATUS_INDEX         0x02u
 #define WD2793_STATUS_DRQ           0x02u
 #define WD2793_STATUS_BUSY          0x01u
+
+/* A 300 rpm drive completes one revolution in 200 ms. These values express
+ * that rotation and a roughly 4 ms index pulse in 3.579545 MHz MSX cycles. */
+#define WD2793_INDEX_PERIOD_CYCLES 715909u
+#define WD2793_INDEX_PULSE_CYCLES   14318u
 
 typedef enum {
     WD2793_TRANSFER_NONE = 0,
@@ -43,6 +49,7 @@ typedef struct {
     bool irq;
     bool multiple;
     bool motor;
+    u32 index_cycles;
 
     Wd2793Transfer transfer;
     u8 transfer_data[FLOPPY_SECTOR_SIZE];
@@ -53,6 +60,7 @@ typedef struct {
 void wd2793_init(Wd2793 *fdc);
 void wd2793_destroy(Wd2793 *fdc);
 void wd2793_reset(Wd2793 *fdc);
+void wd2793_advance(Wd2793 *fdc, unsigned cycles);
 
 bool wd2793_handles_address(u16 address);
 u8 wd2793_read_memory(Wd2793 *fdc, u16 address);

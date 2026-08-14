@@ -39,7 +39,7 @@ cartridge2 =
 cartridge2_mapper = auto
 # Standard MSX CAS image; playback is read-only.
 cassette =
-# Raw MSX or standard/extended CPCEMU floppy images (512-byte sectors).
+# Raw sector-based MSX floppy images (512-byte sectors).
 drive_a =
 drive_b =
 # read-only (safe default) or read-write; applies to both floppies.
