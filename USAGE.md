@@ -33,7 +33,8 @@ firmware choice in the per-user `1983.conf`.
 --sunrise-rom + --ide    Sunrise IDE controller ROM and image, --ide-mode
 --sd-mapper-rom + --sd-a/--sd-b      SD Mapper V2, --sd-mode
 --megaflash-rom + --megaflash-sd-a/--megaflash-sd-b  MegaFlashROM, --sd-mode
- --cdx2-rom FILE         user-provided Microsol CDX-2 controller ROM
+ --cdx2-rom FILE         16 KB ROM or 32 KB dual-ROM CDX-2 EPROM image
+ --cdx2-bank 0|1         select its lower/upper 16 KB jumper position
  --rdf600-rom FILE       user-provided RDF600/TDC-600 controller ROM
  --unapi                   optional openMSXnet host bridge on NMS 8250
  --rs232                   RS-232C interface on ports 80h-87h (PTY /tmp/1983-rs232)
@@ -112,11 +113,15 @@ slot — guest software must run openMSXnet v0.9.7's separate `UNAPINET.COM` TSR
 ### Microsol CDX-2
 
 **Extensions > CDX-2 FDC** models the external cartridge controller: its
-user-provided exact 16 KiB ROM occupies a cartridge slot and its WD2793 is
-available at ports `D0h-D4h`. Enter selects the ROM on first connection;
-Space replaces it, and Delete disconnects and clears it. `--cdx2-rom FILE`
-provides the same startup setup. The firmware is not distributed with 1983.
-The inserted floppy must be a raw MSX-formatted disk image.
+user-provided 16 KiB ROM occupies a cartridge slot and its WD2793 is available
+at ports `D0h-D4h`. A 32 KiB 27C256 dump is also accepted: **CDX-2 ROM
+switch** reproduces the board's physical A14 jumper and chooses its lower or
+upper 16 KiB ROM. Enter selects the image on first connection; Space replaces
+it, and Delete disconnects and clears it. `--cdx2-rom FILE` and
+`--cdx2-bank 0|1` provide the same startup setup. Bank 0 selects the lower
+half, which is the Angeisa firmware in the commonly distributed
+`angesia_fast.rom`; bank 1 selects FAST!DiskROM. Firmware is not distributed
+with 1983. The inserted floppy must be a raw MSX-formatted disk image.
 
 ### RDF600
 

@@ -152,16 +152,22 @@ grep -q "expected read-only or read-write" "$log"
 # A CDX-2 is a cartridge, not just an I/O-port switch. Its ROM must be
 # installed before startup media is mounted, otherwise an MSX1 rejects the
 # floppy as having no controller.
-dd if=/dev/zero of="$cdx2" bs=16384 count=1 2>/dev/null
+dd if=/dev/zero of="$cdx2" bs=16384 count=2 2>/dev/null
 dd if=/dev/zero of="$floppy" bs=512 count=1440 2>/dev/null
-./1983 --config /dev/null --cdx2-rom "$cdx2" --disk-a "$floppy" \
+./1983 --config /dev/null --cdx2-rom "$cdx2" --cdx2-bank 1 \
+    --disk-a "$floppy" \
     --headless --unthrottled --exit-after 0 >"$log" 2>&1
+if ./1983 --config /dev/null --cdx2-bank 2 >"$log" 2>&1; then
+    echo "invalid CDX-2 ROM bank was accepted" >&2
+    exit 1
+fi
+grep -q -- "--cdx2-bank: expected an integer from 0 through 1" "$log"
 if ./1983 --config /dev/null --cdx2-rom missing-cdx2.rom \
         >"$log" 2>&1; then
     echo "missing CDX-2 ROM was accepted" >&2
     exit 1
 fi
-grep -q "cannot load 16 KB Microsol CDX-2 ROM" "$log"
+grep -q "cannot load 16/32 KB Microsol CDX-2 ROM" "$log"
 
 # RDF600 is a TDC-600-compatible cartridge with its own 16 KB ROM and
 # memory-mapped TC8566AF controller.
@@ -208,6 +214,7 @@ grep -q -- "--disk-a PATH" "$log"
 grep -q -- "--disk-b PATH" "$log"
 grep -q -- "--floppy-mode MODE" "$log"
 grep -q -- "--cdx2-rom PATH" "$log"
+grep -q -- "--cdx2-bank 0|1" "$log"
 grep -q -- "--rdf600-rom PATH" "$log"
 grep -q -- "--ide PATH" "$log"
 grep -q -- "--ide-mode MODE" "$log"

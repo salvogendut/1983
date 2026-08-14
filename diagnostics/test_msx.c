@@ -621,18 +621,37 @@ static void test_model_change_reset_preserves_floppy(void) {
            MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793);
 
     /* A real CDX-2 cartridge combines a 16 KiB driver ROM with the
-     * port-based controller and reserves its physical cartridge slot. */
+     * port-based controller and reserves its physical cartridge slot. A
+     * clone's 27C256 can carry two ROMs selected by its A14 jumper. */
     msx_configure(&msx, MSX_MODEL_GENERIC_MSX1, MSX_REGION_PAL, 64);
     assert(!msx_floppy_supported(&msx));
     {
-        u8 cdx2_rom[MSX_CDX2_ROM_SIZE] = { 0 };
+        u8 cdx2_rom[MSX_CDX2_COMBINED_ROM_SIZE] = { 0 };
 
         cdx2_rom[0] = 'A';
         cdx2_rom[1] = 'B';
         cdx2_rom[2] = 0x00;
         cdx2_rom[3] = 0x80;
+        cdx2_rom[4] = 0x11;
+        cdx2_rom[MSX_CDX2_ROM_SIZE] = 'A';
+        cdx2_rom[MSX_CDX2_ROM_SIZE + 1] = 'B';
+        cdx2_rom[MSX_CDX2_ROM_SIZE + 2] = 0x00;
+        cdx2_rom[MSX_CDX2_ROM_SIZE + 3] = 0x80;
+        cdx2_rom[MSX_CDX2_ROM_SIZE + 4] = 0x22;
         assert(msx_install_cdx2(
-                   &msx, 1, cdx2_rom, sizeof(cdx2_rom)) == 0);
+                   &msx, 1, cdx2_rom, MSX_CDX2_ROM_SIZE, 1) == 0);
+        assert(msx_get_cartridge(&msx, 1)->data[4] == 0x11);
+        assert(msx_cdx2_source_rom_size(&msx) == MSX_CDX2_ROM_SIZE);
+        assert(msx_install_cdx2(
+                   &msx, 1, cdx2_rom, sizeof(cdx2_rom), 0) == 0);
+        assert(msx_get_cartridge(&msx, 1)->data[4] == 0x11);
+        assert(msx_cdx2_source_rom_size(&msx) ==
+               MSX_CDX2_COMBINED_ROM_SIZE);
+        assert(msx_cdx2_rom_bank(&msx) == 0);
+        assert(msx_install_cdx2(
+                   &msx, 1, cdx2_rom, sizeof(cdx2_rom), 1) == 0);
+        assert(msx_get_cartridge(&msx, 1)->data[4] == 0x22);
+        assert(msx_cdx2_rom_bank(&msx) == 1);
     }
     assert(msx_cdx2_connected(&msx));
     assert(msx_cdx2_slot(&msx) == 1);

@@ -1348,6 +1348,8 @@ int msx_install_cartridge_slot(MsxMachine *msx, unsigned slot,
     if (msx->cdx2_slot == (int)slot) {
         msx->cdx2_slot = -1;
         msx->cdx2_enabled = false;
+        msx->cdx2_rom_bank = 0;
+        msx->cdx2_source_rom_size = 0;
     }
     if (msx->rdf600_slot == (int)slot) {
         msx->rdf600_slot = -1;
@@ -1361,36 +1363,51 @@ int msx_install_cartridge_slot(MsxMachine *msx, unsigned slot,
 }
 
 /* Microsol CDX-2 is a 16 KiB cartridge ROM plus a WD2793 exposed at
- * ports D0h-D4h. Keeping the ROM and port gate in one lifecycle prevents
- * the impossible state where the controller is visible but its driver ROM
- * is absent. */
+ * ports D0h-D4h. Clone boards commonly use a 27C256 containing two 16 KiB
+ * Disk ROMs; a physical jumper drives EPROM A14 and exposes exactly one
+ * half to the MSX bus. Keeping that selection and the port gate in one
+ * lifecycle prevents the impossible state where the controller is visible
+ * but its driver ROM is absent. */
 int msx_install_cdx2(MsxMachine *msx, unsigned slot,
-                     const u8 *data, size_t size) {
+                     const u8 *data, size_t size,
+                     unsigned rom_bank) {
+    const u8 *selected;
+
     if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
-        !data || size != MSX_CDX2_ROM_SIZE)
+        !data ||
+        (size != MSX_CDX2_ROM_SIZE &&
+         size != MSX_CDX2_COMBINED_ROM_SIZE) ||
+        rom_bank > 1)
         return -1;
+    selected = data;
+    if (size == MSX_CDX2_COMBINED_ROM_SIZE)
+        selected += rom_bank * MSX_CDX2_ROM_SIZE;
     if (msx_install_cartridge_slot(
-            msx, slot, data, size, MSX_CART_MAPPER_LINEAR) != 0)
+            msx, slot, selected, MSX_CDX2_ROM_SIZE,
+            MSX_CART_MAPPER_LINEAR) != 0)
         return -1;
     /* CDX-2 hardware decodes the ROM in page 1 regardless of header
      * heuristics used for ordinary 16 KiB cartridges. */
     msx->cartridges[slot].base = 0x4000;
     msx->cdx2_slot = (int)slot;
     msx->cdx2_enabled = true;
+    msx->cdx2_rom_bank = rom_bank;
+    msx->cdx2_source_rom_size = size;
     msx_reset(msx);
     return 0;
 }
 
 int msx_load_cdx2(MsxMachine *msx, unsigned slot,
-                  const char *path) {
+                  const char *path, unsigned rom_bank) {
     u8 *data;
     size_t size;
     int result;
 
     if (!msx || slot >= MSX_CARTRIDGE_SLOTS ||
-        read_rom_file(path, MSX_CDX2_ROM_SIZE, &data, &size) != 0)
+        read_rom_file(
+            path, MSX_CDX2_COMBINED_ROM_SIZE, &data, &size) != 0)
         return -1;
-    result = msx_install_cdx2(msx, slot, data, size);
+    result = msx_install_cdx2(msx, slot, data, size, rom_bank);
     free(data);
     return result;
 }
@@ -1403,6 +1420,8 @@ int msx_eject_cdx2(MsxMachine *msx) {
     slot = msx->cdx2_slot;
     msx->cdx2_slot = -1;
     msx->cdx2_enabled = false;
+    msx->cdx2_rom_bank = 0;
+    msx->cdx2_source_rom_size = 0;
     msx_cartridge_eject(&msx->cartridges[slot]);
     msx_reset(msx);
     return 0;
@@ -1417,6 +1436,14 @@ bool msx_cdx2_connected(const MsxMachine *msx) {
 
 int msx_cdx2_slot(const MsxMachine *msx) {
     return msx_cdx2_connected(msx) ? msx->cdx2_slot : -1;
+}
+
+unsigned msx_cdx2_rom_bank(const MsxMachine *msx) {
+    return msx_cdx2_connected(msx) ? msx->cdx2_rom_bank : 0;
+}
+
+size_t msx_cdx2_source_rom_size(const MsxMachine *msx) {
+    return msx_cdx2_connected(msx) ? msx->cdx2_source_rom_size : 0;
 }
 
 void msx_reassign_cdx2_slot(MsxMachine *msx, int slot) {
@@ -2374,6 +2401,8 @@ void msx_eject_cartridge(MsxMachine *msx, unsigned slot) {
     if (msx->cdx2_slot == (int)slot) {
         msx->cdx2_slot = -1;
         msx->cdx2_enabled = false;
+        msx->cdx2_rom_bank = 0;
+        msx->cdx2_source_rom_size = 0;
     }
     if (msx->rdf600_slot == (int)slot) {
         msx->rdf600_slot = -1;

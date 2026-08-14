@@ -203,6 +203,8 @@ void config_normalize(Config *config) {
         config->sd_image_mode = SD_IMAGE_READ_ONLY;
     if (config->floppy_image_mode != FLOPPY_IMAGE_READ_WRITE)
         config->floppy_image_mode = FLOPPY_IMAGE_READ_ONLY;
+    if (config->cdx2_rom_bank > 1)
+        config->cdx2_rom_bank = 0;
     if (!msx_floppy_config_valid(config->model, &config->floppy)) {
         config->floppy.controller = MSX_FLOPPY_CONTROLLER_NONE;
         config->floppy.primary_slot = -1;
@@ -345,6 +347,8 @@ void config_load(Config *config, const char *path) {
             config->rs232 = parse_bool(value, config->rs232);
         else if (strcmp(key, "cdx2") == 0)
             config->cdx2 = parse_bool(value, config->cdx2);
+        else if (strcmp(key, "cdx2_rom_bank") == 0)
+            config->cdx2_rom_bank = (unsigned)atoi(value);
         else if (strcmp(key, "rdf600") == 0)
             config->rdf600 = parse_bool(value, config->rdf600);
         else if (strcmp(key, "sd_mapper_ram") == 0)
@@ -553,6 +557,7 @@ int config_save(const Config *config) {
             config->sd_mapper_rom_path);
     fprintf(file, "rs232_rom = %s\n", config->rs232_rom_path);
     fprintf(file, "cdx2_rom = %s\n", config->cdx2_rom_path);
+    fprintf(file, "cdx2_rom_bank = %u\n", config->cdx2_rom_bank);
     fprintf(file, "rdf600_rom = %s\n", config->rdf600_rom_path);
     fprintf(file, "sd_mapper_ram = %s\n",
             bool_name(config->sd_mapper_ram));

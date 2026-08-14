@@ -56,6 +56,7 @@ typedef struct {
     bool rs232;
     bool cdx2;
     bool rdf600;
+    unsigned cdx2_rom_bank;
     bool sd_mapper_ram;
     bool sd_mapper_alternate_driver;
     FloppyImageMode floppy_image_mode;

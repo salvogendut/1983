@@ -65,6 +65,7 @@ typedef struct {
     int tcpip_unapi;
     int rs232;
     int cdx2;
+    int cdx2_rom_bank;
     int rdf600;
     int scale;
     int exit_after;
@@ -236,7 +237,8 @@ static const char *usage =
     "  --rs232-rom PATH    load a user-provided RS-232C EXTBIO/driver ROM\n"
     "  --cdx2              enable the Microsol CDX-2 port-based FDC\n"
     "  --no-cdx2           disable the Microsol CDX-2 port-based FDC\n"
-    "  --cdx2-rom PATH     load a user-provided 16 KB CDX-2 ROM\n"
+    "  --cdx2-rom PATH     load a 16 KB ROM or 32 KB dual-ROM image\n"
+    "  --cdx2-bank 0|1     select the lower/upper 16 KB EPROM half\n"
     "  --rdf600            enable the RDF600/TDC-600-compatible FDC\n"
     "  --no-rdf600         disable the RDF600 floppy controller\n"
     "  --rdf600-rom PATH   load a user-provided 16 KB RDF600 ROM\n"
@@ -357,6 +359,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
     cli->tcpip_unapi = -1;
     cli->rs232 = -1;
     cli->cdx2 = -1;
+    cli->cdx2_rom_bank = -1;
     cli->rdf600 = -1;
     cli->scale = -1;
     cli->exit_after = -1;
@@ -435,6 +438,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--megaflash-sd-b") == 0 ||
              strcmp(argument, "--rs232-rom") == 0 ||
              strcmp(argument, "--cdx2-rom") == 0 ||
+             strcmp(argument, "--cdx2-bank") == 0 ||
              strcmp(argument, "--rdf600-rom") == 0 ||
              strcmp(argument, "--sd-mode") == 0 ||
              strcmp(argument, "--disk-a") == 0 ||
@@ -491,6 +495,11 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->rs232_rom_path = argv[++i];
         } else if (strcmp(argument, "--cdx2-rom") == 0) {
             cli->cdx2_rom_path = argv[++i];
+        } else if (strcmp(argument, "--cdx2-bank") == 0) {
+            cli->cdx2_rom_bank = parse_integer(
+                argv[++i], 0, 1, "--cdx2-bank");
+            if (cli->cdx2_rom_bank < 0)
+                return -1;
         } else if (strcmp(argument, "--rdf600-rom") == 0) {
             cli->rdf600_rom_path = argv[++i];
         } else if (strcmp(argument, "--sd-mode") == 0) {
@@ -863,6 +872,8 @@ int main(int argc, char **argv) {
         config.extra_hardware = true;
         config.cdx2 = true;
     }
+    if (cli.cdx2_rom_bank >= 0)
+        config.cdx2_rom_bank = (unsigned)cli.cdx2_rom_bank;
     if (cli.rdf600_rom_path) {
         snprintf(config.rdf600_rom_path,
                  sizeof(config.rdf600_rom_path),
@@ -998,9 +1009,10 @@ int main(int argc, char **argv) {
         if (cdx2_slot < 0 || !config.cdx2_rom_path[0] ||
             msx_load_cdx2(
                 &msx, (unsigned)cdx2_slot,
-                config.cdx2_rom_path) != 0) {
+                config.cdx2_rom_path,
+                config.cdx2_rom_bank) != 0) {
             fprintf(stderr,
-                    "cannot load 16 KB Microsol CDX-2 ROM: %s\n",
+                    "cannot load 16/32 KB Microsol CDX-2 ROM: %s\n",
                     config.cdx2_rom_path[0]
                     ? config.cdx2_rom_path : "[not configured]");
             if (cli.cdx2 > 0 || cli.cdx2_rom_path) {

@@ -24,6 +24,7 @@ int main(void) {
     assert(!config.tcpip_unapi);
     assert(!config.cdx2);
     assert(!config.cdx2_rom_path[0]);
+    assert(config.cdx2_rom_bank == 0);
     assert(!config.rdf600);
     assert(!config.rdf600_rom_path[0]);
     assert(!config.megaflash_rom_path[0]);
@@ -113,6 +114,7 @@ int main(void) {
     snprintf(config.cdx2_rom_path,
              sizeof(config.cdx2_rom_path),
              "/roms/cdx-2.rom");
+    config.cdx2_rom_bank = 1;
     snprintf(config.rdf600_rom_path,
              sizeof(config.rdf600_rom_path),
              "/roms/RDF600_1_0.rom");
@@ -181,6 +183,7 @@ int main(void) {
                   "/roms/Nextor-2.1.1.SunriseIDE.ROM") == 0);
     assert(strcmp(loaded.cdx2_rom_path,
                   "/roms/cdx-2.rom") == 0);
+    assert(loaded.cdx2_rom_bank == 1);
     assert(strcmp(loaded.rdf600_rom_path,
                   "/roms/RDF600_1_0.rom") == 0);
     assert(strcmp(loaded.ide_image_path,

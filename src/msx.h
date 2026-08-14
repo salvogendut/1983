@@ -29,6 +29,7 @@
 #define MSX_SUBROM_SIZE 0x4000u
 #define MSX_DISK_ROM_SIZE 0x4000u
 #define MSX_CDX2_ROM_SIZE 0x4000u
+#define MSX_CDX2_COMBINED_ROM_SIZE 0x8000u
 #define MSX_RDF600_ROM_SIZE 0x4000u
 #define MSX_RAM_INTERNAL_SIZE 0x20000u
 #define MSX_RAM_MAX_SIZE 0x400000u
@@ -147,6 +148,8 @@ typedef struct {
     int rs232_slot;
     int cdx2_slot;
     int rdf600_slot;
+    unsigned cdx2_rom_bank;
+    size_t cdx2_source_rom_size;
     bool bios_loaded;
     bool logo_loaded;
     bool subrom_loaded;
@@ -212,12 +215,15 @@ void msx_set_io_extension_advance(MsxMachine *msx, void *context,
                                   MsxIoExtensionAdvance advance_handler);
 
 int msx_install_cdx2(MsxMachine *msx, unsigned slot,
-                     const u8 *data, size_t size);
+                     const u8 *data, size_t size,
+                     unsigned rom_bank);
 int msx_load_cdx2(MsxMachine *msx, unsigned slot,
-                  const char *path);
+                  const char *path, unsigned rom_bank);
 int msx_eject_cdx2(MsxMachine *msx);
 bool msx_cdx2_connected(const MsxMachine *msx);
 int msx_cdx2_slot(const MsxMachine *msx);
+unsigned msx_cdx2_rom_bank(const MsxMachine *msx);
+size_t msx_cdx2_source_rom_size(const MsxMachine *msx);
 void msx_reassign_cdx2_slot(MsxMachine *msx, int slot);
 int msx_install_rdf600(MsxMachine *msx, unsigned slot,
                        const u8 *data, size_t size);
