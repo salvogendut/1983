@@ -79,6 +79,7 @@ enum {
     EXTENSION_SECOND_FLOPPY,
     EXTENSION_RS232,
     EXTENSION_CDX2,
+    EXTENSION_RDF600,
     EXTENSION_ROWS
 };
 
@@ -136,6 +137,7 @@ enum {
 
 static bool firmware_file_has_size(const char *path, long expected_size);
 static void open_cdx2_rom_dialog(Overlay *overlay);
+static void open_rdf600_rom_dialog(Overlay *overlay);
 
 static const char *section_name(OverlaySection section) {
     switch (section) {
@@ -260,6 +262,9 @@ static void reconcile_extension_slots(Overlay *overlay) {
     msx_reassign_cdx2_slot(
         overlay->msx,
         cartridge_extension_slot(overlay->config, "CDX-2 FDC"));
+    msx_reassign_rdf600_slot(
+        overlay->msx,
+        cartridge_extension_slot(overlay->config, "RDF600 FDC"));
 }
 
 static void cartridge_extension_text(const Config *config,
@@ -363,6 +368,26 @@ static void cdx2_extension_text(const Overlay *overlay,
     } else if (slot < 0) {
         snprintf(value, value_size, "Off (no free cartridge slot)");
     } else if (!msx_cdx2_connected(overlay->msx)) {
+        snprintf(value, value_size,
+                 "On (Cartridge %d, ROM not loaded)", slot + 1);
+    } else {
+        snprintf(value, value_size, "On (Cartridge %d)", slot + 1);
+    }
+}
+
+static void rdf600_extension_text(const Overlay *overlay,
+                                  char *value, size_t value_size) {
+    const Config *config = overlay->config;
+    int slot = cartridge_extension_slot(config, "RDF600 FDC");
+
+    if (!config->rdf600) {
+        snprintf(value, value_size, "%s",
+                 firmware_file_has_size(
+                     config->rdf600_rom_path, MSX_RDF600_ROM_SIZE)
+                 ? "Off (configured)" : "Off (setup required)");
+    } else if (slot < 0) {
+        snprintf(value, value_size, "Off (no free cartridge slot)");
+    } else if (!msx_rdf600_connected(overlay->msx)) {
         snprintf(value, value_size,
                  "On (Cartridge %d, ROM not loaded)", slot + 1);
     } else {
@@ -770,6 +795,11 @@ static void item_text(const Overlay *overlay, int row,
                     cdx2_extension_text(
                         overlay, value, value_size);
                     break;
+                case EXTENSION_RDF600:
+                    snprintf(label, label_size, "RDF600 FDC");
+                    rdf600_extension_text(
+                        overlay, value, value_size);
+                    break;
                 case EXTENSION_KONAMI_SCC:
                     snprintf(label, label_size, "Konami SCC");
                     cartridge_extension_text(
@@ -981,6 +1011,7 @@ static void apply_config(Overlay *overlay) {
     bool machine_changed;
     bool floppy_changed;
     bool cdx2_changed;
+    bool rdf600_changed;
 
     config_normalize(config);
     active_floppy = msx_floppy_config(msx);
@@ -994,6 +1025,8 @@ static void apply_config(Overlay *overlay) {
         active_floppy->primary_slot != config->floppy.primary_slot ||
         active_floppy->secondary_slot != config->floppy.secondary_slot;
     cdx2_changed = msx_cdx2_connected(msx) != config->cdx2;
+    rdf600_changed =
+        msx_rdf600_connected(msx) != config->rdf600;
     if (machine_changed) {
         if (msx_set_rtc_persistence(
                 msx, "", rtc_host_seconds()) != 0) {
@@ -1039,6 +1072,25 @@ static void apply_config(Overlay *overlay) {
                 config->cdx2 = false;
                 config_normalize(config);
                 notify_post("Could not load the 16 KB CDX-2 ROM");
+            }
+        }
+        overlay->machine_reset_requested = true;
+    }
+    if (rdf600_changed) {
+        if (!config->rdf600) {
+            (void)msx_eject_rdf600(msx);
+        } else {
+            int slot = cartridge_extension_slot(config, "RDF600 FDC");
+
+            if (slot < 0 ||
+                !firmware_file_has_size(
+                    config->rdf600_rom_path, MSX_RDF600_ROM_SIZE) ||
+                msx_load_rdf600(
+                    msx, (unsigned)slot,
+                    config->rdf600_rom_path) != 0) {
+                config->rdf600 = false;
+                config_normalize(config);
+                notify_post("Could not load the 16 KB RDF600 ROM");
             }
         }
         overlay->machine_reset_requested = true;
@@ -1186,6 +1238,32 @@ static bool restore_cdx2(Overlay *overlay) {
             overlay->msx, (unsigned)saved_slot,
             saved->cdx2_rom_path) != 0) {
         notify_post("Could not restore the CDX-2 ROM");
+        return false;
+    }
+    return true;
+}
+
+static bool restore_rdf600(Overlay *overlay) {
+    const Config *saved = &overlay->saved;
+    int saved_slot = cartridge_extension_slot(saved, "RDF600 FDC");
+    bool changed =
+        overlay->config->rdf600 != saved->rdf600 ||
+        strcmp(overlay->config->rdf600_rom_path,
+               saved->rdf600_rom_path) != 0 ||
+        msx_rdf600_slot(overlay->msx) !=
+            (saved->rdf600 ? saved_slot : -1);
+
+    if (!changed)
+        return true;
+    overlay->machine_reset_requested = true;
+    if (msx_eject_rdf600(overlay->msx) != 0)
+        return false;
+    if (!saved->rdf600 || saved_slot < 0)
+        return true;
+    if (msx_load_rdf600(
+            overlay->msx, (unsigned)saved_slot,
+            saved->rdf600_rom_path) != 0) {
+        notify_post("Could not restore the RDF600 ROM");
         return false;
     }
     return true;
@@ -1418,7 +1496,7 @@ static bool restore_floppies(Overlay *overlay) {
         return false;
     }
     if (saved->floppy.controller == MSX_FLOPPY_CONTROLLER_NONE &&
-        !saved->cdx2)
+        !saved->cdx2 && !saved->rdf600)
         return true;
     if (saved->drive_a_path[0] &&
         msx_mount_drive_a(
@@ -1490,6 +1568,8 @@ static void close_overlay(Overlay *overlay, bool save) {
             return;
         restore_cartridges(overlay);
         if (!restore_cdx2(overlay))
+            return;
+        if (!restore_rdf600(overlay))
             return;
         restore_cassette(overlay);
         restore_firmware(overlay);
@@ -1727,6 +1807,28 @@ static void open_cdx2_rom_dialog(Overlay *overlay) {
     overlay->dialog_failed = false;
     overlay->dialog_error[0] = '\0';
     notify_post("Select the 16 KB Microsol CDX-2 controller ROM");
+    SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
+                           overlay->display
+                           ? overlay->display->window : NULL,
+                           filters, 2, location, false);
+}
+
+static void open_rdf600_rom_dialog(Overlay *overlay) {
+    static const SDL_DialogFileFilter filters[] = {
+        { "16 KB RDF600/TDC-600 ROM", "rom;ROM" },
+        { "All files", "*" },
+    };
+    const char *location =
+        overlay->config->last_media_dir[0]
+        ? overlay->config->last_media_dir : NULL;
+
+    if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
+        return;
+    overlay->dialog_target = OVERLAY_DIALOG_RDF600_ROM;
+    overlay->dialog_ready = false;
+    overlay->dialog_failed = false;
+    overlay->dialog_error[0] = '\0';
+    notify_post("Select the 16 KB RDF600 controller ROM");
     SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
                            overlay->display
                            ? overlay->display->window : NULL,
@@ -2632,6 +2734,48 @@ static bool disconnect_cdx2(Overlay *overlay) {
     return true;
 }
 
+static bool connect_rdf600(Overlay *overlay, const char *rom_path) {
+    Config *config = overlay->config;
+    char selected_rom[PATH_MAX];
+    int slot;
+
+    snprintf(selected_rom, sizeof(selected_rom), "%s",
+             rom_path ? rom_path : "");
+    if (!firmware_file_has_size(
+            selected_rom, MSX_RDF600_ROM_SIZE)) {
+        notify_post("RDF600 needs an exact 16 KB controller ROM");
+        return false;
+    }
+    if (!toggle_cartridge_extension(
+            overlay, &config->rdf600, "RDF600 FDC"))
+        return false;
+    slot = cartridge_extension_slot(config, "RDF600 FDC");
+    if (slot < 0 || msx_load_rdf600(
+            overlay->msx, (unsigned)slot, selected_rom) != 0) {
+        config->rdf600 = false;
+        reconcile_extension_slots(overlay);
+        notify_post("Could not load RDF600 ROM: %s",
+                    path_basename(selected_rom));
+        return false;
+    }
+    snprintf(config->rdf600_rom_path,
+             sizeof(config->rdf600_rom_path), "%s", selected_rom);
+    overlay->machine_reset_requested = true;
+    notify_post("RDF600 connected in cartridge slot %d", slot + 1);
+    return true;
+}
+
+static bool disconnect_rdf600(Overlay *overlay) {
+    if (msx_eject_rdf600(overlay->msx) != 0) {
+        notify_post("Could not disconnect RDF600");
+        return false;
+    }
+    (void)toggle_cartridge_extension(
+        overlay, &overlay->config->rdf600, "RDF600 FDC");
+    overlay->machine_reset_requested = true;
+    return true;
+}
+
 static void begin_extension_setup(Overlay *overlay, bool editing) {
     overlay->extension_setup_editing = editing;
     snprintf(overlay->extension_setup_media_dir,
@@ -3383,6 +3527,9 @@ static void edit_extension_settings(Overlay *overlay) {
         case EXTENSION_CDX2:
             open_cdx2_rom_dialog(overlay);
             break;
+        case EXTENSION_RDF600:
+            open_rdf600_rom_dialog(overlay);
+            break;
         default:
             break;
     }
@@ -3637,6 +3784,21 @@ static void activate_item(Overlay *overlay) {
                             return;
                     } else {
                         open_cdx2_rom_dialog(overlay);
+                        return;
+                    }
+                    break;
+                case EXTENSION_RDF600:
+                    if (config->rdf600) {
+                        if (!disconnect_rdf600(overlay))
+                            return;
+                    } else if (firmware_file_has_size(
+                                   config->rdf600_rom_path,
+                                   MSX_RDF600_ROM_SIZE)) {
+                        if (!connect_rdf600(
+                                overlay, config->rdf600_rom_path))
+                            return;
+                    } else {
+                        open_rdf600_rom_dialog(overlay);
                         return;
                     }
                     break;
@@ -4425,6 +4587,15 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 overlay->dirty = true;
                 apply_config(overlay);
                 notify_post("CDX-2 settings cleared");
+            } else if (overlay->section == OVERLAY_EXTENSIONS &&
+                       overlay->row == EXTENSION_RDF600) {
+                if (overlay->config->rdf600 &&
+                    !disconnect_rdf600(overlay))
+                    break;
+                overlay->config->rdf600_rom_path[0] = '\0';
+                overlay->dirty = true;
+                apply_config(overlay);
+                notify_post("RDF600 settings cleared");
             }
             break;
         case SDLK_ESCAPE:
@@ -4509,6 +4680,8 @@ void overlay_tick(Overlay *overlay) {
             notify_post("MegaFlashROM image selection cancelled");
         else if (target == OVERLAY_DIALOG_CDX2_ROM)
             notify_post("CDX-2 ROM selection cancelled");
+        else if (target == OVERLAY_DIALOG_RDF600_ROM)
+            notify_post("RDF600 ROM selection cancelled");
         else if (target == OVERLAY_DIALOG_SD_CARD_A ||
                  target == OVERLAY_DIALOG_SD_CARD_B ||
                  target == OVERLAY_DIALOG_MEGAFLASH_SD_A ||
@@ -4615,6 +4788,39 @@ void overlay_tick(Overlay *overlay) {
             notify_post("CDX-2 ROM updated: %s",
                         path_basename(overlay->dialog_path));
         } else if (!connect_cdx2(
+                       overlay, overlay->dialog_path)) {
+            return;
+        }
+        copy_dirname(overlay->config->last_media_dir,
+                     sizeof(overlay->config->last_media_dir),
+                     overlay->dialog_path);
+        overlay->dirty = true;
+        apply_config(overlay);
+        return;
+    }
+
+    if (target == OVERLAY_DIALOG_RDF600_ROM) {
+        int slot = msx_rdf600_slot(overlay->msx);
+
+        if (!firmware_file_has_size(
+                overlay->dialog_path, MSX_RDF600_ROM_SIZE)) {
+            notify_post("RDF600 needs an exact 16 KB controller ROM");
+            return;
+        }
+        if (overlay->config->rdf600 && slot >= 0) {
+            if (msx_load_rdf600(
+                    overlay->msx, (unsigned)slot,
+                    overlay->dialog_path) != 0) {
+                notify_post("Could not replace the RDF600 ROM");
+                return;
+            }
+            snprintf(overlay->config->rdf600_rom_path,
+                     sizeof(overlay->config->rdf600_rom_path), "%s",
+                     overlay->dialog_path);
+            overlay->machine_reset_requested = true;
+            notify_post("RDF600 ROM updated: %s",
+                        path_basename(overlay->dialog_path));
+        } else if (!connect_rdf600(
                        overlay, overlay->dialog_path)) {
             return;
         }

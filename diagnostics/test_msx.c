@@ -651,6 +651,35 @@ static void test_model_change_reset_preserves_floppy(void) {
     assert(!msx_floppy_supported(&msx));
     assert(msx_drive_a_mounted(&msx));
 
+    /* RDF600/TDC-600 cartridges expose a 16 KiB ROM in page 1 and the
+     * TC8566AF status/data/control windows in pages 0 and 2. */
+    {
+        u8 rdf600_rom[MSX_RDF600_ROM_SIZE] = { 0 };
+
+        rdf600_rom[0] = 'A';
+        rdf600_rom[1] = 'B';
+        rdf600_rom[2] = 0x00;
+        rdf600_rom[3] = 0x40;
+        assert(msx_install_rdf600(
+                   &msx, 1, rdf600_rom, sizeof(rdf600_rom)) == 0);
+    }
+    assert(msx_rdf600_connected(&msx));
+    assert(msx_rdf600_slot(&msx) == 1);
+    assert(msx_get_cartridge(&msx, 1)->base == 0x4000);
+    assert(msx_floppy_supported(&msx));
+    msx_io_write(&msx, 0xa8, 0x28);
+    assert(msx_memory_read(&msx, 0x4000) == 'A');
+    assert(msx_memory_read(&msx, 0x8000) == TC8566_MAIN_RQM);
+    msx_memory_write(&msx, 0x9000, 0x14);
+    assert(msx.rdf600_fdc.selected_drive == 0);
+    assert(msx.rdf600_fdc.motor[0]);
+    msx_reset(&msx);
+    assert(msx_rdf600_connected(&msx));
+    assert(msx_drive_a_mounted(&msx));
+    assert(msx_eject_rdf600(&msx) == 0);
+    assert(!msx_rdf600_connected(&msx));
+    assert(!msx_floppy_supported(&msx));
+
     msx_destroy(&msx);
     assert(remove(image_path) == 0);
 }

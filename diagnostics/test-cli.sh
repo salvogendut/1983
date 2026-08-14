@@ -9,10 +9,11 @@ sdimage=diagnostics/test-cli-sdcard.tmp
 megaflash=diagnostics/test-cli-megaflash.tmp
 cassette=diagnostics/test-cli-cassette.tmp
 cdx2=diagnostics/test-cli-cdx2.tmp
+rdf600=diagnostics/test-cli-rdf600.tmp
 floppy=diagnostics/test-cli-floppy.tmp
 first_run=diagnostics/test-cli-first-run.tmp
 source_root=${srcdir:-.}
-trap 'rm -f "$log" "$config" "$sunrise" "$sdrom" "$sdimage" "$megaflash" "$cassette" "$cdx2" "$floppy" "$first_run"' EXIT HUP INT TERM
+trap 'rm -f "$log" "$config" "$sunrise" "$sdrom" "$sdimage" "$megaflash" "$cassette" "$cdx2" "$rdf600" "$floppy" "$first_run"' EXIT HUP INT TERM
 
 rm -f "$first_run"
 ./1983 --config "$first_run" \
@@ -162,6 +163,18 @@ if ./1983 --config /dev/null --cdx2-rom missing-cdx2.rom \
 fi
 grep -q "cannot load 16 KB Microsol CDX-2 ROM" "$log"
 
+# RDF600 is a TDC-600-compatible cartridge with its own 16 KB ROM and
+# memory-mapped TC8566AF controller.
+dd if=/dev/zero of="$rdf600" bs=16384 count=1 2>/dev/null
+./1983 --config /dev/null --rdf600-rom "$rdf600" --disk-a "$floppy" \
+    --headless --unthrottled --exit-after 0 >"$log" 2>&1
+if ./1983 --config /dev/null --rdf600-rom missing-rdf600.rom \
+        >"$log" 2>&1; then
+    echo "missing RDF600 ROM was accepted" >&2
+    exit 1
+fi
+grep -q "cannot load 16 KB RDF600 ROM" "$log"
+
 if ./1983 --config /dev/null --cassette missing.cas >"$log" 2>&1; then
     echo "missing cassette was accepted" >&2
     exit 1
@@ -195,6 +208,7 @@ grep -q -- "--disk-a PATH" "$log"
 grep -q -- "--disk-b PATH" "$log"
 grep -q -- "--floppy-mode MODE" "$log"
 grep -q -- "--cdx2-rom PATH" "$log"
+grep -q -- "--rdf600-rom PATH" "$log"
 grep -q -- "--ide PATH" "$log"
 grep -q -- "--ide-mode MODE" "$log"
 grep -q -- "--cassette PATH" "$log"

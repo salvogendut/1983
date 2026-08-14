@@ -174,6 +174,7 @@ void config_normalize(Config *config) {
         &config->msx_music,
         &config->rs232,
         &config->cdx2,
+        &config->rdf600,
     };
     unsigned connected = 0;
     unsigned cartridge_capacity = MSX_CARTRIDGE_SLOTS;
@@ -344,6 +345,8 @@ void config_load(Config *config, const char *path) {
             config->rs232 = parse_bool(value, config->rs232);
         else if (strcmp(key, "cdx2") == 0)
             config->cdx2 = parse_bool(value, config->cdx2);
+        else if (strcmp(key, "rdf600") == 0)
+            config->rdf600 = parse_bool(value, config->rdf600);
         else if (strcmp(key, "sd_mapper_ram") == 0)
             config->sd_mapper_ram =
                 parse_bool(value, config->sd_mapper_ram);
@@ -391,6 +394,9 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "cdx2_rom") == 0)
             snprintf(config->cdx2_rom_path,
                      sizeof(config->cdx2_rom_path), "%s", value);
+        else if (strcmp(key, "rdf600_rom") == 0)
+            snprintf(config->rdf600_rom_path,
+                     sizeof(config->rdf600_rom_path), "%s", value);
         else if (strcmp(key, "sd_card_a") == 0)
             snprintf(config->sd_card_path[0],
                      sizeof(config->sd_card_path[0]), "%s", value);
@@ -547,6 +553,7 @@ int config_save(const Config *config) {
             config->sd_mapper_rom_path);
     fprintf(file, "rs232_rom = %s\n", config->rs232_rom_path);
     fprintf(file, "cdx2_rom = %s\n", config->cdx2_rom_path);
+    fprintf(file, "rdf600_rom = %s\n", config->rdf600_rom_path);
     fprintf(file, "sd_mapper_ram = %s\n",
             bool_name(config->sd_mapper_ram));
     fprintf(file, "sd_mapper_alternate_driver = %s\n",
@@ -559,6 +566,8 @@ int config_save(const Config *config) {
             bool_name(config->rs232));
     fprintf(file, "cdx2 = %s\n",
             bool_name(config->cdx2));
+    fprintf(file, "rdf600 = %s\n",
+            bool_name(config->rdf600));
     fprintf(file, "megaflash_rom = %s\n",
             config->megaflash_rom_path);
     fprintf(file, "scc = %s\n", bool_name(config->scc));
@@ -727,7 +736,8 @@ unsigned config_cartridge_extension_count(const Config *config) {
            (config->scc ? 1u : 0u) +
            (config->msx_music ? 1u : 0u) +
            (config->rs232 ? 1u : 0u) +
-           (config->cdx2 ? 1u : 0u);
+           (config->cdx2 ? 1u : 0u) +
+           (config->rdf600 ? 1u : 0u);
 }
 
 const char *config_cartridge_slot_owner(const Config *config,
@@ -756,6 +766,8 @@ const char *config_cartridge_slot_owner(const Config *config,
         extensions[extension_count++] = "RS-232C";
     if (config->cdx2 && extension_count < MSX_CARTRIDGE_SLOTS)
         extensions[extension_count++] = "CDX-2 FDC";
+    if (config->rdf600 && extension_count < MSX_CARTRIDGE_SLOTS)
+        extensions[extension_count++] = "RDF600 FDC";
 
     /*
      * Keep cartridge 1 available for ordinary software until a second

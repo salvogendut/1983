@@ -472,6 +472,8 @@ also provides:
 - an Extensions second-floppy switch which conditionally adds Floppy B;
 - a cartridge-slot-backed Microsol CDX-2 setup with a user-provided 16 KiB
   controller ROM;
+- a cartridge-slot-backed RDF600/TDC-600 setup with a user-provided 16 KiB
+  controller ROM and TC8566AF-compatible command interface;
 - a persistent port-mapped MSX TCP/IP UNAPI host bridge which does not
   reserve a cartridge slot.
 

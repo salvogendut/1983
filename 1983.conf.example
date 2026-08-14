@@ -92,6 +92,10 @@ kanji_rom = false
 cdx2 = false
 # User-supplied 16 KiB controller/driver ROM (not distributed by 1983).
 cdx2_rom =
+# RDF600 / Talent TDC-600-compatible memory-mapped floppy controller.
+rdf600 = false
+# User-supplied exact 16 KiB controller/driver ROM (not distributed by 1983).
+rdf600_rom =
 
 [advanced]
 tinker = false
