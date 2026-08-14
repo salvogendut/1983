@@ -1,0 +1,18 @@
+SD Mapper V2 browser firmware
+=============================
+
+The WebAssembly build embeds `SDM V2 Nextor2.1.1.rom` as the fixed firmware
+for its SD Mapper V2 AUX device. The browser interface deliberately offers no
+firmware chooser: users configure only SD-card images.
+
+Upstream hardware and firmware project:
+https://github.com/fbelavenuto/msxsdmapperv2
+
+Embedded file:
+
+    SDM V2 Nextor2.1.1.rom
+    SHA-256 4c5e5a0015d8e4d0b2c837621b2f34a5fd594ee2c449b3af95e40ab6555f8c0d
+
+The image contains the SD Mapper V2 driver and Nextor 2.1.1 components. Refer
+to the upstream project and Nextor distribution for their respective source,
+copyright, and license notices.

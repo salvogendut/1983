@@ -11,6 +11,7 @@
 /test-ata
 /test-floppy
 /test-wd2793
+/test-tc8566
 /test-sunrise
 /test-sdcard
 /test-sd-mapper
@@ -38,6 +39,8 @@
 !/ROMS/rainbios_msx2.rom
 !/ROMS/rainbios_msx2_sub.rom
 !/ROMS/rainbios_nms8250_disk.rom
+!/ROMS/SDM V2 Nextor2.1.1.rom
+!/ROMS/README-SD-MAPPER-V2
 /rtc/
 /DOS/*
 /src/.deps/

@@ -30,3 +30,13 @@ void unapinet_io_reset(void *context);
 
 bool unapinet_take_activity(UnapiNet *net);
 const char *unapinet_error(const UnapiNet *net);
+
+#ifdef __EMSCRIPTEN__
+/* Asynchronous browser-relay completions. */
+void unapinet_web_dns_result(UnapiNet *net, u8 status,
+                             const u8 address[4]);
+void unapinet_web_tcp_open_result(UnapiNet *net, int slot, u8 status,
+                                  const u8 address[4], u16 port);
+void unapinet_web_udp_open_result(UnapiNet *net, int slot, u8 status,
+                                  u16 port);
+#endif

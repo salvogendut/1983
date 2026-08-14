@@ -57,9 +57,48 @@ async function main() {
   );
   assert.strictEqual(module._poc_cartridge_loaded(0), 1);
   assert.strictEqual(module._poc_cartridge_loaded(1), 1);
+
+  assert.strictEqual(module._poc_set_unapi(1), 1);
+  assert.strictEqual(module._poc_unapi_enabled(), 1);
+  assert.strictEqual(module._poc_unapi_probe(), 0xab);
+  assert.strictEqual(module._poc_unapi_guest_active(), 1);
+  assert.strictEqual(
+    module._poc_cartridge_loaded(0), 1,
+    'port-mapped UNAPI must leave cartridge I available'
+  );
+  assert.strictEqual(
+    module._poc_cartridge_loaded(1), 1,
+    'port-mapped UNAPI must leave cartridge II available'
+  );
+  module._poc_reset();
+  assert.strictEqual(module._poc_unapi_enabled(), 1);
+  assert.strictEqual(module._poc_unapi_guest_active(), 0);
+  assert.strictEqual(module._poc_set_unapi(0), 0);
+
   module._poc_eject_cartridge(1);
   assert.strictEqual(module._poc_cartridge_loaded(0), 1);
   assert.strictEqual(module._poc_cartridge_loaded(1), 0);
+
+  assert.strictEqual(module._poc_set_sd_mapper(1), 1);
+  assert.strictEqual(module._poc_sd_mapper_enabled(), 1);
+  assert.strictEqual(module._poc_cartridge_loaded(0), 1);
+  assert.strictEqual(module._poc_cartridge_loaded(1), 0);
+  module.FS.writeFile('/test-sd.img', new Uint8Array(1024 * 1024));
+  assert.strictEqual(
+    module.ccall(
+      'poc_mount_sd_card', 'number', ['number', 'string', 'number'],
+      [0, '/test-sd.img', 1]
+    ),
+    0
+  );
+  assert.strictEqual(module._poc_sd_card_mounted(0), 1);
+  module._poc_reset();
+  assert.strictEqual(module._poc_sd_mapper_enabled(), 1);
+  assert.strictEqual(module._poc_sd_card_mounted(0), 1);
+  assert.strictEqual(module._poc_eject_sd_card(0), 0);
+  assert.strictEqual(module._poc_sd_card_mounted(0), 0);
+  assert.strictEqual(module._poc_set_sd_mapper(0), 0);
+  assert.strictEqual(module._poc_sd_mapper_enabled(), 0);
 
   assert.strictEqual(module._poc_set_input_device(0), 0);
   module._poc_joy(4, 1);
@@ -76,11 +115,17 @@ async function main() {
   assert.strictEqual(module._poc_set_input_device(0), 0);
   assert.strictEqual(module._poc_set_input_device(2), -1);
 
+  assert.strictEqual(module._poc_set_sd_mapper(1), 1);
+  assert.strictEqual(module._poc_set_unapi(1), 1);
   assert.strictEqual(module._poc_init_model(0, 0), 0);
   assert.strictEqual(module._poc_frame_hz(), 60);
   assert.strictEqual(module._poc_has_floppy(), 0);
   assert.strictEqual(module._poc_cartridge_loaded(0), 0);
   assert.strictEqual(module._poc_cartridge_loaded(1), 0);
+  assert.strictEqual(module._poc_sd_mapper_enabled(), 1);
+  assert.strictEqual(module._poc_unapi_enabled(), 1);
+  assert.strictEqual(module._poc_set_sd_mapper(0), 0);
+  assert.strictEqual(module._poc_set_unapi(0), 0);
 
   console.log('WASM machine profile and peripheral smoke tests passed');
 }

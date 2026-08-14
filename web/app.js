@@ -30,6 +30,20 @@ const ledPowerEl = $("ledPower");
 const ledAEl = $("ledA");
 const ledInputEl = $("ledInput");
 const ledAudioEl = $("ledAudio");
+const expansionButtonEl = $("expansion");
+const expansionPanelEl = $("expansionPanel");
+const expansionBackdropEl = $("expansionBackdrop");
+const expansionCloseEl = $("expansionClose");
+const sdMapperToggleEl = $("sdMapperToggle");
+const sdMapperStateEl = $("sdMapperState");
+const sdAccessModeEls = [...document.querySelectorAll('input[name="sdAccessMode"]')];
+const unapiToggleEl = $("unapiToggle");
+const unapiStateEl = $("unapiState");
+const unapiEndpointEl = $("unapiEndpoint");
+const unapiRelayStateEl = $("unapiRelayState");
+const unapiRelayStateWrapEl = unapiRelayStateEl.closest(".relay-state");
+const unapiRelayLampEl = $("unapiRelayLamp");
+const unapiBridge = globalThis.JS1983UnapiBridge;
 const ctx = canvas.getContext("2d");
 const VW = 768;
 const VH = 576;
@@ -52,6 +66,191 @@ function showToast(message) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toastEl.classList.remove("show"), 3200);
 }
+
+const SD_MAPPER_STORAGE_KEY = "javascript1983.expansion.sdMapper";
+const SD_ACCESS_STORAGE_KEY = "javascript1983.expansion.sdAccessMode";
+const UNAPI_STORAGE_KEY = "javascript1983.expansion.unapi";
+const UNAPI_ENDPOINT_STORAGE_KEY = "javascript1983.expansion.unapiEndpoint";
+let sdMapperEnabled = false;
+let sdAccessMode = "readonly";
+let unapiEnabled = false;
+let unapiEndpoint = unapiBridge ? unapiBridge.endpoint : "";
+let applySdMapperHardware = () => {};
+let applyUnapiHardware = () => {};
+
+try {
+  sdMapperEnabled = localStorage.getItem(SD_MAPPER_STORAGE_KEY) === "true";
+  sdAccessMode = localStorage.getItem(SD_ACCESS_STORAGE_KEY) === "readwrite"
+    ? "readwrite" : "readonly";
+  unapiEnabled = localStorage.getItem(UNAPI_STORAGE_KEY) === "true";
+  const storedEndpoint = localStorage.getItem(UNAPI_ENDPOINT_STORAGE_KEY);
+  if (storedEndpoint !== null) unapiEndpoint = storedEndpoint;
+} catch (_) {
+  // Keep optional hardware disconnected when storage is unavailable.
+}
+
+function updateExpansionIndicator() {
+  expansionButtonEl.classList.toggle(
+    "has-expansion", sdMapperEnabled || unapiEnabled
+  );
+}
+
+function updateSdMapperUi() {
+  sdMapperToggleEl.checked = sdMapperEnabled;
+  sdMapperStateEl.textContent = sdMapperEnabled
+    ? "Enabled - cartridge II reserved" : "Disabled";
+  for (const input of sdAccessModeEls)
+    input.checked = input.value === sdAccessMode;
+  for (const card of ["A", "B"]) {
+    const slot = $("sdSlot" + card);
+    const file = $("sdFile" + card);
+    slot.setAttribute("aria-disabled", String(!sdMapperEnabled));
+    file.disabled = !sdMapperEnabled;
+  }
+  updateExpansionIndicator();
+}
+
+function setSdMapperEnabled(enabled, persist = true, announce = false) {
+  sdMapperEnabled = Boolean(enabled);
+  applySdMapperHardware(sdMapperEnabled);
+  updateSdMapperUi();
+  if (persist) {
+    try {
+      localStorage.setItem(SD_MAPPER_STORAGE_KEY, String(sdMapperEnabled));
+    } catch (_) {}
+  }
+  if (announce)
+    showToast(sdMapperEnabled
+      ? "SD Mapper V2 enabled in cartridge II"
+      : "SD Mapper V2 disabled");
+}
+
+function setSdAccessMode(mode, persist = true, announce = false) {
+  sdAccessMode = mode === "readwrite" ? "readwrite" : "readonly";
+  updateSdMapperUi();
+  if (persist) {
+    try { localStorage.setItem(SD_ACCESS_STORAGE_KEY, sdAccessMode); } catch (_) {}
+  }
+  if (announce)
+    showToast("SD images will open " +
+      (sdAccessMode === "readwrite" ? "read/write" : "read-only"));
+}
+
+function updateUnapiUi() {
+  unapiToggleEl.checked = unapiEnabled;
+  unapiStateEl.textContent = unapiEnabled
+    ? "Enabled - no cartridge slot used" : "Disabled";
+  updateExpansionIndicator();
+}
+
+function setUnapiEnabled(enabled, persist = true, announce = false) {
+  unapiEnabled = Boolean(enabled);
+  applyUnapiHardware(unapiEnabled);
+  updateUnapiUi();
+  if (persist) {
+    try { localStorage.setItem(UNAPI_STORAGE_KEY, String(unapiEnabled)); } catch (_) {}
+  }
+  if (announce)
+    showToast("MSX TCP/IP UNAPI " + (unapiEnabled ? "enabled" : "disabled"));
+}
+
+function updateUnapiRelayStatus(status, detail = "") {
+  const labels = {
+    disabled: "Relay disabled",
+    connecting: "Relay connecting",
+    online: "Relay online",
+    offline: "Relay offline",
+    error: "Relay error",
+  };
+  unapiRelayStateWrapEl.dataset.state = status;
+  unapiRelayStateEl.textContent = labels[status] || "Relay offline";
+  unapiRelayStateEl.title = detail;
+}
+
+function applyUnapiEndpoint(value, persist = true) {
+  unapiEndpoint = value.trim();
+  const accepted = Boolean(unapiBridge && unapiBridge.setEndpoint(unapiEndpoint));
+  unapiEndpointEl.setAttribute("aria-invalid", String(!accepted));
+  if (accepted && persist) {
+    try { localStorage.setItem(UNAPI_ENDPOINT_STORAGE_KEY, unapiEndpoint); } catch (_) {}
+  }
+  return accepted;
+}
+
+function expansionFocusableElements() {
+  return [...expansionPanelEl.querySelectorAll(
+    'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )];
+}
+
+function setExpansionPanelOpen(open, restoreFocus = true) {
+  const isOpen = Boolean(open);
+  document.body.classList.toggle("expansion-open", isOpen);
+  expansionButtonEl.setAttribute("aria-expanded", String(isOpen));
+  expansionPanelEl.setAttribute("aria-hidden", String(!isOpen));
+  expansionPanelEl.inert = !isOpen;
+  if (isOpen) {
+    setThemeMenu(false);
+    requestAnimationFrame(() => expansionCloseEl.focus());
+  } else if (restoreFocus) {
+    expansionButtonEl.focus();
+  }
+}
+
+expansionButtonEl.addEventListener("click", () => {
+  setExpansionPanelOpen(
+    expansionButtonEl.getAttribute("aria-expanded") !== "true"
+  );
+});
+expansionCloseEl.addEventListener("click", () => setExpansionPanelOpen(false));
+expansionBackdropEl.addEventListener("click", () => setExpansionPanelOpen(false));
+expansionPanelEl.addEventListener("keydown", event => {
+  if (event.key !== "Tab") return;
+  const focusable = expansionFocusableElements();
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" &&
+      expansionButtonEl.getAttribute("aria-expanded") === "true") {
+    event.preventDefault();
+    setExpansionPanelOpen(false);
+  }
+});
+sdMapperToggleEl.addEventListener("change", () => {
+  setSdMapperEnabled(sdMapperToggleEl.checked, true, true);
+});
+for (const input of sdAccessModeEls) {
+  input.addEventListener("change", () => {
+    if (input.checked) setSdAccessMode(input.value, true, true);
+  });
+}
+unapiToggleEl.addEventListener("change", () => {
+  setUnapiEnabled(unapiToggleEl.checked, true, true);
+});
+unapiEndpointEl.addEventListener("change", () => {
+  if (!applyUnapiEndpoint(unapiEndpointEl.value, true))
+    showToast("Invalid UNAPI relay endpoint");
+});
+
+try {
+  const queryEndpoint = new URLSearchParams(window.location.search).get("unapiRelay");
+  if (queryEndpoint !== null) unapiEndpoint = queryEndpoint;
+} catch (_) {}
+unapiEndpointEl.value = unapiEndpoint;
+applyUnapiEndpoint(unapiEndpoint, false);
+if (unapiBridge) unapiBridge.onStatus(updateUnapiRelayStatus);
+setExpansionPanelOpen(false, false);
+updateSdMapperUi();
+updateUnapiUi();
 
 const THEMES = {
   "sonyhb-f1xd": "SONYHB-F1XD",
@@ -251,17 +450,29 @@ create1983().then(m => {
   const joystatusEl = $("joystatus");
   const joymatrixEl = $("joymatrix");
   const screenHintEl = $("screenHint");
-  const expansionEl = $("expansion");
+  const sdCardUi = ["A", "B"].map((letter, card) => ({
+    card,
+    slot: $("sdSlot" + letter),
+    file: $("sdFile" + letter),
+    name: $("sdName" + letter),
+    eject: $("sdEject" + letter),
+    led: $("sdLed" + letter),
+    path: "/sd-card-" + letter.toLowerCase() + ".img",
+  }));
 
   let currentModel = 0;
   let audioCtx = null;
   let audioScheduler = null;
   let prevGamepad = null;
-  let extensionReservationEnabled = false;
   let ledState = 0;
+  const sdCardImages = [null, null];
+  const sdLedTimers = [0, 0];
+  let unapiLedTimer = 0;
   const heldKeys = new Map();
   const virtualKeys = new Set();
   const latchedVirtualModifiers = new Set();
+
+  if (unapiBridge) unapiBridge.attachModule(m);
 
   function isGuestFunctionScancode(scancode) {
     return (scancode >= 58 && scancode <= 62) || scancode === 64 || scancode === 65;
@@ -445,6 +656,12 @@ create1983().then(m => {
   }
 
   function reinit(model) {
+    if (sdMapperEnabled) {
+      for (const ui of sdCardUi) {
+        if (sdCardImages[ui.card])
+          m._poc_eject_sd_card(ui.card);
+      }
+    }
     const rc = m._poc_init_model(model, 0);
     if (rc !== 0) {
       setStatus("Machine initialization failed: embedded firmware unavailable");
@@ -463,6 +680,9 @@ create1983().then(m => {
     clearDiskUi();
     clearAllCartUi();
     clearCassUi();
+    applySdMapperHardware(sdMapperEnabled);
+    applyUnapiHardware(unapiEnabled);
+    remountSdCards();
     updateFrameRateLabel();
     updateFloppyUi();
     updateCartridgeAvailability();
@@ -595,35 +815,166 @@ create1983().then(m => {
     setStatus("Cassette ejected");
   });
 
-  function setExtensionReservation(enabled, announce = true) {
-    extensionReservationEnabled = Boolean(enabled);
-    if (extensionReservationEnabled && m._poc_cartridge_loaded(1)) {
-      m._poc_eject_cartridge(1);
-      resetAudioQueue();
-      frameClock.reset();
-      releaseAllJoy();
-    }
-    peripherals.setExtensions(
-      extensionReservationEnabled ? ["expansion hardware"] : []
-    );
-    expansionEl.setAttribute("aria-pressed", String(extensionReservationEnabled));
-    expansionEl.querySelector("small").textContent =
-      extensionReservationEnabled ? "Enabled" : "Extension";
-    updateCartridgeAvailability();
-    setStatus(extensionReservationEnabled
-      ? "Expansion enabled - cartridge II reserved"
-      : "Expansion disabled - cartridge II available");
-    if (announce) {
-      showToast(extensionReservationEnabled
-        ? "Cartridge II reserved by expansion hardware"
-        : "Cartridge II released");
+  function clearSdCardUi(card) {
+    const ui = sdCardUi[card];
+    sdCardImages[card] = null;
+    ui.name.textContent = "No image loaded";
+    ui.eject.disabled = true;
+    ui.file.value = "";
+    ui.led.classList.remove("on");
+  }
+
+  function updateSdCardAvailability() {
+    for (const ui of sdCardUi) {
+      ui.slot.setAttribute("aria-disabled", String(!sdMapperEnabled));
+      ui.file.disabled = !sdMapperEnabled;
+      ui.eject.disabled = !sdMapperEnabled || !sdCardImages[ui.card];
     }
   }
 
-  expansionEl.addEventListener("click", () => {
-    setExtensionReservation(!extensionReservationEnabled);
-  });
-  setExtensionReservation(false, false);
+  function downloadSdImage(card) {
+    const mounted = sdCardImages[card];
+    const ui = sdCardUi[card];
+    if (!mounted || !mounted.writable) return;
+    try {
+      const blob = new Blob([m.FS.readFile(ui.path)], {
+        type: "application/octet-stream",
+      });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = mounted.name;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 0);
+    } catch (error) {
+      setStatus("Could not save " + mounted.name + ": " + error.message);
+    }
+  }
+
+  function ejectSdCard(card, options = {}) {
+    const clear = options.clear !== false;
+    const download = options.download !== false;
+    const mounted = sdCardImages[card];
+    if (mounted) {
+      const rc = m._poc_eject_sd_card(card);
+      if (rc !== 0) throw new Error("SD card could not be flushed safely");
+      if (download) downloadSdImage(card);
+    }
+    if (clear) clearSdCardUi(card);
+  }
+
+  function mountSdCardData(card, data, name, writable, path) {
+    if (!sdMapperEnabled)
+      throw new Error("enable SD Mapper V2 first");
+    if (sdCardImages[card]) ejectSdCard(card);
+    m.FS.writeFile(path, data);
+    const rc = m.ccall(
+      "poc_mount_sd_card", "number", ["number", "string", "number"],
+      [card, path, writable ? 1 : 0]
+    );
+    if (rc !== 0) throw new Error("unsupported or damaged SD image");
+    sdCardImages[card] = { name, writable };
+    const ui = sdCardUi[card];
+    ui.name.textContent = name + (writable ? " (R/W)" : " (R/O)");
+    ui.eject.disabled = false;
+    setStatus("SD " + (card ? "B" : "A") + ": " + name);
+  }
+
+  function remountSdCards() {
+    if (!sdMapperEnabled) return;
+    for (const ui of sdCardUi) {
+      const mounted = sdCardImages[ui.card];
+      if (!mounted) continue;
+      const rc = m.ccall(
+        "poc_mount_sd_card", "number", ["number", "string", "number"],
+        [ui.card, ui.path, mounted.writable ? 1 : 0]
+      );
+      if (rc !== 0) {
+        setStatus("SD " + (ui.card ? "B" : "A") + " could not be remounted");
+        clearSdCardUi(ui.card);
+      }
+    }
+    updateSdCardAvailability();
+  }
+
+  async function loadSdCardFile(file, card) {
+    if (!file) return;
+    try {
+      const data = new Uint8Array(await file.arrayBuffer());
+      mountSdCardData(
+        card, data, file.name, sdAccessMode === "readwrite",
+        sdCardUi[card].path
+      );
+      showToast("SD " + (card ? "B" : "A") + " image loaded");
+    } catch (error) {
+      setStatus("SD image load failed: " + error.message);
+      showToast("Could not load " + file.name);
+    }
+  }
+
+  for (const ui of sdCardUi) {
+    ui.file.addEventListener("change", () => {
+      loadSdCardFile(ui.file.files[0], ui.card);
+    });
+    ui.eject.addEventListener("click", () => {
+      try {
+        const wasWritable = Boolean(sdCardImages[ui.card]?.writable);
+        ejectSdCard(ui.card);
+        setStatus("SD " + (ui.card ? "B" : "A") + " ejected safely");
+        showToast(wasWritable
+          ? "Updated SD image downloaded"
+          : "SD image ejected");
+      } catch (error) {
+        setStatus("SD eject failed: " + error.message);
+        showToast("Could not eject SD image safely");
+      }
+    });
+  }
+
+  applySdMapperHardware = enabled => {
+    const requested = Boolean(enabled);
+    if (!requested) {
+      for (const ui of sdCardUi) {
+        try { ejectSdCard(ui.card); } catch (error) {
+          setStatus("SD eject failed: " + error.message);
+          sdMapperEnabled = true;
+          updateSdMapperUi();
+          return;
+        }
+      }
+    } else if (m._poc_cartridge_loaded(1)) {
+      m._poc_eject_cartridge(1);
+      clearCartUi(1);
+    }
+
+    if (Boolean(m._poc_sd_mapper_enabled()) !== requested)
+      m._poc_set_sd_mapper(requested ? 1 : 0);
+    const actual = Boolean(m._poc_sd_mapper_enabled());
+    sdMapperEnabled = actual;
+    peripherals.setCartridgeExtensions(actual ? ["SD Mapper V2"] : []);
+    if (actual) clearCartUi(1);
+    resetAudioQueue();
+    frameClock.reset();
+    releaseAllJoy();
+    updateCartridgeAvailability();
+    updateSdCardAvailability();
+    updateSdMapperUi();
+    if (requested && !actual)
+      setStatus("SD Mapper V2 firmware could not be installed");
+  };
+
+  applyUnapiHardware = enabled => {
+    const requested = Boolean(enabled);
+    if (Boolean(m._poc_unapi_enabled()) !== requested)
+      m._poc_set_unapi(requested ? 1 : 0);
+    unapiEnabled = Boolean(m._poc_unapi_enabled());
+    peripherals.setPortExtensions(unapiEnabled ? ["MSX TCP/IP UNAPI"] : []);
+    updateUnapiUi();
+    if (requested && !unapiEnabled)
+      setStatus("MSX TCP/IP UNAPI could not be enabled");
+  };
+
+  applySdMapperHardware(sdMapperEnabled);
+  applyUnapiHardware(unapiEnabled);
 
   async function fetchServerMedia(url, kind) {
     const name = JS1983Media.filenameFromUrl(url, kind);
@@ -989,6 +1340,25 @@ create1983().then(m => {
     }
   }
 
+  function updateExpansionActivity() {
+    const sdActivity = m._poc_sd_activity_mask();
+    for (const ui of sdCardUi) {
+      if (!(sdActivity & (1 << ui.card))) continue;
+      ui.led.classList.add("on");
+      clearTimeout(sdLedTimers[ui.card]);
+      sdLedTimers[ui.card] = setTimeout(
+        () => ui.led.classList.remove("on"), 120
+      );
+    }
+    if (m._poc_unapi_activity()) {
+      unapiRelayLampEl.classList.add("activity");
+      clearTimeout(unapiLedTimer);
+      unapiLedTimer = setTimeout(
+        () => unapiRelayLampEl.classList.remove("activity"), 120
+      );
+    }
+  }
+
   // The VDP framebuffer is at native resolution (256x192 MSX1, 512x212 MSX2);
   // render it into an offscreen canvas and stretch to the 768x576 screen.
   const offscreen = document.createElement("canvas");
@@ -1009,6 +1379,7 @@ create1983().then(m => {
     scheduleAudio();
     pollGamepad();
     updateLed();
+    updateExpansionActivity();
 
     const w = m._poc_width();
     const h = m._poc_height();

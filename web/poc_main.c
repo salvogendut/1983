@@ -24,6 +24,7 @@
 #include "msx.h"
 #include "kbd.h"
 #include "paste.h"
+#include "unapinet.h"
 
 static MsxMachine g_msx;
 static KbdHost g_kbd;
@@ -34,6 +35,11 @@ static bool g_initialized;
 static bool g_machine_initialized;
 static u8 g_joy_pressed;
 static int g_input_device;
+static UnapiNet *g_unapinet;
+static bool g_sd_mapper_enabled;
+static bool g_unapi_enabled;
+
+#define SD_MAPPER_ROM_PATH "roms/sdmapper-v2-nextor.rom"
 
 static void poc_cancel_paste(void) {
     paste_cancel(&g_paste, &g_msx);
@@ -88,10 +94,15 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
     if (!g_initialized) {
         kbd_init(&g_kbd);
         paste_init(&g_paste);
+        g_unapinet = unapinet_create();
+        if (!g_unapinet)
+            return -1;
         g_initialized = true;
     }
-    if (g_machine_initialized)
+    if (g_machine_initialized) {
+        unapinet_reset(g_unapinet);
         msx_destroy(&g_msx);
+    }
 
     if (model == 1) {
         m = MSX_MODEL_PHILIPS_NMS8250;
@@ -122,6 +133,16 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
                 "roms/cbios_logo_msx1.rom", NULL, NULL) != 0)
             return -1;
     }
+    if (g_sd_mapper_enabled) {
+        if (msx_load_sd_mapper(&g_msx, 1, SD_MAPPER_ROM_PATH) != 0)
+            return -1;
+        msx_sd_mapper_set_ram_enabled(&g_msx, true);
+        msx_sd_mapper_set_alternate_driver(&g_msx, false);
+    }
+    msx_set_io_extension(&g_msx, g_unapinet,
+                         unapinet_io_read, unapinet_io_write,
+                         unapinet_io_reset);
+    (void)unapinet_set_enabled(g_unapinet, g_unapi_enabled);
     msx_mouse_set_enabled(&g_msx, 0, g_input_device == 1);
     if (cartridge && cartridge[0] &&
         msx_load_cartridge_slot(
@@ -177,6 +198,7 @@ EMSCRIPTEN_KEEPALIVE void poc_reset(void) {
 EMSCRIPTEN_KEEPALIVE int poc_step(void) {
     if (!g_initialized)
         return -1;
+    unapinet_poll(g_unapinet);
     if (g_autorun_frames > 0 && --g_autorun_frames == 0)
         paste_start(&g_paste, &g_msx, g_autorun_command);
     paste_tick(&g_paste, &g_msx);
@@ -288,6 +310,117 @@ EMSCRIPTEN_KEEPALIVE void poc_eject_cassette(void) {
 
 /* Floppy activity: the FDC motor spins while a disk is being accessed. */
 EMSCRIPTEN_KEEPALIVE int poc_disk_motor(void) { return g_msx.fdc.motor ? 1 : 0; }
+
+/* ---- browser expansion bay ----
+ * SD Mapper V2 is a cartridge device and therefore owns cartridge slot II.
+ * TCP/IP UNAPI is port mapped and deliberately reserves no cartridge slot. */
+EMSCRIPTEN_KEEPALIVE int poc_set_sd_mapper(int enabled) {
+    const bool requested = enabled != 0;
+
+    if (!g_machine_initialized)
+        return -1;
+    if (requested == g_sd_mapper_enabled)
+        return requested ? 1 : 0;
+    if (requested) {
+        msx_eject_cartridge(&g_msx, 1);
+        if (msx_load_sd_mapper(&g_msx, 1, SD_MAPPER_ROM_PATH) != 0)
+            return -1;
+        msx_sd_mapper_set_ram_enabled(&g_msx, true);
+        msx_sd_mapper_set_alternate_driver(&g_msx, false);
+        g_sd_mapper_enabled = true;
+        return 1;
+    }
+    if (msx_eject_sd_mapper(&g_msx) != 0)
+        return -1;
+    g_sd_mapper_enabled = false;
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_sd_mapper_enabled(void) {
+    return g_sd_mapper_enabled && msx_sd_mapper_connected(&g_msx) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_mount_sd_card(int card, const char *path,
+                                           int writable) {
+    if (card < 0 || card >= (int)MSX_SD_MAPPER_CARDS ||
+        !path || !path[0])
+        return -1;
+    return msx_mount_sd_card(
+        &g_msx, (unsigned)card,
+        path, writable ? SD_IMAGE_READ_WRITE : SD_IMAGE_READ_ONLY);
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_eject_sd_card(int card) {
+    if (card < 0 || card >= (int)MSX_SD_MAPPER_CARDS)
+        return -1;
+    return msx_eject_sd_card(&g_msx, (unsigned)card);
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_sd_card_mounted(int card) {
+    if (card < 0 || card >= (int)MSX_SD_MAPPER_CARDS)
+        return 0;
+    return msx_sd_card_mounted(&g_msx, (unsigned)card) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_sd_activity_mask(void) {
+    int mask = 0;
+
+    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card)
+        if (msx_sd_card_take_activity(&g_msx, card))
+            mask |= 1 << card;
+    return mask;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_set_unapi(int enabled) {
+    if (!g_unapinet)
+        return -1;
+    g_unapi_enabled = enabled != 0;
+    if (!unapinet_set_enabled(g_unapinet, g_unapi_enabled))
+        return -1;
+    return g_unapi_enabled ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_unapi_enabled(void) {
+    return unapinet_enabled(g_unapinet) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_unapi_guest_active(void) {
+    return unapinet_guest_driver_active(g_unapinet) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_unapi_activity(void) {
+    return unapinet_take_activity(g_unapinet) ? 1 : 0;
+}
+
+/* A compact protocol probe for the WebAssembly smoke test. */
+EMSCRIPTEN_KEEPALIVE int poc_unapi_probe(void) {
+    u8 value = 0;
+
+    if (!g_unapinet ||
+        !unapinet_io_write(g_unapinet, UNAPINET_COMMAND_PORT, 0x00) ||
+        !unapinet_io_read(g_unapinet, UNAPINET_DATA_PORT, &value))
+        return -1;
+    return value;
+}
+
+EMSCRIPTEN_KEEPALIVE void poc_unapi_dns_result(
+    int status, int a, int b, int c, int d) {
+    const u8 address[4] = {(u8)a, (u8)b, (u8)c, (u8)d};
+    unapinet_web_dns_result(g_unapinet, (u8)status, address);
+}
+
+EMSCRIPTEN_KEEPALIVE void poc_unapi_tcp_open_result(
+    int slot, int status, int a, int b, int c, int d, int port) {
+    const u8 address[4] = {(u8)a, (u8)b, (u8)c, (u8)d};
+    unapinet_web_tcp_open_result(
+        g_unapinet, slot, (u8)status, address, (u16)port);
+}
+
+EMSCRIPTEN_KEEPALIVE void poc_unapi_udp_open_result(
+    int slot, int status, int port) {
+    unapinet_web_udp_open_result(
+        g_unapinet, slot, (u8)status, (u16)port);
+}
 
 /* Queue RUN"filename" after a frame-counted boot delay, mirroring the native
  * boot-to-BASIC flow instead of synthesizing browser key events. */
