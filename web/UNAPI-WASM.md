@@ -27,6 +27,14 @@ from `web/dist` and accepts the `/unapi` WebSocket on the same address. The AUX
 panel therefore reports **Relay online** as soon as the UNAPI extension is
 enabled; its endpoint needs no manual editing.
 
+UNAPI can be enabled for one page load without changing saved settings:
+
+    http://127.0.0.1:1983/?extensions=unapi
+
+It can be combined with startup media, including an SD Mapper image and floppy:
+
+    http://127.0.0.1:1983/?extensions=unapi&sda=media/GBMSX.IMG&disk=media/GEOBENCH.DSK
+
 If port 1983 is already occupied, choose another port for both services:
 
     make -C web serve UNAPI_PORT=19830

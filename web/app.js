@@ -468,9 +468,28 @@ create1983().then(m => {
   const sdCardImages = [null, null];
   const sdLedTimers = [0, 0];
   let unapiLedTimer = 0;
+  let startupMedia = null;
+  let startupMediaError = null;
   const heldKeys = new Map();
   const virtualKeys = new Set();
   const latchedVirtualModifiers = new Set();
+
+  try {
+    startupMedia = JS1983Media.parseStartupMedia(
+      window.location.search,
+      document.baseURI
+    );
+    const startupExtensions = JS1983Media.resolveStartupExtensions(
+      startupMedia,
+      { sdMapper: sdMapperEnabled, unapi: unapiEnabled }
+    );
+    sdMapperEnabled = startupExtensions.sdMapper;
+    unapiEnabled = startupExtensions.unapi;
+    if (startupMedia.sdMode !== null)
+      sdAccessMode = startupMedia.sdMode;
+  } catch (error) {
+    startupMediaError = error;
+  }
 
   if (unapiBridge) unapiBridge.attachModule(m);
 
@@ -988,59 +1007,91 @@ create1983().then(m => {
   }
 
   async function bootstrapServerMedia() {
-    let media;
-    try {
-      media = JS1983Media.parseStartupMedia(
-        window.location.search,
-        document.baseURI
-      );
-    } catch (error) {
-      setStatus("Media URL error: " + error.message);
-      showToast("Invalid server media URL");
+    if (startupMediaError) {
+      setStatus("Startup URL error: " + startupMediaError.message);
+      showToast("Invalid startup URL");
       return;
     }
-    if (!media.disk && !media.cartridge && !media.cartridge2) return;
+    const media = startupMedia;
+    const hasMedia = Boolean(
+      media.disk || media.cartridge || media.cartridge2 || media.sdA || media.sdB
+    );
+    if (!hasMedia && media.extensions === null) return;
 
     try {
       if (media.disk && !m._poc_has_floppy() && !reinit(1))
         throw new Error("could not select the NMS 8250 floppy profile");
-      if (media.cartridge) {
-        const cartridge = await fetchServerMedia(media.cartridge, "cartridge");
+
+      const [cartridge, cartridge2, disk, sdA, sdB] = await Promise.all([
+        media.cartridge
+          ? fetchServerMedia(media.cartridge, "cartridge") : null,
+        media.cartridge2
+          ? fetchServerMedia(media.cartridge2, "cartridge 2") : null,
+        media.disk ? fetchServerMedia(media.disk, "Drive A disk") : null,
+        media.sdA ? fetchServerMedia(media.sdA, "SD A image") : null,
+        media.sdB ? fetchServerMedia(media.sdB, "SD B image") : null,
+      ]);
+
+      if (cartridge)
         mountCartridge(cartridge.data, cartridge.name, "/server-cartridge.rom");
-      }
-      if (media.cartridge2) {
-        const cartridge = await fetchServerMedia(media.cartridge2, "cartridge");
+      if (cartridge2) {
         mountCartridge(
-          cartridge.data,
-          cartridge.name,
+          cartridge2.data,
+          cartridge2.name,
           "/server-cartridge-2.rom",
           1
         );
       }
-      if (media.disk) {
-        const disk = await fetchServerMedia(media.disk, "disk");
+      if (sdA) {
+        mountSdCardData(
+          0, sdA.data, sdA.name, sdAccessMode === "readwrite",
+          sdCardUi[0].path
+        );
+      }
+      if (sdB) {
+        mountSdCardData(
+          1, sdB.data, sdB.name, sdAccessMode === "readwrite",
+          sdCardUi[1].path
+        );
+      }
+      if (disk)
         mountDisk(disk.data, disk.name, "/server-disk.dsk");
-        if (media.autorun) {
-          m._poc_reset();
-          resetAudioQueue();
-          frameClock.reset();
-          releaseAllJoy();
-          const rc = m.ccall(
-            "poc_autorun",
-            "number",
-            ["string", "number"],
-            [media.autorun, 42]
-          );
-          if (rc !== 0) throw new Error("invalid autorun filename");
-          setStatus(
-            "Drive A: " + disk.name + " - autorun " + media.autorun + " armed"
-          );
-          showToast("Autorun " + media.autorun + " armed");
-        }
+
+      m._poc_reset();
+      resetAudioQueue();
+      frameClock.reset();
+      releaseAllJoy();
+      releaseAllVirtualKeys();
+
+      if (media.autorun) {
+        const rc = m.ccall(
+          "poc_autorun",
+          "number",
+          ["string", "number"],
+          [media.autorun, 42]
+        );
+        if (rc !== 0) throw new Error("invalid autorun filename");
+        setStatus(
+          "Drive A: " + disk.name + " - autorun " + media.autorun + " armed"
+        );
+        showToast("Autorun " + media.autorun + " armed");
+      } else if (disk) {
+        setStatus("Drive A: " + disk.name + " - booting");
+        showToast("Booting " + disk.name + " from Drive A");
+      } else if (sdA || sdB) {
+        const card = sdA || sdB;
+        const letter = sdA ? "A" : "B";
+        setStatus("SD " + letter + ": " + card.name + " - booting");
+        showToast("Booting with SD " + letter + ": " + card.name);
+      } else if (cartridge || cartridge2) {
+        showToast("Booting with server cartridge media");
+      } else {
+        setStatus("URL extensions applied - machine reset");
+        showToast("URL extensions applied");
       }
     } catch (error) {
-      setStatus("Server media failed: " + error.message);
-      showToast("Could not load server media");
+      setStatus("Startup URL failed: " + error.message);
+      showToast("Could not apply startup URL");
     }
   }
 
