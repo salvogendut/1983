@@ -82,14 +82,24 @@ security details.
 Media URLs are resolved relative to the page URL. Two cartridge ROMs, a Drive A
 floppy, and both SD Mapper cards can be mounted at startup:
 
+    http://127.0.0.1:1983/?machine=msx1
+    http://127.0.0.1:1983/?machine=nms8250
     http://127.0.0.1:1983/?cartridge=media/game.rom
     http://127.0.0.1:1983/?cartridge=media/game.rom&cartridge2=media/tool.rom
     http://127.0.0.1:1983/?disk=media/thisdisk.dsk
     http://127.0.0.1:1983/?disk=media/thisdisk.dsk&autorun=load.bas
 
-A startup disk automatically selects the NMS 8250 profile because the default
-C-BIOS MSX1 profile has no floppy controller. Drive A is mounted before one
-automatic reset, so a bootable disk starts without an `autorun` parameter.
+The `machine` parameter accepts `msx1` for the C-BIOS profile or `nms8250` for
+the Philips NMS 8250 RainBIOS profile. The aliases `cbios` and `msx2` are also
+accepted. The requested machine is selected before extensions and media are
+applied and affects only that page load.
+
+Without an explicit `machine`, a startup disk automatically selects the NMS
+8250 profile because the default C-BIOS MSX1 profile has no floppy controller.
+Drive A is mounted before one automatic reset, so a bootable disk starts
+without an `autorun` parameter. An explicit `machine=msx1` combined with a
+`disk` reports that the selected machine has no floppy controller instead of
+silently changing profiles.
 
 The `extensions` parameter accepts `sdmapper`, `unapi`, or both as a
 comma-separated list. An explicit list overrides stored extension toggles for
