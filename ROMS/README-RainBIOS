@@ -9,7 +9,7 @@ NMS 8250 profile:
   rainbios_nms8250_disk.rom   Philips WD2793 disk ROM, 16 KiB
 
 They were built from RainBIOS commit
-fae75a2410e84f564e12e0755f936fccf9de42d9:
+9b7b69a4790816a0daeb7977f0b50d918eb77643:
 
   https://github.com/salvogendut/rainbios
 
@@ -17,7 +17,7 @@ SHA-256:
 
   55acd7142ece592fa1dcf253b13bc0f05c5d5acdafa80e22019c8136f15ae939  rainbios_msx2.rom
   f8230c25f45db88d4c032e59dd714c4bf65c1b3300000fc20a046fa32ef984ed  rainbios_msx2_sub.rom
-  c27dcab0edd8f4918c89993d5d798246eed21e01a3cedb9e2bb95b0cf3b73488  rainbios_nms8250_disk.rom
+  ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_nms8250_disk.rom
 
 RainBIOS is distributed under the BSD 3-Clause License:
 

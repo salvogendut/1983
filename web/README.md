@@ -1,18 +1,27 @@
 # Javascript 1983
 
-Build the browser edition with Emscripten and serve the publish directory:
+Install the relay dependency once, then build and launch the browser edition:
 
     export PATH=/var/home/salvogendut/emsdk/upstream/emscripten:$PATH
-    make -C web
-    python3 -m http.server 8080 --directory web/dist
+    npm --prefix web/relay ci
+    make -C web serve
 
-Run the JavaScript unit tests and the built-WASM machine/peripheral smoke test
-with:
+Open `http://127.0.0.1:1983/`. The launcher serves the static browser application
+and its restricted UNAPI WebSocket relay on the same origin, so the default
+`/unapi` endpoint works without further configuration. Emulation and media
+handling still execute entirely in the browser; the companion relay exists only
+because browsers cannot open the raw TCP and UDP sockets used by MSX software.
+Choose another same-origin port when 1983 is already occupied with, for example,
+`make -C web serve UNAPI_PORT=19830`.
+
+Run the JavaScript unit tests, relay integration tests, and the built-WASM
+machine/peripheral smoke test with:
 
     make -C web test
+    make -C web test-relay
     make -C web check-wasm
 
-Open `http://localhost:8080/` in a modern browser. The interface defaults to
+The interface defaults to
 the **SONYHB-F1XD** theme: a charcoal, red-accented machine and compact
 Trinitron/PVM-inspired monitor with a recessed tube and period control fascia.
 The treatment is CSS-native and inspired by 1980s Japanese electronics rather
@@ -46,8 +55,27 @@ be selected directly with a case-insensitive query parameter:
 - Selecting **Mouse** captures relative pointer motion when the display is
   clicked. Press **Ctrl+Enter** (or the browser's pointer-lock escape key) to
   release it.
-- Cartridge II is disabled whenever the expansion reservation is active,
-  matching the native emulator's cartridge-slot ownership rule.
+- **AUX expansion bay** with SD Mapper V2 and MSX TCP/IP UNAPI controls. The SD
+  Mapper has fixed embedded firmware, 512 KiB mapper RAM, two user-selectable
+  SD images and reserves cartridge II. UNAPI is port-mapped and leaves both
+  cartridge slots available.
+
+## AUX expansion bay
+
+Press **AUX** to open the accessible side panel. Optional-device state and the
+UNAPI relay endpoint are remembered in browser local storage.
+
+**SD Mapper V2** embeds `SDM V2 Nextor2.1.1.rom`; there is intentionally no ROM
+chooser. Enable the device, select read-only or read/write access, then load an
+image into SD A or SD B. Read/write images live in the browser's in-memory
+filesystem while mounted. Safe ejection flushes the image and downloads its
+updated contents. Disabling the mapper also safely ejects mounted images.
+
+**MSX TCP/IP UNAPI** implements the same 28h/29h host bridge used by the native
+openMSXnet-compatible device. The guest must load `UNAPINET.COM`. Web browsers
+cannot open arbitrary TCP or UDP sockets, so the browser bridge connects to a
+restricted WebSocket relay. See [UNAPI-WASM.md](UNAPI-WASM.md) for setup and
+security details.
 
 ## Server-hosted media
 

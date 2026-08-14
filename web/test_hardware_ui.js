@@ -18,14 +18,21 @@ assert.strictEqual(state.getInputDevice(), INPUT_MOUSE);
 assert.throws(() => normalizeInputDevice('lightpen'), /unsupported/);
 
 assert.deepStrictEqual(
-  state.setExtensions(['Sunrise IDE', 'Sunrise IDE', 'MSX TCP/IP UNAPI']),
-  ['Sunrise IDE', 'MSX TCP/IP UNAPI']
+  state.setPortExtensions(['MSX TCP/IP UNAPI', 'MSX TCP/IP UNAPI']),
+  ['MSX TCP/IP UNAPI']
+);
+assert.strictEqual(state.cartridgeSlotAvailable(0), true);
+assert.strictEqual(state.cartridgeSlotAvailable(1), true);
+
+assert.deepStrictEqual(
+  state.setCartridgeExtensions(['SD Mapper V2', 'SD Mapper V2']),
+  ['SD Mapper V2']
 );
 assert.strictEqual(state.cartridgeSlotAvailable(0), true);
 assert.strictEqual(state.cartridgeSlotAvailable(1), false);
-assert.strictEqual(state.cartridgeSlotOwner(1), 'Sunrise IDE');
+assert.strictEqual(state.cartridgeSlotOwner(1), 'SD Mapper V2');
 
-state.setExtensions([]);
+state.setCartridgeExtensions([]);
 assert.strictEqual(state.cartridgeSlotAvailable(1), true);
 assert.throws(() => state.cartridgeSlotAvailable(2), /unsupported/);
 
