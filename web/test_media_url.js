@@ -1,7 +1,11 @@
 'use strict';
 
 const assert = require('assert');
-const { parseStartupMedia, filenameFromUrl } = require('./media-url.js');
+const {
+  parseStartupMedia,
+  resolveStartupExtensions,
+  filenameFromUrl,
+} = require('./media-url.js');
 
 const base = 'https://example.test/1983/';
 
@@ -13,7 +17,11 @@ assert.deepStrictEqual(media, {
   disk: 'https://example.test/1983/media/thisdisk.dsk',
   cartridge: null,
   cartridge2: null,
+  sdA: null,
+  sdB: null,
+  extensions: null,
   autorun: 'disc.bas',
+  sdMode: null,
 });
 
 media = parseStartupMedia(
@@ -40,8 +48,47 @@ assert.deepStrictEqual(parseStartupMedia('?theme=default', base), {
   disk: null,
   cartridge: null,
   cartridge2: null,
+  sdA: null,
+  sdB: null,
+  extensions: null,
   autorun: null,
+  sdMode: null,
 });
+
+media = parseStartupMedia(
+  '?extensions=SDMAPPER%2Cunapi%2Cunapi' +
+  '&sda=media%2Fsystem.img&sdb=media%2Fdata.img' +
+  '&sdmode=readwrite&disk=media%2FGEOBENCH.DSK',
+  base
+);
+assert.deepStrictEqual(media, {
+  disk: 'https://example.test/1983/media/GEOBENCH.DSK',
+  cartridge: null,
+  cartridge2: null,
+  sdA: 'https://example.test/1983/media/system.img',
+  sdB: 'https://example.test/1983/media/data.img',
+  extensions: ['sdmapper', 'unapi'],
+  autorun: null,
+  sdMode: 'readwrite',
+});
+assert.deepStrictEqual(
+  resolveStartupExtensions(media, { sdMapper: false, unapi: false }),
+  { sdMapper: true, unapi: true }
+);
+
+media = parseStartupMedia('?sda=media%2Fsystem.img', base);
+assert.deepStrictEqual(
+  resolveStartupExtensions(media, { sdMapper: false, unapi: true }),
+  { sdMapper: true, unapi: true },
+  'an SD image implies SD Mapper without replacing stored UNAPI state'
+);
+
+media = parseStartupMedia('?extensions=unapi', base);
+assert.deepStrictEqual(
+  resolveStartupExtensions(media, { sdMapper: true, unapi: false }),
+  { sdMapper: false, unapi: true },
+  'an explicit extensions list overrides stored extension state'
+);
 
 assert.throws(
   () => parseStartupMedia('?disk=file%3A%2F%2F%2Ftmp%2Fprivate.dsk', base),
@@ -54,6 +101,22 @@ assert.throws(
 assert.throws(
   () => parseStartupMedia('?disk=game.dsk&autorun=bad%22name', base),
   /unsupported characters/
+);
+assert.throws(
+  () => parseStartupMedia('?extensions=sdmapper%2Cunknown', base),
+  /unsupported extension/
+);
+assert.throws(
+  () => parseStartupMedia('?sda=file%3A%2F%2F%2Ftmp%2Fprivate.img', base),
+  /HTTP or HTTPS/
+);
+assert.throws(
+  () => parseStartupMedia('?sdmode=readwrite', base),
+  /requires an sda or sdb/
+);
+assert.throws(
+  () => parseStartupMedia('?sda=system.img&sdmode=unsafe', base),
+  /readonly or readwrite/
 );
 
 console.log('server media URL tests passed');

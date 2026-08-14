@@ -77,22 +77,40 @@ cannot open arbitrary TCP or UDP sockets, so the browser bridge connects to a
 restricted WebSocket relay. See [UNAPI-WASM.md](UNAPI-WASM.md) for setup and
 security details.
 
-## Server-hosted media
+## URL-configured hardware and media
 
-Media URLs are resolved relative to the page URL. Two cartridge ROMs, a floppy
-disk and a cassette can be mounted at startup:
+Media URLs are resolved relative to the page URL. Two cartridge ROMs, a Drive A
+floppy, and both SD Mapper cards can be mounted at startup:
 
-    http://localhost:8080/?cartridge=media/game.rom
-    http://localhost:8080/?cartridge=media/game.rom&cartridge2=media/tool.rom
-    http://localhost:8080/?disk=media/thisdisk.dsk
-    http://localhost:8080/?disk=media/thisdisk.dsk&autorun=load.bas
+    http://127.0.0.1:1983/?cartridge=media/game.rom
+    http://127.0.0.1:1983/?cartridge=media/game.rom&cartridge2=media/tool.rom
+    http://127.0.0.1:1983/?disk=media/thisdisk.dsk
+    http://127.0.0.1:1983/?disk=media/thisdisk.dsk&autorun=load.bas
 
 A startup disk automatically selects the NMS 8250 profile because the default
-C-BIOS MSX1 profile has no floppy controller.
+C-BIOS MSX1 profile has no floppy controller. Drive A is mounted before one
+automatic reset, so a bootable disk starts without an `autorun` parameter.
+
+The `extensions` parameter accepts `sdmapper`, `unapi`, or both as a
+comma-separated list. An explicit list overrides stored extension toggles for
+that page load without rewriting browser storage. `sda` and `sdb` load the two
+SD Mapper cards and implicitly enable the mapper. URL-loaded SD images are
+read-only unless `sdmode=readwrite` is supplied; writable changes remain local
+and use the existing download-on-eject path.
+
+For example, this enables UNAPI, mounts an SD image in SD A, implicitly enables
+SD Mapper V2, mounts the GeoBench floppy, and resets with everything present:
+
+    http://127.0.0.1:1983/?extensions=unapi&sda=media/GBMSX.IMG&disk=media/GEOBENCH.DSK
+
+Use `extensions=sdmapper,unapi` when enabling both without an SD image. The
+existing `unapiRelay` parameter can still select a non-default relay endpoint.
+If SD A contains a bootable operating system it may take priority over Drive A;
+an empty or non-bootable SD card lets Nextor continue to the floppy.
 
 Parameter values containing spaces or other reserved characters must be URL
 encoded. Media must be available over HTTP or HTTPS. Cross-origin servers must
 permit the request with CORS headers.
 
-The fetched image lives in the browser's in-memory filesystem. Guest writes
-are not uploaded to the server.
+Fetched images live in the browser's in-memory filesystem. Guest writes are not
+uploaded to the server.
