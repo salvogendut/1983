@@ -15,6 +15,11 @@ assert.match(html, /SD Mapper V2/);
 assert.match(html, /Embedded Nextor 2\.1\.1/);
 assert.match(html, /MSX TCP\/IP UNAPI/);
 assert.match(html, /Port-mapped \/ no cartridge slot/);
+assert.match(
+  html,
+  /<input type="checkbox" id="pixelToggle">/,
+  'Sharp pixels must be disabled by default'
+);
 assert.doesNotMatch(
   html.slice(html.indexOf('id="expansionPanel"'), html.indexOf('<main')),
   /accept="[^"]*\.rom/i,
