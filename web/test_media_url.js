@@ -14,6 +14,7 @@ let media = parseStartupMedia(
   base
 );
 assert.deepStrictEqual(media, {
+  machine: null,
   disk: 'https://example.test/1983/media/thisdisk.dsk',
   cartridge: null,
   cartridge2: null,
@@ -45,6 +46,7 @@ assert.strictEqual(
   'Bomb Jack.dsk'
 );
 assert.deepStrictEqual(parseStartupMedia('?theme=default', base), {
+  machine: null,
   disk: null,
   cartridge: null,
   cartridge2: null,
@@ -62,6 +64,7 @@ media = parseStartupMedia(
   base
 );
 assert.deepStrictEqual(media, {
+  machine: null,
   disk: 'https://example.test/1983/media/GEOBENCH.DSK',
   cartridge: null,
   cartridge2: null,
@@ -88,6 +91,15 @@ assert.deepStrictEqual(
   resolveStartupExtensions(media, { sdMapper: true, unapi: false }),
   { sdMapper: false, unapi: true },
   'an explicit extensions list overrides stored extension state'
+);
+
+assert.strictEqual(parseStartupMedia('?machine=msx1', base).machine, 0);
+assert.strictEqual(parseStartupMedia('?machine=CBIOS', base).machine, 0);
+assert.strictEqual(parseStartupMedia('?machine=nms8250', base).machine, 1);
+assert.strictEqual(parseStartupMedia('?machine=MSX2', base).machine, 1);
+assert.throws(
+  () => parseStartupMedia('?machine=turbor', base),
+  /machine must be msx1 or nms8250/
 );
 
 assert.throws(
