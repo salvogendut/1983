@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #ifdef _WIN32
@@ -112,9 +111,9 @@ static bool geometry_from_size(u64 sectors, unsigned *tracks,
     return false;
 }
 
-static bool inspect_raw_image(FILE *file, FloppyOffset size,
-                              unsigned *tracks, unsigned *sides,
-                              unsigned *sectors_per_track) {
+static bool inspect_image(FILE *file, FloppyOffset size,
+                          unsigned *tracks, unsigned *sides,
+                          unsigned *sectors_per_track) {
     u8 boot[FLOPPY_SECTOR_SIZE];
     u64 sectors;
 
@@ -132,124 +131,6 @@ static bool inspect_raw_image(FILE *file, FloppyOffset size,
         sectors, tracks, sides, sectors_per_track);
 }
 
-static void free_track_info(FloppyImage *image) {
-    if (!image)
-        return;
-    free(image->track_info);
-    image->track_info = NULL;
-}
-
-static bool inspect_cpc_dsk(FILE *file, FloppyOffset size,
-                            unsigned *tracks, unsigned *sides,
-                            unsigned *sectors_per_track,
-                            FloppyTrackInfo **track_info,
-                            bool *recognized) {
-    static const char standard_magic[] = "MV - CPCEMU Disk-File\r\nDisk-Info\r\n";
-    static const char extended_magic[] = "EXTENDED CPC DSK File\r\nDisk-Info\r\n";
-    u8 disk_header[256];
-    FloppyTrackInfo *info;
-    FloppyOffset track_offset = 256;
-    unsigned track_count;
-    unsigned standard_track_size;
-    unsigned maximum_sectors = 0;
-    bool extended;
-
-    *recognized = false;
-    if (size < (FloppyOffset)sizeof(disk_header) ||
-        FLOPPY_FSEEK(file, 0, SEEK_SET) != 0 ||
-        fread(disk_header, 1, sizeof(disk_header), file) !=
-            sizeof(disk_header))
-        return false;
-    if (memcmp(disk_header, extended_magic,
-               sizeof(extended_magic) - 1) == 0)
-        extended = true;
-    else if (memcmp(disk_header, standard_magic,
-                    sizeof(standard_magic) - 1) == 0)
-        extended = false;
-    else
-        return false;
-    *recognized = true;
-
-    *tracks = disk_header[0x30];
-    *sides = disk_header[0x31];
-    if (*tracks < 1 || *tracks > 255 ||
-        *sides < 1 || *sides > 2)
-        return false;
-    track_count = *tracks * *sides;
-    if (extended && track_count > 204)
-        return false;
-    standard_track_size = read_le16(disk_header + 0x32);
-    if (!extended && standard_track_size < 256)
-        return false;
-
-    info = calloc(track_count, sizeof(*info));
-    if (!info)
-        return false;
-    for (unsigned index = 0; index < track_count; ++index) {
-        u8 header[256];
-        unsigned track_size = extended
-            ? (unsigned)disk_header[0x34 + index] * 256u
-            : standard_track_size;
-        unsigned data_offset = 256;
-        unsigned sector_count;
-
-        if (!track_size)
-            continue;
-        if (track_size < sizeof(header) ||
-            track_offset > size - (FloppyOffset)track_size ||
-            FLOPPY_FSEEK(file, track_offset, SEEK_SET) != 0 ||
-            fread(header, 1, sizeof(header), file) != sizeof(header) ||
-            memcmp(header, "Track-Info\r\n", 12) != 0) {
-            free(info);
-            return false;
-        }
-        sector_count = header[0x15];
-        if (sector_count > FLOPPY_MAX_SECTORS_PER_TRACK) {
-            free(info);
-            return false;
-        }
-        info[index].sector_count = sector_count;
-        if (sector_count > maximum_sectors)
-            maximum_sectors = sector_count;
-        for (unsigned sector = 0; sector < sector_count; ++sector) {
-            const u8 *descriptor = header + 0x18 + sector * 8;
-            unsigned sector_size;
-
-            if (descriptor[3] > 6) {
-                free(info);
-                return false;
-            }
-            sector_size = extended
-                ? read_le16(descriptor + 6)
-                : (128u << descriptor[3]);
-            if (!sector_size)
-                sector_size = 128u << descriptor[3];
-            /* The current WD2793 data path models MSX-sized sectors. */
-            if (sector_size != FLOPPY_SECTOR_SIZE ||
-                data_offset > track_size - sector_size) {
-                free(info);
-                return false;
-            }
-            info[index].sectors[sector].id = descriptor[2];
-            info[index].sectors[sector].size_code = descriptor[3];
-            info[index].sectors[sector].st1 = descriptor[4];
-            info[index].sectors[sector].st2 = descriptor[5];
-            info[index].sectors[sector].size = sector_size;
-            info[index].sectors[sector].offset =
-                (u64)track_offset + data_offset;
-            data_offset += sector_size;
-        }
-        track_offset += track_size;
-    }
-    if (!maximum_sectors) {
-        free(info);
-        return false;
-    }
-    *sectors_per_track = maximum_sectors;
-    *track_info = info;
-    return true;
-}
-
 void floppy_image_init(FloppyImage *image) {
     if (!image)
         return;
@@ -263,7 +144,6 @@ void floppy_image_destroy(FloppyImage *image) {
         fclose(image->file);
         image->file = NULL;
     }
-    free_track_info(image);
     memset(image, 0, sizeof(*image));
 }
 
@@ -274,9 +154,6 @@ int floppy_image_mount(FloppyImage *image, const char *path,
     unsigned tracks;
     unsigned sides;
     unsigned sectors_per_track;
-    FloppyImageFormat format;
-    FloppyTrackInfo *track_info = NULL;
-    bool cpc_recognized;
 
     if (!image || !path || !path[0] ||
         (mode != FLOPPY_IMAGE_READ_ONLY &&
@@ -296,44 +173,28 @@ int floppy_image_mount(FloppyImage *image, const char *path,
     }
     errno = 0;
     if (FLOPPY_FSEEK(file, 0, SEEK_END) != 0 ||
-        (size = FLOPPY_FTELL(file)) < 0) {
+        (size = FLOPPY_FTELL(file)) < 0 ||
+        !inspect_image(file, size, &tracks, &sides,
+                       &sectors_per_track)) {
         int saved_errno = errno;
 
         fclose(file);
         floppy_host_error(
             image, false,
-            "Could not inspect floppy image%s%s",
+            "Unsupported raw DSK geometry%s%s",
             saved_errno ? ": " : "",
             saved_errno ? strerror(saved_errno) : "");
         return -1;
     }
-    if (inspect_cpc_dsk(file, size, &tracks, &sides,
-                        &sectors_per_track, &track_info,
-                        &cpc_recognized)) {
-        format = FLOPPY_FORMAT_CPC_DSK;
-    } else if (!cpc_recognized &&
-               inspect_raw_image(file, size, &tracks, &sides,
-                                 &sectors_per_track)) {
-        format = FLOPPY_FORMAT_RAW;
-    } else {
-        fclose(file);
-        floppy_host_error(
-            image, false,
-            "Unsupported floppy image (expected raw MSX or CPCEMU DSK)");
-        return -1;
-    }
     if (image->file && floppy_image_eject(image) != 0) {
         fclose(file);
-        free(track_info);
         return -1;
     }
     image->file = file;
     image->mode = mode;
-    image->format = format;
     image->tracks = tracks;
     image->sides = sides;
     image->sectors_per_track = sectors_per_track;
-    image->track_info = track_info;
     image->dirty = false;
     image->activity = false;
     image->disk_changed = true;
@@ -370,11 +231,9 @@ int floppy_image_eject(FloppyImage *image) {
     }
     image->file = NULL;
     image->mode = FLOPPY_IMAGE_READ_ONLY;
-    image->format = FLOPPY_FORMAT_RAW;
     image->tracks = 0;
     image->sides = 0;
     image->sectors_per_track = 0;
-    free_track_info(image);
     image->dirty = false;
     image->activity = false;
     image->disk_changed = true;
@@ -424,121 +283,19 @@ bool floppy_image_take_disk_changed(FloppyImage *image) {
     return changed;
 }
 
-static const FloppySectorInfo *find_sector(const FloppyImage *image,
-                                           unsigned track,
-                                           unsigned side,
-                                           unsigned sector) {
-    const FloppyTrackInfo *info;
-
-    if (!image || !image->file || image->format != FLOPPY_FORMAT_CPC_DSK ||
-        track >= image->tracks || side >= image->sides ||
-        !image->track_info)
-        return NULL;
-    info = &image->track_info[track * image->sides + side];
-    for (unsigned index = 0; index < info->sector_count; ++index) {
-        if (info->sectors[index].id == sector)
-            return &info->sectors[index];
-    }
-    return NULL;
-}
-
 static bool sector_offset(const FloppyImage *image, unsigned track,
                           unsigned side, unsigned sector,
                           FloppyOffset *offset) {
     u64 logical_sector;
-    const FloppySectorInfo *info;
 
     if (!image || !image->file ||
-        track >= image->tracks || side >= image->sides)
-        return false;
-    if (image->format == FLOPPY_FORMAT_CPC_DSK) {
-        info = find_sector(image, track, side, sector);
-        if (!info || info->size != FLOPPY_SECTOR_SIZE)
-            return false;
-        *offset = (FloppyOffset)info->offset;
-        return true;
-    }
-    if (sector < 1 || sector > image->sectors_per_track)
+        track >= image->tracks || side >= image->sides ||
+        sector < 1 || sector > image->sectors_per_track)
         return false;
     logical_sector =
         ((u64)track * image->sides + side) *
         image->sectors_per_track + (sector - 1);
     *offset = (FloppyOffset)(logical_sector * FLOPPY_SECTOR_SIZE);
-    return true;
-}
-
-bool floppy_image_first_sector(const FloppyImage *image,
-                               unsigned track, unsigned side,
-                               unsigned *sector) {
-    if (!image || !sector || !image->file ||
-        track >= image->tracks || side >= image->sides)
-        return false;
-    if (image->format == FLOPPY_FORMAT_CPC_DSK) {
-        const FloppyTrackInfo *info =
-            &image->track_info[track * image->sides + side];
-
-        if (!info->sector_count)
-            return false;
-        *sector = info->sectors[0].id;
-        return true;
-    }
-    *sector = 1;
-    return true;
-}
-
-bool floppy_image_next_sector(const FloppyImage *image,
-                              unsigned track, unsigned side,
-                              unsigned sector, unsigned *next_sector) {
-    if (!image || !next_sector || !image->file ||
-        track >= image->tracks || side >= image->sides)
-        return false;
-    if (image->format == FLOPPY_FORMAT_CPC_DSK) {
-        const FloppyTrackInfo *info =
-            &image->track_info[track * image->sides + side];
-
-        for (unsigned index = 0; index + 1 < info->sector_count; ++index) {
-            if (info->sectors[index].id == sector) {
-                *next_sector = info->sectors[index + 1].id;
-                return true;
-            }
-        }
-        return false;
-    }
-    if (sector < 1 || sector >= image->sectors_per_track)
-        return false;
-    *next_sector = sector + 1;
-    return true;
-}
-
-bool floppy_image_sector_info(const FloppyImage *image,
-                              unsigned track, unsigned side,
-                              unsigned sector, u8 *size_code,
-                              u8 *st1, u8 *st2) {
-    const FloppySectorInfo *info;
-
-    if (!image || !image->file || track >= image->tracks ||
-        side >= image->sides)
-        return false;
-    if (image->format == FLOPPY_FORMAT_CPC_DSK) {
-        info = find_sector(image, track, side, sector);
-        if (!info)
-            return false;
-        if (size_code)
-            *size_code = info->size_code;
-        if (st1)
-            *st1 = info->st1;
-        if (st2)
-            *st2 = info->st2;
-        return true;
-    }
-    if (sector < 1 || sector > image->sectors_per_track)
-        return false;
-    if (size_code)
-        *size_code = 2;
-    if (st1)
-        *st1 = 0;
-    if (st2)
-        *st2 = 0;
     return true;
 }
 

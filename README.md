@@ -16,7 +16,7 @@ and staying as multiplatform as SDL3 allows.
 > TMS9918-family/V9938 video, AY/YM PSG audio, the international keyboard
 > matrix, dual cartridge slots, expanded slots, memory mapper, RTC, and
 > battery-backed CMOS. Native support covers catalogue-configured Philips
-> WD2793 floppy controllers with raw MSX and CPCEMU DSK containers, the
+> WD2793 floppy controllers with raw MSX DSK images, the
 > external Microsol CDX-2 cartridge, Sunrise IDE disks, and the
 > SD Mapper V2 and MegaFlashROM
 > SCC+ SD cartridges — the official Nextor kernels boot GeoBench and other

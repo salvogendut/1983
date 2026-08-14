@@ -1637,7 +1637,7 @@ static void open_cassette_dialog(Overlay *overlay) {
 
 static void open_drive_a_dialog(Overlay *overlay) {
     static const SDL_DialogFileFilter filters[] = {
-        { "MSX raw / CPCEMU floppy images", "dsk;DSK" },
+        { "Raw MSX floppy images", "dsk;DSK" },
         { "All files", "*" },
     };
     const char *location =
@@ -1662,7 +1662,7 @@ static void open_drive_a_dialog(Overlay *overlay) {
 
 static void open_drive_b_dialog(Overlay *overlay) {
     static const SDL_DialogFileFilter filters[] = {
-        { "MSX raw / CPCEMU floppy images", "dsk;DSK" },
+        { "Raw MSX floppy images", "dsk;DSK" },
         { "All files", "*" },
     };
     const char *location =

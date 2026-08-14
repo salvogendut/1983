@@ -53,6 +53,9 @@ static u8 status_register(const Wd2793 *fdc) {
     if (fdc->last_type_one) {
         if (fdc->physical_track == 0)
             status |= WD2793_STATUS_TRACK_ZERO;
+        if (floppy_image_mounted(image) && fdc->motor &&
+            fdc->index_cycles < WD2793_INDEX_PULSE_CYCLES)
+            status |= WD2793_STATUS_INDEX;
     } else if (fdc->drq) {
         status |= WD2793_STATUS_DRQ;
     }
@@ -104,17 +107,14 @@ static bool begin_write_sector(Wd2793 *fdc) {
 
 static bool continue_multiple(Wd2793 *fdc) {
     FloppyImage *image = selected_image(fdc);
-    unsigned next_sector;
 
     if (!fdc->multiple || !image)
         return false;
-    if (!floppy_image_next_sector(
-            image, fdc->physical_track, fdc->side_reg & 1,
-            fdc->sector, &next_sector)) {
+    ++fdc->sector;
+    if (fdc->sector > image->sectors_per_track) {
         command_error(fdc, WD2793_STATUS_RECORD_MISSING);
         return true;
     }
-    fdc->sector = (u8)next_sector;
     if (fdc->transfer == WD2793_TRANSFER_READ)
         (void)load_sector(fdc);
     else
@@ -207,29 +207,12 @@ static void execute_command(Wd2793 *fdc, u8 command) {
                 command_error(fdc, 0);
                 break;
             }
-            {
-                unsigned sector;
-                u8 size_code;
-
-                if (!floppy_image_first_sector(
-                        selected_image_const(fdc), fdc->physical_track,
-                        fdc->side_reg & 1, &sector) ||
-                    !floppy_image_sector_info(
-                        selected_image_const(fdc), fdc->physical_track,
-                        fdc->side_reg & 1, sector, &size_code,
-                        NULL, NULL)) {
-                    command_error(fdc, WD2793_STATUS_RECORD_MISSING);
-                    break;
-                }
             fdc->transfer_data[0] = fdc->physical_track;
             fdc->transfer_data[1] = fdc->side_reg & 1;
-                fdc->transfer_data[2] = (u8)sector;
-                fdc->transfer_data[3] = size_code;
-                /* WD2793 Read Address returns the address-field CRC here,
-                 * not CPCEMU's NEC-style ST1/ST2 metadata. */
-                fdc->transfer_data[4] = 0;
-                fdc->transfer_data[5] = 0;
-            }
+            fdc->transfer_data[2] = fdc->sector ? fdc->sector : 1;
+            fdc->transfer_data[3] = 2;
+            fdc->transfer_data[4] = 0;
+            fdc->transfer_data[5] = 0;
             fdc->transfer = WD2793_TRANSFER_READ;
             fdc->transfer_size = 6;
             fdc->transfer_offset = 0;
@@ -313,7 +296,17 @@ void wd2793_reset(Wd2793 *fdc) {
     fdc->last_type_one = true;
     fdc->multiple = false;
     fdc->motor = false;
+    fdc->index_cycles = 0;
     end_transfer(fdc, false);
+}
+
+void wd2793_advance(Wd2793 *fdc, unsigned cycles) {
+    u64 phase;
+
+    if (!fdc || !fdc->motor || !cycles)
+        return;
+    phase = (u64)fdc->index_cycles + cycles;
+    fdc->index_cycles = (u32)(phase % WD2793_INDEX_PERIOD_CYCLES);
 }
 
 bool wd2793_handles_address(u16 address) {
