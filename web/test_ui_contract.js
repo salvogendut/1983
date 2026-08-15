@@ -19,7 +19,7 @@ assert.match(html, /id="unapiCertificate"[^>]*>Trust certificate<\/button>/);
 assert.match(html, /Approve its certificate, then return here/);
 assert.match(
   html,
-  /For details see <a href="https:\/\/github\.com\/salvogendut\/1983-msx-unapi-relay" target="_blank" rel="noopener noreferrer">1983-msx-unapi-relay<\/a>/
+  /For details see <a href="https:\/\/github\.com\/salvogendut\/ws-unapi-relay" target="_blank" rel="noopener noreferrer">ws-unapi-relay<\/a>/
 );
 assert.match(app, /relayHealthEndpoint\(unapiEndpoint\)/);
 assert.match(app, /window\.open\(unapiCertificateUrl, "_blank", "noopener,noreferrer"\)/);

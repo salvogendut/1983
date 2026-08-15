@@ -3,6 +3,9 @@
 const assert = require("node:assert/strict");
 const P = require("./unapi-relay-protocol.js");
 
+assert.equal(globalThis.JSWsUnapiRelayProtocol, P);
+assert.equal(globalThis.JS1983UnapiProtocol, P);
+
 const payload = P.concat(new Uint8Array([7]), P.u16(2323), P.encodeText("host"));
 const encoded = P.encode(P.Type.TCP_OPEN, 3, 0x1234, payload);
 const decoded = P.decode(encoded);
