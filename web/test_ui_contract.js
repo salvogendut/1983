@@ -17,6 +17,10 @@ assert.match(html, /MSX TCP\/IP UNAPI/);
 assert.match(html, /Port-mapped \/ no cartridge slot/);
 assert.match(html, /id="unapiCertificate"[^>]*>Trust certificate<\/button>/);
 assert.match(html, /Approve its certificate, then return here/);
+assert.match(
+  html,
+  /For details see <a href="https:\/\/github\.com\/salvogendut\/1983-msx-unapi-relay" target="_blank" rel="noopener noreferrer">1983-msx-unapi-relay<\/a>/
+);
 assert.match(app, /relayHealthEndpoint\(unapiEndpoint\)/);
 assert.match(app, /window\.open\(unapiCertificateUrl, "_blank", "noopener,noreferrer"\)/);
 assert.match(
