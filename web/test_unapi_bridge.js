@@ -2,7 +2,20 @@
 
 const assert = require("node:assert/strict");
 const P = require("./unapi-relay-protocol.js");
-const { UnapiBridge } = require("./unapi-bridge.js");
+const { UnapiBridge, relayHealthEndpoint } = require("./unapi-bridge.js");
+
+assert.equal(
+  relayHealthEndpoint("wss://relay.example:8443/unapi?token=secret#fragment"),
+  "https://relay.example:8443/healthz"
+);
+assert.equal(
+  relayHealthEndpoint("ws://127.0.0.1:1983/custom/path"),
+  "http://127.0.0.1:1983/healthz"
+);
+assert.throws(
+  () => relayHealthEndpoint("https://relay.example/unapi"),
+  /WS or WSS/
+);
 
 class FakeWebSocket {
   static instances = [];

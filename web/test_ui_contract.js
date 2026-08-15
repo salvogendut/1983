@@ -15,6 +15,10 @@ assert.match(html, /SD Mapper V2/);
 assert.match(html, /Embedded Nextor 2\.1\.1/);
 assert.match(html, /MSX TCP\/IP UNAPI/);
 assert.match(html, /Port-mapped \/ no cartridge slot/);
+assert.match(html, /id="unapiCertificate"[^>]*>Trust certificate<\/button>/);
+assert.match(html, /Approve its certificate, then return here/);
+assert.match(app, /relayHealthEndpoint\(unapiEndpoint\)/);
+assert.match(app, /window\.open\(unapiCertificateUrl, "_blank", "noopener,noreferrer"\)/);
 assert.match(
   html,
   /<input type="checkbox" id="pixelToggle">/,
