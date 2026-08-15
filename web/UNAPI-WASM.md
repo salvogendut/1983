@@ -53,6 +53,12 @@ The browser initially proposes the same-origin `ws(s)://host/unapi` endpoint,
 which is convenient when a reverse proxy serves the frontend and relay from
 one origin. An HTTPS frontend must use a WSS relay.
 
+When a private WSS relay uses a locally issued certificate, the AUX panel's
+**Trust certificate** button opens that relay's token-free `/healthz` page in a
+new tab. Approve or import the certificate there and return to 1983; the relay
+connection retries automatically. Browser JavaScript cannot bypass TLS
+certificate validation itself.
+
 ## Relay policy
 
 The relay is restrictive by default:
