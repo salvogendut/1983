@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "types.h"
 
@@ -89,3 +90,8 @@ void vdp_end_frame(MsxVdp *vdp);
 void vdp_render(MsxVdp *vdp);
 /* SCREEN 6 alternates its two border colours on high-resolution dots. */
 u32  vdp_border_colour(const MsxVdp *vdp, unsigned high_res_phase);
+
+/* Decode a SCREEN 0 text-mode name table into ASCII (40x24) on `out`.
+ * Printable character codes 0x20-0x7e are emitted directly; anything else
+ * becomes '.'. Prints a note and returns when the VDP is not in text mode. */
+void vdp_dump_screen_text(const MsxVdp *vdp, FILE *out);

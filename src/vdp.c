@@ -1191,8 +1191,67 @@ static void render_text(MsxVdp *vdp, unsigned first_y,
     }
 }
 
+void vdp_dump_screen_text(const MsxVdp *vdp, FILE *out) {
+    unsigned name_mask;
+    unsigned name_base;
+    unsigned width;
+    char line[41];
+    u8 mode;
+
+    if (!out)
+        return;
+    if (!vdp) {
+        fprintf(out, "[no VDP]\n");
+        return;
+    }
+    mode = display_mode(vdp);
+    if (vdp->registers[1] & 0x10) {
+        bool bitmap = vdp->type == MSX_VDP_V9938 &&
+                      (mode == 0x0c || mode == 0x10 ||
+                       mode == 0x14 || mode == 0x1c);
+
+        if (bitmap) {
+            fprintf(out, "[bitmap mode - not character-based]\n");
+            return;
+        }
+        width = 40;
+        fprintf(out, "[MSX text screen 40x24]\n");
+    } else if (mode == 0x00) {
+        width = 32;
+        fprintf(out, "[MSX SCREEN 1 (32x24)]\n");
+    } else if (mode == 0x04 || mode == 0x08) {
+        fprintf(out, "[SCREEN 2 bitmap - not character-based]\n");
+        return;
+    } else if (mode == 0x02) {
+        fprintf(out, "[multicolour mode - not character-based]\n");
+        return;
+    } else {
+        fprintf(out, "[unsupported display mode 0x%02X]\n", mode);
+        return;
+    }
+
+    name_mask = vdp->type == MSX_VDP_V9938 ? 0x7f : 0x0f;
+    name_base = (unsigned)(vdp->registers[2] & name_mask) << 10;
+    for (unsigned row = 0; row < 24; ++row) {
+        unsigned end = width;
+
+        for (unsigned column = 0; column < width; ++column) {
+            u8 name = vdp->vram[wrap_address(
+                vdp, name_base + row * width + column)];
+
+            line[column] =
+                name >= 0x20 && name <= 0x7e ? (char)name : '.';
+        }
+        while (end > 0 &&
+               (line[end - 1] == '.' || line[end - 1] == ' '))
+            --end;
+        line[end] = '\0';
+        fprintf(out, "%s\n", line);
+    }
+}
+
 static void render_multicolour(MsxVdp *vdp, unsigned first_y,
-                               unsigned limit_y) {
+                                unsigned limit_y) {
     unsigned name_mask =
         vdp->type == MSX_VDP_V9938 ? 0x7f : 0x0f;
     unsigned pattern_mask =
