@@ -39,10 +39,11 @@ firmware choice in the per-user `1983.conf`.
  --unapi                   optional openMSXnet host bridge on NMS 8250
  --rs232                   RS-232C interface on ports 80h-87h (PTY /tmp/1983-rs232)
  --rs232-rom PATH          user-provided RS-232C EXTBIO/driver ROM
- --headless --unthrottled --exit-after N   deterministic runs
- --gif-out FILE            capture GIF on startup
- --screenshot              (see Controls / F4)
- ```
+  --headless --unthrottled --exit-after N   deterministic runs
+  --dump-screen-text N      run N frames, print the text screen as ASCII
+  --gif-out FILE            capture GIF on startup
+  --screenshot              (see Controls / F4)
+  ```
 
 Run `./1983 --help` for the complete list.
 

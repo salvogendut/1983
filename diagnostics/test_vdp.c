@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <stddef.h>
+#include <string.h>
 
 #define SPRITE_ATTRIBUTE_BASE 0x1b00u
 #define SPRITE_PATTERN_BASE   0x3000u
@@ -650,6 +651,56 @@ static void test_graphics_2_and_multicolour_mode_bits(void) {
     assert(pixel(&vdp, 3, 0) == COLOUR_WHITE);
     assert(pixel(&vdp, 4, 0) == COLOUR_DK_RED);
     assert(pixel(&vdp, 7, 0) == COLOUR_DK_RED);
+}
+
+static void test_dump_screen_text(void) {
+    MsxVdp vdp;
+    FILE *stream = tmpfile();
+    char buffer[1024];
+    long length;
+
+    assert(stream);
+
+    /* SCREEN 0 text mode: 40-column name table -> ASCII. */
+    vdp_init(&vdp);
+    vdp.registers[1] = 0x50;
+    vdp.vram[0] = 'H';
+    vdp.vram[1] = 'E';
+    vdp.vram[2] = 'L';
+    vdp.vram[3] = 'L';
+    vdp.vram[4] = 'O';
+    vdp.vram[5] = 0x01;   /* non-printable -> '.' */
+    vdp.vram[6] = 'W';
+    vdp.vram[7] = 'O';
+    vdp.vram[8] = 'R';
+    vdp.vram[9] = 'L';
+    vdp.vram[10] = 'D';
+    rewind(stream);
+    vdp_dump_screen_text(&vdp, stream);
+    rewind(stream);
+    length = (long)fread(buffer, 1, sizeof(buffer) - 1, stream);
+    buffer[length] = '\0';
+    assert(strstr(buffer, "[MSX text screen 40x24]") != NULL);
+    assert(strstr(buffer, "HELLO.WORLD") != NULL);
+
+    /* SCREEN 1 (Graphic 1) mode: 32-column name table. */
+    vdp_init(&vdp);
+    vdp.registers[0] = 0x00;
+    vdp.registers[1] = 0xe0;
+    vdp.vram[0] = 'A';
+    vdp.vram[31] = 'B';
+    vdp.vram[32] = 'C';   /* row 1, column 0 */
+    rewind(stream);
+    vdp_dump_screen_text(&vdp, stream);
+    rewind(stream);
+    length = (long)fread(buffer, 1, sizeof(buffer) - 1, stream);
+    buffer[length] = '\0';
+    assert(strstr(buffer, "[MSX SCREEN 1 (32x24)]") != NULL);
+    assert(strstr(buffer, "A") != NULL);
+    assert(strstr(buffer, "B\n") != NULL);
+    assert(strstr(buffer, "\nC\n") != NULL);
+
+    fclose(stream);
 }
 
 static void test_backdrop_and_text_background_colours(void) {
@@ -1879,6 +1930,7 @@ int main(void) {
     test_v9938_sprite_mode2_display_formats();
     test_graphics_2_and_multicolour_mode_bits();
     test_backdrop_and_text_background_colours();
+    test_dump_screen_text();
     test_v9938_registers_and_status_selection();
     test_v9938_retrace_status();
     test_v9938_line_interrupt();

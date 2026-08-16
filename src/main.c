@@ -69,6 +69,7 @@ typedef struct {
     int rdf600;
     int scale;
     int exit_after;
+    int dump_screen_text;
     const char *paste_text;
     int paste_at;
     int paste_repeat;
@@ -264,6 +265,7 @@ static const char *usage =
     "  --paste-at N        start --paste-text at host frame N (default 60)\n"
     "  --paste-repeat N    requeue --paste-text every N frames (default 0)\n"
     "  --dump-ram A:N      print N guest RAM bytes from address A on exit\n"
+    "  --dump-screen-text N  run N frames, then print the text screen as ASCII\n"
     "  --gif-out PATH       record a GIF to PATH using the capture profile\n"
     "  --unthrottled       disable 50/60 Hz frame pacing\n"
     "  --dump-state        print CPU/bus/VDP state on exit\n"
@@ -363,6 +365,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
     cli->rdf600 = -1;
     cli->scale = -1;
     cli->exit_after = -1;
+    cli->dump_screen_text = -1;
     cli->paste_at = 60;
 
     for (int i = 1; i < argc; ++i) {
@@ -569,6 +572,12 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->exit_after =
                 parse_integer(argv[++i], 0, 1000000000, "--exit-after");
             if (cli->exit_after < 0)
+                return -1;
+        } else if (strcmp(argument, "--dump-screen-text") == 0) {
+            cli->dump_screen_text =
+                parse_integer(argv[++i], 0, 1000000000,
+                              "--dump-screen-text");
+            if (cli->dump_screen_text < 0)
                 return -1;
         } else {
             fprintf(stderr, "unknown option: %s\n", argument);
@@ -1824,6 +1833,9 @@ int main(int argc, char **argv) {
 
         if (cli.exit_after >= 0 && host_frame >= cli.exit_after)
             running = false;
+        if (cli.dump_screen_text >= 0 &&
+            host_frame >= cli.dump_screen_text)
+            running = false;
         if (!cli.unthrottled) {
             Uint64 frame_numerator;
             Uint64 frame_ns;
@@ -1882,6 +1894,8 @@ int main(int argc, char **argv) {
             }
         }
     }
+    if (cli.dump_screen_text >= 0)
+        vdp_dump_screen_text(&msx.vdp, stdout);
     if (cli.dump_state) {
         size_t nonzero_vram = 0;
         for (size_t i = 0; i < sizeof(msx.vdp.vram); ++i)
