@@ -222,12 +222,15 @@ ordering and safe image lifecycle. A Sunrise-configured image can be selected
 interactively or loaded from a server URL:
 
 ```text
-?machine=nms8250&ide=media/MSXSYMBOS.img
+?machine=nms8250&ide=media/MSXSYMBOS.img&idemode=readwrite
 ```
 
-Use `idemode=readwrite` only when changes should be downloaded on ejection. An
-SD Mapper-configured copy uses `sda=media/MSXSYMBOS-SD.img` and may add
-`sdmode=readwrite`. The optional headless WASM acceptance harness is:
+The reference SymZilla installation writes startup state, so it must use
+`idemode=readwrite`; the browser keeps those writes in memory and offers the
+updated copy for download on safe ejection. An SD Mapper-configured copy uses
+`sda=media/MSXSYMBOS-SD.img&sdmode=readwrite`. The optional headless WASM
+acceptance harness mounts its private in-memory copy read/write and verifies
+the actual SymbOS desktop rather than accepting any nonblank screen:
 
 ```sh
 make -C web check-wasm-symbos SYMBOS_IMAGE=/path/to/symbos.img
