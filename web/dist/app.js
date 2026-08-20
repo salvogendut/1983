@@ -28,6 +28,7 @@ const statusEl = $("status");
 const toastEl = $("toast");
 const ledPowerEl = $("ledPower");
 const ledAEl = $("ledA");
+const ledIdeEl = $("ledIde");
 const ledInputEl = $("ledInput");
 const ledAudioEl = $("ledAudio");
 const expansionButtonEl = $("expansion");
@@ -1764,8 +1765,12 @@ create1983().then(m => {
   function updateExpansionActivity() {
     if (m._poc_ide_activity()) {
       ideUi.led.classList.add("on");
+      ledIdeEl.classList.add("on");
       clearTimeout(ideLedTimer);
-      ideLedTimer = setTimeout(() => ideUi.led.classList.remove("on"), 120);
+      ideLedTimer = setTimeout(() => {
+        ideUi.led.classList.remove("on");
+        ledIdeEl.classList.remove("on");
+      }, 120);
     }
     const sdActivity = m._poc_sd_activity_mask();
     for (const ui of sdCardUi) {
