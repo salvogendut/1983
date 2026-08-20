@@ -13,6 +13,7 @@ details in [`TECHNICAL.md`](TECHNICAL.md) and
 make -j4
 ./1983                          # generic MSX1 using bundled C-BIOS
 ./1983 --model msx2 --region pal
+./1983 --model nms8250 --memory 1024  # NMS 8250 with 1 MiB RAM
 ./1983 --cart ROMS/game.rom
 ./1983 --config ./my.conf       # isolated configuration
 ./1983 --help
@@ -25,6 +26,7 @@ firmware choice in the per-user `1983.conf`.
 
 ```
 --model ID                select a machine from the catalogue
+--memory KB               RAM in KiB; exact supported size, model dependent
 --region ntsc|pal
 --bios FILE / --logo FILE explicit C-BIOS main and logo ROMs
 --cart FILE              insert a cartridge
@@ -46,6 +48,12 @@ firmware choice in the per-user `1983.conf`.
   ```
 
 Run `./1983 --help` for the complete list.
+
+`--memory` overrides the configured RAM size after the selected model is
+resolved, so its position relative to `--model` does not matter. MSX2 and
+NMS 8250 machines accept 64, 128, 256, 512, 1024, 2048, or 4096 KiB. MSX1
+machines additionally accept 16 and 32 KiB. Unsupported sizes are rejected
+rather than rounded down.
 
 ### RS-232C and the driver ROM
 

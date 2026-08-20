@@ -67,6 +67,39 @@ if ./1983 --config /dev/null --model definitely-not-a-model \
 fi
 grep -q "unknown catalogue model" "$log"
 
+# RAM selection is a CLI override, independent of argument order. Use the
+# bundled C-BIOS machine so this remains portable in clean release trees.
+./1983 --config /dev/null \
+    --models "$source_root/1983-models.conf" \
+    --memory 1024 --model cbios \
+    --headless --unthrottled --exit-after 0 >"$log" 2>&1
+grep -q ', 1024 KB RAM,' "$log"
+./1983 --config /dev/null \
+    --models "$source_root/1983-models.conf" \
+    --model cbios --memory 1024 \
+    --headless --unthrottled --exit-after 0 >"$log" 2>&1
+grep -q ', 1024 KB RAM,' "$log"
+
+if ./1983 --memory 1000 >"$log" 2>&1; then
+    echo "unsupported RAM size was accepted" >&2
+    exit 1
+fi
+grep -q -- "--memory: expected 16, 32, 64" "$log"
+
+if ./1983 --config /dev/null \
+        --models "$source_root/1983-models.conf" \
+        --model msx2 --memory 32 >"$log" 2>&1; then
+    echo "MSX2 accepted an unsupported RAM size" >&2
+    exit 1
+fi
+grep -q -- "--memory: msx2 does not support 32 KB RAM" "$log"
+
+if ./1983 --memory >"$log" 2>&1; then
+    echo "missing RAM size was accepted" >&2
+    exit 1
+fi
+grep -q -- "--memory requires a value" "$log"
+
 printf '%s\n' \
     '[extensions]' \
     'extra_hardware = true' \
@@ -196,6 +229,7 @@ grep -q 'ASCII; RUN"CAS:"' "$log"
 ./1983 --help >"$log"
 grep -q -- "--model NAME" "$log"
 grep -q -- "--models PATH" "$log"
+grep -q -- "--memory KB" "$log"
 grep -q -- "--cart1 PATH" "$log"
 grep -q -- "--cart2 PATH" "$log"
 grep -q -- "--mapper1 NAME" "$log"
