@@ -42,6 +42,11 @@ be selected directly with a case-insensitive query parameter:
 - Two redistributable machine profiles are bundled: **MSX1 (C-BIOS)** at 60 Hz
   and **Philips NMS 8250 (RainBIOS)** at 50 Hz. The latter includes its MSX2
   main ROM, Sub-ROM, WD2793 disk ROM, 128 KiB RAM and 128 KiB VRAM.
+- The **System RAM** slider below the machine selector exposes the same memory
+  sizes as the native emulator. MSX1 supports 16, 32, 64, 128, 256 and 512 KiB,
+  plus 1, 2 and 4 MiB; the NMS 8250 supports 64 KiB through 4 MiB. Each
+  machine's selection is remembered independently. Changing it resets the
+  guest while retaining mounted media and configured extensions.
 - **Byte-identical to the native emulator**: the VDP framebuffer hashes match
   exactly over 400 boot frames.
 - Video rendered from the VDP framebuffer (256x192 MSX1 / 512x212 MSX2) scaled

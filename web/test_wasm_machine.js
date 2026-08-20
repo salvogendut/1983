@@ -12,6 +12,13 @@ async function main() {
   assert.strictEqual(module._poc_init(), 0, 'C-BIOS MSX1 must initialize');
   assert.strictEqual(module._poc_frame_hz(), 60);
   assert.strictEqual(module._poc_has_floppy(), 0);
+  assert.strictEqual(module._poc_ram_kb(), 64);
+  assert.strictEqual(module._poc_set_ram_kb(16), 16);
+  assert.strictEqual(module._poc_ram_kb(), 16);
+  assert.strictEqual(module._poc_set_ram_kb(4096), 4096);
+  assert.strictEqual(module._poc_ram_kb(), 4096);
+  assert.strictEqual(module._poc_set_ram_kb(1000), -1);
+  assert.strictEqual(module._poc_ram_kb(), 4096);
 
   assert.strictEqual(
     module._poc_init_model(1, 0),
@@ -20,6 +27,16 @@ async function main() {
   );
   assert.strictEqual(module._poc_frame_hz(), 50);
   assert.strictEqual(module._poc_has_floppy(), 1);
+  assert.strictEqual(module._poc_ram_kb(), 128);
+  assert.strictEqual(module._poc_set_ram_kb(512), 512);
+  assert.strictEqual(module._poc_ram_kb(), 512);
+  assert.strictEqual(module._poc_set_ram_kb(1024), 1024);
+  assert.strictEqual(module._poc_ram_kb(), 1024);
+  assert.strictEqual(module._poc_set_ram_kb(4096), 4096);
+  assert.strictEqual(module._poc_ram_kb(), 4096);
+  assert.strictEqual(module._poc_set_ram_kb(32), -1);
+  assert.strictEqual(module._poc_ram_kb(), 4096);
+  assert.strictEqual(module._poc_set_ram_kb(128), 128);
   for (let frame = 0; frame < 300; ++frame) module._poc_step();
   const pixelCount = module._poc_width() * module._poc_height();
   const pixelStart = module._poc_pixels() >>> 2;
@@ -93,6 +110,9 @@ async function main() {
   );
   assert.strictEqual(module._poc_ide_mounted(), 1);
   assert.strictEqual(module._poc_ide_writable(), 1);
+  assert.strictEqual(module._poc_set_ram_kb(512), 512);
+  assert.strictEqual(module._poc_sunrise_enabled(), 1);
+  assert.strictEqual(module._poc_ide_mounted(), 1);
   module._poc_reset();
   assert.strictEqual(module._poc_ide_mounted(), 1);
   assert.strictEqual(module._poc_eject_ide(), 0);
