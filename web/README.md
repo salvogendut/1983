@@ -73,7 +73,8 @@ UNAPI relay endpoint are remembered in browser local storage.
 **Sunrise IDE** embeds the unmodified official Nextor 2.1.1 Sunrise kernel.
 Enable it, choose read-only or read/write access and load a raw IDE image. A
 writable image remains in the browser's in-memory filesystem and is flushed and
-downloaded on safe ejection. Connecting Sunrise suppresses the NMS 8250's
+downloaded on safe ejection. IDE transfers illuminate both the AUX device lamp
+and the dedicated receiver-top IDE activity LED. Connecting Sunrise suppresses the NMS 8250's
 internal disk ROM, matching the native emulator's external-controller boot
 lane. The bundled firmware's notice is available as
 [nextor-license.txt](dist/nextor-license.txt).

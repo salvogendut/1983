@@ -13,6 +13,7 @@ for (const match of app.matchAll(/\$\("([^"]+)"\)/g)) {
 
 assert.match(html, /SD Mapper V2/);
 assert.match(html, /Sunrise IDE/);
+assert.match(html, /id="ledA"[\s\S]*id="ledIde"[\s\S]*<span>IDE<\/span>/);
 assert.match(html, /Embedded Nextor 2\.1\.1/);
 assert.match(html, /href="nextor-license\.txt"/);
 assert.match(html, /MSX TCP\/IP UNAPI/);
@@ -26,6 +27,7 @@ assert.match(
 assert.match(app, /relayHealthEndpoint\(unapiEndpoint\)/);
 assert.match(app, /window\.open\(unapiCertificateUrl, "_blank", "noopener,noreferrer"\)/);
 assert.match(app, /m\._poc_set_sunrise\(requested \? 1 : 0\)/);
+assert.match(app, /ledIdeEl\.classList\.add\("on"\)/);
 assert.match(
   html,
   /id="memoryExpansion" type="range"[^>]*min="0" max="8"[^>]*value="2"/
