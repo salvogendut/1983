@@ -33,7 +33,7 @@ async function main() {
     assert.strictEqual(
       module.ccall(
         'poc_mount_ide', 'number', ['string', 'number'],
-        ['/symbos.img', 0]
+        ['/symbos.img', 1]
       ),
       0
     );
@@ -42,7 +42,7 @@ async function main() {
     assert.strictEqual(
       module.ccall(
         'poc_mount_sd_card', 'number', ['number', 'string', 'number'],
-        [0, '/symbos.img', 0]
+        [0, '/symbos.img', 1]
       ),
       0
     );
@@ -67,10 +67,24 @@ async function main() {
     screenshotPath,
     Buffer.concat([Buffer.from(`P6\n${width} ${height}\n255\n`), rgb])
   );
+  const pixel = (x, y) => pixels[y * width + x] & 0x00ffffff;
+  assert.strictEqual(width, 512, 'SymbOS must enter a 512-pixel MSX2 mode');
+  assert.strictEqual(height, 212, 'SymbOS must enter a 212-line MSX2 mode');
   assert(
-    colors.size >= 4,
-    `SymbOS boot display must not be blank (found ${colors.size} colors; ` +
+    colors.size >= 8 &&
+    colors.has(0x009292ff) && colors.has(0x00000092) &&
+    colors.has(0x00ffff92) && colors.has(0x00ffffff),
+    `expected the SymbOS desktop palette (found ${colors.size} colors; ` +
     screenshotPath + ')'
+  );
+  assert(
+    pixel(0, 0) === 0x00ffff92 || pixel(0, 0) === 0x000000ff,
+    'expected SymbOS desktop or SymZilla chrome at the top-left corner'
+  );
+  assert(
+    pixel(width - 1, 0) === 0x00000092 ||
+    pixel(width - 1, 0) === 0x000000ff,
+    'expected SymbOS desktop or SymZilla chrome at the top-right corner'
   );
   console.log(
     `WASM SymbOS ${controller} acceptance passed: ${frameCount} frames, ` +

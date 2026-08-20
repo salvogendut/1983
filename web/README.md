@@ -125,13 +125,17 @@ local and use the download-on-eject path.
 
 For example, a Sunrise-configured SymbOS image can be launched with:
 
-    http://127.0.0.1:1983/?machine=nms8250&ide=media/MSXSYMBOS.img
+    http://127.0.0.1:1983/?machine=nms8250&ide=media/MSXSYMBOS.img&idemode=readwrite
+
+The reference SymZilla installation writes startup state and must be mounted
+read/write. Browser-side changes remain in memory and are offered as a download
+when the image is safely ejected; the server-hosted source file is not changed.
 
 The same image must have its SymbOS storage driver configured for MegaSD,
 physical slot I, subslot 0, card A and partition 1 before it can use the SD
 Mapper compatibility path:
 
-    http://127.0.0.1:1983/?machine=nms8250&sda=media/MSXSYMBOS-SD.img
+    http://127.0.0.1:1983/?machine=nms8250&sda=media/MSXSYMBOS-SD.img&sdmode=readwrite
 
 For example, this enables UNAPI, mounts an SD image in SD A, implicitly enables
 SD Mapper V2, mounts the GeoBench floppy, and resets with everything present:
@@ -150,7 +154,9 @@ permit the request with CORS headers.
 Fetched images live in the browser's in-memory filesystem. Guest writes are not
 uploaded to the server.
 
-For a repeatable local WASM acceptance run with a user-supplied SymbOS image:
+For a repeatable local WASM acceptance run with a user-supplied SymbOS image,
+the harness mounts its private in-memory copy read/write and requires the
+SymbOS desktop palette and window geometry:
 
     make -C web check-wasm-symbos SYMBOS_IMAGE=/path/to/symbos.img
     make -C web check-wasm-symbos SYMBOS_IMAGE=/path/to/symbos-sd.img \
