@@ -58,6 +58,7 @@ typedef struct {
     MsxCartridgeMapper cartridge_mapper[MSX_CARTRIDGE_SLOTS];
     bool cartridge_mapper_set[MSX_CARTRIDGE_SLOTS];
     const char *model_name;
+    int memory_kb;
     int region;
     int floppy_image_mode;
     int ide_image_mode;
@@ -219,6 +220,7 @@ static const char *usage =
     "  --config PATH       use an alternative configuration file\n"
     "  --models PATH       use an alternative machine catalogue\n"
     "  --model NAME        select a model ID from the machine catalogue\n"
+    "  --memory KB         set RAM in KiB (16 to 4096, model dependent)\n"
     "  --region pal|ntsc   override the configured video standard\n"
     "  --bios PATH         load a 32 KB MSX BIOS ROM\n"
     "  --logo PATH         load a 16 KB C-BIOS logo ROM in slot 0/page 2\n"
@@ -297,6 +299,20 @@ static int parse_integer(const char *text, int minimum, int maximum,
     return (int)value;
 }
 
+static int parse_memory_kb(const char *text) {
+    int value = parse_integer(text, 16, 4096, "--memory");
+
+    if (value < 0)
+        return -1;
+    if ((value & (value - 1)) != 0) {
+        fprintf(stderr,
+                "--memory: expected 16, 32, 64, 128, 256, 512, "
+                "1024, 2048, or 4096 KB\n");
+        return -1;
+    }
+    return value;
+}
+
 static int parse_region(const char *text) {
     if (strcmp(text, "pal") == 0)
         return MSX_REGION_PAL;
@@ -354,6 +370,7 @@ static int parse_sd_mode(const char *text) {
 
 static int parse_cli(int argc, char **argv, Cli *cli) {
     memset(cli, 0, sizeof(*cli));
+    cli->memory_kb = -1;
     cli->region = -1;
     cli->floppy_image_mode = -1;
     cli->ide_image_mode = -1;
@@ -427,6 +444,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
         if ((strcmp(argument, "--config") == 0 ||
              strcmp(argument, "--models") == 0 ||
              strcmp(argument, "--model") == 0 ||
+             strcmp(argument, "--memory") == 0 ||
              strcmp(argument, "--region") == 0 ||
              strcmp(argument, "--bios") == 0 ||
              strcmp(argument, "--logo") == 0 ||
@@ -560,6 +578,10 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->cartridge_mapper_set[1] = true;
         } else if (strcmp(argument, "--model") == 0) {
             cli->model_name = argv[++i];
+        } else if (strcmp(argument, "--memory") == 0) {
+            cli->memory_kb = parse_memory_kb(argv[++i]);
+            if (cli->memory_kb < 0)
+                return -1;
         } else if (strcmp(argument, "--region") == 0) {
             cli->region = parse_region(argv[++i]);
             if (cli->region < 0)
@@ -820,6 +842,16 @@ int main(int argc, char **argv) {
                  "%s", definition->subrom_path);
         snprintf(config.disk_rom_path, sizeof(config.disk_rom_path),
                  "%s", definition->disk_rom_path);
+    }
+    if (cli.memory_kb >= 0) {
+        if (msx_normalize_ram_kb(config.model, cli.memory_kb) !=
+            cli.memory_kb) {
+            fprintf(stderr,
+                    "--memory: %s does not support %d KB RAM\n",
+                    config.machine_id, cli.memory_kb);
+            return 1;
+        }
+        config.memory_kb = cli.memory_kb;
     }
     if (cli.region >= 0)
         config.region = (MsxRegion)cli.region;
