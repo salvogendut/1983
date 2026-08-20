@@ -13,7 +13,7 @@ window, overlay, keyboard, notification, LED, and configuration conventions,
 and staying as multiplatform as SDL3 allows.
 
 > **Status:** MSX1 and MSX2 firmware and cartridge software run, with
-> TMS9918-family/V9938 video, AY/YM PSG audio, the international keyboard
+> TMS9918-family/V9938/V9958 video, AY/YM PSG audio, the international keyboard
 > matrix, dual cartridge slots, expanded slots, memory mapper, RTC, and
 > battery-backed CMOS. Native support covers catalogue-configured Philips
 > WD2793 floppy controllers with raw MSX DSK images, the
@@ -33,7 +33,8 @@ and staying as multiplatform as SDL3 allows.
 - MSX, MSX2, and Philips NMS 8250 machine layouts with an editable
   `1983-models.conf` catalogue.
 - Linear, ASCII8/16, Konami, and Konami SCC cartridges.
-- MSX1 screen/sprite modes plus V9938 SCREEN 5-8 with drawing commands.
+- MSX1 screen/sprite modes plus selectable V9938/V9958 video on MSX2,
+  including SCREEN 5-8, drawing commands, and V9958 YJK/YAE display support.
 - Cycle-timed AY-3-8910/YM2149 audio.
 - Complete international MSX keyboard matrix, SDL3 joystick and mouse input.
 - RP-5C01 clock with persistent per-machine CMOS and offline continuity.

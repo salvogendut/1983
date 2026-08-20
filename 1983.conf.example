@@ -5,6 +5,8 @@
 model = cbios
 hardware = msx1
 region = pal
+# MSX1 uses its fixed TMS9918-family VDP; MSX2 accepts v9938 or v9958.
+vdp = tms9918
 # Supported selections extend through 4096 KiB.
 memory_kb = 64
 

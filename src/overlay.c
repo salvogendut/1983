@@ -49,6 +49,7 @@ static void about_rects(float lw, float lh, OverlayAboutRects *a) {
 enum {
     GENERAL_MACHINE = 0,
     GENERAL_VIDEO_STANDARD,
+    GENERAL_VDP,
     GENERAL_RAM,
     GENERAL_VRAM,
     GENERAL_PSG_VOLUME,
@@ -682,6 +683,15 @@ static void item_text(const Overlay *overlay, int row,
                     snprintf(value, value_size, "%s",
                              msx_region_name(config->region));
                     break;
+                case GENERAL_VDP:
+                    snprintf(label, label_size, "VDP chip");
+                    if (msx_model_is_msx2(config->model))
+                        snprintf(value, value_size, "%s",
+                                 msx_vdp_type_name(config->vdp_type));
+                    else
+                        snprintf(value, value_size, "%s (fixed)",
+                                 msx_vdp_name(msx));
+                    break;
                 case GENERAL_RAM:
                     snprintf(label, label_size, "RAM");
                     snprintf(value, value_size, "%d KB", config->memory_kb);
@@ -1048,6 +1058,7 @@ static void apply_config(Overlay *overlay) {
     machine_changed =
         msx->profile->model != config->model ||
         msx->region != config->region ||
+        msx->vdp.type != config->vdp_type ||
         msx->ram_kb != config->memory_kb;
     floppy_changed =
         !active_floppy ||
@@ -1068,6 +1079,7 @@ static void apply_config(Overlay *overlay) {
         }
         msx_configure(msx, config->model, config->region,
                       config->memory_kb);
+        msx_set_vdp_type(msx, config->vdp_type);
         config->memory_kb = msx->ram_kb;
         display_prepare_scaffold(overlay->display, msx);
         display_set_title(overlay->display, msx,
@@ -2249,6 +2261,7 @@ static bool select_machine(Overlay *overlay, bool preserve_runtime_ram) {
     }
 
     config->model = definition->hardware;
+    config->vdp_type = target_config.vdp_type;
     config->floppy = definition->floppy;
     snprintf(config->machine_id, sizeof(config->machine_id),
               "%s", definition->id);
@@ -3624,6 +3637,15 @@ static void activate_item(Overlay *overlay) {
                         config->region == MSX_REGION_PAL
                         ? MSX_REGION_NTSC : MSX_REGION_PAL;
                     break;
+                case GENERAL_VDP:
+                    if (!msx_model_is_msx2(config->model)) {
+                        notify_post("The MSX1 VDP follows the video standard");
+                        return;
+                    }
+                    config->vdp_type =
+                        config->vdp_type == MSX_VDP_V9938
+                        ? MSX_VDP_V9958 : MSX_VDP_V9938;
+                    break;
                 case GENERAL_RAM:
                     config->memory_kb =
                         msx_next_ram_kb(config->model,
@@ -4690,7 +4712,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
 static const char *section_hint(const Overlay *overlay) {
     switch (overlay->section) {
         case OVERLAY_GENERAL:
-            return "Machine, memory, audio, input, and optional controls.";
+            return "Machine, video, memory, audio, input, and optional controls.";
         case OVERLAY_MEDIA:
             return "Enter loads; R rewinds tape; Delete safely ejects.";
         case OVERLAY_EXTENSIONS:

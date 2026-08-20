@@ -36,6 +36,13 @@ static const u8 v9938_register_masks[32] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
+static const u8 v9958_register_masks[32] = {
+    0x7e, 0x7f, 0x7f, 0xff, 0x3f, 0xff, 0x3f, 0xff,
+    0xfb, 0xbf, 0x07, 0x03, 0xff, 0xff, 0x07, 0x0f,
+    0x0f, 0xbf, 0xff, 0xff, 0x3f, 0x3f, 0x3f, 0xff,
+    0x00, 0x7f, 0x3f, 0x07, 0x00, 0x00, 0x00, 0x00,
+};
+
 #define V9938_STATUS2_TR 0x80
 #define V9938_STATUS2_BD 0x10
 #define V9938_STATUS2_CE 0x01
@@ -130,7 +137,7 @@ static void render_flush_completed(MsxVdp *vdp);
 static void render_to_line(MsxVdp *vdp, unsigned limit_y);
 
 static unsigned vram_size(const MsxVdp *vdp) {
-    return vdp->type == MSX_VDP_V9938
+    return vdp_type_is_v99x8(vdp->type)
          ? MSX2_VRAM_SIZE : MSX1_VRAM_SIZE;
 }
 
@@ -177,7 +184,7 @@ static bool v9938_hscan_tick(const MsxVdp *vdp, u64 *tick) {
     u64 frame_ticks;
     u64 match_tick;
 
-    if (vdp->type != MSX_VDP_V9938 ||
+    if (!vdp_type_is_v99x8(vdp->type) ||
         !vdp->timing_frame_cycles || !vdp->timing_scanlines)
         return false;
 
@@ -205,7 +212,7 @@ static void update_irq(MsxVdp *vdp) {
     bool vertical =
         (vdp->status & 0x80) && (vdp->registers[1] & 0x20);
     bool horizontal =
-        vdp->type == MSX_VDP_V9938 &&
+        vdp_type_is_v99x8(vdp->type) &&
         (vdp->status1 & 0x01) && (vdp->registers[0] & 0x10);
 
     vdp->irq = vertical || horizontal;
@@ -213,14 +220,14 @@ static void update_irq(MsxVdp *vdp) {
 
 static bool planar_vram(const MsxVdp *vdp) {
     u8 mode = display_mode(vdp);
-    return vdp->type == MSX_VDP_V9938 &&
+    return vdp_type_is_v99x8(vdp->type) &&
            (mode == 0x14 || mode == 0x1c);
 }
 
 static unsigned cpu_vram_address(const MsxVdp *vdp) {
     unsigned address = vdp->address;
 
-    if (vdp->type == MSX_VDP_V9938)
+    if (vdp_type_is_v99x8(vdp->type))
         address |= (unsigned)(vdp->registers[14] & 0x07) << 14;
     if (planar_vram(vdp))
         address = ((address << 16) | (address >> 1)) & 0x1ffff;
@@ -229,7 +236,7 @@ static unsigned cpu_vram_address(const MsxVdp *vdp) {
 
 static void increment_vram_pointer(MsxVdp *vdp) {
     vdp->address = (u16)((vdp->address + 1) & 0x3fff);
-    if (vdp->address == 0 && vdp->type == MSX_VDP_V9938 &&
+    if (vdp->address == 0 && vdp_type_is_v99x8(vdp->type) &&
         (display_mode(vdp) & 0x18))
         vdp->registers[14] = (vdp->registers[14] + 1) & 0x07;
 }
@@ -245,7 +252,7 @@ static u32 palette_colour(const MsxVdp *vdp, u8 index) {
     u8 blue;
 
     index &= 0x0f;
-    if (vdp->type != MSX_VDP_V9938)
+    if (!vdp_type_is_v99x8(vdp->type))
         return tms_palette[index];
     grb = vdp->palette_grb[index];
     red = expand_three_bits((grb >> 4) & 0x07);
@@ -264,6 +271,45 @@ static u32 screen8_colour(u8 colour) {
     return ((u32)red << 16) | ((u32)green << 8) | blue;
 }
 
+static u8 expand_five_bits(unsigned value) {
+    return (u8)((value * 255 + 15) / 31);
+}
+
+static int clamp_five_bits(int value) {
+    if (value < 0)
+        return 0;
+    return value > 31 ? 31 : value;
+}
+
+static u32 v9958_yjk_colour(const MsxVdp *vdp, unsigned x,
+                            unsigned y, u8 colour) {
+    unsigned group_x = x & ~3u;
+    u8 pixels[4];
+    int j;
+    int k;
+    int luminance;
+    int red;
+    int green;
+    int blue;
+
+    if ((vdp->registers[25] & 0x10) && (colour & 0x08))
+        return palette_colour(vdp, colour >> 4);
+    for (unsigned i = 0; i < 4; ++i)
+        pixels[i] = bitmap_pixel(vdp, 0x1c, group_x + i, y);
+    j = (pixels[2] & 7) + ((pixels[3] & 3) << 3) -
+        ((pixels[3] & 4) << 3);
+    k = (pixels[0] & 7) + ((pixels[1] & 3) << 3) -
+        ((pixels[1] & 4) << 3);
+    luminance = colour >> 3;
+    red = clamp_five_bits(luminance + j);
+    green = clamp_five_bits(luminance + k);
+    blue = clamp_five_bits(
+        (5 * luminance - 2 * j - k + 2) / 4);
+    return ((u32)expand_five_bits((unsigned)red) << 16) |
+           ((u32)expand_five_bits((unsigned)green) << 8) |
+           expand_five_bits((unsigned)blue);
+}
+
 u32 vdp_border_colour(const MsxVdp *vdp, unsigned high_res_phase) {
     u8 mode;
     u8 background;
@@ -272,20 +318,20 @@ u32 vdp_border_colour(const MsxVdp *vdp, unsigned high_res_phase) {
         return 0;
     mode = display_mode(vdp);
     background = vdp->registers[7];
-    if (vdp->type == MSX_VDP_V9938 && mode == 0x10) {
+    if (vdp_type_is_v99x8(vdp->type) && mode == 0x10) {
         u8 index = high_res_phase & 1
                  ? background & 0x03
                  : (background >> 2) & 0x03;
         return palette_colour(vdp, index);
     }
-    if (vdp->type == MSX_VDP_V9938 && mode == 0x1c)
+    if (vdp_type_is_v99x8(vdp->type) && mode == 0x1c)
         return screen8_colour(background);
     return palette_colour(vdp, background & 0x0f);
 }
 
 static u8 visible_colour(const MsxVdp *vdp, u8 colour) {
     if ((colour & 0x0f) == 0 &&
-        (vdp->type != MSX_VDP_V9938 ||
+        (!vdp_type_is_v99x8(vdp->type) ||
          !(vdp->registers[8] & 0x20)))
         return vdp->registers[7] & 0x0f;
     return colour & 0x0f;
@@ -325,12 +371,12 @@ static unsigned v9938_table_address(unsigned base_mask, unsigned index,
 static u8 sprite_pattern_byte(const MsxVdp *vdp, unsigned index,
                               bool planar) {
     unsigned pattern_mask =
-        vdp->type == MSX_VDP_V9938 ? 0x3f : 0x07;
+        vdp_type_is_v99x8(vdp->type) ? 0x3f : 0x07;
     unsigned pattern_base =
         (unsigned)(vdp->registers[6] & pattern_mask) << 11;
     unsigned address;
 
-    if (vdp->type == MSX_VDP_V9938) {
+    if (vdp_type_is_v99x8(vdp->type)) {
         address = v9938_table_address(
             pattern_base | 0x7ff, index, 0x7ff, planar);
     } else {
@@ -379,7 +425,7 @@ static void update_sprite_status(MsxVdp *vdp, int overflow_sprite,
 static void latch_sprite_collision(MsxVdp *vdp, int x, int y,
                                     bool *collision) {
     if (!*collision && !(vdp->status & 0x20) &&
-        (vdp->type != MSX_VDP_V9938 ||
+        (!vdp_type_is_v99x8(vdp->type) ||
          !(vdp->registers[8] & 0xc0))) {
         vdp->sprite_collision_x = (u16)(x + 12);
         vdp->sprite_collision_y = (u16)(y + 8);
@@ -401,7 +447,7 @@ static void render_sprites_mode1(MsxVdp *vdp, unsigned first_y,
                                  unsigned limit_y) {
     unsigned attribute_base =
         (unsigned)(vdp->registers[5] &
-                   (vdp->type == MSX_VDP_V9938 ? 0xff : 0x7f)) << 7;
+                   (vdp_type_is_v99x8(vdp->type) ? 0xff : 0x7f)) << 7;
     int size = vdp->registers[1] & 0x02 ? 16 : 8;
     int scale = vdp->registers[1] & 0x01 ? 2 : 1;
     int effective_size = size * scale;
@@ -410,7 +456,7 @@ static void render_sprites_mode1(MsxVdp *vdp, unsigned first_y,
     int fifth_sprite = -1;
     bool collision = false;
 
-    if (vdp->type == MSX_VDP_V9938)
+    if (vdp_type_is_v99x8(vdp->type))
         attribute_base |= (unsigned)(vdp->registers[11] & 0x03) << 15;
     while (sprite_end < 32 &&
            vdp->vram[wrap_address(
@@ -425,7 +471,7 @@ static void render_sprites_mode1(MsxVdp *vdp, unsigned first_y,
         bool coloured[MSX1_VIDEO_W] = { false };
         unsigned display_y =
             ((unsigned)y +
-             (vdp->type == MSX_VDP_V9938
+             (vdp_type_is_v99x8(vdp->type)
               ? vdp->registers[23] : 0)) & 0xff;
 
         for (unsigned sprite = 0; sprite < sprite_end; ++sprite) {
@@ -465,7 +511,7 @@ static void render_sprites_mode1(MsxVdp *vdp, unsigned first_y,
             const SpriteLine *line = &visible[sprite];
             u8 colour = line->attribute & 0x0f;
             bool colour_zero_opaque =
-                vdp->type == MSX_VDP_V9938 &&
+                vdp_type_is_v99x8(vdp->type) &&
                 (vdp->registers[8] & 0x20);
 
             for (int source_x = 0; source_x < size; ++source_x) {
@@ -476,7 +522,7 @@ static void render_sprites_mode1(MsxVdp *vdp, unsigned first_y,
                     int x = line->x + source_x * scale + magnified_x;
                     if ((unsigned)x >= MSX1_VIDEO_W)
                         continue;
-                    if (vdp->type != MSX_VDP_V9938 ||
+                    if (!vdp_type_is_v99x8(vdp->type) ||
                         colour || colour_zero_opaque) {
                         if (occupied[x])
                             latch_sprite_collision(
@@ -674,13 +720,13 @@ void vdp_reset(MsxVdp *vdp) {
     memset(vdp->registers, 0, sizeof(vdp->registers));
     memcpy(vdp->palette_grb, v9938_default_palette,
            sizeof(vdp->palette_grb));
-    if (vdp->type == MSX_VDP_V9938) {
+    if (vdp_type_is_v99x8(vdp->type)) {
         vdp->registers[21] = 0x3b;
         vdp->registers[22] = 0x05;
     }
     vdp->status = 0;
-    vdp->status1 = 0;
-    vdp->status2 = vdp->type == MSX_VDP_V9938 ? 0x0c : 0;
+    vdp->status1 = vdp->type == MSX_VDP_V9958 ? 0x04 : 0;
+    vdp->status2 = vdp_type_is_v99x8(vdp->type) ? 0x0c : 0;
     vdp->status7 = 0;
     vdp->read_buffer = 0;
     vdp->control_first = 0;
@@ -737,8 +783,8 @@ void vdp_init(MsxVdp *vdp) {
 void vdp_set_type(MsxVdp *vdp, MsxVdpType type) {
     if (!vdp)
         return;
-    vdp->type = type == MSX_VDP_V9938
-              ? MSX_VDP_V9938 : MSX_VDP_TMS9918;
+    vdp->type = vdp_type_is_v99x8(type)
+              ? type : MSX_VDP_TMS9918;
 }
 
 static void write_register(MsxVdp *vdp, unsigned reg, u8 value) {
@@ -746,24 +792,26 @@ static void write_register(MsxVdp *vdp, unsigned reg, u8 value) {
         reg &= 0x07;
         value &= tms_register_masks[reg];
     } else if (reg < 32) {
-        value &= v9938_register_masks[reg];
+        value &= vdp->type == MSX_VDP_V9958
+               ? v9958_register_masks[reg]
+               : v9938_register_masks[reg];
     } else if (reg >= 47) {
         return;
     }
 
-    if (vdp->type == MSX_VDP_V9938)
+    if (vdp_type_is_v99x8(vdp->type))
         render_flush_completed(vdp);
     vdp->registers[reg] = value;
-    if (vdp->type == MSX_VDP_V9938 &&
+    if (vdp_type_is_v99x8(vdp->type) &&
         reg == 0 && !(value & 0x10))
         vdp->status1 &= (u8)~0x01;
     if (reg == 0 || reg == 1)
         update_irq(vdp);
     if (reg == 16)
         vdp->palette_pending = false;
-    if (vdp->type == MSX_VDP_V9938 && reg == 44)
+    if (vdp_type_is_v99x8(vdp->type) && reg == 44)
         command_transfer_write(vdp);
-    if (vdp->type == MSX_VDP_V9938 && reg == 46)
+    if (vdp_type_is_v99x8(vdp->type) && reg == 46)
         execute_vdp_command(vdp);
 }
 
@@ -791,7 +839,7 @@ static void schedule_cpu_vram_access(MsxVdp *vdp, bool read, u8 value) {
      * beam clock uses the same fallback so standalone functional users do
      * not have to manufacture timing state.
      */
-    if (vdp->type != MSX_VDP_V9938 || !command_has_clock(vdp)) {
+    if (!vdp_type_is_v99x8(vdp->type) || !command_has_clock(vdp)) {
         vdp->cpu_vram_pending = true;
         execute_cpu_vram_access(vdp);
         return;
@@ -832,7 +880,7 @@ u8 vdp_read_status(MsxVdp *vdp) {
 
     if (!vdp)
         return 0xff;
-    reg = vdp->type == MSX_VDP_V9938 ? vdp->registers[15] : 0;
+    reg = vdp_type_is_v99x8(vdp->type) ? vdp->registers[15] : 0;
     switch (reg) {
         case 0:
             value = vdp->status;
@@ -925,9 +973,9 @@ void vdp_write_control(MsxVdp *vdp, u8 value) {
     if (value & 0x80) {
         unsigned reg;
 
-        if (vdp->type == MSX_VDP_V9938 && (value & 0x40))
+        if (vdp_type_is_v99x8(vdp->type) && (value & 0x40))
             return;
-        reg = value & (vdp->type == MSX_VDP_V9938 ? 0x3f : 0x07);
+        reg = value & (vdp_type_is_v99x8(vdp->type) ? 0x3f : 0x07);
         write_register(vdp, reg, vdp->control_first);
         return;
     }
@@ -941,7 +989,7 @@ void vdp_write_control(MsxVdp *vdp, u8 value) {
 void vdp_write_palette(MsxVdp *vdp, u8 value) {
     unsigned index;
 
-    if (!vdp || vdp->type != MSX_VDP_V9938)
+    if (!vdp || !vdp_type_is_v99x8(vdp->type))
         return;
     if (!vdp->palette_pending) {
         vdp->control_first = value;
@@ -960,7 +1008,7 @@ void vdp_write_palette(MsxVdp *vdp, u8 value) {
 void vdp_write_indirect(MsxVdp *vdp, u8 value) {
     u8 selector;
 
-    if (!vdp || vdp->type != MSX_VDP_V9938)
+    if (!vdp || !vdp_type_is_v99x8(vdp->type))
         return;
     vdp->control_first = value;
     selector = vdp->registers[17];
@@ -981,7 +1029,7 @@ static void update_retrace_status(MsxVdp *vdp) {
     unsigned blank_length;
     bool text_mode;
 
-    if (vdp->type != MSX_VDP_V9938 ||
+    if (!vdp_type_is_v99x8(vdp->type) ||
         !vdp->timing_frame_cycles || !vdp->timing_scanlines)
         return;
     frame_ticks =
@@ -1026,7 +1074,7 @@ void vdp_begin_frame(MsxVdp *vdp, unsigned frame_cycles,
     vdp->vram_frame_tick = 0;
     configure_render_geometry(vdp);
     vdp->render_line_zero =
-        vdp->type == MSX_VDP_V9938
+        vdp_type_is_v99x8(vdp->type)
         ? v9938_line_zero(vdp) : 0;
     vdp->rendered_lines = 0;
     update_retrace_status(vdp);
@@ -1041,7 +1089,7 @@ void vdp_advance(MsxVdp *vdp, unsigned cycles) {
 
     if (!vdp || !vdp->timing_frame_cycles)
         return;
-    if (vdp->type == MSX_VDP_V9938) {
+    if (vdp_type_is_v99x8(vdp->type)) {
         u64 frame_ticks =
             (u64)vdp->timing_scanlines * V9938_TICKS_PER_LINE;
         u64 ticks_per_cycle =
@@ -1053,7 +1101,7 @@ void vdp_advance(MsxVdp *vdp, unsigned cycles) {
         vram_engine_advance(vdp, elapsed >> 32);
         render_flush_completed(vdp);
     }
-    if (vdp->type == MSX_VDP_V9938 &&
+    if (vdp_type_is_v99x8(vdp->type) &&
         (vdp->registers[0] & 0x10) &&
         v9938_hscan_tick(vdp, &match_tick)) {
         frame_ticks =
@@ -1082,7 +1130,7 @@ void vdp_end_frame(MsxVdp *vdp) {
      * Sprite evaluation takes place during the visible scanlines, before
      * vertical blank raises the F flag.
      */
-    if (vdp->type == MSX_VDP_V9938 &&
+    if (vdp_type_is_v99x8(vdp->type) &&
         command_has_clock(vdp))
         render_to_line(vdp, vdp->render_height);
     else
@@ -1094,16 +1142,16 @@ void vdp_end_frame(MsxVdp *vdp) {
 static void render_graphics_1(MsxVdp *vdp, unsigned first_y,
                               unsigned limit_y) {
     unsigned name_mask =
-        vdp->type == MSX_VDP_V9938 ? 0x7f : 0x0f;
+        vdp_type_is_v99x8(vdp->type) ? 0x7f : 0x0f;
     unsigned pattern_mask =
-        vdp->type == MSX_VDP_V9938 ? 0x3f : 0x07;
+        vdp_type_is_v99x8(vdp->type) ? 0x3f : 0x07;
     unsigned name_base =
         (unsigned)(vdp->registers[2] & name_mask) << 10;
     unsigned colour_base = (unsigned)vdp->registers[3] << 6;
     unsigned pattern_base =
         (unsigned)(vdp->registers[4] & pattern_mask) << 11;
 
-    if (vdp->type == MSX_VDP_V9938)
+    if (vdp_type_is_v99x8(vdp->type))
         colour_base |= (unsigned)(vdp->registers[10] & 0x07) << 14;
 
     for (unsigned y = first_y; y < limit_y; ++y) {
@@ -1128,7 +1176,7 @@ static void render_graphics_1(MsxVdp *vdp, unsigned first_y,
 static void render_graphics_2(MsxVdp *vdp, unsigned first_y,
                               unsigned limit_y) {
     unsigned name_mask =
-        vdp->type == MSX_VDP_V9938 ? 0x7f : 0x0f;
+        vdp_type_is_v99x8(vdp->type) ? 0x7f : 0x0f;
     unsigned name_base =
         (unsigned)(vdp->registers[2] & name_mask) << 10;
     unsigned pattern_base =
@@ -1136,7 +1184,7 @@ static void render_graphics_2(MsxVdp *vdp, unsigned first_y,
     unsigned colour_base =
         (unsigned)(vdp->registers[3] & 0x80) << 6;
 
-    if (vdp->type == MSX_VDP_V9938)
+    if (vdp_type_is_v99x8(vdp->type))
         colour_base |= (unsigned)(vdp->registers[10] & 0x07) << 14;
     else
         pattern_base = (unsigned)(vdp->registers[4] & 0x04) << 11;
@@ -1165,9 +1213,9 @@ static void render_graphics_2(MsxVdp *vdp, unsigned first_y,
 static void render_text(MsxVdp *vdp, unsigned first_y,
                         unsigned limit_y) {
     unsigned name_mask =
-        vdp->type == MSX_VDP_V9938 ? 0x7f : 0x0f;
+        vdp_type_is_v99x8(vdp->type) ? 0x7f : 0x0f;
     unsigned pattern_mask =
-        vdp->type == MSX_VDP_V9938 ? 0x3f : 0x07;
+        vdp_type_is_v99x8(vdp->type) ? 0x3f : 0x07;
     unsigned name_base =
         (unsigned)(vdp->registers[2] & name_mask) << 10;
     unsigned pattern_base =
@@ -1206,7 +1254,7 @@ void vdp_dump_screen_text(const MsxVdp *vdp, FILE *out) {
     }
     mode = display_mode(vdp);
     if (vdp->registers[1] & 0x10) {
-        bool bitmap = vdp->type == MSX_VDP_V9938 &&
+        bool bitmap = vdp_type_is_v99x8(vdp->type) &&
                       (mode == 0x0c || mode == 0x10 ||
                        mode == 0x14 || mode == 0x1c);
 
@@ -1230,7 +1278,7 @@ void vdp_dump_screen_text(const MsxVdp *vdp, FILE *out) {
         return;
     }
 
-    name_mask = vdp->type == MSX_VDP_V9938 ? 0x7f : 0x0f;
+    name_mask = vdp_type_is_v99x8(vdp->type) ? 0x7f : 0x0f;
     name_base = (unsigned)(vdp->registers[2] & name_mask) << 10;
     for (unsigned row = 0; row < 24; ++row) {
         unsigned end = width;
@@ -1253,9 +1301,9 @@ void vdp_dump_screen_text(const MsxVdp *vdp, FILE *out) {
 static void render_multicolour(MsxVdp *vdp, unsigned first_y,
                                 unsigned limit_y) {
     unsigned name_mask =
-        vdp->type == MSX_VDP_V9938 ? 0x7f : 0x0f;
+        vdp_type_is_v99x8(vdp->type) ? 0x7f : 0x0f;
     unsigned pattern_mask =
-        vdp->type == MSX_VDP_V9938 ? 0x3f : 0x07;
+        vdp_type_is_v99x8(vdp->type) ? 0x3f : 0x07;
     unsigned name_base =
         (unsigned)(vdp->registers[2] & name_mask) << 10;
     unsigned pattern_base =
@@ -2290,14 +2338,37 @@ static void render_bitmap(MsxVdp *vdp, u8 mode,
                           unsigned first_y, unsigned limit_y) {
     unsigned page_y = bitmap_page_y(vdp, mode);
     unsigned vertical_scroll = vdp->registers[23];
+    unsigned dot_scale = vdp->render_width / MSX1_VIDEO_W;
+    unsigned coarse_scroll = 0;
+    unsigned fine_scroll = 0;
+    unsigned masked_pixels = 0;
+
+    if (vdp->type == MSX_VDP_V9958) {
+        coarse_scroll =
+            (vdp->registers[26] & 0x1f) * 8 * dot_scale;
+        fine_scroll = (vdp->registers[27] & 0x07) * dot_scale;
+        if (vdp->registers[25] & 0x02)
+            masked_pixels = 8 * dot_scale;
+    }
 
     for (unsigned y = first_y; y < limit_y; ++y) {
         unsigned source_y = page_y + ((y + vertical_scroll) & 0xff);
         for (unsigned x = 0; x < vdp->render_width; ++x) {
-            u8 colour = bitmap_pixel(vdp, mode, x, source_y);
+            unsigned source_x;
+            u8 colour;
             u32 rgb;
 
-            if (mode == 0x1c) {
+            if (x < fine_scroll || x < masked_pixels)
+                continue;
+            source_x =
+                (x - fine_scroll + coarse_scroll) % vdp->render_width;
+            colour = bitmap_pixel(vdp, mode, source_x, source_y);
+
+            if (mode == 0x1c && vdp->type == MSX_VDP_V9958 &&
+                (vdp->registers[25] & 0x08)) {
+                rgb = v9958_yjk_colour(
+                    vdp, source_x, source_y, colour);
+            } else if (mode == 0x1c) {
                 rgb = screen8_colour(colour);
             } else if (mode == 0x10 && colour == 0 &&
                        !(vdp->registers[8] & 0x20)) {
@@ -2327,7 +2398,7 @@ static int render_sprite_mode(const MsxVdp *vdp, u8 mode) {
         case 0x10: /* SCREEN 6 */
         case 0x14: /* SCREEN 7 */
         case 0x1c: /* SCREEN 8 */
-            return vdp->type == MSX_VDP_V9938 ? 2 : 0;
+            return vdp_type_is_v99x8(vdp->type) ? 2 : 0;
         default:
             return 0;
     }
@@ -2336,7 +2407,7 @@ static int render_sprite_mode(const MsxVdp *vdp, u8 mode) {
 static void configure_render_geometry(MsxVdp *vdp) {
     u8 mode = display_mode(vdp);
 
-    if (vdp->type == MSX_VDP_V9938 &&
+    if (vdp_type_is_v99x8(vdp->type) &&
         (mode == 0x08 || mode == 0x0c || mode == 0x10 ||
          mode == 0x14 || mode == 0x1c)) {
         vdp->render_width =
@@ -2368,7 +2439,7 @@ static void render_line_range(MsxVdp *vdp, unsigned first_y,
                     vdp->render_width == MSX2_VIDEO_W ? x : x * 2);
     if (!(vdp->registers[1] & 0x40))
         return;
-    if (vdp->type == MSX_VDP_V9938 &&
+    if (vdp_type_is_v99x8(vdp->type) &&
         (mode == 0x0c || mode == 0x10 ||
          mode == 0x14 || mode == 0x1c)) {
         render_bitmap(vdp, mode, first_y, limit_y);
@@ -2382,7 +2453,7 @@ static void render_line_range(MsxVdp *vdp, unsigned first_y,
     else
         render_graphics_1(vdp, first_y, limit_y);
 
-    if (vdp->type == MSX_VDP_V9938 &&
+    if (vdp_type_is_v99x8(vdp->type) &&
         (vdp->registers[8] & 0x02))
         return;
     if (sprites == 1)
@@ -2406,7 +2477,7 @@ static void render_flush_completed(MsxVdp *vdp) {
     unsigned line_phase;
     unsigned completed;
 
-    if (!vdp || vdp->type != MSX_VDP_V9938 ||
+    if (!vdp || !vdp_type_is_v99x8(vdp->type) ||
         !command_has_clock(vdp))
         return;
     line = vdp->vram_frame_tick / V9938_TICKS_PER_LINE;

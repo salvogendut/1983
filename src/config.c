@@ -143,6 +143,7 @@ void config_defaults(Config *config) {
     config->model = MSX_MODEL_GENERIC_MSX1;
     snprintf(config->machine_id, sizeof(config->machine_id), "cbios");
     config->region = MSX_REGION_PAL;
+    config->vdp_type = msx_default_vdp_type(config->model);
     config->memory_kb = msx_default_ram_kb(config->model);
     config->scale = 1;
     config->smoothing = false;
@@ -183,6 +184,8 @@ void config_normalize(Config *config) {
         config->model = MSX_MODEL_GENERIC_MSX1;
     if (config->region != MSX_REGION_NTSC)
         config->region = MSX_REGION_PAL;
+    config->vdp_type =
+        msx_normalize_vdp_type(config->model, config->vdp_type);
     config->memory_kb =
         msx_normalize_ram_kb(config->model, config->memory_kb);
     if (config->scale < 1)
@@ -290,6 +293,17 @@ void config_load(Config *config, const char *path) {
             config->model = parse_model(value, config->model);
         } else if (strcmp(key, "region") == 0)
             config->region = parse_region(value, config->region);
+        else if (strcmp(key, "vdp") == 0) {
+            if (strcmp(value, "v9938") == 0 ||
+                strcmp(value, "9938") == 0)
+                config->vdp_type = MSX_VDP_V9938;
+            else if (strcmp(value, "v9958") == 0 ||
+                     strcmp(value, "9958") == 0)
+                config->vdp_type = MSX_VDP_V9958;
+            else if (strcmp(value, "tms9918") == 0 ||
+                     strcmp(value, "tms9929") == 0)
+                config->vdp_type = MSX_VDP_TMS9918;
+        }
         else if (strcmp(key, "memory_kb") == 0)
             config->memory_kb = atoi(value);
         else if (strcmp(key, "scale") == 0)
@@ -488,6 +502,10 @@ int config_save(const Config *config) {
             msx_model_config_name(config->model));
     fprintf(file, "region = %s\n",
             config->region == MSX_REGION_NTSC ? "ntsc" : "pal");
+    fprintf(file, "vdp = %s\n",
+            config->vdp_type == MSX_VDP_V9938
+            ? "v9938" : config->vdp_type == MSX_VDP_V9958
+            ? "v9958" : "tms9918");
     fprintf(file, "memory_kb = %d\n\n", config->memory_kb);
     fprintf(file, "[firmware]\n");
     fprintf(file, "bios = %s\n", config->bios_path);

@@ -16,8 +16,13 @@
 
 typedef enum {
     MSX_VDP_TMS9918 = 0,
-    MSX_VDP_V9938
+    MSX_VDP_V9938,
+    MSX_VDP_V9958
 } MsxVdpType;
+
+static inline bool vdp_type_is_v99x8(MsxVdpType type) {
+    return type == MSX_VDP_V9938 || type == MSX_VDP_V9958;
+}
 
 typedef struct {
     u8 vram[MSX2_VRAM_SIZE];

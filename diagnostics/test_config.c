@@ -13,6 +13,7 @@ int main(void) {
 
     config_defaults(&config);
     assert(strcmp(config.machine_id, "cbios") == 0);
+    assert(config.vdp_type == MSX_VDP_TMS9918);
     assert(!config.bios_path[0]);
     assert(!config.logo_path[0]);
     assert(!config.subrom_path[0]);
@@ -64,6 +65,7 @@ int main(void) {
 
     snprintf(config.path, sizeof(config.path), "%s", path);
     config.model = MSX_MODEL_PHILIPS_NMS8250;
+    config.vdp_type = MSX_VDP_V9938;
     snprintf(config.machine_id, sizeof(config.machine_id),
              "my-nms8250");
     assert(config_rtc_path(
@@ -175,6 +177,7 @@ int main(void) {
 
     config_load(&loaded, path);
     assert(loaded.model == MSX_MODEL_PHILIPS_NMS8250);
+    assert(loaded.vdp_type == MSX_VDP_V9938);
     assert(strcmp(loaded.machine_id, "my-nms8250") == 0);
     assert(loaded.memory_kb == 4096);
     assert(loaded.extra_hardware);
@@ -294,6 +297,15 @@ int main(void) {
     config_normalize(&loaded);
     assert(loaded.main_input == INPUT_PORT_A);
     assert(loaded.joy_port_device[0] == JOY_PORT_JOYSTICK);
+
+    loaded.model = MSX_MODEL_GENERIC_MSX2;
+    loaded.vdp_type = MSX_VDP_TMS9918;
+    config_normalize(&loaded);
+    assert(loaded.vdp_type == MSX_VDP_V9958);
+    loaded.model = MSX_MODEL_GENERIC_MSX1;
+    loaded.vdp_type = MSX_VDP_V9938;
+    config_normalize(&loaded);
+    assert(loaded.vdp_type == MSX_VDP_TMS9918);
 
     /* A catalogue-defined controller can occupy either physical
      * cartridge port. The remaining port still accepts one extension. */

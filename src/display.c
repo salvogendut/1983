@@ -261,14 +261,14 @@ static int presentation_raw_x(int destination_x) {
 static int vdp_active_left(const MsxVdp *vdp) {
     int left = VDP_ACTIVE_LEFT;
 
-    if (vdp->type == MSX_VDP_V9938) {
+    if (vdp_type_is_v99x8(vdp->type)) {
         int horizontal_adjust =
             (vdp->registers[18] & 0x0f) ^ 7;
         left += (horizontal_adjust - 7) * 2;
     }
     if (vdp->registers[1] & 0x10) {
         int text_adjust =
-            vdp->type == MSX_VDP_V9938 ? 9 : 6;
+            vdp_type_is_v99x8(vdp->type) ? 9 : 6;
         left += (text_adjust - 8) * 2;
     }
     return left;
@@ -278,7 +278,7 @@ static int vdp_active_top(const MsxVdp *vdp) {
     int top =
         (VDP_PRESENTATION_LINES - (int)vdp->render_height) / 2;
 
-    if (vdp->type == MSX_VDP_V9938) {
+    if (vdp_type_is_v99x8(vdp->type)) {
         int vertical_adjust =
             (vdp->registers[18] >> 4) ^ 7;
         top += vertical_adjust - 7;
