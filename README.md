@@ -75,6 +75,8 @@ GitHub Releases page. See [`INSTALL.md`](INSTALL.md) for packaging details.
 - [`BOOT_TARGETS.md`](BOOT_TARGETS.md) — firmware lanes, checkpoints, Nextor
   target, and licensing.
 - [`INSTALL.md`](INSTALL.md) — release assets and packaging notes.
+- [`web/README.md`](web/README.md) — browser build, AUX extensions, media URLs,
+  and the WebSocket UNAPI relay.
 
 ## Contributing
 
@@ -85,4 +87,6 @@ issue before starting a substantial machine, device, or architecture change.
 ## License
 
 1983 is released under the GNU General Public License version 2.0 only
-(`GPL-2.0-only`). See [`LICENSE`](LICENSE).
+(`GPL-2.0-only`). See [`LICENSE`](LICENSE). Redistributable firmware retained
+under its own terms carries a notice beside the ROM; the bundled official
+Nextor Sunrise ROM is covered by [`ROMS/LICENSE-NEXTOR`](ROMS/LICENSE-NEXTOR).

@@ -1,6 +1,7 @@
 # WASM build products and intermediates.
 /build/
-/dist/
+/dist/*
+!/dist/nextor-license.txt
 /*.o
 /*.ppm
 /poc.js

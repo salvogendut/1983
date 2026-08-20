@@ -25,12 +25,13 @@ assert.strictEqual(state.cartridgeSlotAvailable(0), true);
 assert.strictEqual(state.cartridgeSlotAvailable(1), true);
 
 assert.deepStrictEqual(
-  state.setCartridgeExtensions(['SD Mapper V2', 'SD Mapper V2']),
-  ['SD Mapper V2']
+  state.setCartridgeExtensions(['Sunrise IDE', 'SD Mapper V2', 'SD Mapper V2']),
+  ['Sunrise IDE', 'SD Mapper V2']
 );
 assert.strictEqual(state.cartridgeSlotAvailable(0), false);
-assert.strictEqual(state.cartridgeSlotAvailable(1), true);
-assert.strictEqual(state.cartridgeSlotOwner(0), 'SD Mapper V2');
+assert.strictEqual(state.cartridgeSlotOwner(0), 'Sunrise IDE');
+assert.strictEqual(state.cartridgeSlotOwner(1), 'SD Mapper V2');
+assert.strictEqual(state.cartridgeSlotAvailable(1), false);
 
 state.setCartridgeExtensions([]);
 assert.strictEqual(state.cartridgeSlotAvailable(0), true);

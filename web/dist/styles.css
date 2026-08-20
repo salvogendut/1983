@@ -538,7 +538,10 @@ body.expansion-open .expansion-panel {
   text-transform: uppercase;
 }
 .firmware-note strong { color: #adb1ad; }
-.firmware-note span { text-align: right; }
+.firmware-note span,
+.firmware-note a { text-align: right; }
+.firmware-note a { color: #aebfb1; text-underline-offset: 2px; }
+.firmware-note a:hover { color: #d9e6db; }
 .expansion-mode-field { min-width: 0; margin: 0; padding: 0; border: 0; }
 .expansion-mode-field legend,
 .expansion-text-field > span {

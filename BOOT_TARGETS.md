@@ -213,8 +213,27 @@ an SD copy, first boot it through Sunrise and use SymSetup to select
 Both paths reach the SymZilla desktop with the 64 MiB reference image whose
 SHA-256 is
 `0d599b41d9b138cb7e857fad6b37e56c958070b70e7fe5cd67609c1729220930`.
-The image, SymbOS, and controller firmware remain user-supplied and are not
-redistributed by 1983.
+The image and SymbOS remain user-supplied. The browser edition embeds the
+unmodified official Nextor 2.1.1 Sunrise controller ROM together with its
+license notice; native builds can use the same repository copy explicitly.
+
+The browser's AUX panel exposes both storage controllers with the same slot
+ordering and safe image lifecycle. A Sunrise-configured image can be selected
+interactively or loaded from a server URL:
+
+```text
+?machine=nms8250&ide=media/MSXSYMBOS.img
+```
+
+Use `idemode=readwrite` only when changes should be downloaded on ejection. An
+SD Mapper-configured copy uses `sda=media/MSXSYMBOS-SD.img` and may add
+`sdmode=readwrite`. The optional headless WASM acceptance harness is:
+
+```sh
+make -C web check-wasm-symbos SYMBOS_IMAGE=/path/to/symbos.img
+make -C web check-wasm-symbos SYMBOS_IMAGE=/path/to/symbos-sd.img \
+  SYMBOS_CONTROLLER=sdmapper
+```
 
 ### MegaFlashROM SCC+ SD
 

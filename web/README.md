@@ -55,15 +55,23 @@ be selected directly with a case-insensitive query parameter:
 - Selecting **Mouse** captures relative pointer motion when the display is
   clicked. Press **Ctrl+Enter** (or the browser's pointer-lock escape key) to
   release it.
-- **AUX expansion bay** with SD Mapper V2 and MSX TCP/IP UNAPI controls. The SD
-  Mapper has fixed embedded firmware, 512 KiB mapper RAM, two user-selectable
-  SD images and reserves cartridge I. UNAPI is port-mapped and leaves both
-  cartridge slots available.
+- **AUX expansion bay** with Sunrise IDE, SD Mapper V2 and MSX TCP/IP UNAPI
+  controls. Sunrise and SD Mapper have fixed embedded Nextor firmware and safe
+  read-only/read-write image handling. They reserve cartridge slots in device
+  order; UNAPI is port-mapped and leaves both slots available.
 
 ## AUX expansion bay
 
 Press **AUX** to open the accessible side panel. Optional-device state and the
 UNAPI relay endpoint are remembered in browser local storage.
+
+**Sunrise IDE** embeds the unmodified official Nextor 2.1.1 Sunrise kernel.
+Enable it, choose read-only or read/write access and load a raw IDE image. A
+writable image remains in the browser's in-memory filesystem and is flushed and
+downloaded on safe ejection. Connecting Sunrise suppresses the NMS 8250's
+internal disk ROM, matching the native emulator's external-controller boot
+lane. The bundled firmware's notice is available as
+[nextor-license.txt](dist/nextor-license.txt).
 
 **SD Mapper V2** embeds `SDM V2 Nextor2.1.1.rom`; there is intentionally no ROM
 chooser. Enable the device, select read-only or read/write access, then load an
@@ -77,10 +85,15 @@ cannot open arbitrary TCP or UDP sockets, so the browser bridge connects to a
 restricted WebSocket relay. See [UNAPI-WASM.md](UNAPI-WASM.md) for setup and
 security details.
 
+Sunrise occupies cartridge I. If both cartridge extensions are enabled, SD
+Mapper moves to cartridge II; if Sunrise is disabled, SD Mapper moves back to
+cartridge I. The normal cartridge controls display the corresponding reserved
+slots.
+
 ## URL-configured hardware and media
 
 Media URLs are resolved relative to the page URL. Two cartridge ROMs, a Drive A
-floppy, and both SD Mapper cards can be mounted at startup:
+floppy, a Sunrise IDE image and both SD Mapper cards can be mounted at startup:
 
     http://127.0.0.1:1983/?machine=msx1
     http://127.0.0.1:1983/?machine=nms8250
@@ -88,6 +101,7 @@ floppy, and both SD Mapper cards can be mounted at startup:
     http://127.0.0.1:1983/?cartridge=media/game.rom&cartridge2=media/tool.rom
     http://127.0.0.1:1983/?disk=media/thisdisk.dsk
     http://127.0.0.1:1983/?disk=media/thisdisk.dsk&autorun=load.bas
+    http://127.0.0.1:1983/?machine=nms8250&ide=media/symbos.img
 
 The `machine` parameter accepts `msx1` for the C-BIOS profile or `nms8250` for
 the Philips NMS 8250 RainBIOS profile. The aliases `cbios` and `msx2` are also
@@ -101,12 +115,23 @@ without an `autorun` parameter. An explicit `machine=msx1` combined with a
 `disk` reports that the selected machine has no floppy controller instead of
 silently changing profiles.
 
-The `extensions` parameter accepts `sdmapper`, `unapi`, or both as a
+The `extensions` parameter accepts `sunrise`, `sdmapper`, and `unapi` as a
 comma-separated list. An explicit list overrides stored extension toggles for
-that page load without rewriting browser storage. `sda` and `sdb` load the two
-SD Mapper cards and implicitly enable the mapper. URL-loaded SD images are
-read-only unless `sdmode=readwrite` is supplied; writable changes remain local
-and use the existing download-on-eject path.
+that page load without rewriting browser storage. `ide` loads an IDE master
+image and implicitly enables Sunrise; `sda` and `sdb` load the two SD Mapper
+cards and implicitly enable that mapper. URL-loaded images are read-only unless
+`idemode=readwrite` or `sdmode=readwrite` is supplied. Writable changes remain
+local and use the download-on-eject path.
+
+For example, a Sunrise-configured SymbOS image can be launched with:
+
+    http://127.0.0.1:1983/?machine=nms8250&ide=media/MSXSYMBOS.img
+
+The same image must have its SymbOS storage driver configured for MegaSD,
+physical slot I, subslot 0, card A and partition 1 before it can use the SD
+Mapper compatibility path:
+
+    http://127.0.0.1:1983/?machine=nms8250&sda=media/MSXSYMBOS-SD.img
 
 For example, this enables UNAPI, mounts an SD image in SD A, implicitly enables
 SD Mapper V2, mounts the GeoBench floppy, and resets with everything present:
@@ -124,3 +149,9 @@ permit the request with CORS headers.
 
 Fetched images live in the browser's in-memory filesystem. Guest writes are not
 uploaded to the server.
+
+For a repeatable local WASM acceptance run with a user-supplied SymbOS image:
+
+    make -C web check-wasm-symbos SYMBOS_IMAGE=/path/to/symbos.img
+    make -C web check-wasm-symbos SYMBOS_IMAGE=/path/to/symbos-sd.img \
+      SYMBOS_CONTROLLER=sdmapper
