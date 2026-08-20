@@ -30,6 +30,7 @@ typedef struct {
     MsxModel  model;
     char      machine_id[MODEL_ID_MAX];
     MsxRegion region;
+    MsxVdpType vdp_type;
     int       memory_kb;
 
     int  scale;

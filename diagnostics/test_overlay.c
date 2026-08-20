@@ -502,6 +502,11 @@ int main(void) {
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 2);
+    assert(config.vdp_type == MSX_VDP_TMS9918);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.vdp_type == MSX_VDP_TMS9918);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 3);
     send_key(&overlay, SDLK_RETURN);
     assert(config.memory_kb == 128);
     assert(msx.ram_kb == 128);
@@ -512,23 +517,23 @@ int main(void) {
     assert(msx.ram_capacity == MSX_RAM_MAX_SIZE);
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 4);
+    assert(overlay.row == 5);
     send_key(&overlay, SDLK_RETURN);
     assert(config.audio_volume == 90);
     send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 5);
+    assert(overlay.row == 6);
     send_key(&overlay, SDLK_RETURN);
     assert(config.main_input == INPUT_PORT_B);
     send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 6);
+    assert(overlay.row == 7);
     send_key(&overlay, SDLK_RETURN);
     assert(config.joy_port_device[0] == JOY_PORT_MOUSE);
     send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 7);
+    assert(overlay.row == 8);
     send_key(&overlay, SDLK_RETURN);
     assert(config.joy_port_device[1] == JOY_PORT_MOUSE);
     send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 8);
+    assert(overlay.row == 9);
     send_key(&overlay, SDLK_RETURN);
     assert(config.extra_hardware);
 
@@ -801,9 +806,9 @@ int main(void) {
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_LEFT);
     assert(overlay.section == OVERLAY_GENERAL);
-    for (int row = 0; row < 8; ++row)
+    for (int row = 0; row < 9; ++row)
         send_key(&overlay, SDLK_DOWN);
-    assert(overlay.row == 8);
+    assert(overlay.row == 9);
     send_key(&overlay, SDLK_RETURN);
     assert(!config.extra_hardware);
     send_key(&overlay, SDLK_RIGHT);
@@ -1452,6 +1457,8 @@ int main(void) {
         assert(overlay.state == OVERLAY_STATE_MENU);
         assert(overlay.dialog_target == OVERLAY_DIALOG_NONE);
         assert(config.model == MSX_MODEL_GENERIC_MSX2);
+        assert(config.vdp_type == MSX_VDP_V9958);
+        assert(msx.vdp.type == MSX_VDP_V9958);
         assert(strcmp(config.machine_id, "custom-floppy-msx2") == 0);
         assert(config.memory_kb == 128);
         assert(msx.bios_loaded);
@@ -1464,6 +1471,16 @@ int main(void) {
                       "Floppy controller") == 0);
         assert(!config.cartridge_path[1][0]);
         assert(!msx_get_cartridge(&msx, 1)->loaded);
+
+        send_key(&overlay, SDLK_DOWN);
+        send_key(&overlay, SDLK_DOWN);
+        assert(overlay.row == 2);
+        send_key(&overlay, SDLK_RETURN);
+        assert(config.vdp_type == MSX_VDP_V9938);
+        assert(msx.vdp.type == MSX_VDP_V9938);
+        send_key(&overlay, SDLK_UP);
+        send_key(&overlay, SDLK_UP);
+        assert(overlay.row == 0);
 
         snprintf(loaded_bios_path, sizeof(loaded_bios_path), "%s",
                  config.bios_path);
@@ -1479,6 +1496,7 @@ int main(void) {
         send_key(&overlay, SDLK_RETURN);
         assert(overlay.state == OVERLAY_STATE_MENU);
         assert(config.model == MSX_MODEL_GENERIC_MSX1);
+        assert(config.vdp_type == MSX_VDP_TMS9918);
         assert(strcmp(config.machine_id, "cbios") == 0);
         assert(config.memory_kb == 64);
         assert(msx.profile->model == MSX_MODEL_GENERIC_MSX1);

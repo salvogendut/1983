@@ -736,7 +736,7 @@ static void test_msx2_vdp_extended_ports(void) {
     MsxMachine msx;
 
     msx_init(&msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
-    assert(msx.vdp.type == MSX_VDP_V9938);
+    assert(msx.vdp.type == MSX_VDP_V9958);
 
     /* R16 selects palette entry 4; port 9A writes its two GRB bytes. */
     msx_io_write(&msx, 0x99, 4);
@@ -1347,7 +1347,7 @@ static void test_nms8250_checkpoint_if_available(void) {
     assert(msx->mapper_segment[2] == 1);
     assert(msx->mapper_segment[3] == 0);
     assert(msx->instructions > 1000000);
-    assert(msx->vdp.type == MSX_VDP_V9938);
+    assert(msx->vdp.type == MSX_VDP_V9958);
     assert(msx->vdp.registers[9] == 0x02);
     assert(nonzero_vram > 0);
     assert(msx->vdp.registers[0] == 0x08);
@@ -1682,6 +1682,11 @@ int main(void) {
     assert(msx.frame == 1);
 
     msx_configure(&msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_NTSC, 200);
+    assert(strcmp(msx_vdp_name(&msx), "V9958") == 0);
+    assert(msx_default_vdp_type(MSX_MODEL_GENERIC_MSX2) ==
+           MSX_VDP_V9958);
+    msx_set_vdp_type(&msx, MSX_VDP_V9938);
+    assert(msx.vdp.type == MSX_VDP_V9938);
     assert(strcmp(msx_vdp_name(&msx), "V9938") == 0);
     assert(msx.ram_kb == 128);
     assert(msx.profile->vram_kb == 128);
@@ -1725,7 +1730,7 @@ int main(void) {
     msx_configure(&msx, MSX_MODEL_PHILIPS_NMS8250,
                   MSX_REGION_PAL, 128);
     assert(strcmp(msx.profile->name, "Philips NMS 8250") == 0);
-    assert(msx.vdp.type == MSX_VDP_V9938);
+    assert(msx.vdp.type == MSX_VDP_V9958);
     assert(msx.ram == msx.internal_ram);
 
     test_slot_bus_and_cpu();

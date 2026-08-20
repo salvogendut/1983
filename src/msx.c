@@ -532,10 +532,39 @@ const char *msx_region_name(MsxRegion region) {
 }
 
 const char *msx_vdp_name(const MsxMachine *msx) {
-    if (msx && msx_model_is_msx2(msx->profile->model))
-        return "V9938";
+    if (msx && vdp_type_is_v99x8(msx->vdp.type))
+        return msx_vdp_type_name(msx->vdp.type);
     return msx && msx->region == MSX_REGION_NTSC
          ? "TMS9918A" : "TMS9929A";
+}
+
+const char *msx_vdp_type_name(MsxVdpType type) {
+    switch (type) {
+        case MSX_VDP_V9938: return "V9938";
+        case MSX_VDP_V9958: return "V9958";
+        default:             return "TMS9918";
+    }
+}
+
+MsxVdpType msx_default_vdp_type(MsxModel model) {
+    return msx_model_is_msx2(model)
+         ? MSX_VDP_V9958 : MSX_VDP_TMS9918;
+}
+
+MsxVdpType msx_normalize_vdp_type(MsxModel model, MsxVdpType type) {
+    if (!msx_model_is_msx2(model))
+        return MSX_VDP_TMS9918;
+    return vdp_type_is_v99x8(type) ? type : MSX_VDP_V9958;
+}
+
+void msx_set_vdp_type(MsxMachine *msx, MsxVdpType type) {
+    if (!msx || !msx->profile)
+        return;
+    type = msx_normalize_vdp_type(msx->profile->model, type);
+    if (msx->vdp.type == type)
+        return;
+    vdp_set_type(&msx->vdp, type);
+    msx_reset(msx);
 }
 
 int msx_default_ram_kb(MsxModel model) {
@@ -710,8 +739,7 @@ void msx_configure(MsxMachine *msx, MsxModel model, MsxRegion region,
     msx->ram_kb = normalized_ram;
     msx->frame_hz = msx->region == MSX_REGION_NTSC ? 60 : 50;
     vdp_set_type(&msx->vdp,
-                 msx_model_is_msx2(msx->profile->model)
-                 ? MSX_VDP_V9938 : MSX_VDP_TMS9918);
+                 msx_default_vdp_type(msx->profile->model));
     msx_reset(msx);
 }
 
@@ -1140,13 +1168,13 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
             vdp_write_control(&msx->vdp, value);
             break;
         case 0x9a:
-            if (msx->vdp.type == MSX_VDP_V9938)
+            if (vdp_type_is_v99x8(msx->vdp.type))
                 vdp_write_palette(&msx->vdp, value);
             else
                 vdp_write_data(&msx->vdp, value);
             break;
         case 0x9b:
-            if (msx->vdp.type == MSX_VDP_V9938)
+            if (vdp_type_is_v99x8(msx->vdp.type))
                 vdp_write_indirect(&msx->vdp, value);
             else
                 vdp_write_control(&msx->vdp, value);

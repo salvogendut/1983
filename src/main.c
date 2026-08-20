@@ -972,6 +972,7 @@ int main(int argc, char **argv) {
     }
 
     msx_init(&msx, config.model, config.region, config.memory_kb);
+    msx_set_vdp_type(&msx, config.vdp_type);
     if (msx_configure_floppy(&msx, &config.floppy) != 0) {
         fprintf(stderr,
                 "cannot configure floppy controller for %s\n",

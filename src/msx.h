@@ -196,6 +196,10 @@ bool msx_model_is_msx2(MsxModel model);
 bool msx_has_memory_mapper(const MsxMachine *msx);
 const char *msx_region_name(MsxRegion region);
 const char *msx_vdp_name(const MsxMachine *msx);
+const char *msx_vdp_type_name(MsxVdpType type);
+MsxVdpType msx_default_vdp_type(MsxModel model);
+MsxVdpType msx_normalize_vdp_type(MsxModel model, MsxVdpType type);
+void msx_set_vdp_type(MsxMachine *msx, MsxVdpType type);
 
 int  msx_default_ram_kb(MsxModel model);
 int  msx_normalize_ram_kb(MsxModel model, int ram_kb);

@@ -27,6 +27,8 @@ static u32 pixel(const MsxVdp *vdp, int x, int y) {
     return vdp->pixels[y * vdp->render_width + x];
 }
 
+static void setup_v9938_bitmap(MsxVdp *vdp, u8 reg0);
+
 static u64 framebuffer_hash(const MsxVdp *vdp) {
     u64 hash = 1469598103934665603ull;
 
@@ -766,6 +768,59 @@ static void test_v9938_registers_and_status_selection(void) {
     assert(!vdp.irq);
     write_control_register(&vdp, 15, 15);
     assert(vdp_read_status(&vdp) == 0xff);
+}
+
+static void test_v9958_identity_registers_and_rendering(void) {
+    MsxVdp vdp;
+
+    vdp_init(&vdp);
+    vdp_set_type(&vdp, MSX_VDP_V9958);
+    vdp_reset(&vdp);
+    assert(vdp.type == MSX_VDP_V9958);
+    assert(vdp.status1 == 0x04);
+    write_control_register(&vdp, 15, 1);
+    assert(vdp_read_status(&vdp) == 0x04);
+
+    write_control_register(&vdp, 25, 0xff);
+    write_control_register(&vdp, 26, 0xff);
+    write_control_register(&vdp, 27, 0xff);
+    assert(vdp.registers[25] == 0x7f);
+    assert(vdp.registers[26] == 0x3f);
+    assert(vdp.registers[27] == 0x07);
+
+    vdp_set_type(&vdp, MSX_VDP_V9938);
+    vdp_reset(&vdp);
+    write_control_register(&vdp, 25, 0xff);
+    assert(vdp.registers[25] == 0);
+
+    /* YJK groups share J/K and carry a five-bit luminance per pixel. */
+    setup_v9938_bitmap(&vdp, 0x0e);
+    vdp_set_type(&vdp, MSX_VDP_V9958);
+    vdp.registers[25] = 0x08;
+    vdp.vram[0] = 0x80;
+    vdp.vram[0x10000] = 0x80;
+    vdp.vram[1] = 0x80;
+    vdp.vram[0x10001] = 0x80;
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 0, 0) == 0x8484a5);
+    assert(pixel(&vdp, 3, 0) == 0x8484a5);
+
+    /* YAE selects a normal palette entry when bit 3 is set. */
+    vdp.registers[25] = 0x18;
+    vdp.vram[0] = 0xf8;
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 0, 0) == COLOUR_WHITE);
+
+    /* R26 rotates by eight low-resolution pixels; R27 exposes border. */
+    setup_v9938_bitmap(&vdp, 0x06);
+    vdp_set_type(&vdp, MSX_VDP_V9958);
+    vdp.vram[4] = 0x20;
+    vdp.registers[26] = 1;
+    vdp.registers[27] = 2;
+    vdp_render(&vdp);
+    assert(pixel(&vdp, 0, 0) == COLOUR_BACKDROP);
+    assert(pixel(&vdp, 1, 0) == COLOUR_BACKDROP);
+    assert(pixel(&vdp, 2, 0) == V9938_GREEN);
 }
 
 static void test_v9938_retrace_status(void) {
@@ -1932,6 +1987,7 @@ int main(void) {
     test_backdrop_and_text_background_colours();
     test_dump_screen_text();
     test_v9938_registers_and_status_selection();
+    test_v9958_identity_registers_and_rendering();
     test_v9938_retrace_status();
     test_v9938_line_interrupt();
     test_v9938_interrupt_arbitration();
