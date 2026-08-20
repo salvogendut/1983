@@ -572,15 +572,15 @@ int main(void) {
     assert(config.sunrise_ide);
     assert(msx_sunrise_connected(&msx));
     assert(!msx_sunrise_disk_mounted(&msx));
-    assert(msx_sunrise_slot(&msx) == 1);
-    assert(strcmp(config_cartridge_slot_owner(&config, 1),
+    assert(msx_sunrise_slot(&msx) == 0);
+    assert(strcmp(config_cartridge_slot_owner(&config, 0),
                   "Sunrise IDE") == 0);
-    assert(!msx_get_cartridge(&msx, 1)->loaded);
-    assert(!config.cartridge_path[1][0]);
-    assert(leds_get_cartridge_state(1).type ==
+    assert(msx_get_cartridge(&msx, 1)->loaded);
+    assert(config.cartridge_path[1][0]);
+    assert(leds_get_cartridge_state(0).type ==
            LED_CARTRIDGE_STANDARD);
-    assert(leds_get_cartridge_state(1).present);
-    assert(!leds_get_cartridge_state(1).activity);
+    assert(leds_get_cartridge_state(0).present);
+    assert(!leds_get_cartridge_state(0).activity);
 
     snprintf(config.last_media_dir, sizeof(config.last_media_dir),
              "before-extension-edit");
@@ -652,7 +652,7 @@ int main(void) {
     assert(overlay.state == OVERLAY_STATE_MENU);
     assert(config.sunrise_ide);
     assert(msx_sunrise_connected(&msx));
-    assert(msx_sunrise_slot(&msx) == 1);
+    assert(msx_sunrise_slot(&msx) == 0);
     assert(strcmp(config.sunrise_rom_path,
                    sunrise_rom_path_2) == 0);
     assert(strcmp(config.ide_image_path,
@@ -710,11 +710,11 @@ int main(void) {
     assert(!config.scc);
     send_key(&overlay, SDLK_RETURN);
     assert(config.scc);
-    assert(strcmp(config_cartridge_slot_owner(&config, 0),
+    assert(strcmp(config_cartridge_slot_owner(&config, 1),
                   "Konami SCC") == 0);
-    assert(leds_get_cartridge_state(0).type ==
+    assert(leds_get_cartridge_state(1).type ==
            LED_CARTRIDGE_STANDARD);
-    assert(leds_get_cartridge_state(0).present);
+    assert(leds_get_cartridge_state(1).present);
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);
     assert(!config.msx_music);
@@ -784,13 +784,13 @@ int main(void) {
     assert(overlay.section == OVERLAY_EXTENSIONS);
     send_key(&overlay, SDLK_RETURN);
     assert(!config.sunrise_ide);
-    assert(config_cartridge_slot_available(&config, 0));
-    assert(strcmp(config_cartridge_slot_owner(&config, 1),
+    assert(config_cartridge_slot_available(&config, 1));
+    assert(strcmp(config_cartridge_slot_owner(&config, 0),
                   "Konami SCC") == 0);
-    assert(!leds_get_cartridge_state(0).present);
-    assert(leds_get_cartridge_state(1).type ==
+    assert(leds_get_cartridge_state(0).type ==
            LED_CARTRIDGE_STANDARD);
-    assert(leds_get_cartridge_state(1).present);
+    assert(leds_get_cartridge_state(0).present);
+    assert(!leds_get_cartridge_state(1).present);
 
     send_key(&overlay, SDLK_LEFT);
     assert(overlay.section == OVERLAY_MEDIA);
@@ -1007,9 +1007,9 @@ int main(void) {
     assert(config.cdx2);
     assert(strcmp(config.cdx2_rom_path, cdx2_rom_path) == 0);
     assert(msx_cdx2_connected(&msx));
-    assert(msx_cdx2_slot(&msx) == 1);
+    assert(msx_cdx2_slot(&msx) == 0);
     assert(msx_cdx2_rom_bank(&msx) == 0);
-    assert(msx_get_cartridge(&msx, 1)->data[4] == 0x11);
+    assert(msx_get_cartridge(&msx, 0)->data[4] == 0x11);
     assert(msx_floppy_supported(&msx));
     /* Installing the cartridge ROM resets immediately; the main-loop
      * request also guarantees a reset after the overlay transition. */
@@ -1023,7 +1023,7 @@ int main(void) {
     send_key(&overlay, SDLK_RETURN);
     assert(config.cdx2_rom_bank == 1);
     assert(msx_cdx2_rom_bank(&msx) == 1);
-    assert(msx_get_cartridge(&msx, 1)->data[4] == 0x22);
+    assert(msx_get_cartridge(&msx, 0)->data[4] == 0x22);
     assert(overlay_take_machine_reset_request(&overlay));
     send_key(&overlay, SDLK_UP);
     assert(overlay.row == 8); /* EXTENSION_CDX2 */
@@ -1053,7 +1053,7 @@ int main(void) {
              "%s", cdx2_rom_path);
     config_normalize(&config);
     assert(msx_load_cdx2(
-               &msx, 1,
+               &msx, 0,
                cdx2_rom_path,
                config.cdx2_rom_bank) == 0);
     send_key(&overlay, SDLK_F9);
@@ -1069,7 +1069,7 @@ int main(void) {
     send_key(&overlay, SDLK_N);
     assert(config.cdx2);
     assert(msx_cdx2_connected(&msx));
-    assert(msx_cdx2_slot(&msx) == 1);
+    assert(msx_cdx2_slot(&msx) == 0);
     assert(overlay_take_machine_reset_request(&overlay));
 
     /* RDF600 follows the same cartridge-slot lifecycle while exposing a
@@ -1095,7 +1095,7 @@ int main(void) {
     assert(config.rdf600);
     assert(strcmp(config.rdf600_rom_path, rdf600_rom_path) == 0);
     assert(msx_rdf600_connected(&msx));
-    assert(msx_rdf600_slot(&msx) == 1);
+    assert(msx_rdf600_slot(&msx) == 0);
     assert(msx_floppy_supported(&msx));
     assert(overlay_take_machine_reset_request(&overlay));
     send_key(&overlay, SDLK_RETURN);
@@ -1144,14 +1144,14 @@ int main(void) {
     assert(!config.sd_mapper_ram);
     assert(config.sd_mapper_alternate_driver);
     assert(msx_sd_mapper_connected(&msx));
-    assert(msx_sd_mapper_slot(&msx) == 1);
+    assert(msx_sd_mapper_slot(&msx) == 0);
     assert(msx_sd_card_mounted(&msx, 0));
     assert(!msx_sd_card_writable(&msx, 0));
     assert(strcmp(config.sd_mapper_rom_path,
                   sd_mapper_rom_path) == 0);
     assert(strcmp(config.sd_card_path[0],
                   sd_image_path) == 0);
-    assert(leds_get_cartridge_state(1).present);
+    assert(leds_get_cartridge_state(0).present);
 
     send_key(&overlay, SDLK_SPACE);
     assert(overlay.state == OVERLAY_STATE_SD_MAPPER_SETUP);
@@ -1182,7 +1182,7 @@ int main(void) {
     assert(config.sd_mapper_ram);
     assert(!config.sd_mapper_alternate_driver);
     assert(msx_sd_mapper_connected(&msx));
-    assert(msx_sd_mapper_slot(&msx) == 1);
+    assert(msx_sd_mapper_slot(&msx) == 0);
     assert(msx_sd_card_mounted(&msx, 0));
 
     snprintf(config.sunrise_rom_path,
@@ -1191,12 +1191,12 @@ int main(void) {
     assert(overlay.row == 0);
     send_key(&overlay, SDLK_RETURN);
     assert(config.sunrise_ide);
-    assert(msx_sunrise_slot(&msx) == 1);
-    assert(msx_sd_mapper_slot(&msx) == 0);
+    assert(msx_sunrise_slot(&msx) == 0);
+    assert(msx_sd_mapper_slot(&msx) == 1);
     assert(msx_sd_card_mounted(&msx, 0));
     send_key(&overlay, SDLK_RETURN);
     assert(!config.sunrise_ide);
-    assert(msx_sd_mapper_slot(&msx) == 1);
+    assert(msx_sd_mapper_slot(&msx) == 0);
     assert(msx_sd_card_mounted(&msx, 0));
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 1);
@@ -1309,7 +1309,7 @@ int main(void) {
     assert(overlay.state == OVERLAY_STATE_MENU);
     assert(config.megaflash);
     assert(msx_megaflash_connected(&msx));
-    assert(msx_megaflash_slot(&msx) == 1);
+    assert(msx_megaflash_slot(&msx) == 0);
     assert(msx_megaflash_card_mounted(&msx, 0));
     assert(strcmp(config.megaflash_rom_path,
                   megaflash_rom_path) == 0);
@@ -1388,7 +1388,7 @@ int main(void) {
     assert(overlay.state == OVERLAY_STATE_MENU);
     assert(config.megaflash);
     assert(msx_megaflash_connected(&msx));
-    assert(msx_megaflash_slot(&msx) == 1);
+    assert(msx_megaflash_slot(&msx) == 0);
     assert(!msx_megaflash_card_mounted(&msx, 0));
     assert(!config.megaflash_card_path[0][0]);
 

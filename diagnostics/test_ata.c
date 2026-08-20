@@ -84,6 +84,23 @@ static void test_identify(AtaDevice *ata) {
            (ATA_STATUS_DRDY | ATA_STATUS_DSC));
 }
 
+static void test_symbos_native_max(AtaDevice *ata) {
+    /*
+     * SymbOS uses READ NATIVE MAX ADDRESS as a capacity query. Match the
+     * Sunrise IDE behaviour in openMSX: return the sector count, not the
+     * zero-based last LBA, so a partition ending at the final sector is not
+     * rejected as extending beyond the device.
+     */
+    select_lba(ata, 0, 1);
+    ata_write_register(ata, 7, 0xf8);
+    assert(ata_read_register(ata, 3) == 2);
+    assert(ata_read_register(ata, 4) == 0);
+    assert(ata_read_register(ata, 5) == 0);
+    assert((ata_read_register(ata, 6) & 0x0f) == 0);
+    assert(ata_read_register(ata, 7) ==
+           (ATA_STATUS_DRDY | ATA_STATUS_DSC));
+}
+
 static void test_sector_reads(AtaDevice *ata) {
     select_lba(ata, 1, 1);
     ata_write_register(ata, 7, 0x20);
@@ -278,6 +295,7 @@ int main(void) {
     assert(ata_is_mounted(&ata));
 
     test_identify(&ata);
+    test_symbos_native_max(&ata);
     test_sector_reads(&ata);
     test_errors_and_reset(&ata);
     test_read_only_safety(&ata);

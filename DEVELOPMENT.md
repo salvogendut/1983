@@ -162,9 +162,10 @@ wired-AND semantics.
 `config_cartridge_slot_owner()` is the shared authority for physical
 cartridge-port reservations. Sunrise IDE, SD Mapper V2, MegaFlashROM SCC+ SD,
 SCC, and MSX-MUSIC
-reserve slot 2 then slot 1 in deterministic order. Startup and overlay media
-operations must consult that function rather than duplicating extension
-policy.
+reserve slot 1 then slot 2 in deterministic order, matching openMSX and
+keeping the physical slot recorded by direct-storage guests stable. Startup
+and overlay media operations must consult that function rather than
+duplicating extension policy.
 `configure_leds()` maps the resolved owner and cartridge presence onto the
 two physical slot indicators. Sunrise storage activity uses the dedicated
 IDE LED, while both SD cartridges use the dedicated SD A/B LEDs. The

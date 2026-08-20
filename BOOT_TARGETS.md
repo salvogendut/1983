@@ -13,6 +13,7 @@ The implementation supports these complementary paths:
 | C-BIOS | Redistributable out-of-box firmware for cartridge software | Useful for early Z80, slot, VDP, input, and cartridge tests; no BASIC, cassette, or disk support |
 | User-supplied MSX BIOS/BASIC | Representative real-machine behaviour | Required for BASIC and for broad software and peripheral compatibility |
 | Nextor | Disk operating system for machines with a supported storage controller | Boots through Sunrise IDE on the GeoBench NMS 8250 target and through SD Mapper V2 on MSX1; MegaFlashROM provides an additional user-supplied preflash lane |
+| SymbOS | Graphical operating system using a direct mass-storage driver | Boots the reference SymZilla image through Sunrise IDE or the SD Mapper V2 MegaSD compatibility view |
 
 C-BIOS and a vendor-compatible BIOS/BASIC set are alternatives at the machine
 firmware layer. Nextor is not a replacement for that layer: it is a disk
@@ -175,6 +176,64 @@ controller also boots `../geobench/QA/GBMSX.IMG` on the NMS 8250 profile and
 reaches the GeoBench desktop; at the 2,501-frame inspection point it has
 performed SD reads, populated 12,293 VRAM bytes, and left the external mapper
 at `03,02,01,00`.
+
+### SymbOS on Sunrise IDE and SD Mapper V2
+
+SymbOS records its storage driver and physical MSX slot in `SYMBOS.CFG` and
+then talks to that hardware directly. Cartridge-connected extensions therefore
+occupy slot 1 before slot 2, matching openMSX's normal external-slot order.
+The Sunrise driver also relies on ATA command `F8h` for its capacity query.
+
+The reference `MSXSYMBOS-SymZilla-H4-diag-368ee05-a07b93a.img` is already
+configured for Sunrise IDE. Work on a copy if SymbOS should be allowed to save
+settings:
+
+```sh
+cp /path/to/MSXSYMBOS-SymZilla-H4-diag-368ee05-a07b93a.img \
+  /tmp/1983-symbos-sunrise.img
+./1983 --model nms8250 \
+  --sunrise-rom ROMS/Nextor-2.1.1.SunriseIDE.ROM \
+  --ide /tmp/1983-symbos-sunrise.img --ide-mode read-write
+```
+
+SymbOS 4 supplies a MegaSD mass-storage driver, but no native SD Mapper V2
+driver. 1983 consequently exposes a MegaSD-compatible SPI view only while
+that guest driver selects its otherwise invalid `40h` bank; the native SD
+Mapper V2 ROM, SPI registers, and 512 KiB mapper remain unchanged. To prepare
+an SD copy, first boot it through Sunrise and use SymSetup to select
+**MegaSD compatible**, physical slot **1**, subslot **0**, card A, partition
+1. Save `SYMBOS.CFG`, shut down, and relaunch the copy with:
+
+```sh
+./1983 --model nms8250 \
+  --sd-mapper-rom 'ROMS/SDM V2 Nextor2.1.1.rom' \
+  --sd-a /tmp/1983-symbos-sd.img --sd-mode read-write
+```
+
+Both paths reach the SymZilla desktop with the 64 MiB reference image whose
+SHA-256 is
+`0d599b41d9b138cb7e857fad6b37e56c958070b70e7fe5cd67609c1729220930`.
+The image and SymbOS remain user-supplied. The browser edition embeds the
+unmodified official Nextor 2.1.1 Sunrise controller ROM together with its
+license notice; native builds can use the same repository copy explicitly.
+
+The browser's AUX panel exposes both storage controllers with the same slot
+ordering and safe image lifecycle. A Sunrise-configured image can be selected
+interactively or loaded from a server URL:
+
+```text
+?machine=nms8250&ide=media/MSXSYMBOS.img
+```
+
+Use `idemode=readwrite` only when changes should be downloaded on ejection. An
+SD Mapper-configured copy uses `sda=media/MSXSYMBOS-SD.img` and may add
+`sdmode=readwrite`. The optional headless WASM acceptance harness is:
+
+```sh
+make -C web check-wasm-symbos SYMBOS_IMAGE=/path/to/symbos.img
+make -C web check-wasm-symbos SYMBOS_IMAGE=/path/to/symbos-sd.img \
+  SYMBOS_CONTROLLER=sdmapper
+```
 
 ### MegaFlashROM SCC+ SD
 
@@ -428,6 +487,13 @@ Development tests advance through explicit checkpoints:
    `999564a371dd2fdf7fbe8d853e82a68d557c27b7d87417639b2fa17704b83f78`
    and the official preflash with SHA-256
    `54d92573bf88b699b6f15d82f497d268a61a9d491b71aa84fd78d862a4561065`.
+10. **Reached:** the 64 MiB SymZilla H4 diagnostic image reaches the SymbOS
+    desktop through both Sunrise IDE and SD Mapper V2. The Sunrise path uses
+    the image's supplied `SYMBOS.CFG`; the SD path uses the SymbOS MegaSD
+    driver configured for slot 1/subslot 0 and 1983's register-level
+    compatibility view. ATA `F8h`, extension slot ordering, and MegaSD SPI
+    activation have component regressions independent of the user-supplied
+    image.
 
 Each checkpoint should be scriptable in headless mode and should record the
 firmware hashes, machine profile, disk-image hash, CPU milestone, and

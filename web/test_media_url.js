@@ -18,11 +18,13 @@ assert.deepStrictEqual(media, {
   disk: 'https://example.test/1983/media/thisdisk.dsk',
   cartridge: null,
   cartridge2: null,
+  ide: null,
   sdA: null,
   sdB: null,
   extensions: null,
   autorun: 'disc.bas',
   sdMode: null,
+  ideMode: null,
 });
 
 media = parseStartupMedia(
@@ -50,11 +52,13 @@ assert.deepStrictEqual(parseStartupMedia('?theme=default', base), {
   disk: null,
   cartridge: null,
   cartridge2: null,
+  ide: null,
   sdA: null,
   sdB: null,
   extensions: null,
   autorun: null,
   sdMode: null,
+  ideMode: null,
 });
 
 media = parseStartupMedia(
@@ -68,29 +72,51 @@ assert.deepStrictEqual(media, {
   disk: 'https://example.test/1983/media/GEOBENCH.DSK',
   cartridge: null,
   cartridge2: null,
+  ide: null,
   sdA: 'https://example.test/1983/media/system.img',
   sdB: 'https://example.test/1983/media/data.img',
   extensions: ['sdmapper', 'unapi'],
   autorun: null,
   sdMode: 'readwrite',
+  ideMode: null,
 });
 assert.deepStrictEqual(
-  resolveStartupExtensions(media, { sdMapper: false, unapi: false }),
-  { sdMapper: true, unapi: true }
+  resolveStartupExtensions(media, {
+    sunrise: false, sdMapper: false, unapi: false,
+  }),
+  { sunrise: false, sdMapper: true, unapi: true }
 );
 
 media = parseStartupMedia('?sda=media%2Fsystem.img', base);
 assert.deepStrictEqual(
-  resolveStartupExtensions(media, { sdMapper: false, unapi: true }),
-  { sdMapper: true, unapi: true },
+  resolveStartupExtensions(media, {
+    sunrise: false, sdMapper: false, unapi: true,
+  }),
+  { sunrise: false, sdMapper: true, unapi: true },
   'an SD image implies SD Mapper without replacing stored UNAPI state'
 );
 
 media = parseStartupMedia('?extensions=unapi', base);
 assert.deepStrictEqual(
-  resolveStartupExtensions(media, { sdMapper: true, unapi: false }),
-  { sdMapper: false, unapi: true },
+  resolveStartupExtensions(media, {
+    sunrise: true, sdMapper: true, unapi: false,
+  }),
+  { sunrise: false, sdMapper: false, unapi: true },
   'an explicit extensions list overrides stored extension state'
+);
+
+media = parseStartupMedia(
+  '?ide=media%2Fsymbos.img&idemode=readwrite&extensions=sdmapper',
+  base
+);
+assert.strictEqual(media.ide, 'https://example.test/1983/media/symbos.img');
+assert.strictEqual(media.ideMode, 'readwrite');
+assert.deepStrictEqual(
+  resolveStartupExtensions(media, {
+    sunrise: false, sdMapper: false, unapi: true,
+  }),
+  { sunrise: true, sdMapper: true, unapi: false },
+  'an IDE image implies Sunrise alongside explicitly requested extensions'
 );
 
 assert.strictEqual(parseStartupMedia('?machine=msx1', base).machine, 0);
@@ -128,6 +154,14 @@ assert.throws(
 );
 assert.throws(
   () => parseStartupMedia('?sda=system.img&sdmode=unsafe', base),
+  /readonly or readwrite/
+);
+assert.throws(
+  () => parseStartupMedia('?idemode=readwrite', base),
+  /requires an ide/
+);
+assert.throws(
+  () => parseStartupMedia('?ide=system.img&idemode=unsafe', base),
   /readonly or readwrite/
 );
 

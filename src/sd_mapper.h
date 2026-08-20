@@ -22,10 +22,12 @@ typedef struct {
     u8 rom_bank1;
     u8 rom_bank2;
     u8 selected_cards;
+    u8 mega_sd_selected_card;
     u16 timer;
     u64 timer_clock_fraction;
     bool mapper_enabled;
     bool alternate_driver;
+    bool mega_sd_compat;
     bool rom_loaded;
 } MsxSdMapper;
 

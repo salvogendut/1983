@@ -51,12 +51,13 @@ FIRMWARE_ASSETS = \
 	../ROMS/rainbios_msx2.rom \
 	../ROMS/rainbios_msx2_sub.rom \
 	../ROMS/rainbios_nms8250_disk.rom \
+	../ROMS/Nextor-2.1.1.SunriseIDE.ROM \
 	../ROMS/SDM\ V2\ Nextor2.1.1.rom
 
 all: $(DIST_DIR)/index.html $(addprefix $(DIST_DIR)/,$(STYLE_ASSETS)) $(DIST_DIR)/app.js \
 	$(DIST_DIR)/audio-scheduler.js $(DIST_DIR)/gamepad.js $(DIST_DIR)/hardware-ui.js \
 	$(DIST_DIR)/media-url.js $(DIST_DIR)/unapi-relay-protocol.js \
-	$(DIST_DIR)/unapi-bridge.js \
+	$(DIST_DIR)/unapi-bridge.js $(DIST_DIR)/nextor-license.txt \
 	$(DIST_DIR)/brand-1983.png $(WASM_ASSETS)
 
 test: test-audio-scheduler test-gamepad test-hardware-ui test-media-url test-theme \
@@ -90,10 +91,15 @@ test-relay:
 check-wasm: all
 	node test_wasm_machine.js
 
+check-wasm-symbos: all
+	test -n "$(SYMBOS_IMAGE)"
+	node test_wasm_symbos.js "$(SYMBOS_IMAGE)" \
+	    /tmp/1983-wasm-symbos.ppm 5000 "$(or $(SYMBOS_CONTROLLER),sunrise)"
+
 $(WASM_ASSETS) &: $(OBJS) $(FIRMWARE_ASSETS) | $(DIST_DIR)
 	$(EMCC) $(CFLAGS) $(OBJS) -o $(DIST_DIR)/1983.js \
 	    -sMODULARIZE -sEXPORT_NAME=create1983 \
-	    -sEXPORTED_FUNCTIONS='_poc_init,_poc_init_model,_poc_load_cartridge,_poc_load_cartridge_slot,_poc_eject_cartridge,_poc_cartridge_loaded,_poc_reset,_poc_step,_poc_pixels,_poc_width,_poc_height,_poc_frame_hz,_poc_key,_poc_key_mod,_poc_joy,_poc_joy_matrix,_poc_set_input_device,_poc_mouse_motion,_poc_mouse_button,_poc_mouse_clear,_poc_audio_reset,_poc_audio_avail,_poc_audio_read_pos,_poc_audio_buffer,_poc_audio_advance,_poc_load_disk,_poc_eject_disk,_poc_has_floppy,_poc_load_cassette,_poc_eject_cassette,_poc_disk_motor,_poc_set_sd_mapper,_poc_sd_mapper_enabled,_poc_mount_sd_card,_poc_eject_sd_card,_poc_sd_card_mounted,_poc_sd_activity_mask,_poc_set_unapi,_poc_unapi_enabled,_poc_unapi_guest_active,_poc_unapi_activity,_poc_unapi_probe,_poc_unapi_dns_result,_poc_unapi_tcp_open_result,_poc_unapi_udp_open_result,_poc_autorun,_malloc,_free' \
+	    -sEXPORTED_FUNCTIONS='_poc_init,_poc_init_model,_poc_load_cartridge,_poc_load_cartridge_slot,_poc_eject_cartridge,_poc_cartridge_loaded,_poc_reset,_poc_step,_poc_pixels,_poc_width,_poc_height,_poc_frame_hz,_poc_key,_poc_key_mod,_poc_joy,_poc_joy_matrix,_poc_set_input_device,_poc_mouse_motion,_poc_mouse_button,_poc_mouse_clear,_poc_audio_reset,_poc_audio_avail,_poc_audio_read_pos,_poc_audio_buffer,_poc_audio_advance,_poc_load_disk,_poc_eject_disk,_poc_has_floppy,_poc_load_cassette,_poc_eject_cassette,_poc_disk_motor,_poc_set_sunrise,_poc_sunrise_enabled,_poc_sunrise_slot,_poc_mount_ide,_poc_eject_ide,_poc_ide_mounted,_poc_ide_writable,_poc_ide_activity,_poc_set_sd_mapper,_poc_sd_mapper_enabled,_poc_sd_mapper_slot,_poc_mount_sd_card,_poc_eject_sd_card,_poc_sd_card_mounted,_poc_sd_activity_mask,_poc_set_unapi,_poc_unapi_enabled,_poc_unapi_guest_active,_poc_unapi_activity,_poc_unapi_probe,_poc_unapi_dns_result,_poc_unapi_tcp_open_result,_poc_unapi_udp_open_result,_poc_autorun,_malloc,_free' \
 	    -sEXPORTED_RUNTIME_METHODS='HEAPU8,HEAPU32,wasmMemory,getValue,setValue,ccall,cwrap,FS' \
 	    -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 \
 	    --embed-file ../ROMS/cbios_main_msx1.rom@roms/cbios_main_msx1.rom \
@@ -101,6 +107,7 @@ $(WASM_ASSETS) &: $(OBJS) $(FIRMWARE_ASSETS) | $(DIST_DIR)
 	    --embed-file ../ROMS/rainbios_msx2.rom@roms/rainbios_msx2.rom \
 	    --embed-file ../ROMS/rainbios_msx2_sub.rom@roms/rainbios_msx2_sub.rom \
 	    --embed-file ../ROMS/rainbios_nms8250_disk.rom@roms/rainbios_nms8250_disk.rom \
+	    --embed-file ../ROMS/Nextor-2.1.1.SunriseIDE.ROM@roms/nextor-sunrise.rom \
 	    --embed-file ../ROMS/SDM\ V2\ Nextor2.1.1.rom@roms/sdmapper-v2-nextor.rom
 
 $(BUILD_DIR)/%.o: ../src/%.c | $(BUILD_DIR)
@@ -139,6 +146,9 @@ $(DIST_DIR)/unapi-relay-protocol.js: unapi-relay-protocol.js | $(DIST_DIR)
 $(DIST_DIR)/unapi-bridge.js: unapi-bridge.js | $(DIST_DIR)
 	cp $< $@
 
+$(DIST_DIR)/nextor-license.txt: ../ROMS/LICENSE-NEXTOR | $(DIST_DIR)
+	cp $< $@
+
 $(DIST_DIR)/%.css: %.css | $(DIST_DIR)
 	cp $< $@
 
@@ -159,6 +169,6 @@ clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)
 	rm -f *.o *.ppm poc.js poc.wasm 1983.js 1983.wasm
 
-.PHONY: all clean serve test check-wasm test-audio-scheduler test-gamepad \
+.PHONY: all clean serve test check-wasm check-wasm-symbos test-audio-scheduler test-gamepad \
 	test-hardware-ui test-media-url test-theme test-ui-contract test-unapi \
 	test-relay

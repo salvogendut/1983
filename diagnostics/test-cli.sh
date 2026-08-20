@@ -73,11 +73,11 @@ printf '%s\n' \
     'sunrise_ide = true' \
     "sunrise_rom = $sunrise" >"$config"
 dd if=/dev/zero of="$sunrise" bs=131072 count=1 2>/dev/null
-if ./1983 --config "$config" --cart2 missing.rom >"$log" 2>&1; then
+if ./1983 --config "$config" --cart1 missing.rom >"$log" 2>&1; then
     echo "cartridge was accepted in an extension-reserved slot" >&2
     exit 1
 fi
-grep -q "cartridge slot 2 unavailable: reserved by Sunrise IDE" "$log"
+grep -q "cartridge slot 1 unavailable: reserved by Sunrise IDE" "$log"
 
 if ./1983 --config /dev/null --sunrise-rom missing-sunrise.rom \
         >"$log" 2>&1; then
@@ -112,7 +112,7 @@ dd if=/dev/zero of="$sdimage" bs=512 count=2 2>/dev/null
 ./1983 --config /dev/null --megaflash-rom "$megaflash" \
     --megaflash-sd-a "$sdimage" --headless --unthrottled \
     --exit-after 0 >"$log" 2>&1
-grep -q "MegaFlashROM SCC+ SD loaded in cartridge slot 2" "$log"
+grep -q "MegaFlashROM SCC+ SD loaded in cartridge slot 1" "$log"
 grep -q "MegaFlash SD A: $sdimage (read-only)" "$log"
 
 if ./1983 --config /dev/null --sd-mapper-rom missing-sdmapper.rom \
@@ -134,7 +134,7 @@ grep -q "cannot mount SD Mapper card A image" "$log"
 ./1983 --config /dev/null --sd-mapper-rom "$sdrom" \
     --sd-a "$sdimage" --headless --unthrottled --exit-after 0 \
     >"$log" 2>&1
-grep -q "SD Mapper V2 loaded in cartridge slot 2" "$log"
+grep -q "SD Mapper V2 loaded in cartridge slot 1" "$log"
 grep -q "SD A: $sdimage (read-only)" "$log"
 
 if ./1983 --sd-mode unsafe >"$log" 2>&1; then

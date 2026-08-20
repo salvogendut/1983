@@ -1,0 +1,13 @@
+Nextor 2.1.1 Sunrise IDE kernel ROM
+==================================
+
+File: Nextor-2.1.1.SunriseIDE.ROM
+Size: 131072 bytes
+SHA-256: 205af7f7893aa0328be23f66b3afe3132c7dee59cf4bbc493408475a201c7ad6
+
+This is the unmodified Sunrise IDE kernel ROM from the official Nextor 2.1.1
+distribution. It is embedded in the Javascript 1983 build so the browser's
+Sunrise IDE extension does not need a firmware chooser.
+
+Source: https://github.com/Konamiman/Nextor/releases/tag/v2.1.1
+License: LICENSE-NEXTOR

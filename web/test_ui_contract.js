@@ -12,7 +12,9 @@ for (const match of app.matchAll(/\$\("([^"]+)"\)/g)) {
 }
 
 assert.match(html, /SD Mapper V2/);
+assert.match(html, /Sunrise IDE/);
 assert.match(html, /Embedded Nextor 2\.1\.1/);
+assert.match(html, /href="nextor-license\.txt"/);
 assert.match(html, /MSX TCP\/IP UNAPI/);
 assert.match(html, /Port-mapped \/ no cartridge slot/);
 assert.match(html, /id="unapiCertificate"[^>]*>Trust certificate<\/button>/);
@@ -23,6 +25,8 @@ assert.match(
 );
 assert.match(app, /relayHealthEndpoint\(unapiEndpoint\)/);
 assert.match(app, /window\.open\(unapiCertificateUrl, "_blank", "noopener,noreferrer"\)/);
+assert.match(app, /m\._poc_set_sunrise\(requested \? 1 : 0\)/);
+assert.match(app, /const slot = sunriseEnabled \? 1 : 0;/);
 assert.match(
   html,
   /<input type="checkbox" id="pixelToggle">/,

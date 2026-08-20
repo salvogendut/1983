@@ -75,13 +75,33 @@ async function main() {
   assert.strictEqual(module._poc_unapi_guest_active(), 0);
   assert.strictEqual(module._poc_set_unapi(0), 0);
 
-  module._poc_eject_cartridge(1);
-  assert.strictEqual(module._poc_cartridge_loaded(0), 1);
-  assert.strictEqual(module._poc_cartridge_loaded(1), 0);
+  assert.strictEqual(module._poc_set_sunrise(1), 1);
+  assert.strictEqual(module._poc_sunrise_enabled(), 1);
+  assert.strictEqual(module._poc_sunrise_slot(), 0);
+  assert.strictEqual(module._poc_cartridge_loaded(0), 0);
+  assert.strictEqual(
+    module._poc_cartridge_loaded(1), 1,
+    'Sunrise alone must leave cartridge II available'
+  );
+  module.FS.writeFile('/test-ide.img', new Uint8Array(1024 * 1024));
+  assert.strictEqual(
+    module.ccall(
+      'poc_mount_ide', 'number', ['string', 'number'],
+      ['/test-ide.img', 1]
+    ),
+    0
+  );
+  assert.strictEqual(module._poc_ide_mounted(), 1);
+  assert.strictEqual(module._poc_ide_writable(), 1);
+  module._poc_reset();
+  assert.strictEqual(module._poc_ide_mounted(), 1);
+  assert.strictEqual(module._poc_eject_ide(), 0);
+  assert.strictEqual(module._poc_ide_mounted(), 0);
 
   assert.strictEqual(module._poc_set_sd_mapper(1), 1);
   assert.strictEqual(module._poc_sd_mapper_enabled(), 1);
-  assert.strictEqual(module._poc_cartridge_loaded(0), 1);
+  assert.strictEqual(module._poc_sd_mapper_slot(), 1);
+  assert.strictEqual(module._poc_cartridge_loaded(0), 0);
   assert.strictEqual(module._poc_cartridge_loaded(1), 0);
   module.FS.writeFile('/test-sd.img', new Uint8Array(1024 * 1024));
   assert.strictEqual(
@@ -97,6 +117,12 @@ async function main() {
   assert.strictEqual(module._poc_sd_card_mounted(0), 1);
   assert.strictEqual(module._poc_eject_sd_card(0), 0);
   assert.strictEqual(module._poc_sd_card_mounted(0), 0);
+  assert.strictEqual(module._poc_set_sunrise(0), 0);
+  assert.strictEqual(module._poc_sunrise_enabled(), 0);
+  assert.strictEqual(
+    module._poc_sd_mapper_slot(), 0,
+    'SD Mapper must move back to cartridge I when Sunrise is disabled'
+  );
   assert.strictEqual(module._poc_set_sd_mapper(0), 0);
   assert.strictEqual(module._poc_sd_mapper_enabled(), 0);
 
@@ -115,6 +141,7 @@ async function main() {
   assert.strictEqual(module._poc_set_input_device(0), 0);
   assert.strictEqual(module._poc_set_input_device(2), -1);
 
+  assert.strictEqual(module._poc_set_sunrise(1), 1);
   assert.strictEqual(module._poc_set_sd_mapper(1), 1);
   assert.strictEqual(module._poc_set_unapi(1), 1);
   assert.strictEqual(module._poc_init_model(0, 0), 0);
@@ -123,7 +150,11 @@ async function main() {
   assert.strictEqual(module._poc_cartridge_loaded(0), 0);
   assert.strictEqual(module._poc_cartridge_loaded(1), 0);
   assert.strictEqual(module._poc_sd_mapper_enabled(), 1);
+  assert.strictEqual(module._poc_sunrise_enabled(), 1);
+  assert.strictEqual(module._poc_sunrise_slot(), 0);
+  assert.strictEqual(module._poc_sd_mapper_slot(), 1);
   assert.strictEqual(module._poc_unapi_enabled(), 1);
+  assert.strictEqual(module._poc_set_sunrise(0), 0);
   assert.strictEqual(module._poc_set_sd_mapper(0), 0);
   assert.strictEqual(module._poc_set_unapi(0), 0);
 

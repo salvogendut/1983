@@ -36,10 +36,31 @@ static bool g_machine_initialized;
 static u8 g_joy_pressed;
 static int g_input_device;
 static UnapiNet *g_unapinet;
+static bool g_sunrise_enabled;
 static bool g_sd_mapper_enabled;
 static bool g_unapi_enabled;
 
+#define SUNRISE_ROM_PATH "roms/nextor-sunrise.rom"
 #define SD_MAPPER_ROM_PATH "roms/sdmapper-v2-nextor.rom"
+
+static unsigned desired_sd_mapper_slot(void) {
+    return g_sunrise_enabled ? 1u : 0u;
+}
+
+static int poc_reload_firmware(void) {
+    if (g_msx.profile &&
+        g_msx.profile->model == MSX_MODEL_PHILIPS_NMS8250) {
+        return msx_load_firmware_set(
+            &g_msx,
+            "roms/rainbios_msx2.rom", NULL,
+            "roms/rainbios_msx2_sub.rom",
+            g_sunrise_enabled ? NULL : "roms/rainbios_nms8250_disk.rom");
+    }
+    return msx_load_firmware_set(
+        &g_msx,
+        "roms/cbios_main_msx1.rom",
+        "roms/cbios_logo_msx1.rom", NULL, NULL);
+}
 
 static void poc_cancel_paste(void) {
     paste_cancel(&g_paste, &g_msx);
@@ -119,22 +140,14 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
     if (msx_configure_floppy(&g_msx, &floppy) != 0)
         return -1;
 
-    if (model == 1) {
-        if (msx_load_firmware_set(
-                &g_msx,
-                "roms/rainbios_msx2.rom", NULL,
-                "roms/rainbios_msx2_sub.rom",
-                "roms/rainbios_nms8250_disk.rom") != 0)
-            return -1;
-    } else {
-        if (msx_load_firmware_set(
-                &g_msx,
-                "roms/cbios_main_msx1.rom",
-                "roms/cbios_logo_msx1.rom", NULL, NULL) != 0)
-            return -1;
-    }
+    if (poc_reload_firmware() != 0)
+        return -1;
+    if (g_sunrise_enabled &&
+        msx_load_sunrise_ide(&g_msx, 0, SUNRISE_ROM_PATH) != 0)
+        return -1;
     if (g_sd_mapper_enabled) {
-        if (msx_load_sd_mapper(&g_msx, 1, SD_MAPPER_ROM_PATH) != 0)
+        if (msx_load_sd_mapper(
+                &g_msx, desired_sd_mapper_slot(), SD_MAPPER_ROM_PATH) != 0)
             return -1;
         msx_sd_mapper_set_ram_enabled(&g_msx, true);
         msx_sd_mapper_set_alternate_driver(&g_msx, false);
@@ -312,8 +325,74 @@ EMSCRIPTEN_KEEPALIVE void poc_eject_cassette(void) {
 EMSCRIPTEN_KEEPALIVE int poc_disk_motor(void) { return g_msx.fdc.motor ? 1 : 0; }
 
 /* ---- browser expansion bay ----
- * SD Mapper V2 is a cartridge device and therefore owns cartridge slot II.
- * TCP/IP UNAPI is port mapped and deliberately reserves no cartridge slot. */
+ * Sunrise IDE and SD Mapper V2 are cartridge devices. Sunrise owns cartridge
+ * slot I when connected; SD Mapper then moves to slot II. With Sunrise absent,
+ * SD Mapper owns slot I. TCP/IP UNAPI is port mapped and reserves no slot. */
+EMSCRIPTEN_KEEPALIVE int poc_set_sunrise(int enabled) {
+    const bool requested = enabled != 0;
+
+    if (!g_machine_initialized)
+        return -1;
+    if (requested == g_sunrise_enabled)
+        return requested ? 1 : 0;
+    if (requested) {
+        if (g_sd_mapper_enabled) {
+            msx_eject_cartridge(&g_msx, 1);
+            msx_reassign_extension_slots(&g_msx, -1, 1, -1);
+        }
+        msx_eject_cartridge(&g_msx, 0);
+        if (msx_load_sunrise_ide(&g_msx, 0, SUNRISE_ROM_PATH) != 0) {
+            if (g_sd_mapper_enabled)
+                msx_reassign_extension_slots(&g_msx, -1, 0, -1);
+            return -1;
+        }
+        g_sunrise_enabled = true;
+        if (poc_reload_firmware() != 0)
+            return -1;
+        return 1;
+    }
+    if (msx_eject_sunrise_ide(&g_msx) != 0)
+        return -1;
+    g_sunrise_enabled = false;
+    if (g_sd_mapper_enabled)
+        msx_reassign_extension_slots(&g_msx, -1, 0, -1);
+    if (poc_reload_firmware() != 0)
+        return -1;
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_sunrise_enabled(void) {
+    return g_sunrise_enabled && msx_sunrise_connected(&g_msx) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_sunrise_slot(void) {
+    return msx_sunrise_slot(&g_msx);
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_mount_ide(const char *path, int writable) {
+    if (!path || !path[0])
+        return -1;
+    return msx_mount_sunrise_disk_mode(
+        &g_msx, path,
+        writable ? ATA_IMAGE_READ_WRITE : ATA_IMAGE_READ_ONLY);
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_eject_ide(void) {
+    return msx_eject_sunrise_disk(&g_msx);
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_ide_mounted(void) {
+    return msx_sunrise_disk_mounted(&g_msx) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_ide_writable(void) {
+    return msx_sunrise_disk_writable(&g_msx) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_ide_activity(void) {
+    return msx_sunrise_take_activity(&g_msx) ? 1 : 0;
+}
+
 EMSCRIPTEN_KEEPALIVE int poc_set_sd_mapper(int enabled) {
     const bool requested = enabled != 0;
 
@@ -322,8 +401,10 @@ EMSCRIPTEN_KEEPALIVE int poc_set_sd_mapper(int enabled) {
     if (requested == g_sd_mapper_enabled)
         return requested ? 1 : 0;
     if (requested) {
-        msx_eject_cartridge(&g_msx, 1);
-        if (msx_load_sd_mapper(&g_msx, 1, SD_MAPPER_ROM_PATH) != 0)
+        const unsigned slot = desired_sd_mapper_slot();
+
+        msx_eject_cartridge(&g_msx, slot);
+        if (msx_load_sd_mapper(&g_msx, slot, SD_MAPPER_ROM_PATH) != 0)
             return -1;
         msx_sd_mapper_set_ram_enabled(&g_msx, true);
         msx_sd_mapper_set_alternate_driver(&g_msx, false);
@@ -338,6 +419,10 @@ EMSCRIPTEN_KEEPALIVE int poc_set_sd_mapper(int enabled) {
 
 EMSCRIPTEN_KEEPALIVE int poc_sd_mapper_enabled(void) {
     return g_sd_mapper_enabled && msx_sd_mapper_connected(&g_msx) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_sd_mapper_slot(void) {
+    return msx_sd_mapper_slot(&g_msx);
 }
 
 EMSCRIPTEN_KEEPALIVE int poc_mount_sd_card(int card, const char *path,
