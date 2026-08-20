@@ -275,7 +275,7 @@ static void ata_execute(AtaDevice *ata, u8 command) {
         case 0xf8: {
             u32 maximum =
                 ata->sector_count_total
-                ? (u32)(ata->sector_count_total - 1) : 0;
+                ? (u32)ata->sector_count_total : 0;
 
             ata->lba_low = (u8)maximum;
             ata->lba_mid = (u8)(maximum >> 8);

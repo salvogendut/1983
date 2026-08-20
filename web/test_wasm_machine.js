@@ -75,14 +75,10 @@ async function main() {
   assert.strictEqual(module._poc_unapi_guest_active(), 0);
   assert.strictEqual(module._poc_set_unapi(0), 0);
 
-  module._poc_eject_cartridge(1);
-  assert.strictEqual(module._poc_cartridge_loaded(0), 1);
-  assert.strictEqual(module._poc_cartridge_loaded(1), 0);
-
   assert.strictEqual(module._poc_set_sd_mapper(1), 1);
   assert.strictEqual(module._poc_sd_mapper_enabled(), 1);
-  assert.strictEqual(module._poc_cartridge_loaded(0), 1);
-  assert.strictEqual(module._poc_cartridge_loaded(1), 0);
+  assert.strictEqual(module._poc_cartridge_loaded(0), 0);
+  assert.strictEqual(module._poc_cartridge_loaded(1), 1);
   module.FS.writeFile('/test-sd.img', new Uint8Array(1024 * 1024));
   assert.strictEqual(
     module.ccall(

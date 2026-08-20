@@ -50,6 +50,26 @@ int main(void) {
     sd_mapper_write(&mapper, 0x4000, 0x19);
     assert(sd_mapper_read(&mapper, 0x4000) == 0x19);
 
+    /* SymbOS can address the mounted cards through its MegaSD driver. */
+    sd_mapper_set_alternate_driver(&mapper, false);
+    sd_mapper_secondary_write(&mapper, 0);
+    sd_mapper_write(&mapper, 0x6000, 0x40);
+    sd_mapper_write(&mapper, 0x5800, 1);
+    sd_mapper_write(&mapper, 0x4000, 0xff);
+    assert(mapper.mega_sd_compat);
+    assert(mapper.mega_sd_selected_card == 1);
+    assert(!mapper.cards[0].selected);
+    assert(mapper.cards[1].selected);
+    assert(sd_mapper_read(&mapper, 0x5000) == 0xff);
+    assert(!mapper.cards[1].selected);
+    sd_mapper_write(&mapper, 0x5800, 0);
+    sd_mapper_write(&mapper, 0x4000, 0xff);
+    assert(mapper.cards[0].selected);
+    sd_mapper_write(&mapper, 0x6000, 0);
+    assert(!mapper.mega_sd_compat);
+    assert(!mapper.cards[0].selected);
+
+    sd_mapper_set_alternate_driver(&mapper, true);
     sd_mapper_secondary_write(&mapper, 0);
     sd_mapper_write(&mapper, 0x7ff0, 1);
     assert(sd_mapper_read(&mapper, 0x7ff0) == 0x06);

@@ -134,7 +134,7 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
             return -1;
     }
     if (g_sd_mapper_enabled) {
-        if (msx_load_sd_mapper(&g_msx, 1, SD_MAPPER_ROM_PATH) != 0)
+        if (msx_load_sd_mapper(&g_msx, 0, SD_MAPPER_ROM_PATH) != 0)
             return -1;
         msx_sd_mapper_set_ram_enabled(&g_msx, true);
         msx_sd_mapper_set_alternate_driver(&g_msx, false);
@@ -312,7 +312,7 @@ EMSCRIPTEN_KEEPALIVE void poc_eject_cassette(void) {
 EMSCRIPTEN_KEEPALIVE int poc_disk_motor(void) { return g_msx.fdc.motor ? 1 : 0; }
 
 /* ---- browser expansion bay ----
- * SD Mapper V2 is a cartridge device and therefore owns cartridge slot II.
+ * SD Mapper V2 is a cartridge device and therefore owns cartridge slot I.
  * TCP/IP UNAPI is port mapped and deliberately reserves no cartridge slot. */
 EMSCRIPTEN_KEEPALIVE int poc_set_sd_mapper(int enabled) {
     const bool requested = enabled != 0;
@@ -322,8 +322,8 @@ EMSCRIPTEN_KEEPALIVE int poc_set_sd_mapper(int enabled) {
     if (requested == g_sd_mapper_enabled)
         return requested ? 1 : 0;
     if (requested) {
-        msx_eject_cartridge(&g_msx, 1);
-        if (msx_load_sd_mapper(&g_msx, 1, SD_MAPPER_ROM_PATH) != 0)
+        msx_eject_cartridge(&g_msx, 0);
+        if (msx_load_sd_mapper(&g_msx, 0, SD_MAPPER_ROM_PATH) != 0)
             return -1;
         msx_sd_mapper_set_ram_enabled(&g_msx, true);
         msx_sd_mapper_set_alternate_driver(&g_msx, false);

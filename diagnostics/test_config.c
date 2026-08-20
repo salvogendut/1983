@@ -164,9 +164,9 @@ int main(void) {
     config.gif_ffmpeg = true;
     assert(config_cartridge_extension_count(&config) == 2);
     assert(strcmp(config_cartridge_slot_owner(&config, 0),
-                  "SD Mapper V2") == 0);
-    assert(strcmp(config_cartridge_slot_owner(&config, 1),
                   "Sunrise IDE") == 0);
+    assert(strcmp(config_cartridge_slot_owner(&config, 1),
+                  "SD Mapper V2") == 0);
     assert(!config_cartridge_slot_available(&config, 0));
     assert(!config_cartridge_slot_available(&config, 1));
     snprintf(config.last_media_dir, sizeof(config.last_media_dir),
@@ -259,7 +259,7 @@ int main(void) {
                  "/roms/cdx-2.rom");
         config_normalize(&cdx_config);
         assert(config_cartridge_extension_count(&cdx_config) == 1);
-        assert(strcmp(config_cartridge_slot_owner(&cdx_config, 1),
+        assert(strcmp(config_cartridge_slot_owner(&cdx_config, 0),
                       "CDX-2 FDC") == 0);
     }
 
@@ -273,7 +273,7 @@ int main(void) {
         rdf_config.rdf600 = true;
         config_normalize(&rdf_config);
         assert(config_cartridge_extension_count(&rdf_config) == 1);
-        assert(strcmp(config_cartridge_slot_owner(&rdf_config, 1),
+        assert(strcmp(config_cartridge_slot_owner(&rdf_config, 0),
                       "RDF600 FDC") == 0);
     }
 
@@ -286,9 +286,9 @@ int main(void) {
     loaded.megaflash = true;
     config_normalize(&loaded);
     assert(strcmp(config_cartridge_slot_owner(&loaded, 0),
-                  "MegaFlashROM SCC+ SD") == 0);
-    assert(strcmp(config_cartridge_slot_owner(&loaded, 1),
                   "SD Mapper V2") == 0);
+    assert(strcmp(config_cartridge_slot_owner(&loaded, 1),
+                  "MegaFlashROM SCC+ SD") == 0);
     loaded.main_input = (InputPort)99;
     loaded.joy_port_device[0] = (JoyPortDevice)99;
     config_normalize(&loaded);

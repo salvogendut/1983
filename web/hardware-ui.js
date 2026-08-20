@@ -49,7 +49,7 @@
       cartridgeSlotOwner(slot) {
         if (slot !== 0 && slot !== 1)
           throw new Error('unsupported cartridge slot: ' + slot);
-        return slot === 1 && cartridgeExtensions.length
+        return slot === 0 && cartridgeExtensions.length
           ? cartridgeExtensions[0] : null;
       },
       cartridgeSlotAvailable(slot) {

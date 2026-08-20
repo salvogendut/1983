@@ -24,6 +24,11 @@ assert.match(
 assert.match(app, /relayHealthEndpoint\(unapiEndpoint\)/);
 assert.match(app, /window\.open\(unapiCertificateUrl, "_blank", "noopener,noreferrer"\)/);
 assert.match(
+  app,
+  /else if \(m\._poc_cartridge_loaded\(0\)\) \{\s*m\._poc_eject_cartridge\(0\);/,
+  'enabling SD Mapper must release cartridge I in both the UI and core'
+);
+assert.match(
   html,
   /<input type="checkbox" id="pixelToggle">/,
   'Sharp pixels must be disabled by default'

@@ -101,7 +101,7 @@ function updateExpansionIndicator() {
 function updateSdMapperUi() {
   sdMapperToggleEl.checked = sdMapperEnabled;
   sdMapperStateEl.textContent = sdMapperEnabled
-    ? "Enabled - cartridge II reserved" : "Disabled";
+    ? "Enabled - cartridge I reserved" : "Disabled";
   for (const input of sdAccessModeEls)
     input.checked = input.value === sdAccessMode;
   for (const card of ["A", "B"]) {
@@ -124,7 +124,7 @@ function setSdMapperEnabled(enabled, persist = true, announce = false) {
   }
   if (announce)
     showToast(sdMapperEnabled
-      ? "SD Mapper V2 enabled in cartridge II"
+      ? "SD Mapper V2 enabled in cartridge I"
       : "SD Mapper V2 disabled");
 }
 
@@ -979,9 +979,9 @@ create1983().then(m => {
           return;
         }
       }
-    } else if (m._poc_cartridge_loaded(1)) {
-      m._poc_eject_cartridge(1);
-      clearCartUi(1);
+    } else if (m._poc_cartridge_loaded(0)) {
+      m._poc_eject_cartridge(0);
+      clearCartUi(0);
     }
 
     if (Boolean(m._poc_sd_mapper_enabled()) !== requested)
@@ -989,7 +989,7 @@ create1983().then(m => {
     const actual = Boolean(m._poc_sd_mapper_enabled());
     sdMapperEnabled = actual;
     peripherals.setCartridgeExtensions(actual ? ["SD Mapper V2"] : []);
-    if (actual) clearCartUi(1);
+    if (actual) clearCartUi(0);
     resetAudioQueue();
     frameClock.reset();
     releaseAllJoy();

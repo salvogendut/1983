@@ -775,13 +775,16 @@ const char *config_cartridge_slot_owner(const Config *config,
         extensions[extension_count++] = "RDF600 FDC";
 
     /*
-     * Keep cartridge 1 available for ordinary software until a second
-     * extension is connected. A controller mapped into primary slot 1 or 2
-     * reserves that exact physical port first.
+     * Match the standard MSX/openMSX external-slot order: the first
+     * cartridge device occupies primary slot 1, followed by primary slot 2.
+     * SymbOS stores this physical slot in its mass-storage configuration, so
+     * keeping the order stable lets images configured in openMSX boot here.
+     * A controller mapped into primary slot 1 or 2 still reserves that exact
+     * physical port first.
      */
     for (unsigned extension = 0;
          extension < extension_count; ++extension) {
-        unsigned destination = owners[1] == NULL ? 1u : 0u;
+        unsigned destination = owners[0] == NULL ? 0u : 1u;
 
         if (owners[destination] == NULL)
             owners[destination] = extensions[extension];

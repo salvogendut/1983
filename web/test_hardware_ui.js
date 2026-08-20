@@ -28,12 +28,12 @@ assert.deepStrictEqual(
   state.setCartridgeExtensions(['SD Mapper V2', 'SD Mapper V2']),
   ['SD Mapper V2']
 );
-assert.strictEqual(state.cartridgeSlotAvailable(0), true);
-assert.strictEqual(state.cartridgeSlotAvailable(1), false);
-assert.strictEqual(state.cartridgeSlotOwner(1), 'SD Mapper V2');
+assert.strictEqual(state.cartridgeSlotAvailable(0), false);
+assert.strictEqual(state.cartridgeSlotAvailable(1), true);
+assert.strictEqual(state.cartridgeSlotOwner(0), 'SD Mapper V2');
 
 state.setCartridgeExtensions([]);
-assert.strictEqual(state.cartridgeSlotAvailable(1), true);
+assert.strictEqual(state.cartridgeSlotAvailable(0), true);
 assert.throws(() => state.cartridgeSlotAvailable(2), /unsupported/);
 
 console.log('web hardware UI tests passed');

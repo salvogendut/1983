@@ -57,7 +57,7 @@ be selected directly with a case-insensitive query parameter:
   release it.
 - **AUX expansion bay** with SD Mapper V2 and MSX TCP/IP UNAPI controls. The SD
   Mapper has fixed embedded firmware, 512 KiB mapper RAM, two user-selectable
-  SD images and reserves cartridge II. UNAPI is port-mapped and leaves both
+  SD images and reserves cartridge I. UNAPI is port-mapped and leaves both
   cartridge slots available.
 
 ## AUX expansion bay
