@@ -26,6 +26,13 @@ assert.match(
 assert.match(app, /relayHealthEndpoint\(unapiEndpoint\)/);
 assert.match(app, /window\.open\(unapiCertificateUrl, "_blank", "noopener,noreferrer"\)/);
 assert.match(app, /m\._poc_set_sunrise\(requested \? 1 : 0\)/);
+assert.match(
+  html,
+  /id="memoryExpansion" type="range"[^>]*min="0" max="8"[^>]*value="2"/
+);
+assert.match(html, /id="memoryValue"[^>]*>64 KiB<\/output>/);
+assert.match(app, /m\._poc_set_ram_kb\(ramKb\)/);
+assert.match(app, /RAM_STORAGE_PREFIX \+ currentModel/);
 assert.match(app, /const slot = sunriseEnabled \? 1 : 0;/);
 assert.match(
   html,

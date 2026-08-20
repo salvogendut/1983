@@ -80,6 +80,7 @@ const SD_MAPPER_STORAGE_KEY = "javascript1983.expansion.sdMapper";
 const SD_ACCESS_STORAGE_KEY = "javascript1983.expansion.sdAccessMode";
 const UNAPI_STORAGE_KEY = "javascript1983.expansion.unapi";
 const UNAPI_ENDPOINT_STORAGE_KEY = "javascript1983.expansion.unapiEndpoint";
+const RAM_STORAGE_PREFIX = "javascript1983.machine.ram.";
 let sunriseEnabled = false;
 let ideAccessMode = "readonly";
 let sdMapperEnabled = false;
@@ -519,6 +520,9 @@ create1983().then(m => {
   const frameClock = JS1983Audio.createFrameClock(m._poc_frame_hz());
   const peripherals = JS1983Hardware.createPeripheralState();
   const modelEl = $("model");
+  const memoryExpansionEl = $("memoryExpansion");
+  const memoryValueEl = $("memoryValue");
+  const memoryMinimumEl = $("memoryMinimum");
   const frameRateLabelEl = $("frameRateLabel");
   const resetEl = $("reset");
   const diskSlotEl = $("diskSlot");
@@ -558,6 +562,19 @@ create1983().then(m => {
     path: "/sd-card-" + letter.toLowerCase() + ".img",
   }));
 
+  const ramSelections = [
+    JS1983Hardware.defaultRamKb(0),
+    JS1983Hardware.defaultRamKb(1),
+  ];
+  for (let model = 0; model < ramSelections.length; ++model) {
+    try {
+      const stored = Number(localStorage.getItem(RAM_STORAGE_PREFIX + model));
+      if (JS1983Hardware.ramSizesForModel(model).includes(stored))
+        ramSelections[model] = stored;
+    } catch (_) {
+      // Keep the native machine default when browser storage is unavailable.
+    }
+  }
   let currentModel = 0;
   let audioCtx = null;
   let audioScheduler = null;
@@ -882,6 +899,53 @@ create1983().then(m => {
     else m._poc_audio_reset();
   }
 
+  function updateMemoryControl(model) {
+    const sizes = JS1983Hardware.ramSizesForModel(model);
+    const ramKb = JS1983Hardware.normalizeRamKb(model, ramSelections[model]);
+    const index = JS1983Hardware.RAM_SIZES_KB.indexOf(ramKb);
+
+    ramSelections[model] = ramKb;
+    memoryExpansionEl.min = String(
+      JS1983Hardware.RAM_SIZES_KB.indexOf(sizes[0])
+    );
+    memoryExpansionEl.max = String(JS1983Hardware.RAM_SIZES_KB.length - 1);
+    memoryExpansionEl.value = String(index);
+    memoryValueEl.value = JS1983Hardware.formatRamKb(ramKb);
+    memoryMinimumEl.textContent = JS1983Hardware.formatRamKb(sizes[0]);
+    memoryExpansionEl.setAttribute(
+      "aria-valuetext", JS1983Hardware.formatRamKb(ramKb)
+    );
+  }
+
+  function machineReadyStatus(model) {
+    const prefix = model === 1
+      ? "Philips NMS 8250 ready - RainBIOS + WD2793"
+      : "MSX1 ready - C-BIOS";
+    return prefix + " - " +
+      JS1983Hardware.formatRamKb(ramSelections[model]) + " RAM";
+  }
+
+  function applyMemorySelection(ramKb, persist = true, announce = true) {
+    const supported = JS1983Hardware.ramSizesForModel(currentModel);
+    if (!supported.includes(ramKb) || m._poc_set_ram_kb(ramKb) !== ramKb)
+      return false;
+    ramSelections[currentModel] = ramKb;
+    if (persist) {
+      try {
+        localStorage.setItem(RAM_STORAGE_PREFIX + currentModel, String(ramKb));
+      } catch (_) {}
+    }
+    updateMemoryControl(currentModel);
+    resetAudioQueue();
+    frameClock.reset();
+    releaseAllJoy();
+    releaseAllVirtualKeys();
+    setStatus(machineReadyStatus(currentModel));
+    if (announce)
+      showToast("System RAM changed to " + JS1983Hardware.formatRamKb(ramKb));
+    return true;
+  }
+
   function reinit(model) {
     if (sunriseEnabled && ideImage) {
       try {
@@ -904,6 +968,15 @@ create1983().then(m => {
     }
     currentModel = model;
     modelEl.value = String(model);
+    const selectedRam = JS1983Hardware.normalizeRamKb(
+      model, ramSelections[model]
+    );
+    if (m._poc_set_ram_kb(selectedRam) !== selectedRam) {
+      setStatus("Machine initialization failed: RAM configuration unavailable");
+      return false;
+    }
+    ramSelections[model] = selectedRam;
+    updateMemoryControl(model);
     framebufferPtr = m._poc_pixels();
     frameW = m._poc_width();
     frameH = m._poc_height();
@@ -925,9 +998,7 @@ create1983().then(m => {
     updateCartridgeAvailability();
     applyInputDevice(peripherals.getInputDevice(), false);
     updateScreenModeReadout();
-    setStatus(model === 1
-      ? "Philips NMS 8250 ready - RainBIOS + WD2793"
-      : "MSX1 ready - C-BIOS");
+    setStatus(machineReadyStatus(model));
     return true;
   }
 
@@ -939,6 +1010,23 @@ create1983().then(m => {
         : "MSX1 (C-BIOS) selected");
     } else {
       modelEl.value = String(currentModel);
+    }
+  });
+
+  memoryExpansionEl.addEventListener("input", () => {
+    const ramKb = JS1983Hardware.RAM_SIZES_KB[Number(memoryExpansionEl.value)];
+    memoryValueEl.value = JS1983Hardware.formatRamKb(ramKb);
+    memoryExpansionEl.setAttribute(
+      "aria-valuetext", JS1983Hardware.formatRamKb(ramKb)
+    );
+  });
+
+  memoryExpansionEl.addEventListener("change", () => {
+    const ramKb = JS1983Hardware.RAM_SIZES_KB[Number(memoryExpansionEl.value)];
+    if (!applyMemorySelection(ramKb)) {
+      updateMemoryControl(currentModel);
+      setStatus("RAM configuration could not be applied");
+      showToast("Could not change system RAM");
     }
   });
 
@@ -1248,6 +1336,9 @@ create1983().then(m => {
     if (!reinit(startupMedia.machine))
       startupMediaError = new Error("selected machine firmware is unavailable");
   } else {
+    if (!startupMediaError &&
+        !applyMemorySelection(ramSelections[currentModel], false, false))
+      startupMediaError = new Error("stored RAM configuration is unavailable");
     applySunriseHardware(sunriseEnabled);
     applySdMapperHardware(sdMapperEnabled);
     applyUnapiHardware(unapiEnabled);

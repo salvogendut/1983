@@ -166,6 +166,23 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
 
 EMSCRIPTEN_KEEPALIVE int poc_init(void) { return poc_init_model(0, NULL); }
 
+EMSCRIPTEN_KEEPALIVE int poc_ram_kb(void) {
+    return g_machine_initialized ? g_msx.ram_kb : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_set_ram_kb(int ram_kb) {
+    MsxModel model;
+
+    if (!g_machine_initialized || !g_msx.profile)
+        return -1;
+    model = g_msx.profile->model;
+    if (msx_normalize_ram_kb(model, ram_kb) != ram_kb)
+        return -1;
+    if (g_msx.ram_kb != ram_kb)
+        msx_configure(&g_msx, model, g_msx.region, ram_kb);
+    return g_msx.ram_kb == ram_kb ? ram_kb : -1;
+}
+
 EMSCRIPTEN_KEEPALIVE int poc_load_cartridge(const char *path) {
     if (msx_load_cartridge_slot(
             &g_msx, 0, path, MSX_CART_MAPPER_AUTO) != 0)
