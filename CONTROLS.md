@@ -7,6 +7,7 @@ media, and extensions are covered in [`USAGE.md`](USAGE.md).
 
 | Key | Action |
 |-----|--------|
+| F3 | Flip the active 512 KiB unified ROM between its lower/upper 256 KiB bank, then reset |
 | F4 | Save a PPM screenshot (with a camera-shutter sound) |
 | F5 | Reset |
 | F6 | Toggle animated GIF recording |

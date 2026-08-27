@@ -12,8 +12,12 @@ int main(void) {
     char flash_path[PATH_MAX];
 
     config_defaults(&config);
-    assert(strcmp(config.machine_id, "cbios") == 0);
-    assert(config.vdp_type == MSX_VDP_TMS9918);
+    assert(strcmp(config.machine_id, "omega-msx2") == 0);
+    assert(config.model == MSX_MODEL_GENERIC_MSX2);
+    assert(config.vdp_type == MSX_VDP_V9958);
+    assert(config.memory_kb == 128);
+    assert(!config.unified_rom_path[0]);
+    assert(config.unified_rom_bank == 0);
     assert(!config.bios_path[0]);
     assert(!config.logo_path[0]);
     assert(!config.subrom_path[0]);
@@ -240,6 +244,8 @@ int main(void) {
                   "/roms/nms8250_msx2sub.rom") == 0);
     assert(strcmp(loaded.disk_rom_path,
                   "/roms/nms8250_disk.rom") == 0);
+    assert(!loaded.unified_rom_path[0]);
+    assert(loaded.unified_rom_bank == 0);
     assert(strcmp(loaded.cartridge_path[0],
                   "/roms/Metal Gear.rom") == 0);
     assert(strcmp(loaded.cartridge_path[1],
@@ -258,6 +264,20 @@ int main(void) {
         snprintf(expected, sizeof(expected),
                  "/chooser-history/%d", chooser);
         assert(strcmp(loaded.file_chooser_dir[chooser], expected) == 0);
+    }
+
+    {
+        Config unified = loaded;
+
+        snprintf(unified.unified_rom_path,
+                 sizeof(unified.unified_rom_path),
+                 "/roms/omega-unified.rom");
+        unified.unified_rom_bank = 1;
+        config_normalize(&unified);
+        assert(!unified.bios_path[0]);
+        assert(!unified.logo_path[0]);
+        assert(!unified.subrom_path[0]);
+        assert(!unified.disk_rom_path[0]);
     }
 
     {

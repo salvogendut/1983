@@ -211,8 +211,22 @@ dist_pkgdata_DATA = 1983-models.conf
 cbiosdir = $(pkgdatadir)/ROMS
 dist_cbios_DATA = \
 	ROMS/README.C-BIOS \
+	ROMS/README-RainBIOS \
 	ROMS/cbios_logo_msx1.rom \
-	ROMS/cbios_main_msx1.rom
+	ROMS/cbios_main_msx1.rom \
+	ROMS/rainbios_msx2.rom \
+	ROMS/rainbios_msx2_sub.rom \
+	ROMS/rainbios_disk.rom \
+	ROMS/rainbios_omega.rom
+
+dist_noinst_SCRIPTS = \
+	tools/import-rainbios-roms.sh \
+	tools/build-omega-unified-rom.py
+
+RAINBIOS_DIR ?= $(srcdir)/../rainbios
+.PHONY: import-rainbios-roms
+import-rainbios-roms:
+	$(srcdir)/tools/import-rainbios-roms.sh "$(RAINBIOS_DIR)"
 
 icon16dir        = $(datadir)/icons/hicolor/16x16/apps
 dist_icon16_DATA = icons/16x16/apps/io.github.salvogendut.Emulator1983.png

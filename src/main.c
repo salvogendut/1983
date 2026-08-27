@@ -98,6 +98,41 @@ static bool gif_capture_fps_supported(int fps) {
     return fps == 25 || fps == 20 || fps == 10 || fps == 5;
 }
 
+static const char *path_basename(const char *path) {
+    const char *slash;
+    const char *backslash;
+
+    if (!path || !path[0])
+        return "ROM";
+    slash = strrchr(path, '/');
+    backslash = strrchr(path, '\\');
+    if (!slash || (backslash && backslash > slash))
+        slash = backslash;
+    return slash ? slash + 1 : path;
+}
+
+static void short_rom_filename(char *destination, size_t destination_size,
+                               const char *path) {
+    const char *name = path_basename(path);
+    size_t length;
+    size_t tail;
+    size_t head;
+
+    if (!destination || destination_size == 0)
+        return;
+    length = strlen(name);
+    if (length < destination_size) {
+        snprintf(destination, destination_size, "%s", name);
+        return;
+    }
+
+    /* Retain both the identifying prefix and the filename extension. */
+    tail = destination_size > 12 ? 9 : 3;
+    head = destination_size - tail - 4;
+    snprintf(destination, destination_size, "%.*s...%s",
+             (int)head, name, name + length - tail);
+}
+
 /* The MsxMachine exposes a single optional-I/O slot; route both the UNAPI
  * bridge and the RS-232C interface through one dispatcher. */
 static UnapiNet *g_unapinet;
@@ -800,20 +835,39 @@ int main(int argc, char **argv) {
     if (!definition)
         definition = model_catalog_find_hardware(&models, config.model);
     if (definition) {
+        bool individual_empty =
+            !config.bios_path[0] && !config.logo_path[0] &&
+            !config.subrom_path[0] && !config.disk_rom_path[0];
+
         config.model = definition->hardware;
         config.floppy = definition->floppy;
         snprintf(config.machine_id, sizeof(config.machine_id),
                  "%s", definition->id);
-        if (!config.bios_path[0])
+        if (!config.unified_rom_path[0] && individual_empty &&
+            definition->unified_rom_path[0]) {
+            snprintf(config.unified_rom_path,
+                     sizeof(config.unified_rom_path), "%s",
+                     definition->unified_rom_path);
+            config.unified_rom_bank = definition->unified_rom_bank;
+        }
+        if (!config.unified_rom_path[0] &&
+            !definition->unified_rom_path[0] &&
+            !config.bios_path[0])
             snprintf(config.bios_path, sizeof(config.bios_path),
                      "%s", definition->bios_path);
-        if (!config.logo_path[0])
+        if (!config.unified_rom_path[0] &&
+            !definition->unified_rom_path[0] &&
+            !config.logo_path[0])
             snprintf(config.logo_path, sizeof(config.logo_path),
                      "%s", definition->logo_path);
-        if (!config.subrom_path[0])
+        if (!config.unified_rom_path[0] &&
+            !definition->unified_rom_path[0] &&
+            !config.subrom_path[0])
             snprintf(config.subrom_path, sizeof(config.subrom_path),
                      "%s", definition->subrom_path);
-        if (!config.disk_rom_path[0])
+        if (!config.unified_rom_path[0] &&
+            !definition->unified_rom_path[0] &&
+            !config.disk_rom_path[0])
             snprintf(config.disk_rom_path, sizeof(config.disk_rom_path),
                      "%s", definition->disk_rom_path);
     }
@@ -834,6 +888,10 @@ int main(int argc, char **argv) {
         snprintf(config.machine_id, sizeof(config.machine_id),
                  "%s", definition->id);
         config.memory_kb = msx_default_ram_kb(config.model);
+        snprintf(config.unified_rom_path,
+                 sizeof(config.unified_rom_path), "%s",
+                 definition->unified_rom_path);
+        config.unified_rom_bank = definition->unified_rom_bank;
         snprintf(config.bios_path, sizeof(config.bios_path),
                  "%s", definition->bios_path);
         snprintf(config.logo_path, sizeof(config.logo_path),
@@ -869,6 +927,11 @@ int main(int argc, char **argv) {
     if (cli.disk_rom_path)
         snprintf(config.disk_rom_path, sizeof(config.disk_rom_path),
                  "%s", cli.disk_rom_path);
+    if (cli.bios_path || cli.logo_path ||
+        cli.subrom_path || cli.disk_rom_path) {
+        config.unified_rom_path[0] = '\0';
+        config.unified_rom_bank = 0;
+    }
     if (cli.sunrise_rom_path) {
         snprintf(config.sunrise_rom_path,
                  sizeof(config.sunrise_rom_path),
@@ -1023,10 +1086,20 @@ int main(int argc, char **argv) {
     sync_mouse_ports(&msx, &config);
     kbd_init(&keyboard);
     paste_init(&paste);
-    if (config.bios_path[0] &&
-        msx_load_firmware_set(
-            &msx, config.bios_path, config.logo_path,
-            config.subrom_path, config.disk_rom_path) < 0) {
+    if (config.unified_rom_path[0] &&
+        msx_load_omega_unified_rom(
+            &msx, config.unified_rom_path,
+            config.unified_rom_bank) < 0) {
+        fprintf(stderr, "cannot load unified ROM for %s\n",
+                config.machine_id);
+        if (cli.model_name) {
+            msx_destroy(&msx);
+            return 1;
+        }
+    } else if (config.bios_path[0] &&
+               msx_load_firmware_set(
+                   &msx, config.bios_path, config.logo_path,
+                   config.subrom_path, config.disk_rom_path) < 0) {
         fprintf(stderr, "cannot load firmware set for %s\n",
                 config.machine_id);
         if (cli.bios_path || cli.logo_path ||
@@ -1471,8 +1544,8 @@ int main(int argc, char **argv) {
                  msx.profile->psg_variant == PSG_VARIANT_YM2149
                  ? "YM2149" : "AY-3-8910");
     startup_info(config.notifications,
-                 "F4 screenshot, F5 reset, F6 GIF record, F9 options, "
-                 "F11 fullscreen, F12 quit\n");
+                 "F3 unified ROM bank, F4 screenshot, F5 reset, "
+                 "F6 GIF record, F9 options, F11 fullscreen, F12 quit\n");
     startup_info(config.notifications,
                  "Shift+F1..F5 = MSX F1..F5, Shift+F7 = SELECT, "
                  "Shift+F8 = STOP\n");
@@ -1480,7 +1553,11 @@ int main(int argc, char **argv) {
                  "Ctrl+V = paste host clipboard text\n");
     startup_info(config.notifications, "Gamepad: %s\n",
                  gamepad_input_name(&gamepad));
-    if (msx_can_boot(&msx))
+    if (msx.unified_rom_loaded)
+        startup_info(config.notifications,
+                     "Omega unified ROM bank %u loaded\n",
+                     msx.unified_rom_bank + 1);
+    else if (msx_can_boot(&msx))
         startup_info(config.notifications,
                      "BIOS loaded%s%s%s%s%s\n",
                      msx.logo_loaded ? ", logo ROM loaded" : "",
@@ -1746,6 +1823,40 @@ int main(int argc, char **argv) {
             }
 
             switch (event.key.key) {
+                case SDLK_F3:
+                    if (event.key.repeat)
+                        break;
+                    if (!msx.unified_rom_loaded ||
+                        !config.unified_rom_path[0]) {
+                        notify_post("F3 requires an active unified ROM");
+                        break;
+                    }
+                    {
+                        unsigned bank = config.unified_rom_bank ^ 1u;
+                        char rom_name[25];
+
+                        if (msx_load_omega_unified_rom(
+                                &msx, config.unified_rom_path,
+                                bank) != 0) {
+                            notify_post(
+                                "Could not switch unified ROM bank");
+                            break;
+                        }
+                        config.unified_rom_bank = bank;
+                        reset_machine(
+                            &msx, &config, &paste, &keyboard,
+                            &display, &audio);
+                        short_rom_filename(
+                            rom_name, sizeof(rom_name),
+                            config.unified_rom_path);
+                        notify_post(
+                            "ROM bank %u/2: %s 256 KiB, JP1 %s, "
+                            "%05Xh-%05Xh [%s]",
+                            bank + 1, bank ? "upper" : "lower",
+                            bank ? "on" : "off", bank * 0x40000u,
+                            bank * 0x40000u + 0x3ffffu, rom_name);
+                    }
+                    break;
                 case SDLK_F4: {
                     char path[64];
                     snprintf(path, sizeof(path), "1983-%05d.ppm",

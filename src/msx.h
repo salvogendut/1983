@@ -28,6 +28,9 @@
 #define MSX_LOGO_SIZE 0x4000u
 #define MSX_SUBROM_SIZE 0x4000u
 #define MSX_DISK_ROM_SIZE 0x4000u
+#define MSX_OMEGA_UNIFIED_ROM_SIZE 0x80000u
+#define MSX_OMEGA_ROM_BANK_SIZE 0x40000u
+#define MSX_OMEGA_ROM_SLOT_SIZE 0x10000u
 #define MSX_CDX2_ROM_SIZE 0x4000u
 #define MSX_CDX2_COMBINED_ROM_SIZE 0x8000u
 #define MSX_RDF600_ROM_SIZE 0x4000u
@@ -131,6 +134,7 @@ typedef struct {
     u8 logo[MSX_LOGO_SIZE];
     u8 subrom[MSX_SUBROM_SIZE];
     u8 disk_rom[MSX_DISK_ROM_SIZE];
+    u8 unified_rom[MSX_OMEGA_ROM_BANK_SIZE];
     u8 *ram;
     size_t ram_capacity;
     u8 internal_ram[MSX_RAM_INTERNAL_SIZE];
@@ -154,6 +158,8 @@ typedef struct {
     bool logo_loaded;
     bool subrom_loaded;
     bool disk_rom_loaded;
+    bool unified_rom_loaded;
+    unsigned unified_rom_bank;
 
     u8 ppi_port_c;
     u8 keyboard_rows[MSX_KEYBOARD_ROWS];
@@ -423,5 +429,9 @@ int msx_load_firmware_set(MsxMachine *msx, const char *bios_path,
                           const char *logo_path,
                           const char *subrom_path,
                           const char *disk_rom_path);
+int msx_install_omega_unified_rom(MsxMachine *msx, const u8 *data,
+                                  size_t size, unsigned bank);
+int msx_load_omega_unified_rom(MsxMachine *msx, const char *path,
+                               unsigned bank);
 void msx_eject_firmware(MsxMachine *msx);
 bool msx_can_boot(const MsxMachine *msx);

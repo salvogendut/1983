@@ -16,6 +16,8 @@ typedef struct {
     char id[MODEL_ID_MAX];
     char name[MODEL_NAME_MAX];
     MsxModel hardware;
+    char unified_rom_path[PATH_MAX];
+    unsigned unified_rom_bank;
     char bios_path[PATH_MAX];
     char logo_path[PATH_MAX];
     char subrom_path[PATH_MAX];

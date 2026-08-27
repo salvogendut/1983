@@ -21,7 +21,7 @@
 #define OVERLAY_VALUE_X 188
 #define OVERLAY_FIRST_Y 48
 #define OVERLAY_RENDER_SCALE 1.5f
-#define MODEL_EDITOR_FIELDS 10
+#define MODEL_EDITOR_FIELDS 12
 #define MODEL_EDITOR_VISIBLE_ROWS 15
 
 #define OVERLAY_ABOUT_TEXT "1983 MSX/MSX2 emulator (c) 2026 salvogendut"
@@ -114,6 +114,8 @@ enum {
     MODEL_FIELD_FLOPPY_CONTROLLER,
     MODEL_FIELD_FLOPPY_PRIMARY_SLOT,
     MODEL_FIELD_FLOPPY_SECONDARY_SLOT,
+    MODEL_FIELD_UNIFIED_ROM,
+    MODEL_FIELD_UNIFIED_ROM_BANK,
     MODEL_FIELD_BIOS,
     MODEL_FIELD_LOGO,
     MODEL_FIELD_SUBROM,
@@ -661,7 +663,8 @@ static void mapper_text(const Overlay *overlay, unsigned slot,
 
 static void machine_text(const Overlay *overlay,
                          char *value, size_t value_size) {
-    const char *bios = overlay->config->bios_path;
+    const char *firmware = overlay->config->unified_rom_path[0]
+        ? overlay->config->unified_rom_path : overlay->config->bios_path;
     const ModelDefinition *definition =
         model_catalog_find(overlay->models,
                            overlay->config->machine_id);
@@ -669,14 +672,18 @@ static void machine_text(const Overlay *overlay,
         definition ? definition->name :
         msx_model_name(overlay->config->model);
 
-    if (overlay->msx->bios_loaded)
+    if (overlay->msx->unified_rom_loaded)
+        snprintf(value, value_size, "%s - %s [bank %u]",
+                 name, path_basename(firmware),
+                 overlay->msx->unified_rom_bank + 1);
+    else if (overlay->msx->bios_loaded)
         snprintf(value, value_size, "%s - %s",
                  name,
-                 path_basename(bios));
-    else if (bios[0])
+                 path_basename(firmware));
+    else if (firmware[0])
         snprintf(value, value_size, "%s - %s [not loaded]",
                  name,
-                 path_basename(bios));
+                 path_basename(firmware));
     else
         snprintf(value, value_size, "%s - [no BIOS]",
                  name);
@@ -1739,6 +1746,8 @@ static ConfigFileChooser dialog_file_chooser(
             return CONFIG_FILE_CHOOSER_CDX2_ROM;
         case OVERLAY_DIALOG_RDF600_ROM:
             return CONFIG_FILE_CHOOSER_RDF600_ROM;
+        case OVERLAY_DIALOG_MODEL_UNIFIED_ROM:
+            return CONFIG_FILE_CHOOSER_MODEL_UNIFIED_ROM;
         case OVERLAY_DIALOG_MODEL_BIOS:
             return CONFIG_FILE_CHOOSER_MODEL_BIOS;
         case OVERLAY_DIALOG_MODEL_LOGO:
@@ -2088,6 +2097,8 @@ static void open_ide_image_dialog(Overlay *overlay) {
 static char *model_firmware_field(Overlay *overlay,
                                   OverlayDialogTarget target) {
     switch (target) {
+        case OVERLAY_DIALOG_MODEL_UNIFIED_ROM:
+            return overlay->model_edit.unified_rom_path;
         case OVERLAY_DIALOG_MODEL_BIOS:
             return overlay->model_edit.bios_path;
         case OVERLAY_DIALOG_MODEL_LOGO:
@@ -2104,6 +2115,10 @@ static char *model_firmware_field(Overlay *overlay,
 
 static void open_model_firmware_dialog(Overlay *overlay,
                                        OverlayDialogTarget target) {
+    static const SDL_DialogFileFilter unified_filters[] = {
+        { "512 KB Omega unified ROM", "rom;ROM;bin;BIN" },
+        { "All files", "*" },
+    };
     static const SDL_DialogFileFilter bios_filters[] = {
         { "32 KB MSX BIOS ROM", "rom;ROM" },
         { "All files", "*" },
@@ -2112,9 +2127,14 @@ static void open_model_firmware_dialog(Overlay *overlay,
         { "16 KB MSX firmware ROM", "rom;ROM" },
         { "All files", "*" },
     };
-    const SDL_DialogFileFilter *filters =
-        target == OVERLAY_DIALOG_MODEL_BIOS
-        ? bios_filters : extension_filters;
+    const SDL_DialogFileFilter *filters;
+
+    if (target == OVERLAY_DIALOG_MODEL_UNIFIED_ROM)
+        filters = unified_filters;
+    else if (target == OVERLAY_DIALOG_MODEL_BIOS)
+        filters = bios_filters;
+    else
+        filters = extension_filters;
     char *field = model_firmware_field(overlay, target);
     const char *location;
     char fallback_location[PATH_MAX];
@@ -2274,25 +2294,37 @@ static bool select_machine(Overlay *overlay, bool preserve_runtime_ram) {
         return false;
     }
 
-    if (!firmware_file_has_size(definition->bios_path, MSX_BIOS_SIZE)) {
+    if (definition->unified_rom_path[0] &&
+        !firmware_file_has_size(
+            definition->unified_rom_path,
+            MSX_OMEGA_UNIFIED_ROM_SIZE)) {
+        notify_post("Invalid unified ROM for %s; edit the machine model",
+                    definition->name);
+        return false;
+    }
+    if (!definition->unified_rom_path[0] &&
+        !firmware_file_has_size(definition->bios_path, MSX_BIOS_SIZE)) {
         notify_post("Invalid BIOS for %s; edit the machine model",
                     definition->name);
         return false;
     }
-    if (definition->logo_path[0] &&
+    if (!definition->unified_rom_path[0] &&
+        definition->logo_path[0] &&
         !firmware_file_has_size(definition->logo_path, MSX_LOGO_SIZE)) {
         notify_post("Invalid logo ROM for %s; edit the machine model",
                     definition->name);
         return false;
     }
-    if ((profile->requires_subrom || definition->subrom_path[0]) &&
+    if (!definition->unified_rom_path[0] &&
+        (profile->requires_subrom || definition->subrom_path[0]) &&
         !firmware_file_has_size(
             definition->subrom_path, MSX_SUBROM_SIZE)) {
         notify_post("Invalid Sub-ROM for %s; edit the machine model",
                     definition->name);
         return false;
     }
-    if (definition->disk_rom_path[0] &&
+    if (!definition->unified_rom_path[0] &&
+        definition->disk_rom_path[0] &&
         !firmware_file_has_size(
             definition->disk_rom_path, MSX_DISK_ROM_SIZE)) {
         notify_post("Invalid disk ROM for %s; edit the machine model",
@@ -2305,10 +2337,14 @@ static bool select_machine(Overlay *overlay, bool preserve_runtime_ram) {
                     msx_rtc_persistence_error(overlay->msx));
         return false;
     }
-    if (msx_load_firmware_set(
-            overlay->msx, definition->bios_path,
-            definition->logo_path, definition->subrom_path,
-            definition->disk_rom_path) != 0) {
+    if ((definition->unified_rom_path[0]
+         ? msx_load_omega_unified_rom(
+               overlay->msx, definition->unified_rom_path,
+               definition->unified_rom_bank)
+         : msx_load_firmware_set(
+               overlay->msx, definition->bios_path,
+               definition->logo_path, definition->subrom_path,
+               definition->disk_rom_path)) != 0) {
         if (rtc_changed)
             (void)sync_rtc_persistence(overlay);
         notify_post("Could not load %s firmware; check ROM sizes",
@@ -2341,6 +2377,10 @@ static bool select_machine(Overlay *overlay, bool preserve_runtime_ram) {
     snprintf(config->machine_id, sizeof(config->machine_id),
               "%s", definition->id);
     config->memory_kb = target_ram;
+    snprintf(config->unified_rom_path,
+             sizeof(config->unified_rom_path), "%s",
+             definition->unified_rom_path);
+    config->unified_rom_bank = definition->unified_rom_bank;
     snprintf(config->bios_path, sizeof(config->bios_path), "%s",
              definition->bios_path);
     snprintf(config->logo_path, sizeof(config->logo_path), "%s",
@@ -2357,7 +2397,9 @@ static bool select_machine(Overlay *overlay, bool preserve_runtime_ram) {
     display_set_title(overlay->display, overlay->msx,
                       definition->name);
     notify_post("%s firmware loaded: %s", definition->name,
-                 path_basename(config->bios_path));
+                path_basename(config->unified_rom_path[0]
+                              ? config->unified_rom_path
+                              : config->bios_path));
     return true;
 }
 
@@ -2491,7 +2533,8 @@ static bool model_field_is_choice(int field) {
     return field == MODEL_FIELD_HARDWARE ||
            field == MODEL_FIELD_FLOPPY_CONTROLLER ||
            field == MODEL_FIELD_FLOPPY_PRIMARY_SLOT ||
-           field == MODEL_FIELD_FLOPPY_SECONDARY_SLOT;
+           field == MODEL_FIELD_FLOPPY_SECONDARY_SLOT ||
+           field == MODEL_FIELD_UNIFIED_ROM_BANK;
 }
 
 static void change_model_choice(Overlay *overlay, int direction) {
@@ -2551,6 +2594,9 @@ static void change_model_choice(Overlay *overlay, int direction) {
                 definition->floppy.secondary_slot == 1 ? 3 : 1;
             break;
         }
+        case MODEL_FIELD_UNIFIED_ROM_BANK:
+            definition->unified_rom_bank ^= 1u;
+            break;
         default:
             break;
     }
@@ -2569,6 +2615,10 @@ static char *model_edit_text_field(Overlay *overlay, int field,
             if (capacity)
                 *capacity = sizeof(overlay->model_edit.name);
             return overlay->model_edit.name;
+        case MODEL_FIELD_UNIFIED_ROM:
+            if (capacity)
+                *capacity = sizeof(overlay->model_edit.unified_rom_path);
+            return overlay->model_edit.unified_rom_path;
         case MODEL_FIELD_BIOS:
             if (capacity)
                 *capacity = sizeof(overlay->model_edit.bios_path);
@@ -2589,6 +2639,31 @@ static char *model_edit_text_field(Overlay *overlay, int field,
             break;
     }
     return NULL;
+}
+
+static void normalize_model_edit_firmware(ModelDefinition *definition,
+                                          int changed_field) {
+    const char *individual = NULL;
+
+    if (changed_field == MODEL_FIELD_UNIFIED_ROM &&
+        definition->unified_rom_path[0]) {
+        definition->bios_path[0] = '\0';
+        definition->logo_path[0] = '\0';
+        definition->subrom_path[0] = '\0';
+        definition->disk_rom_path[0] = '\0';
+    } else if (changed_field == MODEL_FIELD_BIOS) {
+        individual = definition->bios_path;
+    } else if (changed_field == MODEL_FIELD_LOGO) {
+        individual = definition->logo_path;
+    } else if (changed_field == MODEL_FIELD_SUBROM) {
+        individual = definition->subrom_path;
+    } else if (changed_field == MODEL_FIELD_DISK_ROM) {
+        individual = definition->disk_rom_path;
+    }
+    if (individual && individual[0]) {
+        definition->unified_rom_path[0] = '\0';
+        definition->unified_rom_bank = 0;
+    }
 }
 
 static void begin_model_text_edit(Overlay *overlay, int field) {
@@ -2613,6 +2688,8 @@ static void finish_model_text_edit(Overlay *overlay, bool commit) {
         if (destination && capacity)
             snprintf(destination, capacity, "%s",
                      overlay->model_text);
+        normalize_model_edit_firmware(
+            &overlay->model_edit, overlay->model_text_field);
     }
     if (overlay->display && overlay->display->window)
         SDL_StopTextInput(overlay->display->window);
@@ -2655,6 +2732,9 @@ static bool validate_model_edit(Overlay *overlay) {
         if (strcmp(checked.disk_rom_path,
                    original->disk_rom_path) == 0)
             checked.disk_rom_path[0] = '\0';
+        if (strcmp(checked.unified_rom_path,
+                   original->unified_rom_path) == 0)
+            checked.unified_rom_path[0] = '\0';
     }
     return model_definition_validate(
         overlay->models, &checked, replaced, true,
@@ -4492,7 +4572,12 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 case MODEL_FIELD_FLOPPY_CONTROLLER:
                 case MODEL_FIELD_FLOPPY_PRIMARY_SLOT:
                 case MODEL_FIELD_FLOPPY_SECONDARY_SLOT:
+                case MODEL_FIELD_UNIFIED_ROM_BANK:
                     change_model_choice(overlay, 1);
+                    break;
+                case MODEL_FIELD_UNIFIED_ROM:
+                    open_model_firmware_dialog(
+                        overlay, OVERLAY_DIALOG_MODEL_UNIFIED_ROM);
                     break;
                 case MODEL_FIELD_BIOS:
                     open_model_firmware_dialog(
@@ -4517,8 +4602,9 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
             begin_model_text_edit(
                 overlay, overlay->model_edit_field);
         } else if (key == SDLK_DELETE &&
-                   overlay->model_edit_field >=
-                       MODEL_FIELD_BIOS) {
+                   (overlay->model_edit_field ==
+                        MODEL_FIELD_UNIFIED_ROM ||
+                    overlay->model_edit_field >= MODEL_FIELD_BIOS)) {
             char *field = model_edit_text_field(
                 overlay, overlay->model_edit_field, NULL);
             if (field)
@@ -4838,7 +4924,8 @@ void overlay_tick(Overlay *overlay) {
     if (!overlay->visible || target == OVERLAY_DIALOG_NONE)
         return;
     if (!overlay->dialog_path[0]) {
-        if (target == OVERLAY_DIALOG_MODEL_BIOS ||
+        if (target == OVERLAY_DIALOG_MODEL_UNIFIED_ROM ||
+            target == OVERLAY_DIALOG_MODEL_BIOS ||
             target == OVERLAY_DIALOG_MODEL_LOGO ||
             target == OVERLAY_DIALOG_MODEL_SUBROM ||
             target == OVERLAY_DIALOG_MODEL_DISK_ROM)
@@ -5173,7 +5260,8 @@ void overlay_tick(Overlay *overlay) {
         return;
     }
 
-    if (target == OVERLAY_DIALOG_MODEL_BIOS ||
+    if (target == OVERLAY_DIALOG_MODEL_UNIFIED_ROM ||
+        target == OVERLAY_DIALOG_MODEL_BIOS ||
         target == OVERLAY_DIALOG_MODEL_LOGO ||
         target == OVERLAY_DIALOG_MODEL_SUBROM ||
         target == OVERLAY_DIALOG_MODEL_DISK_ROM) {
@@ -5184,6 +5272,16 @@ void overlay_tick(Overlay *overlay) {
         if (destination)
             snprintf(destination, PATH_MAX, "%s",
                      overlay->dialog_path);
+        normalize_model_edit_firmware(
+            &overlay->model_edit,
+            target == OVERLAY_DIALOG_MODEL_UNIFIED_ROM
+            ? MODEL_FIELD_UNIFIED_ROM :
+            target == OVERLAY_DIALOG_MODEL_BIOS
+            ? MODEL_FIELD_BIOS :
+            target == OVERLAY_DIALOG_MODEL_LOGO
+            ? MODEL_FIELD_LOGO :
+            target == OVERLAY_DIALOG_MODEL_SUBROM
+            ? MODEL_FIELD_SUBROM : MODEL_FIELD_DISK_ROM);
         overlay->model_editor_error[0] = '\0';
         return;
     }
@@ -5300,6 +5398,10 @@ static const char *model_field_name(int field) {
             return "FDC slot 1";
         case MODEL_FIELD_FLOPPY_SECONDARY_SLOT:
             return "FDC slot 2";
+        case MODEL_FIELD_UNIFIED_ROM:
+            return "Unified ROM";
+        case MODEL_FIELD_UNIFIED_ROM_BANK:
+            return "Unified bank";
         case MODEL_FIELD_BIOS:     return "BIOS";
         case MODEL_FIELD_LOGO:     return "Logo ROM";
         case MODEL_FIELD_SUBROM:   return "Sub-ROM";
@@ -5343,6 +5445,18 @@ static void model_field_value(const Overlay *overlay, int field,
                          overlay->model_edit.floppy.secondary_slot);
             else
                 snprintf(value, value_size, "none");
+            break;
+        case MODEL_FIELD_UNIFIED_ROM:
+            editor_shorten(value, value_size,
+                           overlay->model_edit.unified_rom_path, 56);
+            break;
+        case MODEL_FIELD_UNIFIED_ROM_BANK:
+            snprintf(value, value_size, "%u (%s / JP1 %s)",
+                     overlay->model_edit.unified_rom_bank + 1,
+                     overlay->model_edit.unified_rom_bank
+                     ? "upper 256 KB" : "lower 256 KB",
+                     overlay->model_edit.unified_rom_bank
+                     ? "on" : "off");
             break;
         case MODEL_FIELD_BIOS:
             editor_shorten(value, value_size,
@@ -5460,7 +5574,7 @@ static void render_model_edit(const Overlay *overlay,
 
     for (int field = 0; field < MODEL_EDITOR_FIELDS; ++field) {
         char value[PATH_MAX + 64];
-        float y = 56.0f + (float)field * 29.0f;
+        float y = 52.0f + (float)field * 25.0f;
         bool selected = field == overlay->model_edit_field;
 
         model_field_value(overlay, field, value, sizeof(value));
@@ -5477,14 +5591,14 @@ static void render_model_edit(const Overlay *overlay,
                      selected ? 255 : 210,
                      selected ? 70 : 225);
     }
-    ui_draw_text(renderer, 22.0f, 358.0f,
+    ui_draw_text(renderer, 22.0f, 360.0f,
                  "Enter choose/open   E edits text   Delete clears ROM path",
                  175, 190, 220);
-    ui_draw_text(renderer, 22.0f, 378.0f,
+    ui_draw_text(renderer, 22.0f, 380.0f,
                  "Left/Right changes choices   F2 saves   Esc cancels",
                  150, 170, 205);
     ui_draw_text(renderer, 22.0f, 404.0f,
-                 "FDC Disk ROM is per-model; Enter selects any matching 16 KB ROM.",
+                 "A 512 KB unified ROM replaces all individual firmware ROMs.",
                  120, 190, 150);
     if (overlay->model_editor_error[0])
         ui_draw_text(renderer, 22.0f, 434.0f,
@@ -5973,12 +6087,17 @@ static void overlay_render_content(const Overlay *overlay,
             char line[160];
             bool selected = model == overlay->machine_row;
             bool has_subrom = definition->subrom_path[0];
+            bool has_unified = definition->unified_rom_path[0];
             bool has_floppy =
                 definition->floppy.controller !=
                     MSX_FLOPPY_CONTROLLER_NONE;
 
             snprintf(line, sizeof(line), "%s%s",
                      definition->name,
+                     has_unified && has_floppy
+                     ? "  [unified ROM + floppy]" :
+                     has_unified
+                     ? "  [unified ROM]" :
                      has_floppy && has_subrom
                      ? "  [BIOS + Sub-ROM + floppy]" :
                      has_floppy

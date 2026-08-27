@@ -1,7 +1,7 @@
 /* Minimal WASM proof-of-concept main for the 1983 MSX core.
  *
  * Mirrors 1984's JS1984 POC: exposes a tiny C API to the browser glue.
- *   - poc_init():           boot an MSX1 (C-BIOS) from the embedded ROMs
+ *   - poc_init():           boot the Omega MSX2 (RainBIOS) default machine
  *   - poc_step():           run one emulated frame (CPU + VDP + PSG)
  *   - poc_pixels():         pointer to the VDP framebuffer (u32 0x00RRGGBB)
  *   - poc_key():            SDL_Scancode key down/up through the MSX matrix
@@ -39,6 +39,7 @@ static UnapiNet *g_unapinet;
 static bool g_sunrise_enabled;
 static bool g_sd_mapper_enabled;
 static bool g_unapi_enabled;
+static unsigned g_omega_unified_bank;
 
 #define SUNRISE_ROM_PATH "roms/nextor-sunrise.rom"
 #define SD_MAPPER_ROM_PATH "roms/sdmapper-v2-nextor.rom"
@@ -48,6 +49,11 @@ static unsigned desired_sd_mapper_slot(void) {
 }
 
 static int poc_reload_firmware(void) {
+    if (g_msx.profile &&
+        g_msx.profile->model == MSX_MODEL_GENERIC_MSX2)
+        return msx_load_omega_unified_rom(
+            &g_msx, "roms/rainbios_omega.rom",
+            g_omega_unified_bank);
     if (g_msx.profile &&
         g_msx.profile->model == MSX_MODEL_PHILIPS_NMS8250) {
         return msx_load_firmware_set(
@@ -100,8 +106,9 @@ EMSCRIPTEN_KEEPALIVE void poc_audio_advance(int n) {
 }
 
 /* ---- emulator lifecycle ----
- * model 0 = MSX1 (C-BIOS), 1 = Philips NMS 8250 (RainBIOS main, Sub-ROM and
- * disk ROM). May be called repeatedly to switch machines. */
+ * model 0 = MSX1 (C-BIOS), 1 = Philips NMS 8250 (RainBIOS), and
+ * model 2 = Omega MSX2 (RainBIOS). May be called repeatedly to switch
+ * machines. */
 EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
     MsxModel m;
     MsxRegion region = MSX_REGION_NTSC;
@@ -111,6 +118,8 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
         .secondary_slot = -1,
     };
 
+    if (model < 0 || model > 2)
+        return -1;
     poc_cancel_paste();
     if (!g_initialized) {
         kbd_init(&g_kbd);
@@ -131,8 +140,16 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
         floppy.controller = MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
         floppy.primary_slot = 3;
         floppy.secondary_slot = 3;
-    } else {
+    } else if (model == 2) {
+        m = MSX_MODEL_GENERIC_MSX2;
+        region = MSX_REGION_PAL;
+        floppy.controller = MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
+        floppy.primary_slot = 3;
+        floppy.secondary_slot = 3;
+    } else if (model == 0) {
         m = MSX_MODEL_GENERIC_MSX1;
+    } else {
+        return -1;
     }
     msx_init(&g_msx, m, region, msx_default_ram_kb(m));
     g_machine_initialized = true;
@@ -164,7 +181,7 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
     return msx_can_boot(&g_msx) ? 0 : -1;
 }
 
-EMSCRIPTEN_KEEPALIVE int poc_init(void) { return poc_init_model(0, NULL); }
+EMSCRIPTEN_KEEPALIVE int poc_init(void) { return poc_init_model(2, NULL); }
 
 EMSCRIPTEN_KEEPALIVE int poc_ram_kb(void) {
     return g_machine_initialized ? g_msx.ram_kb : 0;
@@ -223,6 +240,32 @@ EMSCRIPTEN_KEEPALIVE void poc_reset(void) {
     kbd_release_all(&g_kbd, &g_msx);
     msx_reset(&g_msx);
     g_joy_pressed = 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_omega_unified_bank(void) {
+    if (!g_machine_initialized || !g_msx.profile ||
+        g_msx.profile->model != MSX_MODEL_GENERIC_MSX2 ||
+        !g_msx.unified_rom_loaded)
+        return -1;
+    return (int)g_omega_unified_bank;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_flip_omega_unified_bank(void) {
+    unsigned bank;
+
+    if (poc_omega_unified_bank() < 0)
+        return -1;
+    bank = g_omega_unified_bank ^ 1u;
+    poc_cancel_paste();
+    kbd_release_all(&g_kbd, &g_msx);
+    if (msx_load_omega_unified_rom(
+            &g_msx, "roms/rainbios_omega.rom", bank) != 0)
+        return -1;
+    g_omega_unified_bank = bank;
+    g_audio_w = 0;
+    g_audio_r = 0;
+    g_joy_pressed = 0;
+    return (int)bank;
 }
 
 EMSCRIPTEN_KEEPALIVE int poc_step(void) {

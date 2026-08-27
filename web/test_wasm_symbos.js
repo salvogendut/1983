@@ -26,7 +26,10 @@ async function main() {
   const module = await create1983({
     locateFile: file => path.join(__dirname, 'dist', file),
   });
-  assert.strictEqual(module._poc_init_model(1, 0), 0);
+  assert.strictEqual(
+    module._poc_init(), 0,
+    'the default Omega MSX2 profile must initialize'
+  );
   module.FS.writeFile('/symbos.img', image);
   if (controller === 'sunrise') {
     assert.strictEqual(module._poc_set_sunrise(1), 1);

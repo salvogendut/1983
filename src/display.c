@@ -209,10 +209,10 @@ static void draw_scaffold_text(Display *display, const MsxMachine *msx) {
 static void draw_footer(Display *display, const MsxMachine *msx,
                         int output_w, int output_h) {
     const char *full_keys =
-        "  F4=screenshot  F5=reset  F6=capture  F8=monitor  "
+        "  F3=ROM bank  F4=screenshot  F5=reset  F6=capture  F8=monitor  "
         "F9=options  F11=fullscreen  F12=quit";
     const char *compact_keys =
-        "  F4=shot F5=reset F6=rec F8=mon F9=options F11=full F12=quit";
+        "  F3=ROM F4=shot F5=rst F6=rec F8=mon F9=opts F11=full F12=quit";
     const char *captured_keys =
         "  Mouse captured  Ctrl+Enter=release";
     const char *model = msx->profile->name;

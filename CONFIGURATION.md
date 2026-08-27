@@ -36,6 +36,31 @@ floppy_primary_slot = 3
 floppy_secondary_slot = 3
 ```
 
+An Omega-style model can replace all four individual firmware paths with one
+exact 512 KiB EEPROM image:
+
+```ini
+[model my-omega]
+name = My Omega MSX2
+hardware = msx2
+unified_rom = ROMS/my-omega-512k.bin
+unified_rom_bank = 0
+bios =
+logo =
+subrom =
+disk_rom =
+floppy_controller = philips-wd2793
+floppy_primary_slot = 3
+floppy_secondary_slot = 3
+```
+
+Bank `0` selects bytes `00000h-3FFFFh` (JP1 off) and bank `1` selects
+`40000h-7FFFFh` (JP1 on). Each bank is four consecutive 64 KiB images for
+slot 0, 3-0, 3-1, and 3-3. Selecting a unified ROM in the model editor clears
+the individual BIOS, logo, Sub-ROM, and disk-ROM paths; selecting any
+individual component clears the unified path. With that machine running,
+unshifted F3 flips banks and resets, while Shift+F3 remains the MSX F3 key.
+
 `floppy_controller` is currently `none` or `philips-wd2793`. Primary slot 1
 or 2 represents a controller connected through that physical cartridge port
 and uses `floppy_secondary_slot = none`; the occupied port is then unavailable
@@ -43,8 +68,8 @@ to other cartridges and extensions. On the expanded MSX2 layouts, primary
 slot 3 may instead use free secondary slot 1 or 3 for built-in hardware.
 Primary slot 0 and the RAM/Sub-ROM subslots are rejected because they would
 overlap existing machine devices. A disk ROM without a controller, a
-controller without its 16 KiB disk ROM, and incompatible slot mappings are
-reported by the model editor.
+controller without either its 16 KiB disk ROM or a unified image, and
+incompatible slot mappings are reported by the model editor.
 
 The NMS 8250 entry's `ROMS/nms8250_disk.rom` is only its supplied default.
 To use another compatible ROM, enable Tinker, open **Advanced > Machine model

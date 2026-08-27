@@ -28,11 +28,17 @@ install -m 0755 "$binary" "$macos/1983"
 cp "$root/1983-models.conf" "$resources/1983-models.conf"
 mkdir -p "$resources/ROMS"
 cp "$root/ROMS/README.C-BIOS" \
+    "$root/ROMS/README-RainBIOS" \
     "$root/ROMS/cbios_logo_msx1.rom" \
     "$root/ROMS/cbios_main_msx1.rom" \
+    "$root/ROMS/rainbios_msx2.rom" \
+    "$root/ROMS/rainbios_msx2_sub.rom" \
+    "$root/ROMS/rainbios_disk.rom" \
+    "$root/ROMS/rainbios_omega.rom" \
     "$resources/ROMS/"
 cp "$root/LICENSE" "$resources/LICENSE.txt"
 cp "$root/ROMS/README.C-BIOS" "$resources/C-BIOS-LICENSE.txt"
+cp "$root/ROMS/README-RainBIOS" "$resources/RainBIOS-NOTICE.txt"
 
 cp "$root/icons/16x16/apps/io.github.salvogendut.Emulator1983.png" \
     "$iconset/icon_16x16.png"

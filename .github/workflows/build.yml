@@ -41,8 +41,11 @@ jobs:
           cp 1983 1983-models.conf 1983.conf.example LICENSE README.md \
             INSTALL.md "$bundle/"
           mkdir -p "$bundle/ROMS"
-          cp ROMS/README.C-BIOS ROMS/cbios_logo_msx1.rom \
-            ROMS/cbios_main_msx1.rom "$bundle/ROMS/"
+          cp ROMS/README.C-BIOS ROMS/README-RainBIOS \
+            ROMS/cbios_logo_msx1.rom ROMS/cbios_main_msx1.rom \
+            ROMS/rainbios_msx2.rom ROMS/rainbios_msx2_sub.rom \
+            ROMS/rainbios_disk.rom ROMS/rainbios_omega.rom \
+            "$bundle/ROMS/"
           tar -C dist -czf dist/1983-linux-x86_64.tar.gz \
             1983-linux-x86_64
           temporary_config=$(mktemp)
@@ -50,7 +53,7 @@ jobs:
           (cd /tmp && "$GITHUB_WORKSPACE/$bundle/1983" \
             --config "$temporary_config" --headless --unthrottled \
             --exit-after 0)
-          grep -q '^model = cbios$' "$temporary_config"
+          grep -q '^model = omega-msx2$' "$temporary_config"
       - name: Build source archive and RPM
         run: |
           set -eu
@@ -125,8 +128,10 @@ jobs:
           cp 1983.exe 1983-models.conf 1983.conf.example LICENSE README.md \
             INSTALL.md dist/
           mkdir -p dist/ROMS
-          cp ROMS/README.C-BIOS ROMS/cbios_logo_msx1.rom \
-            ROMS/cbios_main_msx1.rom dist/ROMS/
+          cp ROMS/README.C-BIOS ROMS/README-RainBIOS \
+            ROMS/cbios_logo_msx1.rom ROMS/cbios_main_msx1.rom \
+            ROMS/rainbios_msx2.rom ROMS/rainbios_msx2_sub.rom \
+            ROMS/rainbios_disk.rom ROMS/rainbios_omega.rom dist/ROMS/
           for dll in $(ldd dist/1983.exe | awk '/mingw64/ {print $3}'); do
             cp "$dll" dist/
           done
@@ -137,7 +142,7 @@ jobs:
           (cd /tmp && "$workspace/dist/1983.exe" \
             --config "$temporary_config" --headless --unthrottled \
             --exit-after 0)
-          grep -q '^model = cbios$' "$temporary_config"
+          grep -q '^model = omega-msx2$' "$temporary_config"
       - name: Upload Windows bundle
         uses: actions/upload-artifact@v4
         with:
@@ -178,7 +183,7 @@ jobs:
           (cd /tmp && "$GITHUB_WORKSPACE/dist/1983.app/Contents/MacOS/1983" \
             --config "$temporary_config" --headless --unthrottled \
             --exit-after 0)
-          grep -q '^model = cbios$' "$temporary_config"
+          grep -q '^model = omega-msx2$' "$temporary_config"
           ditto -c -k --sequesterRsrc --keepParent \
             dist/1983.app "dist/1983-macos-${{ matrix.arch }}.zip"
       - name: Upload macOS application

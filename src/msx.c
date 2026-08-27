@@ -908,6 +908,29 @@ static u8 read_plain_ram(const MsxMachine *msx, u16 address) {
     return address >= ram_base ? msx->ram[address] : 0xff;
 }
 
+static bool unified_rom_read(const MsxMachine *msx, unsigned primary,
+                             u16 address, u8 *value) {
+    unsigned block;
+
+    if (!msx->unified_rom_loaded)
+        return false;
+    if (primary == 0) {
+        block = 0;
+    } else if (primary == 3 && slot_is_expanded(msx, primary)) {
+        switch (selected_subslot(msx, primary, address)) {
+            case 0: block = 1; break;
+            case 1: block = 2; break;
+            case 3: block = 3; break;
+            default: return false;
+        }
+    } else {
+        return false;
+    }
+    *value = msx->unified_rom[
+        (size_t)block * MSX_OMEGA_ROM_SLOT_SIZE + address];
+    return true;
+}
+
 static void write_plain_ram(MsxMachine *msx, u16 address, u8 value) {
     size_t ram_size = (size_t)msx->ram_kb * 1024;
     size_t ram_base;
@@ -921,6 +944,7 @@ static void write_plain_ram(MsxMachine *msx, u16 address, u8 value) {
 
 u8 msx_memory_read(MsxMachine *msx, u16 address) {
     unsigned primary;
+    u8 unified_value;
 
     if (!msx)
         return 0xff;
@@ -940,8 +964,12 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
         if (msx->disk_rom_loaded &&
             address >= 0x4000 && address < 0x8000)
             return msx->disk_rom[address - 0x4000];
+        if (unified_rom_read(msx, primary, address, &unified_value))
+            return unified_value;
         return 0xff;
     }
+    if (unified_rom_read(msx, primary, address, &unified_value))
+        return unified_value;
 
     switch (primary) {
         case 0:
@@ -2486,6 +2514,9 @@ int msx_load_firmware_set(MsxMachine *msx, const char *bios_path,
             disk_rom_path, MSX_DISK_ROM_SIZE, &disk_rom) != 0)
         goto done;
 
+    memset(msx->unified_rom, 0xff, sizeof(msx->unified_rom));
+    msx->unified_rom_loaded = false;
+    msx->unified_rom_bank = 0;
     memcpy(msx->bios, bios, MSX_BIOS_SIZE);
     msx->bios_loaded = true;
     memset(msx->logo, 0xff, sizeof(msx->logo));
@@ -2511,9 +2542,12 @@ done:
     return result;
 }
 
-void msx_eject_firmware(MsxMachine *msx) {
-    if (!msx)
-        return;
+int msx_install_omega_unified_rom(MsxMachine *msx, const u8 *data,
+                                  size_t size, unsigned bank) {
+    if (!msx || !data || size != MSX_OMEGA_UNIFIED_ROM_SIZE || bank > 1 ||
+        !msx->profile || !msx->profile->expanded_slots)
+        return -1;
+
     memset(msx->bios, 0xff, sizeof(msx->bios));
     memset(msx->logo, 0xff, sizeof(msx->logo));
     memset(msx->subrom, 0xff, sizeof(msx->subrom));
@@ -2522,9 +2556,50 @@ void msx_eject_firmware(MsxMachine *msx) {
     msx->logo_loaded = false;
     msx->subrom_loaded = false;
     msx->disk_rom_loaded = false;
+    memcpy(msx->unified_rom,
+           data + (size_t)bank * MSX_OMEGA_ROM_BANK_SIZE,
+           MSX_OMEGA_ROM_BANK_SIZE);
+    msx->unified_rom_loaded = true;
+    msx->unified_rom_bank = bank;
+    msx_reset(msx);
+    return 0;
+}
+
+int msx_load_omega_unified_rom(MsxMachine *msx, const char *path,
+                               unsigned bank) {
+    u8 *data = NULL;
+    size_t size = 0;
+    int result;
+
+    if (!msx || bank > 1 ||
+        read_rom_file(path, MSX_OMEGA_UNIFIED_ROM_SIZE,
+                      &data, &size) != 0 ||
+        size != MSX_OMEGA_UNIFIED_ROM_SIZE) {
+        free(data);
+        return -1;
+    }
+    result = msx_install_omega_unified_rom(msx, data, size, bank);
+    free(data);
+    return result;
+}
+
+void msx_eject_firmware(MsxMachine *msx) {
+    if (!msx)
+        return;
+    memset(msx->bios, 0xff, sizeof(msx->bios));
+    memset(msx->logo, 0xff, sizeof(msx->logo));
+    memset(msx->subrom, 0xff, sizeof(msx->subrom));
+    memset(msx->disk_rom, 0xff, sizeof(msx->disk_rom));
+    memset(msx->unified_rom, 0xff, sizeof(msx->unified_rom));
+    msx->bios_loaded = false;
+    msx->logo_loaded = false;
+    msx->subrom_loaded = false;
+    msx->disk_rom_loaded = false;
+    msx->unified_rom_loaded = false;
+    msx->unified_rom_bank = 0;
     msx_reset(msx);
 }
 
 bool msx_can_boot(const MsxMachine *msx) {
-    return msx && msx->bios_loaded;
+    return msx && (msx->bios_loaded || msx->unified_rom_loaded);
 }

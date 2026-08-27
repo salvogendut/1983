@@ -491,26 +491,28 @@ int main(void) {
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.machine_row == 4);
     send_key(&overlay, SDLK_DOWN);
+    assert(overlay.machine_row == 5);
+    send_key(&overlay, SDLK_DOWN);
     assert(overlay.machine_row == 0);
     send_key(&overlay, SDLK_UP);
-    assert(overlay.machine_row == 4);
+    assert(overlay.machine_row == 5);
     send_key(&overlay, SDLK_ESCAPE);
     assert(overlay.state == OVERLAY_STATE_MENU);
-    assert(config.model == MSX_MODEL_GENERIC_MSX1);
+    assert(config.model == MSX_MODEL_GENERIC_MSX2);
     assert(!overlay.dirty);
 
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 2);
-    assert(config.vdp_type == MSX_VDP_TMS9918);
+    assert(config.vdp_type == MSX_VDP_V9958);
     send_key(&overlay, SDLK_RETURN);
-    assert(config.vdp_type == MSX_VDP_TMS9918);
+    assert(config.vdp_type == MSX_VDP_V9938);
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 3);
     send_key(&overlay, SDLK_RETURN);
-    assert(config.memory_kb == 128);
-    assert(msx.ram_kb == 128);
-    for (int step = 0; step < 5; ++step)
+    assert(config.memory_kb == 256);
+    assert(msx.ram_kb == 256);
+    for (int step = 0; step < 4; ++step)
         send_key(&overlay, SDLK_RETURN);
     assert(config.memory_kb == 4096);
     assert(msx.ram_kb == 4096);
@@ -858,7 +860,7 @@ int main(void) {
     render_overlay(&display, &msx, &overlay);
     send_key(&overlay, SDLK_F2);
     assert(overlay.state == OVERLAY_STATE_MODEL_LIST);
-    assert(models.count == 6);
+    assert(models.count == 7);
     assert(model_catalog_find(&models, "new-model"));
 
     send_key(&overlay, SDLK_D);
@@ -868,14 +870,14 @@ int main(void) {
                   "new-model-copy") == 0);
     send_key(&overlay, SDLK_F2);
     assert(overlay.state == OVERLAY_STATE_MODEL_LIST);
-    assert(models.count == 7);
+    assert(models.count == 8);
 
     send_key(&overlay, SDLK_DELETE);
     assert(overlay.state == OVERLAY_STATE_MODEL_DELETE);
     render_overlay(&display, &msx, &overlay);
     send_key(&overlay, SDLK_RETURN);
     assert(overlay.state == OVERLAY_STATE_MODEL_LIST);
-    assert(models.count == 6);
+    assert(models.count == 7);
     assert(!model_catalog_find(&models, "new-model-copy"));
 
     send_key(&overlay, SDLK_RETURN);
@@ -922,6 +924,30 @@ int main(void) {
     overlay_tick(&overlay);
     assert(strcmp(overlay.model_edit.disk_rom_path,
                   machine_disk_rom_path) == 0);
+    overlay.dialog_target = OVERLAY_DIALOG_MODEL_UNIFIED_ROM;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "ROMS/rainbios_omega.rom");
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(strcmp(overlay.model_edit.unified_rom_path,
+                  "ROMS/rainbios_omega.rom") == 0);
+    assert(!overlay.model_edit.bios_path[0]);
+    assert(!overlay.model_edit.logo_path[0]);
+    assert(!overlay.model_edit.subrom_path[0]);
+    assert(!overlay.model_edit.disk_rom_path[0]);
+    overlay.dialog_target = OVERLAY_DIALOG_MODEL_BIOS;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", machine_bios_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
+    assert(!overlay.model_edit.unified_rom_path[0]);
+    assert(strcmp(overlay.model_edit.bios_path,
+                  machine_bios_path) == 0);
+    overlay.dialog_target = OVERLAY_DIALOG_MODEL_DISK_ROM;
+    snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
+             "%s", machine_disk_rom_path);
+    overlay.dialog_ready = true;
+    overlay_tick(&overlay);
     send_key(&overlay, SDLK_F2);
     assert(overlay.state == OVERLAY_STATE_MODEL_LIST);
     assert(strstr(model_catalog_find(
@@ -1271,6 +1297,7 @@ int main(void) {
     snprintf(config.path, sizeof(config.path), "%s",
              megaflash_config_path);
     config.extra_hardware = true;
+    config.rtc_persistence = false;
     config.tinker = true;
     char megaflash_state_path[PATH_MAX];
     char megaflash_pending_path[PATH_MAX];
@@ -1442,6 +1469,7 @@ int main(void) {
         size_t model_index = model_catalog_index(
             &models, "custom-floppy-msx2");
         size_t cbios_index = model_catalog_index(&models, "cbios");
+        size_t omega_index = model_catalog_index(&models, "omega-msx2");
         size_t nms8250_index = model_catalog_index(&models, "nms8250");
         char custom_bios_path[PATH_MAX];
         char loaded_bios_path[PATH_MAX];
@@ -1451,6 +1479,7 @@ int main(void) {
 
         assert(model_index < models.count);
         assert(cbios_index < models.count);
+        assert(omega_index < models.count);
         assert(nms8250_index < models.count);
         config_defaults(&config);
         config.tinker = true;
@@ -1503,6 +1532,25 @@ int main(void) {
         send_key(&overlay, SDLK_DELETE);
         assert(strcmp(config.bios_path, loaded_bios_path) == 0);
         assert(msx.bios_loaded);
+
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MACHINE);
+        overlay.machine_row = (int)omega_index;
+        send_key(&overlay, SDLK_RETURN);
+        assert(overlay.state == OVERLAY_STATE_MENU);
+        assert(strcmp(config.machine_id, "omega-msx2") == 0);
+        assert(strcmp(config.unified_rom_path,
+                      models.entries[omega_index].unified_rom_path) == 0);
+        assert(config.unified_rom_bank == 0);
+        assert(!config.bios_path[0]);
+        assert(!config.logo_path[0]);
+        assert(!config.subrom_path[0]);
+        assert(!config.disk_rom_path[0]);
+        assert(msx.unified_rom_loaded);
+        assert(msx.unified_rom_bank == 0);
+        assert(!msx.bios_loaded);
+        assert(msx_can_boot(&msx));
+        assert(msx_floppy_supported(&msx));
 
         send_key(&overlay, SDLK_RETURN);
         assert(overlay.state == OVERLAY_STATE_MACHINE);

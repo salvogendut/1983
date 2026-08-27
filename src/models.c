@@ -179,7 +179,16 @@ static void add_default(ModelCatalog *catalog, const char *id,
     definition->floppy.secondary_slot = -1;
 }
 
+static void bundled_rom_path(char *path, size_t path_size,
+                             const char *filename) {
+    if (PKGDATADIR[0])
+        snprintf(path, path_size, "%s/ROMS/%s", PKGDATADIR, filename);
+    else
+        snprintf(path, path_size, "ROMS/%s", filename);
+}
+
 void model_catalog_defaults(ModelCatalog *catalog) {
+    ModelDefinition *omega;
     ModelDefinition *cbios;
 
     if (!catalog)
@@ -187,20 +196,23 @@ void model_catalog_defaults(ModelCatalog *catalog) {
     memset(catalog, 0, sizeof(*catalog));
     model_catalog_user_path(catalog->edit_path,
                             sizeof(catalog->edit_path));
+    add_default(catalog, "omega-msx2", "Omega MSX2",
+                MSX_MODEL_GENERIC_MSX2);
+    omega = &catalog->entries[catalog->count - 1];
+    bundled_rom_path(omega->unified_rom_path,
+                     sizeof(omega->unified_rom_path),
+                     "rainbios_omega.rom");
+    omega->floppy.controller =
+        MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
+    omega->floppy.primary_slot = 3;
+    omega->floppy.secondary_slot = 3;
     add_default(catalog, "cbios", "C-BIOS MSX",
                 MSX_MODEL_GENERIC_MSX1);
     cbios = &catalog->entries[catalog->count - 1];
-    if (PKGDATADIR[0]) {
-        snprintf(cbios->bios_path, sizeof(cbios->bios_path),
-                 "%s/ROMS/cbios_main_msx1.rom", PKGDATADIR);
-        snprintf(cbios->logo_path, sizeof(cbios->logo_path),
-                 "%s/ROMS/cbios_logo_msx1.rom", PKGDATADIR);
-    } else {
-        snprintf(cbios->bios_path, sizeof(cbios->bios_path),
-                 "ROMS/cbios_main_msx1.rom");
-        snprintf(cbios->logo_path, sizeof(cbios->logo_path),
-                 "ROMS/cbios_logo_msx1.rom");
-    }
+    bundled_rom_path(cbios->bios_path, sizeof(cbios->bios_path),
+                     "cbios_main_msx1.rom");
+    bundled_rom_path(cbios->logo_path, sizeof(cbios->logo_path),
+                     "cbios_logo_msx1.rom");
     add_default(catalog, "msx1", "MSX", MSX_MODEL_GENERIC_MSX1);
     add_default(catalog, "msx2", "MSX2", MSX_MODEL_GENERIC_MSX2);
     add_default(catalog, "nms8250", "Philips NMS 8250",
@@ -209,14 +221,10 @@ void model_catalog_defaults(ModelCatalog *catalog) {
         MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
     catalog->entries[catalog->count - 1].floppy.primary_slot = 3;
     catalog->entries[catalog->count - 1].floppy.secondary_slot = 3;
-    if (PKGDATADIR[0])
-        snprintf(catalog->entries[catalog->count - 1].disk_rom_path,
-                 sizeof(catalog->entries[catalog->count - 1].disk_rom_path),
-                 "%s/ROMS/nms8250_disk.rom", PKGDATADIR);
-    else
-        snprintf(catalog->entries[catalog->count - 1].disk_rom_path,
-                 sizeof(catalog->entries[catalog->count - 1].disk_rom_path),
-                 "ROMS/nms8250_disk.rom");
+    bundled_rom_path(
+        catalog->entries[catalog->count - 1].disk_rom_path,
+        sizeof(catalog->entries[catalog->count - 1].disk_rom_path),
+        "nms8250_disk.rom");
 }
 
 static bool executable_directory(char *directory, size_t directory_size) {
@@ -338,6 +346,15 @@ static void set_definition_value(ModelDefinition *definition,
     } else if (strcasecmp(key, "hardware") == 0) {
         if (msx_model_from_name(value, &hardware))
             definition->hardware = hardware;
+    } else if (strcasecmp(key, "unified_rom") == 0) {
+        resolve_path(definition->unified_rom_path,
+                     sizeof(definition->unified_rom_path), directory, value);
+    } else if (strcasecmp(key, "unified_rom_bank") == 0) {
+        char *end;
+        unsigned long bank = strtoul(value, &end, 10);
+
+        definition->unified_rom_bank =
+            *end == '\0' && bank <= 1 ? (unsigned)bank : 2;
     } else if (strcasecmp(key, "bios") == 0) {
         resolve_path(definition->bios_path,
                      sizeof(definition->bios_path), directory, value);
@@ -372,6 +389,12 @@ static void compact_catalog(ModelCatalog *catalog) {
 
         if (definition->hardware == MSX_MODEL_COUNT)
             continue;
+        if (definition->unified_rom_path[0]) {
+            definition->bios_path[0] = '\0';
+            definition->logo_path[0] = '\0';
+            definition->subrom_path[0] = '\0';
+            definition->disk_rom_path[0] = '\0';
+        }
         /* Catalogues written before issue #82 implied the NMS 8250's
          * Philips controller from the hardware name, but some custom NMS
          * profiles deliberately omitted the disk ROM. Only migrate legacy
@@ -530,7 +553,8 @@ bool model_definition_validate(const ModelCatalog *catalog,
     if (has_line_break(definition->name))
         return validation_error(error, error_size,
                                 "Display name cannot contain line breaks");
-    if (has_line_break(definition->bios_path) ||
+    if (has_line_break(definition->unified_rom_path) ||
+        has_line_break(definition->bios_path) ||
         has_line_break(definition->logo_path) ||
         has_line_break(definition->subrom_path) ||
         has_line_break(definition->disk_rom_path))
@@ -539,6 +563,19 @@ bool model_definition_validate(const ModelCatalog *catalog,
     if ((unsigned)definition->hardware >= MSX_MODEL_COUNT)
         return validation_error(error, error_size,
                                 "Unsupported hardware layout");
+    if (definition->unified_rom_bank > 1)
+        return validation_error(error, error_size,
+                                "Unified ROM bank must be 0 or 1");
+    if (definition->unified_rom_path[0] &&
+        !msx_profile(definition->hardware)->expanded_slots)
+        return validation_error(error, error_size,
+                                "Unified ROM requires MSX2 hardware");
+    if (definition->unified_rom_path[0] &&
+        (definition->bios_path[0] || definition->logo_path[0] ||
+         definition->subrom_path[0] || definition->disk_rom_path[0]))
+        return validation_error(
+            error, error_size,
+            "Unified ROM cannot be combined with individual firmware ROMs");
     for (size_t i = 0; i < catalog->count; ++i) {
         if (i != replaced_index &&
             strcasecmp(catalog->entries[i].id,
@@ -560,7 +597,8 @@ bool model_definition_validate(const ModelCatalog *catalog,
                 "Disk ROM requires a floppy controller");
         if (definition->floppy.controller !=
                 MSX_FLOPPY_CONTROLLER_NONE &&
-            !definition->disk_rom_path[0])
+            !definition->disk_rom_path[0] &&
+            !definition->unified_rom_path[0])
             return validation_error(
                 error, error_size,
                 "Floppy controller requires a disk ROM");
@@ -571,6 +609,11 @@ bool model_definition_validate(const ModelCatalog *catalog,
                 "Floppy slot mapping is incompatible with this hardware");
         return true;
     }
+    if (!file_has_size(definition->unified_rom_path,
+                       MSX_OMEGA_UNIFIED_ROM_SIZE))
+        return validation_error(
+            error, error_size,
+            "Unified ROM must be empty or exactly 512 KB");
     if (!file_has_size(definition->bios_path, MSX_BIOS_SIZE))
         return validation_error(
             error, error_size,
@@ -623,6 +666,7 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
     fputs("# 1983 machine catalogue\n"
           "# Managed by Advanced > Machine model editor.\n"
           "# Blank optional firmware fields leave components disconnected.\n"
+          "# A unified ROM replaces BIOS/logo/Sub-ROM/disk-ROM fields.\n"
           "# Floppy controllers are explicit machine hardware, not model names.\n\n",
           file);
     for (size_t i = 0; i < catalog->count; ++i) {
@@ -631,6 +675,7 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
         char logo[PATH_MAX];
         char subrom[PATH_MAX];
         char disk_rom[PATH_MAX];
+        char unified_rom[PATH_MAX];
         char floppy_primary[16] = "";
         char floppy_secondary[16] = "";
 
@@ -640,6 +685,8 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
             remove(temporary);
             return -1;
         }
+        save_path(definition->unified_rom_path,
+                  unified_rom, sizeof(unified_rom));
         save_path(definition->bios_path, bios, sizeof(bios));
         save_path(definition->logo_path, logo, sizeof(logo));
         save_path(definition->subrom_path, subrom, sizeof(subrom));
@@ -660,6 +707,8 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
                 "[model %s]\n"
                 "name = %s\n"
                 "hardware = %s\n"
+                "unified_rom = %s\n"
+                "unified_rom_bank = %u\n"
                 "bios = %s\n"
                 "logo = %s\n"
                 "subrom = %s\n"
@@ -669,6 +718,7 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
                 "floppy_secondary_slot = %s\n\n",
                 definition->id, definition->name,
                 msx_model_config_name(definition->hardware),
+                unified_rom, definition->unified_rom_bank,
                 bios, logo, subrom, disk_rom,
                 msx_floppy_controller_config_name(
                     definition->floppy.controller),

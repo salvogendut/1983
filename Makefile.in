@@ -16,6 +16,7 @@
 
 
 
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -110,11 +111,12 @@ am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
-	$(am__configure_deps) $(dist_cbios_DATA) $(dist_desktop_DATA) \
-	$(dist_icon128_DATA) $(dist_icon16_DATA) $(dist_icon256_DATA) \
-	$(dist_icon32_DATA) $(dist_icon48_DATA) $(dist_icon512_DATA) \
-	$(dist_icon64_DATA) $(dist_metainfo_DATA) $(dist_pkgdata_DATA) \
-	$(noinst_HEADERS) $(am__DIST_COMMON)
+	$(am__configure_deps) $(dist_noinst_SCRIPTS) \
+	$(dist_cbios_DATA) $(dist_desktop_DATA) $(dist_icon128_DATA) \
+	$(dist_icon16_DATA) $(dist_icon256_DATA) $(dist_icon32_DATA) \
+	$(dist_icon48_DATA) $(dist_icon512_DATA) $(dist_icon64_DATA) \
+	$(dist_metainfo_DATA) $(dist_pkgdata_DATA) $(noinst_HEADERS) \
+	$(am__DIST_COMMON)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
@@ -412,6 +414,7 @@ test_wd2793_OBJECTS = $(am_test_wd2793_OBJECTS)
 test_wd2793_LDADD = $(LDADD)
 test_wd2793_LINK = $(CCLD) $(test_wd2793_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+SCRIPTS = $(dist_noinst_SCRIPTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -1201,8 +1204,17 @@ dist_pkgdata_DATA = 1983-models.conf
 cbiosdir = $(pkgdatadir)/ROMS
 dist_cbios_DATA = \
 	ROMS/README.C-BIOS \
+	ROMS/README-RainBIOS \
 	ROMS/cbios_logo_msx1.rom \
-	ROMS/cbios_main_msx1.rom
+	ROMS/cbios_main_msx1.rom \
+	ROMS/rainbios_msx2.rom \
+	ROMS/rainbios_msx2_sub.rom \
+	ROMS/rainbios_disk.rom \
+	ROMS/rainbios_omega.rom
+
+dist_noinst_SCRIPTS = \
+	tools/import-rainbios-roms.sh \
+	tools/build-omega-unified-rom.py
 
 icon16dir = $(datadir)/icons/hicolor/16x16/apps
 dist_icon16_DATA = icons/16x16/apps/io.github.salvogendut.Emulator1983.png
@@ -5823,7 +5835,7 @@ check-am: all-am
 	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
-all-am: Makefile $(PROGRAMS) $(DATA) $(HEADERS)
+all-am: Makefile $(PROGRAMS) $(SCRIPTS) $(DATA) $(HEADERS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(cbiosdir)" "$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(icon128dir)" "$(DESTDIR)$(icon16dir)" "$(DESTDIR)$(icon256dir)" "$(DESTDIR)$(icon32dir)" "$(DESTDIR)$(icon48dir)" "$(DESTDIR)$(icon512dir)" "$(DESTDIR)$(icon64dir)" "$(DESTDIR)$(metainfodir)" "$(DESTDIR)$(pkgdatadir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -6394,6 +6406,11 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_cbiosDATA \
 icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 	@mkdir -p icons
 	$(WINDRES) -I$(srcdir)/icons -i $< -O coff -o $@
+
+RAINBIOS_DIR ?= $(srcdir)/../rainbios
+.PHONY: import-rainbios-roms
+import-rainbios-roms:
+	$(srcdir)/tools/import-rainbios-roms.sh "$(RAINBIOS_DIR)"
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

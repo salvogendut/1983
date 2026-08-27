@@ -19,8 +19,8 @@
       It runs MSX1 and MSX2 firmware, cartridges, cassettes, raw floppy
       images, Sunrise IDE disks, and SD Mapper media. An optional
       openMSXnet-compatible bridge supplies host TCP/IP UNAPI networking.
-      A redistributable C-BIOS MSX1 machine is included as the ready-to-run
-      default.
+      A redistributable RainBIOS Omega MSX2 unified ROM is included as the
+      ready-to-run default, with C-BIOS available as a bundled MSX1 model.
     </p>
   </description>
   <launchable type="desktop-id">io.github.salvogendut.Emulator1983.desktop</launchable>

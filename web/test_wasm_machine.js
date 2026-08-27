@@ -9,22 +9,48 @@ async function main() {
     locateFile: file => path.join(__dirname, 'dist', file),
   });
 
-  assert.strictEqual(module._poc_init(), 0, 'C-BIOS MSX1 must initialize');
-  assert.strictEqual(module._poc_frame_hz(), 60);
-  assert.strictEqual(module._poc_has_floppy(), 0);
-  assert.strictEqual(module._poc_ram_kb(), 64);
-  assert.strictEqual(module._poc_set_ram_kb(16), 16);
-  assert.strictEqual(module._poc_ram_kb(), 16);
+  assert.strictEqual(
+    module._poc_init(), 0,
+    'the default RainBIOS Omega MSX2 must initialize'
+  );
+  assert.strictEqual(module._poc_frame_hz(), 50);
+  assert.strictEqual(module._poc_has_floppy(), 1);
+  assert.strictEqual(module._poc_omega_unified_bank(), 0);
+  assert.strictEqual(module._poc_flip_omega_unified_bank(), 1);
+  assert.strictEqual(module._poc_omega_unified_bank(), 1);
+  assert.strictEqual(module._poc_flip_omega_unified_bank(), 0);
+  assert.strictEqual(module._poc_omega_unified_bank(), 0);
+  assert.strictEqual(module._poc_ram_kb(), 128);
+  assert.strictEqual(module._poc_set_ram_kb(16), -1);
+  assert.strictEqual(module._poc_ram_kb(), 128);
   assert.strictEqual(module._poc_set_ram_kb(4096), 4096);
   assert.strictEqual(module._poc_ram_kb(), 4096);
   assert.strictEqual(module._poc_set_ram_kb(1000), -1);
   assert.strictEqual(module._poc_ram_kb(), 4096);
+  assert.strictEqual(module._poc_set_ram_kb(128), 128);
+  for (let frame = 0; frame < 300; ++frame) module._poc_step();
+  let pixelCount = module._poc_width() * module._poc_height();
+  let pixelStart = module._poc_pixels() >>> 2;
+  let colors = new Set(
+    module.HEAPU32.subarray(pixelStart, pixelStart + pixelCount)
+  );
+  assert(colors.size > 1, 'Omega RainBIOS must render a non-blank boot display');
+
+  module.FS.writeFile('/omega-test.dsk', new Uint8Array(737280));
+  assert.strictEqual(
+    module.ccall('poc_load_disk', 'number', ['string'], ['/omega-test.dsk']),
+    0,
+    'the default Omega WD2793 must accept a disk image'
+  );
+  module._poc_eject_disk();
 
   assert.strictEqual(
     module._poc_init_model(1, 0),
     0,
     'RainBIOS NMS 8250 must initialize'
   );
+  assert.strictEqual(module._poc_omega_unified_bank(), -1);
+  assert.strictEqual(module._poc_flip_omega_unified_bank(), -1);
   assert.strictEqual(module._poc_frame_hz(), 50);
   assert.strictEqual(module._poc_has_floppy(), 1);
   assert.strictEqual(module._poc_ram_kb(), 128);
@@ -38,9 +64,9 @@ async function main() {
   assert.strictEqual(module._poc_ram_kb(), 4096);
   assert.strictEqual(module._poc_set_ram_kb(128), 128);
   for (let frame = 0; frame < 300; ++frame) module._poc_step();
-  const pixelCount = module._poc_width() * module._poc_height();
-  const pixelStart = module._poc_pixels() >>> 2;
-  const colors = new Set(
+  pixelCount = module._poc_width() * module._poc_height();
+  pixelStart = module._poc_pixels() >>> 2;
+  colors = new Set(
     module.HEAPU32.subarray(pixelStart, pixelStart + pixelCount)
   );
   assert(colors.size > 1, 'RainBIOS must render a non-blank boot display');

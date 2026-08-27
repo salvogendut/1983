@@ -39,12 +39,15 @@ be selected directly with a case-insensitive query parameter:
 - The MSX core compiles to WebAssembly (z80, VDP, PSG, floppy, cassette,
   cartridge, keyboard, mouse, paste) with host-only modules stubbed. It boots
   fully client-side — no host process and no frame streaming.
-- Two redistributable machine profiles are bundled: **MSX1 (C-BIOS)** at 60 Hz
-  and **Philips NMS 8250 (RainBIOS)** at 50 Hz. The latter includes its MSX2
-  main ROM, Sub-ROM, WD2793 disk ROM, 128 KiB RAM and 128 KiB VRAM.
+- Three redistributable machine profiles are bundled. **Omega MSX2
+  (RainBIOS)** is the 50 Hz default and boots the same 512 KiB unified Omega
+  EEPROM image as the native application, selecting its lower JP1 bank. It
+  includes the MSX2 main ROM, Sub-ROM, generic WD2793 disk ROM, 128 KiB RAM,
+  and 128 KiB VRAM. **MSX1 (C-BIOS)** at 60 Hz and **Philips NMS 8250
+  (RainBIOS)** at 50 Hz remain selectable.
 - The **System RAM** slider below the machine selector exposes the same memory
   sizes as the native emulator. MSX1 supports 16, 32, 64, 128, 256 and 512 KiB,
-  plus 1, 2 and 4 MiB; the NMS 8250 supports 64 KiB through 4 MiB. Each
+  plus 1, 2 and 4 MiB; both MSX2 profiles support 64 KiB through 4 MiB. Each
   machine's selection is remembered independently. Changing it resets the
   guest while retaining mounted media and configured extensions.
 - **Byte-identical to the native emulator**: the VDP framebuffer hashes match
@@ -74,9 +77,10 @@ UNAPI relay endpoint are remembered in browser local storage.
 Enable it, choose read-only or read/write access and load a raw IDE image. A
 writable image remains in the browser's in-memory filesystem and is flushed and
 downloaded on safe ejection. IDE transfers illuminate both the AUX device lamp
-and the dedicated receiver-top IDE activity LED. Connecting Sunrise suppresses the NMS 8250's
-internal disk ROM, matching the native emulator's external-controller boot
-lane. The bundled firmware's notice is available as
+and the dedicated receiver-top IDE activity LED. On the Philips profile,
+connecting Sunrise suppresses the separate internal disk ROM to provide an
+external-controller boot lane. The Omega unified image retains its physical
+slot contents. The bundled firmware's notice is available as
 [nextor-license.txt](dist/nextor-license.txt).
 
 **SD Mapper V2** embeds `SDM V2 Nextor2.1.1.rom`; there is intentionally no ROM
@@ -102,24 +106,30 @@ Media URLs are resolved relative to the page URL. Two cartridge ROMs, a Drive A
 floppy, a Sunrise IDE image and both SD Mapper cards can be mounted at startup:
 
     http://127.0.0.1:1983/?machine=msx1
+    http://127.0.0.1:1983/?machine=omega-msx2
     http://127.0.0.1:1983/?machine=nms8250
     http://127.0.0.1:1983/?cartridge=media/game.rom
     http://127.0.0.1:1983/?cartridge=media/game.rom&cartridge2=media/tool.rom
     http://127.0.0.1:1983/?disk=media/thisdisk.dsk
     http://127.0.0.1:1983/?disk=media/thisdisk.dsk&autorun=load.bas
-    http://127.0.0.1:1983/?machine=nms8250&ide=media/symbos.img
+    http://127.0.0.1:1983/?machine=omega-msx2&ide=media/symbos.img
 
-The `machine` parameter accepts `msx1` for the C-BIOS profile or `nms8250` for
-the Philips NMS 8250 RainBIOS profile. The aliases `cbios` and `msx2` are also
-accepted. The requested machine is selected before extensions and media are
-applied and affects only that page load.
+The `machine` parameter accepts `omega-msx2` for the default Omega RainBIOS
+profile, `msx1` for C-BIOS, or `nms8250` for Philips NMS 8250 RainBIOS. The
+aliases `omega` and `msx2`, `cbios`, and `philips` are also accepted for those
+profiles respectively. The requested machine is selected before extensions
+and media are applied and affects only that page load.
 
-Without an explicit `machine`, a startup disk automatically selects the NMS
-8250 profile because the default C-BIOS MSX1 profile has no floppy controller.
-Drive A is mounted before one automatic reset, so a bootable disk starts
-without an `autorun` parameter. An explicit `machine=msx1` combined with a
-`disk` reports that the selected machine has no floppy controller instead of
-silently changing profiles.
+With the display focused, unshifted **F3** flips the Omega unified image
+between its lower and upper 256 KiB JP1 banks and resets the guest.
+**Shift+F3** continues to send the ordinary MSX F3 key. On the C-BIOS and
+Philips profiles, F3 reports that no unified ROM is active.
+
+Without an explicit `machine`, a startup disk uses the default Omega MSX2 and
+its WD2793 controller. Drive A is mounted before one automatic reset, so a
+bootable disk starts without an `autorun` parameter. An explicit `machine=msx1`
+combined with a `disk` reports that the selected machine has no floppy
+controller instead of silently changing profiles.
 
 The `extensions` parameter accepts `sunrise`, `sdmapper`, and `unapi` as a
 comma-separated list. An explicit list overrides stored extension toggles for
@@ -131,7 +141,7 @@ local and use the download-on-eject path.
 
 For example, a Sunrise-configured SymbOS image can be launched with:
 
-    http://127.0.0.1:1983/?machine=nms8250&ide=media/MSXSYMBOS.img&idemode=readwrite
+    http://127.0.0.1:1983/?machine=omega-msx2&ide=media/MSXSYMBOS.img&idemode=readwrite
 
 The reference SymZilla installation writes startup state and must be mounted
 read/write. Browser-side changes remain in memory and are offered as a download
@@ -140,7 +150,7 @@ when the image is safely ejected; the server-hosted source file is not changed.
 An SD Mapper copy must have its SymbOS storage driver configured for native
 SD Mapper V2 access, physical slot I, subslot 0, card A and partition 1:
 
-    http://127.0.0.1:1983/?machine=nms8250&sda=media/MSXSYMBOS-SD.img&sdmode=readwrite
+    http://127.0.0.1:1983/?machine=omega-msx2&sda=media/MSXSYMBOS-SD.img&sdmode=readwrite
 
 For example, this enables UNAPI, mounts an SD image in SD A, implicitly enables
 SD Mapper V2, mounts the GeoBench floppy, and resets with everything present:

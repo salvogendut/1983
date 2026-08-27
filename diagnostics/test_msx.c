@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static u64 vdp_frame_hash(const MsxVdp *vdp);
+
 static void write_vdp_ppm_if_requested(const MsxVdp *vdp) {
     const char *path = getenv("MSX_CBIOS_PPM");
     FILE *file;
@@ -457,6 +459,108 @@ static void test_atomic_firmware_set_and_eject(void) {
     assert(remove(subrom_path) == 0);
     assert(remove(disk_path) == 0);
     assert(remove(bad_path) == 0);
+}
+
+static void test_omega_unified_rom_slot_map(void) {
+    static const char *rom_path = "test-omega-unified.tmp";
+    MsxMachine *msx = malloc(sizeof(*msx));
+    u8 *rom = malloc(MSX_OMEGA_UNIFIED_ROM_SIZE);
+    MsxFloppyConfig floppy = {
+        .controller = MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793,
+        .primary_slot = 3,
+        .secondary_slot = 3,
+    };
+
+    assert(msx && rom);
+    for (size_t page = 0;
+         page < MSX_OMEGA_UNIFIED_ROM_SIZE / 0x4000; ++page)
+        memset(rom + page * 0x4000, (int)page, 0x4000);
+    write_fixture(rom_path, rom, MSX_OMEGA_UNIFIED_ROM_SIZE);
+
+    msx_init(msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
+    assert(msx_configure_floppy(msx, &floppy) == 0);
+    assert(msx_load_omega_unified_rom(msx, rom_path, 1) == 0);
+    assert(msx->unified_rom_loaded);
+    assert(msx->unified_rom_bank == 1);
+    assert(msx_can_boot(msx));
+    assert(!msx->bios_loaded);
+    assert(!msx->logo_loaded);
+    assert(!msx->subrom_loaded);
+    assert(!msx->disk_rom_loaded);
+
+    /* The selected 256 KiB bank is four consecutive 64 KiB images:
+     * slot 0, then slot 3-0, slot 3-1 and slot 3-3. */
+    assert(msx_memory_read(msx, 0x0000) == 16);
+    assert(msx_memory_read(msx, 0x4000) == 17);
+    assert(msx_memory_read(msx, 0x8000) == 18);
+    assert(msx_memory_read(msx, 0xc000) == 19);
+    msx_io_write(msx, 0xa8, 0xff); /* Primary slot 3 in every page. */
+    msx_memory_write(msx, 0xffff, 0x00); /* Subslot 0. */
+    assert(msx_memory_read(msx, 0x0000) == 20);
+    assert(msx_memory_read(msx, 0xc000) == 23);
+    msx_memory_write(msx, 0xffff, 0x55); /* Subslot 1. */
+    assert(msx_memory_read(msx, 0x0000) == 24);
+    assert(msx_memory_read(msx, 0xc000) == 27);
+    msx_memory_write(msx, 0xffff, 0xff); /* Subslot 3. */
+    assert(msx_memory_read(msx, 0x0000) == 28);
+    assert(msx_memory_read(msx, 0x4000) == 29);
+    assert(msx_memory_read(msx, 0xc000) == 31);
+
+    msx_eject_firmware(msx);
+    assert(!msx->unified_rom_loaded);
+    assert(!msx_can_boot(msx));
+    msx_destroy(msx);
+    free(msx);
+    free(rom);
+    assert(remove(rom_path) == 0);
+}
+
+static void test_omega_unified_boot_if_available(void) {
+    const char *rom_path = getenv("MSX_OMEGA_UNIFIED_ROM");
+    const char *bank_text = getenv("MSX_OMEGA_UNIFIED_ROM_BANK");
+    MsxMachine *msx;
+    size_t nonzero_vram = 0;
+    unsigned bank = 0;
+
+    if (!rom_path || !rom_path[0])
+        return;
+    if (bank_text && bank_text[0]) {
+        char *end = NULL;
+        unsigned long parsed = strtoul(bank_text, &end, 10);
+
+        assert(end && !*end && parsed <= 1);
+        bank = (unsigned)parsed;
+    }
+
+    msx = malloc(sizeof(*msx));
+    assert(msx);
+    msx_init(msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
+    configure_philips_floppy(msx);
+    assert(msx_load_omega_unified_rom(msx, rom_path, bank) == 0);
+    for (int frame = 0; frame < 300; ++frame)
+        msx_run_frame(msx);
+    for (size_t i = 0; i < sizeof(msx->vdp.vram); ++i)
+        if (msx->vdp.vram[i])
+            ++nonzero_vram;
+
+    fprintf(stderr,
+            "Omega unified checkpoint: bank=%u frame=%llu PC=%04X "
+            "SP=%04X slot=%02X subslot=%02X instructions=%llu "
+            "VRAM=%zu framebuffer=%016llX\n",
+            bank, (unsigned long long)msx->frame, msx->cpu.pc,
+            msx->cpu.sp, msx->primary_slot, msx->secondary_slot[3],
+            (unsigned long long)msx->instructions, nonzero_vram,
+            (unsigned long long)vdp_frame_hash(&msx->vdp));
+    assert(msx->frame == 300);
+    assert(msx->unified_rom_loaded);
+    assert(msx->unified_rom_bank == bank);
+    assert(!msx->bios_loaded);
+    assert(!msx->subrom_loaded);
+    assert(!msx->disk_rom_loaded);
+    assert(msx->instructions > 100000);
+    assert(nonzero_vram > 0);
+    msx_destroy(msx);
+    free(msx);
 }
 
 static void test_msx2_configured_floppy_slots_and_firmware(void) {
@@ -1740,6 +1844,8 @@ int main(void) {
     test_megaflash_expanded_cartridge_bus();
     test_ascii8_cpu_boot_checkpoint();
     test_atomic_firmware_set_and_eject();
+    test_omega_unified_rom_slot_map();
+    test_omega_unified_boot_if_available();
     test_msx2_configured_floppy_slots_and_firmware();
     test_model_change_reset_preserves_floppy();
     test_vdp_ports_and_renderer();

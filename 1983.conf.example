@@ -2,17 +2,21 @@
 # Fresh installations create equivalent settings automatically.
 
 [machine]
-model = cbios
-hardware = msx1
+model = omega-msx2
+hardware = msx2
 region = pal
 # MSX1 uses its fixed TMS9918-family VDP; MSX2 accepts v9938 or v9958.
-vdp = tms9918
+vdp = v9958
 # Supported selections extend through 4096 KiB.
-memory_kb = 64
+memory_kb = 128
 
 [firmware]
-bios = ROMS/cbios_main_msx1.rom
-logo = ROMS/cbios_logo_msx1.rom
+# Omega EEPROM image: 0 selects its lower 256 KiB JP1 bank, 1 the upper.
+# A unified ROM replaces all four individual firmware paths below.
+unified_rom = ROMS/rainbios_omega.rom
+unified_rom_bank = 0
+bios =
+logo =
 subrom =
 disk_rom =
 

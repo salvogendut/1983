@@ -22,16 +22,23 @@ assert.deepStrictEqual(
   ramSizesForModel(1),
   [64, 128, 256, 512, 1024, 2048, 4096]
 );
+assert.deepStrictEqual(
+  ramSizesForModel(2),
+  [64, 128, 256, 512, 1024, 2048, 4096]
+);
 assert.strictEqual(normalizeRamKb(0, 16), 16);
 assert.strictEqual(normalizeRamKb(1, 16), 64);
 assert.strictEqual(normalizeRamKb(1, 1000), 512);
 assert.strictEqual(normalizeRamKb(1, 4096), 4096);
+assert.strictEqual(normalizeRamKb(2, 16), 64);
+assert.strictEqual(normalizeRamKb(2, 4096), 4096);
 assert.strictEqual(defaultRamKb(0), 64);
 assert.strictEqual(defaultRamKb(1), 128);
+assert.strictEqual(defaultRamKb(2), 128);
 assert.strictEqual(formatRamKb(512), '512 KiB');
 assert.strictEqual(formatRamKb(1024), '1 MiB');
 assert.strictEqual(formatRamKb(4096), '4 MiB');
-assert.throws(() => ramSizesForModel(2), /unsupported/);
+assert.throws(() => ramSizesForModel(3), /unsupported/);
 
 const state = createPeripheralState();
 assert.strictEqual(state.getInputDevice(), INPUT_JOYSTICK);

@@ -11,7 +11,7 @@ details in [`TECHNICAL.md`](TECHNICAL.md) and
 
 ```sh
 make -j4
-./1983                          # generic MSX1 using bundled C-BIOS
+./1983                          # Omega MSX2 using bundled RainBIOS
 ./1983 --model msx2 --region pal
 ./1983 --model nms8250 --memory 1024  # NMS 8250 with 1 MiB RAM
 ./1983 --cart ROMS/game.rom
@@ -19,8 +19,9 @@ make -j4
 ./1983 --help
 ```
 
-Fresh configurations select the bundled `cbios` model and record that complete
-firmware choice in the per-user `1983.conf`.
+Fresh configurations select the bundled `omega-msx2` RainBIOS model and
+record that complete firmware choice in the per-user `1983.conf`. The bundled
+`cbios` model remains available for MSX1 software.
 
 ## Command line
 
@@ -72,7 +73,8 @@ unavailable. The ROM is not bundled with 1983.
 
 ## Firmware and machines
 
-`1983-models.conf` ships with `cbios`, `msx1`, `msx2`, and `nms8250` machines.
+`1983-models.conf` ships with `omega-msx2`, `cbios`, `msx1`, `msx2`, and
+`nms8250` machines.
 Open the **F9** overlay and choose **General > Machine**. Catalogue mappings
 load exactly as defined and the whole firmware set is validated before the
 running machine is replaced.
@@ -83,8 +85,12 @@ point its firmware paths at files you are entitled to use (the Git-ignored
 blank. With **General > Tinker** enabled, the **Advanced > Machine model
 editor** provides graphical add/edit/duplicate/delete over the catalogue.
 The editor also configures an optional Philips WD2793, its primary/secondary
-slot, and matching 16 KiB disk ROM. This means either a generic MSX/MSX2
-definition or the supplied NMS 8250 definition can provide floppy support.
+slot, and matching 16 KiB disk ROM. MSX2 definitions may instead select a
+512 KiB **Unified ROM** and its lower/upper 256 KiB JP1 bank. A unified image
+provides the complete Omega slot contents, so selecting it clears and disables
+the individual BIOS, logo, Sub-ROM, and disk-ROM paths. This means either a
+generic MSX/MSX2 definition or the supplied NMS 8250 definition can provide
+floppy support.
 
 See [`BOOT_TARGETS.md`](BOOT_TARGETS.md) for firmware lanes, checkpoints, and
 the GeoBench/Nextor targets.

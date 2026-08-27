@@ -122,10 +122,13 @@ assert.deepStrictEqual(
 assert.strictEqual(parseStartupMedia('?machine=msx1', base).machine, 0);
 assert.strictEqual(parseStartupMedia('?machine=CBIOS', base).machine, 0);
 assert.strictEqual(parseStartupMedia('?machine=nms8250', base).machine, 1);
-assert.strictEqual(parseStartupMedia('?machine=MSX2', base).machine, 1);
+assert.strictEqual(parseStartupMedia('?machine=philips', base).machine, 1);
+assert.strictEqual(parseStartupMedia('?machine=omega', base).machine, 2);
+assert.strictEqual(parseStartupMedia('?machine=omega-msx2', base).machine, 2);
+assert.strictEqual(parseStartupMedia('?machine=MSX2', base).machine, 2);
 assert.throws(
   () => parseStartupMedia('?machine=turbor', base),
-  /machine must be msx1 or nms8250/
+  /machine must be msx1, omega-msx2, or nms8250/
 );
 
 assert.throws(
