@@ -42,6 +42,7 @@ typedef enum {
     CONFIG_FILE_CHOOSER_MEGAFLASH_SD_B,
     CONFIG_FILE_CHOOSER_CDX2_ROM,
     CONFIG_FILE_CHOOSER_RDF600_ROM,
+    CONFIG_FILE_CHOOSER_MODEL_UNIFIED_ROM,
     CONFIG_FILE_CHOOSER_MODEL_BIOS,
     CONFIG_FILE_CHOOSER_MODEL_LOGO,
     CONFIG_FILE_CHOOSER_MODEL_SUBROM,
@@ -100,6 +101,8 @@ typedef struct {
     bool       debug;
     NotifyMode notifications;
 
+    char unified_rom_path[PATH_MAX];
+    unsigned unified_rom_bank;
     char bios_path[PATH_MAX];
     char logo_path[PATH_MAX];
     char subrom_path[PATH_MAX];

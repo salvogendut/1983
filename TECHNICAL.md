@@ -10,7 +10,8 @@ implemented by 1983. Low-level design notes and source ownership are in
 Its address space is divided into four 16 KiB pages selected between four
 primary slots through PPI port `0xA8`.
 
-- Slot 0 contains the BIOS and optional C-BIOS logo ROM.
+- Slot 0 contains the BIOS and optional C-BIOS logo ROM, or the first 64 KiB
+  slice of an Omega unified ROM.
 - Slots 1 and 2 are independent cartridge devices.
 - Slot 3 contains ordinary MSX RAM or the expanded MSX2 devices.
 
@@ -20,6 +21,15 @@ mapper RAM, and RTC. Memory-mapper segment registers are exposed at ports
 `0xFC` through `0xFF`. Floppy topology is supplied separately by the selected
 catalogue entry, so the same Philips memory-mapped WD2793 and disk ROM can be
 wired into either the NMS 8250 or a compatible generic layout.
+
+An Omega unified ROM is exactly 512 KiB. Its lower and upper 256 KiB halves
+represent the two physical EEPROM banks selected by Omega jumper JP1. The
+selected half contains four consecutive 64 KiB slot images: primary slot 0,
+expanded slots 3-0 and 3-1, and expanded slot 3-3. Slot 3-2 remains mapper
+RAM. Loading this image is mutually exclusive with the individual BIOS, logo,
+Sub-ROM, and disk-ROM paths; switching either way clears the inactive form
+before resetting the guest. A configured WD2793 may still intercept its
+register addresses within the embedded slot 3-3 disk-ROM page.
 
 The General RAM control offers power-of-two mapper capacities through
 4096 KiB (plus the smaller 16/32 KiB MSX1 layouts). Capacity above 128 KiB is
@@ -49,6 +59,8 @@ hardware layouts. Each `[model id]` entry accepts:
 [model my-msx2]
 name = My MSX2
 hardware = msx2
+unified_rom =
+unified_rom_bank = 0
 bios = ROMS/my-bios.rom
 logo =
 subrom = ROMS/my-subrom.rom
@@ -57,6 +69,12 @@ floppy_controller = none
 floppy_primary_slot =
 floppy_secondary_slot =
 ```
+
+For an Omega-style image, set `unified_rom` to an exact 512 KiB file and use
+`unified_rom_bank = 0` for its lower half or `1` for its upper half. Leave
+`bios`, `logo`, `subrom`, and `disk_rom` blank. A non-empty unified path wins
+when an older hand-edited catalogue supplies both forms, and the editor makes
+the choices mutually exclusive.
 
 `hardware` must currently be `msx1`, `msx2`, or `nms8250`. A catalogue may
 contain up to 64 valid entries. Duplicate IDs and unknown hardware layouts
@@ -77,9 +95,9 @@ mapping reserves the corresponding physical cartridge port.
 With Tinker enabled, Advanced > Machine model editor provides catalogue
 list, add, edit, duplicate, and delete workflows. IDs are restricted to
 portable INI-safe characters and must be unique. Non-empty firmware paths
-selected or changed in the editor are checked for their required 32 KiB or
-16 KiB size. Empty optional fields remain valid and leave those components
-disconnected when the model is selected.
+selected or changed in the editor are checked for their required 512 KiB,
+32 KiB, or 16 KiB size. Empty optional fields remain valid and leave those
+components disconnected when the model is selected.
 
 Editor changes are written through a same-directory temporary file and
 atomically renamed to the per-user `1983-models.conf`. The saved file is

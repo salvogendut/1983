@@ -32,6 +32,8 @@ and staying as multiplatform as SDL3 allows.
 
 - MSX, MSX2, and Philips NMS 8250 machine layouts with an editable
   `1983-models.conf` catalogue.
+- Ready-to-run Omega MSX2 default powered by a redistributable 512 KiB
+  RainBIOS unified ROM; C-BIOS remains available for MSX1.
 - Linear, ASCII8/16, Konami, and Konami SCC cartridges.
 - MSX1 screen/sprite modes plus selectable V9938/V9958 video on MSX2,
   including SCREEN 5-8, drawing commands, and V9958 YJK/YAE display support.
@@ -90,4 +92,6 @@ issue before starting a substantial machine, device, or architecture change.
 1983 is released under the GNU General Public License version 2.0 only
 (`GPL-2.0-only`). See [`LICENSE`](LICENSE). Redistributable firmware retained
 under its own terms carries a notice beside the ROM; the bundled official
-Nextor Sunrise ROM is covered by [`ROMS/LICENSE-NEXTOR`](ROMS/LICENSE-NEXTOR).
+Nextor Sunrise ROM is covered by [`ROMS/LICENSE-NEXTOR`](ROMS/LICENSE-NEXTOR),
+and the RainBIOS firmware provenance and notices are recorded in
+[`ROMS/README-RainBIOS`](ROMS/README-RainBIOS).

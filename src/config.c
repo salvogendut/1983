@@ -31,6 +31,8 @@ static const char *const file_chooser_keys[CONFIG_FILE_CHOOSER_COUNT] = {
     [CONFIG_FILE_CHOOSER_MEGAFLASH_SD_B] = "last_megaflash_sd_b_dir",
     [CONFIG_FILE_CHOOSER_CDX2_ROM] = "last_cdx2_rom_dir",
     [CONFIG_FILE_CHOOSER_RDF600_ROM] = "last_rdf600_rom_dir",
+    [CONFIG_FILE_CHOOSER_MODEL_UNIFIED_ROM] =
+        "last_model_unified_rom_dir",
     [CONFIG_FILE_CHOOSER_MODEL_BIOS] = "last_model_bios_dir",
     [CONFIG_FILE_CHOOSER_MODEL_LOGO] = "last_model_logo_dir",
     [CONFIG_FILE_CHOOSER_MODEL_SUBROM] = "last_model_subrom_dir",
@@ -181,8 +183,9 @@ static void ensure_parent(const char *path) {
 
 void config_defaults(Config *config) {
     memset(config, 0, sizeof(*config));
-    config->model = MSX_MODEL_GENERIC_MSX1;
-    snprintf(config->machine_id, sizeof(config->machine_id), "cbios");
+    config->model = MSX_MODEL_GENERIC_MSX2;
+    snprintf(config->machine_id, sizeof(config->machine_id),
+             "omega-msx2");
     config->region = MSX_REGION_PAL;
     config->vdp_type = msx_default_vdp_type(config->model);
     config->memory_kb = msx_default_ram_kb(config->model);
@@ -223,6 +226,14 @@ void config_normalize(Config *config) {
 
     if ((unsigned)config->model >= MSX_MODEL_COUNT)
         config->model = MSX_MODEL_GENERIC_MSX1;
+    if (config->unified_rom_bank > 1)
+        config->unified_rom_bank = 0;
+    if (config->unified_rom_path[0]) {
+        config->bios_path[0] = '\0';
+        config->logo_path[0] = '\0';
+        config->subrom_path[0] = '\0';
+        config->disk_rom_path[0] = '\0';
+    }
     if (config->region != MSX_REGION_NTSC)
         config->region = MSX_REGION_PAL;
     config->vdp_type =
@@ -429,6 +440,11 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "notifications") == 0)
             config->notifications =
                 parse_notifications(value, config->notifications);
+        else if (strcmp(key, "unified_rom") == 0)
+            snprintf(config->unified_rom_path,
+                     sizeof(config->unified_rom_path), "%s", value);
+        else if (strcmp(key, "unified_rom_bank") == 0)
+            config->unified_rom_bank = (unsigned)atoi(value);
         else if (strcmp(key, "bios") == 0)
             snprintf(config->bios_path,
                      sizeof(config->bios_path), "%s", value);
@@ -556,6 +572,9 @@ int config_save(const Config *config) {
             ? "v9958" : "tms9918");
     fprintf(file, "memory_kb = %d\n\n", config->memory_kb);
     fprintf(file, "[firmware]\n");
+    fprintf(file, "unified_rom = %s\n", config->unified_rom_path);
+    fprintf(file, "unified_rom_bank = %u\n",
+            config->unified_rom_bank);
     fprintf(file, "bios = %s\n", config->bios_path);
     fprintf(file, "logo = %s\n", config->logo_path);
     fprintf(file, "subrom = %s\n", config->subrom_path);

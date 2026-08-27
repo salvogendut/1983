@@ -1,25 +1,85 @@
 RainBIOS firmware for Javascript 1983
 =====================================
 
-These redistributable ROM images provide the browser edition's Philips
-NMS 8250 profile:
+These redistributable ROM images provide the native and browser-edition Omega
+MSX2 default and the browser edition's Philips NMS 8250 profile:
 
   rainbios_msx2.rom           MSX2 main BIOS, 32 KiB
   rainbios_msx2_sub.rom       MSX2 Sub-ROM, 16 KiB
+  rainbios_disk.rom           Generic WD2793 disk ROM, 16 KiB
+  rainbios_omega.rom          Omega unified EEPROM image, 512 KiB
   rainbios_nms8250_disk.rom   Philips WD2793 disk ROM, 16 KiB
 
 They were built from RainBIOS commit
-9b7b69a4790816a0daeb7977f0b50d918eb77643:
+d4925fcb58e8ba939ccfb45f23d650bb4cce10c2:
 
   https://github.com/salvogendut/rainbios
 
+Rebuild and import the exact Omega firmware from a clean sibling checkout of
+that revision with:
+
+  make import-rainbios-roms
+
+For a checkout elsewhere, use:
+
+  make import-rainbios-roms RAINBIOS_DIR=/path/to/rainbios
+
+The script invokes the RainBIOS MSX2 main, Sub-ROM, and generic disk-ROM
+targets, cooks the unified Omega image, verifies every digest, and only then
+replaces the bundled copies.
+RainBIOS documents the required assembler, compiler, Python, and companion
+BBC BASIC checkout in its own README.
+
+The unified image follows the Omega EEPROM layout: each 256 KiB jumper bank
+contains four consecutive 64 KiB images for slot 0 and slot 3 subslots 0, 1,
+and 3. RainBIOS is placed in slot 0, its Sub-ROM in 3-0, and the WD2793 disk
+ROM in page 1 of 3-3. Both halves contain the same redistributable recipe, so
+either emulated JP1 bank boots identically. See:
+
+  https://msxmakers.design.blog/proyectos/proyectos-msx/omega-home-computer/omega-paso-a-paso/cocinando-la-rom-del-omega/
+
 SHA-256:
 
-  55acd7142ece592fa1dcf253b13bc0f05c5d5acdafa80e22019c8136f15ae939  rainbios_msx2.rom
+  c128d92142531b9a68f9337d0f046d7cff3fdc3278996e7dad63613e981a4e5f  rainbios_msx2.rom
   f8230c25f45db88d4c032e59dd714c4bf65c1b3300000fc20a046fa32ef984ed  rainbios_msx2_sub.rom
+  ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_disk.rom
+  7e59f6f07c70780539c6369e4004155d68287bb3c11948c016f01f8c07dbc328  rainbios_omega.rom
   ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_nms8250_disk.rom
 
-RainBIOS is distributed under the BSD 3-Clause License:
+Licensing and attribution
+-------------------------
+
+The license information below is copied from RainBIOS LICENSE,
+THIRD_PARTY_NOTICES.md, and LICENSES/ at the pinned source revision. It applies
+to rainbios_msx2.rom and therefore also to every copy of that main ROM embedded
+in rainbios_omega.rom. The Sub-ROM and disk ROM are original RainBIOS firmware
+under BSD-3-Clause.
+
+The combined MSX2 main ROM is an aggregate of separately licensed components:
+
+  Component                         Source identity                 License
+  --------------------------------  ------------------------------  ----------------
+  Original RainBIOS firmware, font  RainBIOS                       BSD-3-Clause
+  and menu tables
+  Generated boot-logo data          RainBIOS src/logo-simple.png    CC0-1.0
+  ZX0 decoder                       ZX0 ecde3a2ae05061fe06469ed46df81a33b7de7d86
+                                                                   BSD-3-Clause
+  Z80 interpreter core              bbcbasic-z80-msx                Zlib-style
+                                    34540d468d3f39da0d283da49c0feb2dab9a1313
+  MSX platform adapters             same bbcbasic-z80-msx revision  BSD-3-Clause
+
+The embedded companion payload's expected SHA-256 at that source revision is:
+
+  82b0ff999ae85d4105875ad6e8c5a33f37662fbcde1642044c56a430de9759a6
+
+The permissive source licenses do not grant permission to use the BBC BASIC
+name. RainBIOS records that the upstream naming permission is not transferable
+to derived or forked works. A public derived release must obtain permission or
+rename the port and its on-screen identity while retaining accurate source
+attribution.
+
+RainBIOS BSD 3-Clause License
+-----------------------------
 
 Copyright (c) 2026, RainBIOS contributors
 All rights reserved.
@@ -49,3 +109,100 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
+
+BBC BASIC Z80 interpreter-core notice
+--------------------------------------
+
+Copyright (c) 1984-2000 R.T. Russell
+
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+
+BBC BASIC for Z80 on MSX platform-layer BSD 3-Clause License
+------------------------------------------------------------
+
+Copyright (c) 2026, BBC BASIC for Z80 on MSX contributors
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+ZX0 BSD 3-Clause License
+------------------------
+
+Copyright (c) 2021, Einar Saukas
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+RainBIOS boot-logo data: CC0 1.0
+--------------------------------
+
+The RainBIOS source project identifies src/logo-simple.png and the converted
+pattern, name, and color data embedded in the ROM as created by Salvatore
+Bognanni and dedicated to the public domain under CC0 1.0 Universal. CC0
+waives copyright and related rights to the greatest extent allowed by law and
+otherwise supplies its public-license fallback, without warranty. The full
+legal code is available in the pinned RainBIOS source tree at:
+
+  LICENSES/CC0-1.0.txt
+  https://github.com/salvogendut/rainbios/blob/d4925fcb58e8ba939ccfb45f23d650bb4cce10c2/LICENSES/CC0-1.0.txt

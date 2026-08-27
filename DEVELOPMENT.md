@@ -104,7 +104,7 @@ hardware layouts are:
 | Expanded slots | No | Yes | Yes |
 | RAM mapper | With RAM above 64 KB | Yes | Yes |
 | RTC | No | Yes | Yes |
-| Required firmware | BIOS | BIOS + Sub-ROM | BIOS + Sub-ROM; disk ROM optional |
+| Required firmware | BIOS | BIOS + Sub-ROM, or Omega unified ROM | BIOS + Sub-ROM; disk ROM optional |
 
 The MSX1 executable layout follows the C-BIOS machine definition: slot 0
 contains a 32 KB main ROM and optional 16 KB logo ROM, primary slots 1 and 2
@@ -112,14 +112,17 @@ contain independent external cartridge devices, and slot 3 contains RAM.
 Each cartridge can be linear, ASCII8, ASCII16, Konami, or Konami SCC.
 
 `1983-models.conf` provides the data-driven layer above these hardware
-profiles. A `[model id]` entry supplies `name`, `hardware`, `bios`, `logo`,
-`subrom`, `disk_rom`, `floppy_controller`, `floppy_primary_slot`, and
-`floppy_secondary_slot`. Paths are resolved relative to that file. A user
-can add any number of named models which reuse an implemented hardware layout
-without recompiling 1983. The parser caps the catalogue at 64 valid entries,
-ignores unknown hardware layouts and duplicate IDs, and falls back to four
-built-in entries, including the ready-to-run C-BIOS machine, when no valid
-file is available.
+profiles. A `[model id]` entry supplies `name`, `hardware`, `unified_rom`,
+`unified_rom_bank`, `bios`, `logo`, `subrom`, `disk_rom`,
+`floppy_controller`, `floppy_primary_slot`, and `floppy_secondary_slot`.
+Paths are resolved relative to that file. An exact 512 KiB Omega unified ROM
+maps one selected 256 KiB JP1 bank into slot 0 and expanded slots 3-0, 3-1,
+and 3-3; it is mutually exclusive with all four individual firmware paths.
+A user can add any number of named models which reuse an implemented hardware
+layout without recompiling 1983. The parser caps the catalogue at 64 valid
+entries, ignores unknown hardware layouts and duplicate IDs, and falls back
+to five built-in entries, including the ready-to-run Omega MSX2 and C-BIOS
+machines, when no valid file is available.
 
 **Advanced > Machine model editor**, behind the existing Tinker gate, writes
 the same format through `model_catalog_save()`. It edits a copy, validates
@@ -147,10 +150,12 @@ adds a separate 512 KiB mapper as one half of its real composite hardware,
 rather than folding it into a fictitious 640 KiB internal allocation.
 MegaFlashROM SCC+ SD supplies another independent 512 KiB mapper inside its
 own four-subslot composite cartridge.
-Firmware discovery builds on the explicit
-`1983-models.conf` paths and the pinned hashes documented in
-`BOOT_TARGETS.md`. Only the redistributable C-BIOS MSX1 main and logo ROMs
-belong in the repository; all proprietary machine firmware remains local.
+Firmware discovery builds on the explicit `1983-models.conf` paths and the
+pinned hashes documented in `BOOT_TARGETS.md`. The redistributable C-BIOS
+MSX1 files and RainBIOS Omega components/unified image belong in the
+repository; proprietary machine firmware remains local. The
+`import-rainbios-roms` target rebuilds the component ROMs from the pinned
+RainBIOS revision and cooks both identical JP1 banks reproducibly.
 
 The frontend RAM control currently scales the active system mapper from its
 profile default through 4 MiB; allocations above 128 KiB live on the heap.
@@ -584,6 +589,18 @@ Run the pinned C-BIOS checkpoint against the bundled C-BIOS 0.29 files:
 ```sh
 MSX_CBIOS_DIR=ROMS make check
 ```
+
+Run a real 512 KiB Omega image through either selected JP1 bank with:
+
+```sh
+MSX_OMEGA_UNIFIED_ROM=/path/to/omega.bin \
+MSX_OMEGA_UNIFIED_ROM_BANK=0 ./test-msx
+MSX_OMEGA_UNIFIED_ROM_BANK=1 \
+MSX_OMEGA_UNIFIED_ROM=/path/to/omega.bin ./test-msx
+```
+
+The checkpoint runs 300 frames and requires active VRAM and sustained CPU
+execution while printing the final slot registers and framebuffer hash.
 
 Run the Philips NMS 8250 firmware checkpoint with:
 

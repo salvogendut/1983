@@ -3,7 +3,7 @@ Version:        0.2.0
 Release:        1%{?dist}
 Summary:        Generic MSX and MSX2 emulator
 
-License:        GPL-2.0-only AND BSD-2-Clause
+License:        GPL-2.0-only AND BSD-2-Clause AND BSD-3-Clause AND Zlib AND CC0-1.0
 URL:            https://github.com/salvogendut/1983
 Source0:        %{name}-%{version}.tar.gz
 
@@ -23,9 +23,9 @@ Philips floppy drives, Sunrise IDE, SD Mapper V2, MegaFlashROM SCC+ SD, and
 the MSX2 real-time clock. An openMSXnet-compatible host bridge can expose
 TCP/IP UNAPI networking through the separately supplied guest TSR.
 
-The redistributable C-BIOS 0.29 MSX1 main and logo ROMs are included as a
-ready-to-run default. Proprietary machine, controller, cartridge, and media
-images are not included.
+The redistributable RainBIOS Omega MSX2 firmware is included as the
+ready-to-run default. C-BIOS 0.29 remains available as a bundled MSX1 model.
+Proprietary machine, controller, cartridge, and media images are not included.
 
 %prep
 %autosetup
@@ -55,8 +55,13 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/io.github
 %{_datadir}/%{name}/1983-models.conf
 %dir %{_datadir}/%{name}/ROMS
 %{_datadir}/%{name}/ROMS/README.C-BIOS
+%{_datadir}/%{name}/ROMS/README-RainBIOS
 %{_datadir}/%{name}/ROMS/cbios_logo_msx1.rom
 %{_datadir}/%{name}/ROMS/cbios_main_msx1.rom
+%{_datadir}/%{name}/ROMS/rainbios_msx2.rom
+%{_datadir}/%{name}/ROMS/rainbios_msx2_sub.rom
+%{_datadir}/%{name}/ROMS/rainbios_disk.rom
+%{_datadir}/%{name}/ROMS/rainbios_omega.rom
 
 %changelog
 * Thu Jul 30 2026 Salvatore Bognanni <salvogendut@gmail.com> - 0.2.0-1

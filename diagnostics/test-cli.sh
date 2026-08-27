@@ -12,18 +12,29 @@ cdx2=diagnostics/test-cli-cdx2.tmp
 rdf600=diagnostics/test-cli-rdf600.tmp
 floppy=diagnostics/test-cli-floppy.tmp
 first_run=diagnostics/test-cli-first-run.tmp
+first_run_rtc=diagnostics/rtc/omega-msx2.cmos
+first_run_rtc_upper=diagnostics/rtc/OMEGA-MSX2.cmos
 source_root=${srcdir:-.}
-trap 'rm -f "$log" "$config" "$sunrise" "$sdrom" "$sdimage" "$megaflash" "$cassette" "$cdx2" "$rdf600" "$floppy" "$first_run"' EXIT HUP INT TERM
+cleanup() {
+    rm -f "$log" "$config" "$sunrise" "$sdrom" "$sdimage" \
+        "$megaflash" "$cassette" "$cdx2" "$rdf600" "$floppy" \
+        "$first_run" "$first_run_rtc" "$first_run_rtc_upper"
+    rmdir diagnostics/rtc 2>/dev/null || :
+}
+trap cleanup EXIT HUP INT TERM
 
-rm -f "$first_run"
+rm -f "$first_run" "$first_run_rtc" "$first_run_rtc_upper"
 ./1983 --config "$first_run" \
     --models "$source_root/1983-models.conf" \
     --headless --unthrottled --exit-after 0 \
     >"$log" 2>&1
-grep -q '^model = cbios$' "$first_run"
-grep -q 'cbios_main_msx1\.rom$' "$first_run"
-grep -q 'cbios_logo_msx1\.rom$' "$first_run"
-grep -q 'BIOS loaded, logo ROM loaded' "$log"
+grep -q '^model = omega-msx2$' "$first_run"
+grep -q '^unified_rom = .*rainbios_omega\.rom$' "$first_run"
+grep -q '^unified_rom_bank = 0$' "$first_run"
+grep -q '^bios = $' "$first_run"
+grep -q '^subrom = $' "$first_run"
+grep -q '^disk_rom = $' "$first_run"
+grep -q 'Omega unified ROM bank 1 loaded' "$log"
 
 # Exercise the normal GUI/audio initialization path without a host window.
 # Unlike --headless, this opens both PSG and shutter streams. Shutdown must
@@ -43,7 +54,8 @@ grep -q "expected auto, linear, ascii8, ascii16, konami" "$log"
 
 printf '%s\n' \
     '[advanced]' \
-    'notifications = off' >"$config"
+    'notifications = off' \
+    'rtc_persistence = false' >"$config"
 ./1983 --config "$config" --headless --unthrottled --exit-after 0 \
     >"$log" 2>&1
 if grep -q "1983 - MSX / MSX2 emulator" "$log" ||

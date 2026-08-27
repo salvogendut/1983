@@ -14,9 +14,11 @@ Tagged releases are published on the
 | `1983-vX.Y.Z-macos-x86_64.zip` | Intel macOS | Extract and open `1983.app` |
 | `1983-vX.Y.Z-x86_64.flatpak` | Flatpak x86_64 | Install with `flatpak install --user FILE` |
 
-Every bundle includes `1983-models.conf` and the redistributable C-BIOS
-MSX1 main and logo ROMs. A fresh launch therefore boots the basic `cbios`
-MSX1 machine without downloading proprietary firmware.
+Every bundle includes `1983-models.conf`, the redistributable 512 KiB
+RainBIOS Omega unified ROM and its component images, and the C-BIOS MSX1
+firmware. A fresh launch therefore boots the `omega-msx2` model with a V9958,
+128 KiB RAM, and its Philips-compatible floppy controller without downloading
+proprietary firmware. The `cbios` model remains available for MSX1 software.
 
 The TCP/IP UNAPI host bridge is included on every platform. Its separate
 guest driver, openMSXnet v0.9.7's `UNAPINET.COM`, is not bundled; download it
