@@ -58,7 +58,28 @@ megaflash_sd_a =
 megaflash_sd_b =
 # read-only (safe default) or read-write; applies to both cards.
 sd_image_mode = read-only
-last_media_dir =
+
+[file_chooser_history]
+# Maintained automatically; each picker remembers its own last directory.
+last_cartridge_1_dir =
+last_cartridge_2_dir =
+last_cassette_dir =
+last_drive_a_dir =
+last_drive_b_dir =
+last_sunrise_rom_dir =
+last_ide_image_dir =
+last_sd_mapper_rom_dir =
+last_sd_card_a_dir =
+last_sd_card_b_dir =
+last_megaflash_rom_dir =
+last_megaflash_sd_a_dir =
+last_megaflash_sd_b_dir =
+last_cdx2_rom_dir =
+last_rdf600_rom_dir =
+last_model_bios_dir =
+last_model_logo_dir =
+last_model_subrom_dir =
+last_model_disk_rom_dir =
 
 [extensions]
 extra_hardware = false

@@ -587,18 +587,31 @@ int main(void) {
     assert(leds_get_cartridge_state(0).present);
     assert(!leds_get_cartridge_state(0).activity);
 
-    snprintf(config.last_media_dir, sizeof(config.last_media_dir),
-             "before-extension-edit");
+    snprintf(config.file_chooser_dir[
+                 CONFIG_FILE_CHOOSER_SUNRISE_ROM], PATH_MAX,
+             "before-sunrise-rom");
+    snprintf(config.file_chooser_dir[
+                 CONFIG_FILE_CHOOSER_IDE_IMAGE], PATH_MAX,
+             "before-ide-image");
     send_key(&overlay, SDLK_SPACE);
     overlay.dialog_target = OVERLAY_DIALOG_SUNRISE_ROM;
     snprintf(overlay.dialog_path, sizeof(overlay.dialog_path),
              "%s", sunrise_rom_path_2);
     overlay.dialog_ready = true;
     overlay_tick(&overlay);
-    assert(strcmp(config.last_media_dir, "diagnostics") == 0);
+    assert(strcmp(config.file_chooser_dir[
+                      CONFIG_FILE_CHOOSER_SUNRISE_ROM],
+                  "diagnostics") == 0);
+    assert(strcmp(config.file_chooser_dir[
+                      CONFIG_FILE_CHOOSER_IDE_IMAGE],
+                  "before-ide-image") == 0);
     send_key(&overlay, SDLK_ESCAPE);
-    assert(strcmp(config.last_media_dir,
-                  "before-extension-edit") == 0);
+    assert(strcmp(config.file_chooser_dir[
+                      CONFIG_FILE_CHOOSER_SUNRISE_ROM],
+                  "diagnostics") == 0);
+    assert(strcmp(config.file_chooser_dir[
+                      CONFIG_FILE_CHOOSER_IDE_IMAGE],
+                  "before-ide-image") == 0);
     assert(config.sunrise_ide);
     assert(msx_sunrise_connected(&msx));
 
@@ -612,8 +625,9 @@ int main(void) {
     assert(overlay.dialog_target == OVERLAY_DIALOG_NONE);
     assert(!config.ide_image_path[0]);
     assert(!msx_sunrise_disk_mounted(&msx));
-    assert(strcmp(config.last_media_dir,
-                  "before-extension-edit") == 0);
+    assert(strcmp(config.file_chooser_dir[
+                      CONFIG_FILE_CHOOSER_IDE_IMAGE],
+                  "before-ide-image") == 0);
 
     send_key(&overlay, SDLK_SPACE);
     assert(overlay.state == OVERLAY_STATE_SUNRISE_SETUP);

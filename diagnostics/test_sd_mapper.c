@@ -5,8 +5,50 @@
 #include <stdlib.h>
 #include <string.h>
 
+static u8 sd_command(MsxSdMapper *mapper, u16 transfer_address,
+                     u8 number, u32 argument) {
+    const u8 bytes[6] = {
+        (u8)(0x40 | number),
+        (u8)(argument >> 24),
+        (u8)(argument >> 16),
+        (u8)(argument >> 8),
+        (u8)argument,
+        0x95
+    };
+
+    for (unsigned i = 0; i < sizeof(bytes); ++i)
+        sd_mapper_write(mapper, transfer_address, bytes[i]);
+    for (unsigned i = 0; i < 32; ++i) {
+        u8 response = sd_mapper_read(mapper, transfer_address);
+
+        if (!(response & 0x80))
+            return response;
+    }
+    assert(!"MegaSD command did not return an R1 response");
+    return 0xff;
+}
+
+static void sd_write_payload(MsxSdMapper *mapper, u16 transfer_address,
+                             u8 token, u8 value) {
+    sd_mapper_write(mapper, transfer_address, token);
+    for (unsigned i = 0; i < SD_CARD_SECTOR_SIZE; ++i)
+        sd_mapper_write(mapper, transfer_address, value);
+    sd_mapper_write(mapper, transfer_address, 0xff);
+    sd_mapper_write(mapper, transfer_address, 0xff);
+    assert((sd_mapper_read(mapper, transfer_address) & 0x1f) == 0x05);
+    assert(sd_mapper_read(mapper, transfer_address) == 0x00);
+    assert(sd_mapper_read(mapper, transfer_address) == 0xff);
+}
+
+static void sd_write_sector(MsxSdMapper *mapper, u16 transfer_address,
+                            u32 lba, u8 value) {
+    assert(sd_command(mapper, transfer_address, 24, lba) == 0x00);
+    sd_write_payload(mapper, transfer_address, 0xfe, value);
+}
+
 int main(void) {
     static const char *card_path = "test-sd-mapper-card.tmp";
+    static const char *compat_path = "test-sd-mapper-megasd.tmp";
     MsxSdMapper mapper;
     u8 *rom = malloc(MSX_SD_MAPPER_ROM_SIZE);
     FILE *file;
@@ -50,10 +92,79 @@ int main(void) {
     sd_mapper_write(&mapper, 0x4000, 0x19);
     assert(sd_mapper_read(&mapper, 0x4000) == 0x19);
 
-    /* SymbOS can address the mounted cards through its MegaSD driver. */
+    file = fopen(compat_path, "wb");
+    assert(file);
+    for (unsigned sector = 0; sector < 256; ++sector)
+        for (unsigned i = 0; i < SD_CARD_SECTOR_SIZE; ++i)
+            assert(fputc(sector == 0 ? 0x11 : 0x22, file) != EOF);
+    assert(fclose(file) == 0);
+    assert(sd_mapper_mount_card(
+               &mapper, 0, compat_path, SD_IMAGE_READ_WRITE) == 0);
+
+    /*
+     * SD Mapper V2 exposes SDHC cards even when its firmware's ACMD41 omits
+     * the HCS request. A regression divided LBA 164 by 512 and overwrote the
+     * MBR while the SymbOS installer was copying files through Nextor.
+     */
     sd_mapper_set_alternate_driver(&mapper, false);
     sd_mapper_secondary_write(&mapper, 0);
+    sd_mapper_write(&mapper, 0x6000, 7);
+    sd_mapper_write(&mapper, 0x7ff0, 1);
+    assert(sd_command(&mapper, 0x7b00, 0, 0) == 0x01);
+    assert(sd_command(&mapper, 0x7b00, 55, 0) == 0x01);
+    assert(sd_command(&mapper, 0x7b00, 41, 0) == 0x00);
+    assert(sd_command(&mapper, 0x7b00, 58, 0) == 0x00);
+    assert(sd_mapper_read(&mapper, 0x7b00) == 0x40);
+    (void)sd_mapper_read(&mapper, 0x7b00);
+    (void)sd_mapper_read(&mapper, 0x7b00);
+    (void)sd_mapper_read(&mapper, 0x7b00);
+    sd_write_sector(&mapper, 0x7b00, 164, 0x5a);
+
+    /*
+     * The SD Mapper driver probes an already-ready card with CMD0 before a
+     * bulk write, then proceeds directly to ACMD23/CMD25. Keep an emulated
+     * SDHC card ready across that probe, as openMSX's stateless card does.
+     */
+    assert(sd_command(&mapper, 0x7b00, 0, 0) == 0x01);
+    assert(sd_command(&mapper, 0x7b00, 0, 0) == 0x01);
+    assert(sd_command(&mapper, 0x7b00, 55, 0) == 0x00);
+    assert(sd_command(&mapper, 0x7b00, 23, 2) == 0x00);
+    assert(sd_command(&mapper, 0x7b00, 25, 165) == 0x00);
+    sd_write_payload(&mapper, 0x7b00, 0xfc, 0xa5);
+    sd_write_payload(&mapper, 0x7b00, 0xfc, 0x3c);
+    sd_mapper_write(&mapper, 0x7b00, 0xfd);
+    assert(sd_mapper_read(&mapper, 0x7b00) == 0xff);
+
+    /* SymbOS can later address the same card through its MegaSD driver. */
     sd_mapper_write(&mapper, 0x6000, 0x40);
+    sd_mapper_write(&mapper, 0x5800, 0);
+    assert(sd_command(&mapper, 0x4000, 0, 0) == 0x01);
+    assert(sd_command(&mapper, 0x4000, 55, 0) == 0x00);
+    assert(sd_command(&mapper, 0x4000, 41, 0) == 0x00);
+    assert(sd_command(&mapper, 0x4000, 58, 0) == 0x00);
+    assert(sd_mapper_read(&mapper, 0x4000) == 0x40);
+    (void)sd_mapper_read(&mapper, 0x4000);
+    (void)sd_mapper_read(&mapper, 0x4000);
+    (void)sd_mapper_read(&mapper, 0x4000);
+    sd_write_sector(&mapper, 0x4000, 167, 0xc3);
+    assert(sd_mapper_flush_card(&mapper, 0) == 0);
+    assert(sd_mapper_eject_card(&mapper, 0) == 0);
+
+    file = fopen(compat_path, "rb");
+    assert(file);
+    for (unsigned i = 0; i < SD_CARD_SECTOR_SIZE; ++i)
+        assert(fgetc(file) == 0x11);
+    assert(fseek(file, 164 * SD_CARD_SECTOR_SIZE, SEEK_SET) == 0);
+    for (unsigned i = 0; i < SD_CARD_SECTOR_SIZE; ++i)
+        assert(fgetc(file) == 0x5a);
+    for (unsigned i = 0; i < SD_CARD_SECTOR_SIZE; ++i)
+        assert(fgetc(file) == 0xa5);
+    for (unsigned i = 0; i < SD_CARD_SECTOR_SIZE; ++i)
+        assert(fgetc(file) == 0x3c);
+    for (unsigned i = 0; i < SD_CARD_SECTOR_SIZE; ++i)
+        assert(fgetc(file) == 0xc3);
+    assert(fclose(file) == 0);
+
     sd_mapper_write(&mapper, 0x5800, 1);
     sd_mapper_write(&mapper, 0x4000, 0xff);
     assert(mapper.mega_sd_compat);
@@ -72,6 +183,7 @@ int main(void) {
     sd_mapper_set_alternate_driver(&mapper, true);
     sd_mapper_secondary_write(&mapper, 0);
     sd_mapper_write(&mapper, 0x7ff0, 1);
+    (void)sd_mapper_read(&mapper, 0x7ff0);
     assert(sd_mapper_read(&mapper, 0x7ff0) == 0x06);
 
     file = fopen(card_path, "wb");
@@ -112,6 +224,7 @@ int main(void) {
     assert(!sd_mapper_card_mounted(&mapper, 1));
     sd_mapper_destroy(&mapper);
     assert(remove(card_path) == 0);
+    assert(remove(compat_path) == 0);
     free(rom);
     return 0;
 }

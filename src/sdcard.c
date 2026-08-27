@@ -182,7 +182,7 @@ static u32 command_argument(const SdCard *card) {
 static u32 command_lba(const SdCard *card) {
     u32 argument = command_argument(card);
 
-    return card->high_capacity
+    return (card->high_capacity || card->force_high_capacity)
          ? argument : argument / SD_CARD_SECTOR_SIZE;
 }
 
@@ -214,8 +214,12 @@ static void execute_command(SdCard *card) {
     card->app_command = false;
     switch (command) {
         case 0:
-            card->idle = true;
-            card->high_capacity = false;
+            if (!card->force_high_capacity || card->idle) {
+                card->idle = true;
+                card->high_capacity = false;
+            } else {
+                card->high_capacity = true;
+            }
             card->multi_read = false;
             card->write_wait_token = false;
             queue_clear(card);
@@ -308,7 +312,8 @@ static void execute_command(SdCard *card) {
             break;
         case 58: {
             const u8 ocr[4] = {
-                card->high_capacity ? 0x40 : 0x00,
+                (card->high_capacity || card->force_high_capacity)
+                    ? 0x40 : 0x00,
                 0xff, 0x80, 0x00
             };
 
@@ -533,6 +538,11 @@ void sd_card_select(SdCard *card, bool selected) {
         card->multi_write = false;
         queue_clear(card);
     }
+}
+
+void sd_card_force_high_capacity(SdCard *card, bool enabled) {
+    if (card)
+        card->force_high_capacity = enabled;
 }
 
 u8 sd_card_transfer(SdCard *card, u8 value) {

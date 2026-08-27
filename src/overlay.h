@@ -80,7 +80,6 @@ typedef struct {
 
     int machine_row;
     bool extension_setup_editing;
-    char extension_setup_media_dir[PATH_MAX];
 
     int sunrise_setup_row;
     char pending_sunrise_rom_path[PATH_MAX];

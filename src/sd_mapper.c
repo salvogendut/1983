@@ -163,8 +163,11 @@ void sd_mapper_init(MsxSdMapper *mapper) {
         return;
     memset(mapper, 0, sizeof(*mapper));
     memset(mapper->rom, 0xff, sizeof(mapper->rom));
-    for (unsigned i = 0; i < MSX_SD_MAPPER_CARDS; ++i)
+    for (unsigned i = 0; i < MSX_SD_MAPPER_CARDS; ++i) {
         sd_card_init(&mapper->cards[i]);
+        /* Both the native Nextor and MegaSD windows expose SDHC cards. */
+        sd_card_force_high_capacity(&mapper->cards[i], true);
+    }
     mapper->mapper_enabled = true;
     sd_mapper_reset(mapper);
 }

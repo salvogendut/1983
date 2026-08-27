@@ -171,8 +171,11 @@ int main(void) {
                   "SD Mapper V2") == 0);
     assert(!config_cartridge_slot_available(&config, 0));
     assert(!config_cartridge_slot_available(&config, 1));
-    snprintf(config.last_media_dir, sizeof(config.last_media_dir),
-             "/roms");
+    for (int chooser = 0; chooser < CONFIG_FILE_CHOOSER_COUNT;
+         ++chooser) {
+        snprintf(config.file_chooser_dir[chooser], PATH_MAX,
+                 "/chooser-history/%d", chooser);
+    }
     assert(config_save(&config) == 0);
 
     config_load(&loaded, path);
@@ -248,7 +251,14 @@ int main(void) {
     assert(loaded.main_input == INPUT_PORT_B);
     assert(loaded.joy_port_device[0] == JOY_PORT_MOUSE);
     assert(loaded.joy_port_device[1] == JOY_PORT_JOYSTICK);
-    assert(strcmp(loaded.last_media_dir, "/roms") == 0);
+    for (int chooser = 0; chooser < CONFIG_FILE_CHOOSER_COUNT;
+         ++chooser) {
+        char expected[PATH_MAX];
+
+        snprintf(expected, sizeof(expected),
+                 "/chooser-history/%d", chooser);
+        assert(strcmp(loaded.file_chooser_dir[chooser], expected) == 0);
+    }
 
     {
         Config cdx_config = loaded;
@@ -327,6 +337,28 @@ int main(void) {
                   "Floppy controller") == 0);
     assert(!config_cartridge_slot_available(&loaded, 0));
     assert(!config_cartridge_slot_available(&loaded, 1));
+
+    {
+        FILE *legacy = fopen(path, "w");
+
+        assert(legacy != NULL);
+        assert(fputs("[media]\n"
+                     "last_media_dir = /legacy-media\n"
+                     "[file_chooser_history]\n"
+                     "last_drive_a_dir = /floppy-images\n",
+                     legacy) >= 0);
+        assert(fclose(legacy) == 0);
+        config_load(&loaded, path);
+        for (int chooser = 0; chooser < CONFIG_FILE_CHOOSER_COUNT;
+             ++chooser) {
+            const char *expected =
+                chooser == CONFIG_FILE_CHOOSER_DRIVE_A
+                ? "/floppy-images" : "/legacy-media";
+
+            assert(strcmp(loaded.file_chooser_dir[chooser],
+                          expected) == 0);
+        }
+    }
     assert(remove(path) == 0);
 
     puts("configuration media tests passed");

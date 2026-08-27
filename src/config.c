@@ -15,6 +15,47 @@
 #define MKDIR(path) mkdir((path), 0755)
 #endif
 
+static const char *const file_chooser_keys[CONFIG_FILE_CHOOSER_COUNT] = {
+    [CONFIG_FILE_CHOOSER_CARTRIDGE_1] = "last_cartridge_1_dir",
+    [CONFIG_FILE_CHOOSER_CARTRIDGE_2] = "last_cartridge_2_dir",
+    [CONFIG_FILE_CHOOSER_CASSETTE] = "last_cassette_dir",
+    [CONFIG_FILE_CHOOSER_DRIVE_A] = "last_drive_a_dir",
+    [CONFIG_FILE_CHOOSER_DRIVE_B] = "last_drive_b_dir",
+    [CONFIG_FILE_CHOOSER_SUNRISE_ROM] = "last_sunrise_rom_dir",
+    [CONFIG_FILE_CHOOSER_IDE_IMAGE] = "last_ide_image_dir",
+    [CONFIG_FILE_CHOOSER_SD_MAPPER_ROM] = "last_sd_mapper_rom_dir",
+    [CONFIG_FILE_CHOOSER_SD_CARD_A] = "last_sd_card_a_dir",
+    [CONFIG_FILE_CHOOSER_SD_CARD_B] = "last_sd_card_b_dir",
+    [CONFIG_FILE_CHOOSER_MEGAFLASH_ROM] = "last_megaflash_rom_dir",
+    [CONFIG_FILE_CHOOSER_MEGAFLASH_SD_A] = "last_megaflash_sd_a_dir",
+    [CONFIG_FILE_CHOOSER_MEGAFLASH_SD_B] = "last_megaflash_sd_b_dir",
+    [CONFIG_FILE_CHOOSER_CDX2_ROM] = "last_cdx2_rom_dir",
+    [CONFIG_FILE_CHOOSER_RDF600_ROM] = "last_rdf600_rom_dir",
+    [CONFIG_FILE_CHOOSER_MODEL_BIOS] = "last_model_bios_dir",
+    [CONFIG_FILE_CHOOSER_MODEL_LOGO] = "last_model_logo_dir",
+    [CONFIG_FILE_CHOOSER_MODEL_SUBROM] = "last_model_subrom_dir",
+    [CONFIG_FILE_CHOOSER_MODEL_DISK_ROM] = "last_model_disk_rom_dir",
+};
+
+static int file_chooser_from_key(const char *key) {
+    for (int chooser = 0; chooser < CONFIG_FILE_CHOOSER_COUNT;
+         ++chooser) {
+        if (strcmp(key, file_chooser_keys[chooser]) == 0)
+            return chooser;
+    }
+    return -1;
+}
+
+static void load_legacy_media_dir(Config *config, const char *path) {
+    for (int chooser = 0; chooser < CONFIG_FILE_CHOOSER_COUNT;
+         ++chooser) {
+        if (!config->file_chooser_dir[chooser][0]) {
+            snprintf(config->file_chooser_dir[chooser], PATH_MAX,
+                     "%s", path);
+        }
+    }
+}
+
 static bool parse_bool(const char *value, bool fallback) {
     if (!value)
         return fallback;
@@ -474,9 +515,16 @@ void config_load(Config *config, const char *path) {
             MsxCartridgeMapper mapper;
             if (msx_cartridge_mapper_from_name(value, &mapper))
                 config->cartridge_mapper[1] = mapper;
-        } else if (strcmp(key, "last_media_dir") == 0)
-            snprintf(config->last_media_dir,
-                     sizeof(config->last_media_dir), "%s", value);
+        } else if (strcmp(key, "last_media_dir") == 0) {
+            load_legacy_media_dir(config, value);
+        } else {
+            int chooser = file_chooser_from_key(key);
+
+            if (chooser >= 0) {
+                snprintf(config->file_chooser_dir[chooser], PATH_MAX,
+                         "%s", value);
+            }
+        }
     }
     fclose(file);
     config_normalize(config);
@@ -562,7 +610,13 @@ int config_save(const Config *config) {
     fprintf(file, "sd_image_mode = %s\n",
             config->sd_image_mode == SD_IMAGE_READ_WRITE
             ? "read-write" : "read-only");
-    fprintf(file, "last_media_dir = %s\n\n", config->last_media_dir);
+    fprintf(file, "\n[file_chooser_history]\n");
+    for (int chooser = 0; chooser < CONFIG_FILE_CHOOSER_COUNT;
+         ++chooser) {
+        fprintf(file, "%s = %s\n", file_chooser_keys[chooser],
+                config->file_chooser_dir[chooser]);
+    }
+    fprintf(file, "\n");
     fprintf(file, "[extensions]\n");
     fprintf(file, "extra_hardware = %s\n",
             bool_name(config->extra_hardware));
