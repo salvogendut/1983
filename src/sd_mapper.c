@@ -19,56 +19,9 @@ static void select_cards(MsxSdMapper *mapper, u8 selected) {
                        mapper->selected_cards == (1u << i));
 }
 
-/*
- * SymbOS ships a direct MegaSD block driver but no native SD Mapper V2
- * driver.  Accept MegaSD's otherwise invalid bank value 40h in the storage
- * subslot and expose its SPI window until the bank is changed again.  This
- * gives SymbOS a register-level compatibility view while the SD Mapper ROM,
- * native SPI window, and 512 KiB mapper keep their normal hardware layout.
- */
-static void mega_sd_select(MsxSdMapper *mapper, bool active) {
-    for (unsigned card = 0; card < MSX_SD_MAPPER_CARDS; ++card)
-        sd_card_select(&mapper->cards[card],
-                       active && card == mapper->mega_sd_selected_card);
-}
-
-static u8 mega_sd_read(MsxSdMapper *mapper, u16 address) {
-    bool active;
-
-    if (!mapper->mega_sd_compat ||
-        address < 0x4000 || address >= 0x6000)
-        return 0xff;
-    active = (address & 0x1000) == 0;
-    mega_sd_select(mapper, active);
-    return active
-         ? sd_card_transfer(
-               &mapper->cards[mapper->mega_sd_selected_card], 0xff)
-         : 0xff;
-}
-
-static void mega_sd_write(MsxSdMapper *mapper, u16 address, u8 value) {
-    if (mapper->mega_sd_compat &&
-        address >= 0x4000 && address < 0x6000) {
-        if (address >= 0x5800) {
-            mega_sd_select(mapper, false);
-            mapper->mega_sd_selected_card = value & 1;
-        } else {
-            bool active = (address & 0x1000) == 0;
-
-            mega_sd_select(mapper, active);
-            if (active)
-                (void)sd_card_transfer(
-                    &mapper->cards[mapper->mega_sd_selected_card], value);
-        }
-    }
-}
-
 static u8 storage_read(MsxSdMapper *mapper, u16 address) {
     size_t offset;
 
-    if (mapper->mega_sd_compat &&
-        address >= 0x4000 && address < 0x6000)
-        return mega_sd_read(mapper, address);
     if (mapper->rom_bank1 == 7 &&
         address >= 0x7b00 && address < 0x7f00) {
         if (mapper->selected_cards == 1)
@@ -117,22 +70,6 @@ static u8 storage_read(MsxSdMapper *mapper, u16 address) {
 }
 
 static void storage_write(MsxSdMapper *mapper, u16 address, u8 value) {
-    if (address == 0x6000 && (value & 0xc0) == 0x40) {
-        if (!mapper->mega_sd_compat)
-            select_cards(mapper, 0);
-        mega_sd_select(mapper, false);
-        mapper->mega_sd_compat = true;
-        return;
-    }
-    if (mapper->mega_sd_compat &&
-        address >= 0x4000 && address < 0x6000) {
-        mega_sd_write(mapper, address, value);
-        return;
-    }
-    if (address == 0x6000) {
-        mega_sd_select(mapper, false);
-        mapper->mega_sd_compat = false;
-    }
     if (mapper->rom_bank1 == 7 &&
         address >= 0x7b00 && address < 0x7f00) {
         if (mapper->selected_cards == 1)
@@ -163,8 +100,11 @@ void sd_mapper_init(MsxSdMapper *mapper) {
         return;
     memset(mapper, 0, sizeof(*mapper));
     memset(mapper->rom, 0xff, sizeof(mapper->rom));
-    for (unsigned i = 0; i < MSX_SD_MAPPER_CARDS; ++i)
+    for (unsigned i = 0; i < MSX_SD_MAPPER_CARDS; ++i) {
         sd_card_init(&mapper->cards[i]);
+        /* Both the native Nextor and MegaSD windows expose SDHC cards. */
+        sd_card_force_high_capacity(&mapper->cards[i], true);
+    }
     mapper->mapper_enabled = true;
     sd_mapper_reset(mapper);
 }
@@ -187,8 +127,6 @@ void sd_mapper_reset(MsxSdMapper *mapper) {
            sizeof(mapper->mapper_segment));
     mapper->rom_bank1 = 0;
     mapper->rom_bank2 = 0;
-    mapper->mega_sd_selected_card = 0;
-    mapper->mega_sd_compat = false;
     mapper->timer = 0;
     mapper->timer_clock_fraction = 0;
     select_cards(mapper, 0);

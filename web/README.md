@@ -137,9 +137,8 @@ The reference SymZilla installation writes startup state and must be mounted
 read/write. Browser-side changes remain in memory and are offered as a download
 when the image is safely ejected; the server-hosted source file is not changed.
 
-The same image must have its SymbOS storage driver configured for MegaSD,
-physical slot I, subslot 0, card A and partition 1 before it can use the SD
-Mapper compatibility path:
+An SD Mapper copy must have its SymbOS storage driver configured for native
+SD Mapper V2 access, physical slot I, subslot 0, card A and partition 1:
 
     http://127.0.0.1:1983/?machine=nms8250&sda=media/MSXSYMBOS-SD.img&sdmode=readwrite
 

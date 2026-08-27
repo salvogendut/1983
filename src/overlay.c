@@ -207,6 +207,11 @@ static const char *sd_mode_name(SdImageMode mode) {
 }
 
 static const char *path_basename(const char *path);
+static void editor_path(char *destination, size_t destination_size,
+                        const char *path, size_t maximum);
+static void editor_path_with_suffix(
+    char *destination, size_t destination_size, const char *path,
+    const char *suffix, size_t maximum);
 
 static int media_floppy_b_row(const Config *config) {
     return config->second_drive ? 6 : -1;
@@ -424,6 +429,7 @@ static void rdf600_extension_text(const Overlay *overlay,
 static void ide_image_text(const Overlay *overlay,
                            char *value, size_t value_size) {
     const char *path = overlay->config->ide_image_path;
+    char suffix[64];
 
     if (msx_sunrise_disk_mounted(overlay->msx)) {
         const char *state =
@@ -432,17 +438,18 @@ static void ide_image_text(const Overlay *overlay,
             msx_sunrise_disk_dirty(overlay->msx)
             ? ", dirty" : "";
 
-        snprintf(value, value_size, "%s [%s%s]",
-                 path_basename(path),
+        snprintf(suffix, sizeof(suffix), " [%s%s]",
                  msx_sunrise_disk_writable(overlay->msx)
-                 ? "read/write" : "read-only", state);
+                     ? "read/write" : "read-only", state);
+        editor_path_with_suffix(
+            value, value_size, path, suffix, 54);
+    } else if (path[0]) {
+        snprintf(suffix, sizeof(suffix), " [not mounted, %s]",
+                 overlay->config->ide_image_mode == ATA_IMAGE_READ_WRITE
+                     ? "read/write" : "read-only");
+        editor_path_with_suffix(
+            value, value_size, path, suffix, 54);
     }
-    else if (path[0])
-        snprintf(value, value_size, "%s [not mounted, %s]",
-                 path_basename(path),
-                 overlay->config->ide_image_mode ==
-                     ATA_IMAGE_READ_WRITE
-                 ? "read/write" : "read-only");
     else
         snprintf(value, value_size, "[not mounted]");
 }
@@ -450,6 +457,7 @@ static void ide_image_text(const Overlay *overlay,
 static void cassette_text(const Overlay *overlay,
                           char *value, size_t value_size) {
     const char *path = overlay->config->cassette_path;
+    char suffix[96];
 
     if (msx_cassette_mounted(overlay->msx)) {
         u64 position = msx_cassette_position_ms(overlay->msx) / 1000u;
@@ -458,9 +466,8 @@ static void cassette_text(const Overlay *overlay,
             msx_cassette_rolling(overlay->msx) ? "playing" :
             msx_cassette_at_end(overlay->msx) ? "end" : "stopped";
 
-        snprintf(value, value_size,
-                 "%s [%s, %s %llu:%02llu/%llu:%02llu]",
-                 path_basename(path),
+        snprintf(suffix, sizeof(suffix),
+                 " [%s, %s %llu:%02llu/%llu:%02llu]",
                  cassette_file_type_name(
                      msx_cassette_file_type(overlay->msx)),
                  state,
@@ -468,9 +475,11 @@ static void cassette_text(const Overlay *overlay,
                  (unsigned long long)(position % 60u),
                  (unsigned long long)(duration / 60u),
                  (unsigned long long)(duration % 60u));
+        editor_path_with_suffix(
+            value, value_size, path, suffix, 54);
     } else if (path[0]) {
-        snprintf(value, value_size, "%s [not mounted]",
-                 path_basename(path));
+        editor_path_with_suffix(
+            value, value_size, path, " [not mounted]", 54);
     } else {
         snprintf(value, value_size, "[not mounted]");
     }
@@ -479,6 +488,7 @@ static void cassette_text(const Overlay *overlay,
 static void drive_a_text(const Overlay *overlay,
                          char *value, size_t value_size) {
     const char *path = overlay->config->drive_a_path;
+    char suffix[64];
 
     if (!msx_floppy_supported(overlay->msx)) {
         snprintf(value, value_size, "[no floppy controller]");
@@ -489,15 +499,16 @@ static void drive_a_text(const Overlay *overlay,
             msx_drive_a_dirty(overlay->msx)
             ? ", dirty" : "";
 
-        snprintf(value, value_size, "%s [%s%s]",
-                 path_basename(path),
+        snprintf(suffix, sizeof(suffix), " [%s%s]",
                  msx_drive_a_writable(overlay->msx)
-                 ? "read/write" : "read-only", state);
+                     ? "read/write" : "read-only", state);
+        editor_path_with_suffix(
+            value, value_size, path, suffix, 54);
     } else if (path[0]) {
-        snprintf(value, value_size, "%s [not mounted, %s]",
-                 path_basename(path),
-                 floppy_mode_name(
-                     overlay->config->floppy_image_mode));
+        snprintf(suffix, sizeof(suffix), " [not mounted, %s]",
+                 floppy_mode_name(overlay->config->floppy_image_mode));
+        editor_path_with_suffix(
+            value, value_size, path, suffix, 54);
     } else {
         snprintf(value, value_size, "[not mounted]");
     }
@@ -506,6 +517,7 @@ static void drive_a_text(const Overlay *overlay,
 static void drive_b_text(const Overlay *overlay,
                          char *value, size_t value_size) {
     const char *path = overlay->config->drive_b_path;
+    char suffix[64];
 
     if (!msx_floppy_supported(overlay->msx)) {
         snprintf(value, value_size, "[no floppy controller]");
@@ -516,15 +528,16 @@ static void drive_b_text(const Overlay *overlay,
             msx_drive_b_dirty(overlay->msx)
             ? ", dirty" : "";
 
-        snprintf(value, value_size, "%s [%s%s]",
-                 path_basename(path),
+        snprintf(suffix, sizeof(suffix), " [%s%s]",
                  msx_drive_b_writable(overlay->msx)
-                 ? "read/write" : "read-only", state);
+                     ? "read/write" : "read-only", state);
+        editor_path_with_suffix(
+            value, value_size, path, suffix, 54);
     } else if (path[0]) {
-        snprintf(value, value_size, "%s [not mounted, %s]",
-                 path_basename(path),
-                 floppy_mode_name(
-                     overlay->config->floppy_image_mode));
+        snprintf(suffix, sizeof(suffix), " [not mounted, %s]",
+                 floppy_mode_name(overlay->config->floppy_image_mode));
+        editor_path_with_suffix(
+            value, value_size, path, suffix, 54);
     } else {
         snprintf(value, value_size, "[not mounted]");
     }
@@ -533,6 +546,7 @@ static void drive_b_text(const Overlay *overlay,
 static void sd_card_text(const Overlay *overlay, unsigned card,
                          char *value, size_t value_size) {
     const char *path = overlay->config->sd_card_path[card];
+    char suffix[64];
 
     if (msx_sd_card_mounted(overlay->msx, card)) {
         const char *state =
@@ -541,14 +555,16 @@ static void sd_card_text(const Overlay *overlay, unsigned card,
             msx_sd_card_dirty(overlay->msx, card)
             ? ", dirty" : "";
 
-        snprintf(value, value_size, "%s [%s%s]",
-                 path_basename(path),
+        snprintf(suffix, sizeof(suffix), " [%s%s]",
                  msx_sd_card_writable(overlay->msx, card)
-                 ? "read/write" : "read-only", state);
+                     ? "read/write" : "read-only", state);
+        editor_path_with_suffix(
+            value, value_size, path, suffix, 54);
     } else if (path[0]) {
-        snprintf(value, value_size, "%s [not mounted, %s]",
-                 path_basename(path),
+        snprintf(suffix, sizeof(suffix), " [not mounted, %s]",
                  sd_mode_name(overlay->config->sd_image_mode));
+        editor_path_with_suffix(
+            value, value_size, path, suffix, 54);
     } else {
         snprintf(value, value_size, "[not mounted]");
     }
@@ -558,6 +574,7 @@ static void megaflash_card_text(const Overlay *overlay, unsigned card,
                                 char *value, size_t value_size) {
     const char *path =
         overlay->config->megaflash_card_path[card];
+    char suffix[64];
 
     if (msx_megaflash_card_mounted(overlay->msx, card)) {
         const char *state =
@@ -566,14 +583,16 @@ static void megaflash_card_text(const Overlay *overlay, unsigned card,
             msx_megaflash_card_dirty(overlay->msx, card)
             ? ", dirty" : "";
 
-        snprintf(value, value_size, "%s [%s%s]",
-                 path_basename(path),
+        snprintf(suffix, sizeof(suffix), " [%s%s]",
                  msx_megaflash_card_writable(overlay->msx, card)
-                 ? "read/write" : "read-only", state);
+                     ? "read/write" : "read-only", state);
+        editor_path_with_suffix(
+            value, value_size, path, suffix, 54);
     } else if (path[0]) {
-        snprintf(value, value_size, "%s [not mounted, %s]",
-                 path_basename(path),
+        snprintf(suffix, sizeof(suffix), " [not mounted, %s]",
                  sd_mode_name(overlay->config->sd_image_mode));
+        editor_path_with_suffix(
+            value, value_size, path, suffix, 54);
     } else {
         snprintf(value, value_size, "[not mounted]");
     }
@@ -612,10 +631,10 @@ static void cartridge_text(const Overlay *overlay, unsigned slot,
     if (owner)
         snprintf(value, value_size, "[reserved by %s]", owner);
     else if (cartridge && cartridge->loaded)
-        snprintf(value, value_size, "%s", path_basename(path));
+        editor_path(value, value_size, path, 54);
     else if (path[0])
-        snprintf(value, value_size, "%s [not loaded]",
-                 path_basename(path));
+        editor_path_with_suffix(
+            value, value_size, path, " [not loaded]", 54);
     else
         snprintf(value, value_size, "[not mounted]");
 }
@@ -1687,6 +1706,74 @@ static void copy_dirname(char *destination, size_t destination_size,
     }
 }
 
+static ConfigFileChooser dialog_file_chooser(
+    OverlayDialogTarget target) {
+    switch (target) {
+        case OVERLAY_DIALOG_CARTRIDGE_1:
+            return CONFIG_FILE_CHOOSER_CARTRIDGE_1;
+        case OVERLAY_DIALOG_CARTRIDGE_2:
+            return CONFIG_FILE_CHOOSER_CARTRIDGE_2;
+        case OVERLAY_DIALOG_CASSETTE:
+            return CONFIG_FILE_CHOOSER_CASSETTE;
+        case OVERLAY_DIALOG_DRIVE_A:
+            return CONFIG_FILE_CHOOSER_DRIVE_A;
+        case OVERLAY_DIALOG_DRIVE_B:
+            return CONFIG_FILE_CHOOSER_DRIVE_B;
+        case OVERLAY_DIALOG_SUNRISE_ROM:
+            return CONFIG_FILE_CHOOSER_SUNRISE_ROM;
+        case OVERLAY_DIALOG_IDE_IMAGE:
+            return CONFIG_FILE_CHOOSER_IDE_IMAGE;
+        case OVERLAY_DIALOG_SD_MAPPER_ROM:
+            return CONFIG_FILE_CHOOSER_SD_MAPPER_ROM;
+        case OVERLAY_DIALOG_SD_CARD_A:
+            return CONFIG_FILE_CHOOSER_SD_CARD_A;
+        case OVERLAY_DIALOG_SD_CARD_B:
+            return CONFIG_FILE_CHOOSER_SD_CARD_B;
+        case OVERLAY_DIALOG_MEGAFLASH_ROM:
+            return CONFIG_FILE_CHOOSER_MEGAFLASH_ROM;
+        case OVERLAY_DIALOG_MEGAFLASH_SD_A:
+            return CONFIG_FILE_CHOOSER_MEGAFLASH_SD_A;
+        case OVERLAY_DIALOG_MEGAFLASH_SD_B:
+            return CONFIG_FILE_CHOOSER_MEGAFLASH_SD_B;
+        case OVERLAY_DIALOG_CDX2_ROM:
+            return CONFIG_FILE_CHOOSER_CDX2_ROM;
+        case OVERLAY_DIALOG_RDF600_ROM:
+            return CONFIG_FILE_CHOOSER_RDF600_ROM;
+        case OVERLAY_DIALOG_MODEL_BIOS:
+            return CONFIG_FILE_CHOOSER_MODEL_BIOS;
+        case OVERLAY_DIALOG_MODEL_LOGO:
+            return CONFIG_FILE_CHOOSER_MODEL_LOGO;
+        case OVERLAY_DIALOG_MODEL_SUBROM:
+            return CONFIG_FILE_CHOOSER_MODEL_SUBROM;
+        case OVERLAY_DIALOG_MODEL_DISK_ROM:
+            return CONFIG_FILE_CHOOSER_MODEL_DISK_ROM;
+        case OVERLAY_DIALOG_NONE:
+            break;
+    }
+    return CONFIG_FILE_CHOOSER_COUNT;
+}
+
+static const char *dialog_initial_location(
+    const Overlay *overlay, OverlayDialogTarget target) {
+    ConfigFileChooser chooser = dialog_file_chooser(target);
+
+    if (chooser >= CONFIG_FILE_CHOOSER_COUNT ||
+        !overlay->config->file_chooser_dir[chooser][0])
+        return NULL;
+    return overlay->config->file_chooser_dir[chooser];
+}
+
+static void remember_dialog_location(
+    Overlay *overlay, OverlayDialogTarget target, const char *path) {
+    ConfigFileChooser chooser = dialog_file_chooser(target);
+
+    if (chooser >= CONFIG_FILE_CHOOSER_COUNT)
+        return;
+    copy_dirname(overlay->config->file_chooser_dir[chooser], PATH_MAX,
+                 path);
+    overlay->dirty = true;
+}
+
 static void rom_dialog_callback(void *userdata,
                                 const char * const *files,
                                 int filter) {
@@ -1715,9 +1802,10 @@ static void open_cartridge_dialog(Overlay *overlay, unsigned slot) {
         { "MSX cartridge ROMs", "rom;ROM;mx1;MX1;mx2;MX2" },
         { "All files", "*" },
     };
-    const char *location =
-        overlay->config->last_media_dir[0]
-        ? overlay->config->last_media_dir : NULL;
+    OverlayDialogTarget target =
+        slot == 0 ? OVERLAY_DIALOG_CARTRIDGE_1
+                  : OVERLAY_DIALOG_CARTRIDGE_2;
+    const char *location = dialog_initial_location(overlay, target);
     const char *owner =
         config_cartridge_slot_owner(overlay->config, slot);
 
@@ -1728,9 +1816,7 @@ static void open_cartridge_dialog(Overlay *overlay, unsigned slot) {
     }
     if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
         return;
-    overlay->dialog_target =
-        slot == 0 ? OVERLAY_DIALOG_CARTRIDGE_1
-                  : OVERLAY_DIALOG_CARTRIDGE_2;
+    overlay->dialog_target = target;
     overlay->dialog_ready = false;
     overlay->dialog_failed = false;
     overlay->dialog_error[0] = '\0';
@@ -1745,9 +1831,8 @@ static void open_cassette_dialog(Overlay *overlay) {
         { "MSX cassette images", "cas;CAS" },
         { "All files", "*" },
     };
-    const char *location =
-        overlay->config->last_media_dir[0]
-        ? overlay->config->last_media_dir : NULL;
+    const char *location = dialog_initial_location(
+        overlay, OVERLAY_DIALOG_CASSETTE);
 
     if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
         return;
@@ -1766,9 +1851,8 @@ static void open_drive_a_dialog(Overlay *overlay) {
         { "Raw MSX floppy images", "dsk;DSK" },
         { "All files", "*" },
     };
-    const char *location =
-        overlay->config->last_media_dir[0]
-        ? overlay->config->last_media_dir : NULL;
+    const char *location = dialog_initial_location(
+        overlay, OVERLAY_DIALOG_DRIVE_A);
 
     if (!msx_floppy_supported(overlay->msx)) {
         notify_post("The selected machine has no floppy controller");
@@ -1791,9 +1875,8 @@ static void open_drive_b_dialog(Overlay *overlay) {
         { "Raw MSX floppy images", "dsk;DSK" },
         { "All files", "*" },
     };
-    const char *location =
-        overlay->config->last_media_dir[0]
-        ? overlay->config->last_media_dir : NULL;
+    const char *location = dialog_initial_location(
+        overlay, OVERLAY_DIALOG_DRIVE_B);
 
     if (!overlay->config->second_drive) {
         notify_post("Enable the second floppy in Extensions first");
@@ -1820,9 +1903,8 @@ static void open_sunrise_rom_dialog(Overlay *overlay) {
         { "128 KB Sunrise IDE ROM", "rom;ROM" },
         { "All files", "*" },
     };
-    const char *location =
-        overlay->config->last_media_dir[0]
-        ? overlay->config->last_media_dir : NULL;
+    const char *location = dialog_initial_location(
+        overlay, OVERLAY_DIALOG_SUNRISE_ROM);
 
     if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
         return;
@@ -1842,9 +1924,8 @@ static void open_cdx2_rom_dialog(Overlay *overlay) {
         { "16/32 KB CDX-2 ROM image", "rom;ROM" },
         { "All files", "*" },
     };
-    const char *location =
-        overlay->config->last_media_dir[0]
-        ? overlay->config->last_media_dir : NULL;
+    const char *location = dialog_initial_location(
+        overlay, OVERLAY_DIALOG_CDX2_ROM);
 
     if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
         return;
@@ -1864,9 +1945,8 @@ static void open_rdf600_rom_dialog(Overlay *overlay) {
         { "16 KB RDF600/TDC-600 ROM", "rom;ROM" },
         { "All files", "*" },
     };
-    const char *location =
-        overlay->config->last_media_dir[0]
-        ? overlay->config->last_media_dir : NULL;
+    const char *location = dialog_initial_location(
+        overlay, OVERLAY_DIALOG_RDF600_ROM);
 
     if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
         return;
@@ -1886,9 +1966,8 @@ static void open_sd_mapper_rom_dialog(Overlay *overlay) {
         { "128/256 KB SD Mapper V2 ROM", "rom;ROM" },
         { "All files", "*" },
     };
-    const char *location =
-        overlay->config->last_media_dir[0]
-        ? overlay->config->last_media_dir : NULL;
+    const char *location = dialog_initial_location(
+        overlay, OVERLAY_DIALOG_SD_MAPPER_ROM);
 
     if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
         return;
@@ -1908,9 +1987,9 @@ static void open_sd_card_dialog(Overlay *overlay, unsigned card) {
         { "Raw SD card images", "img;IMG;dsk;DSK;sd;SD" },
         { "All files", "*" },
     };
-    const char *location =
-        overlay->config->last_media_dir[0]
-        ? overlay->config->last_media_dir : NULL;
+    OverlayDialogTarget target =
+        card ? OVERLAY_DIALOG_SD_CARD_B : OVERLAY_DIALOG_SD_CARD_A;
+    const char *location = dialog_initial_location(overlay, target);
 
     if (card >= MSX_SD_MAPPER_CARDS ||
         overlay->dialog_target != OVERLAY_DIALOG_NONE)
@@ -1920,9 +1999,7 @@ static void open_sd_card_dialog(Overlay *overlay, unsigned card) {
         notify_post("Connect SD Mapper V2 before inserting a card");
         return;
     }
-    overlay->dialog_target =
-        card ? OVERLAY_DIALOG_SD_CARD_B :
-               OVERLAY_DIALOG_SD_CARD_A;
+    overlay->dialog_target = target;
     overlay->dialog_ready = false;
     overlay->dialog_failed = false;
     overlay->dialog_error[0] = '\0';
@@ -1937,9 +2014,8 @@ static void open_megaflash_rom_dialog(Overlay *overlay) {
         { "MegaFlashROM SCC+ SD flash image", "rom;ROM;flash;FLASH" },
         { "All files", "*" },
     };
-    const char *location =
-        overlay->config->last_media_dir[0]
-        ? overlay->config->last_media_dir : NULL;
+    const char *location = dialog_initial_location(
+        overlay, OVERLAY_DIALOG_MEGAFLASH_ROM);
 
     if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
         return;
@@ -1960,9 +2036,10 @@ static void open_megaflash_card_dialog(
         { "Raw SD card images", "img;IMG;dsk;DSK;sd;SD" },
         { "All files", "*" },
     };
-    const char *location =
-        overlay->config->last_media_dir[0]
-        ? overlay->config->last_media_dir : NULL;
+    OverlayDialogTarget target =
+        card ? OVERLAY_DIALOG_MEGAFLASH_SD_B
+             : OVERLAY_DIALOG_MEGAFLASH_SD_A;
+    const char *location = dialog_initial_location(overlay, target);
 
     if (card >= MSX_MEGAFLASH_CARDS ||
         overlay->dialog_target != OVERLAY_DIALOG_NONE)
@@ -1973,9 +2050,7 @@ static void open_megaflash_card_dialog(
             "Connect MegaFlashROM SCC+ SD before inserting a card");
         return;
     }
-    overlay->dialog_target =
-        card ? OVERLAY_DIALOG_MEGAFLASH_SD_B :
-               OVERLAY_DIALOG_MEGAFLASH_SD_A;
+    overlay->dialog_target = target;
     overlay->dialog_ready = false;
     overlay->dialog_failed = false;
     overlay->dialog_error[0] = '\0';
@@ -1990,9 +2065,8 @@ static void open_ide_image_dialog(Overlay *overlay) {
         { "Raw IDE disk images", "img;IMG;dsk;DSK;hdd;HDD" },
         { "All files", "*" },
     };
-    const char *location =
-        overlay->config->last_media_dir[0]
-        ? overlay->config->last_media_dir : NULL;
+    const char *location = dialog_initial_location(
+        overlay, OVERLAY_DIALOG_IDE_IMAGE);
 
     if (overlay->state != OVERLAY_STATE_SUNRISE_SETUP &&
         !msx_sunrise_connected(overlay->msx)) {
@@ -2042,16 +2116,18 @@ static void open_model_firmware_dialog(Overlay *overlay,
         target == OVERLAY_DIALOG_MODEL_BIOS
         ? bios_filters : extension_filters;
     char *field = model_firmware_field(overlay, target);
-    char location[PATH_MAX];
+    const char *location;
+    char fallback_location[PATH_MAX];
 
     if (!field || overlay->dialog_target != OVERLAY_DIALOG_NONE)
         return;
-    location[0] = '\0';
-    if (field[0])
-        copy_dirname(location, sizeof(location), field);
-    if (!location[0])
-        snprintf(location, sizeof(location), "%s",
-                 overlay->config->last_media_dir);
+    location = dialog_initial_location(overlay, target);
+    fallback_location[0] = '\0';
+    if (!location && field[0]) {
+        copy_dirname(fallback_location, sizeof(fallback_location), field);
+        if (fallback_location[0])
+            location = fallback_location;
+    }
     overlay->dialog_target = target;
     overlay->dialog_ready = false;
     overlay->dialog_failed = false;
@@ -2059,8 +2135,7 @@ static void open_model_firmware_dialog(Overlay *overlay,
     SDL_ShowOpenFileDialog(rom_dialog_callback, overlay,
                            overlay->display
                            ? overlay->display->window : NULL,
-                           filters, 2,
-                           location[0] ? location : NULL, false);
+                           filters, 2, location, false);
 }
 
 static bool firmware_file_has_size(const char *path, long expected_size) {
@@ -2864,15 +2939,9 @@ static bool disconnect_rdf600(Overlay *overlay) {
 
 static void begin_extension_setup(Overlay *overlay, bool editing) {
     overlay->extension_setup_editing = editing;
-    snprintf(overlay->extension_setup_media_dir,
-             sizeof(overlay->extension_setup_media_dir), "%s",
-             overlay->config->last_media_dir);
 }
 
 static void cancel_extension_setup(Overlay *overlay) {
-    snprintf(overlay->config->last_media_dir,
-             sizeof(overlay->config->last_media_dir), "%s",
-             overlay->extension_setup_media_dir);
     if (overlay->dialog_target != OVERLAY_DIALOG_NONE)
         overlay->dialog_discard = true;
     overlay->state = OVERLAY_STATE_MENU;
@@ -4800,6 +4869,11 @@ void overlay_tick(Overlay *overlay) {
         return;
     }
 
+    /* File-picker history is UI state, not mount success state. Remember
+     * the directory as soon as the user makes a choice, even if the file
+     * is subsequently rejected by a format or hardware check. */
+    remember_dialog_location(overlay, target, overlay->dialog_path);
+
     if (target == OVERLAY_DIALOG_CASSETTE) {
         if (msx_load_cassette(
                 overlay->msx, overlay->dialog_path) != 0) {
@@ -4810,9 +4884,6 @@ void overlay_tick(Overlay *overlay) {
         snprintf(overlay->config->cassette_path,
                  sizeof(overlay->config->cassette_path), "%s",
                  overlay->dialog_path);
-        copy_dirname(overlay->config->last_media_dir,
-                     sizeof(overlay->config->last_media_dir),
-                     overlay->dialog_path);
         overlay->dirty = true;
         notify_post("%s cassette ready: %s",
                     cassette_file_type_name(
@@ -4833,9 +4904,6 @@ void overlay_tick(Overlay *overlay) {
         snprintf(overlay->config->drive_a_path,
                  sizeof(overlay->config->drive_a_path), "%s",
                  overlay->dialog_path);
-        copy_dirname(overlay->config->last_media_dir,
-                     sizeof(overlay->config->last_media_dir),
-                     overlay->dialog_path);
         overlay->dirty = true;
         notify_post("Floppy A mounted %s: %s",
                     floppy_mode_name(
@@ -4857,9 +4925,6 @@ void overlay_tick(Overlay *overlay) {
         snprintf(overlay->config->drive_b_path,
                  sizeof(overlay->config->drive_b_path), "%s",
                  overlay->dialog_path);
-        copy_dirname(overlay->config->last_media_dir,
-                     sizeof(overlay->config->last_media_dir),
-                     overlay->dialog_path);
         overlay->dirty = true;
         notify_post("Floppy B mounted %s: %s",
                     floppy_mode_name(
@@ -4893,9 +4958,6 @@ void overlay_tick(Overlay *overlay) {
                        overlay, overlay->dialog_path)) {
             return;
         }
-        copy_dirname(overlay->config->last_media_dir,
-                     sizeof(overlay->config->last_media_dir),
-                     overlay->dialog_path);
         overlay->dirty = true;
         apply_config(overlay);
         return;
@@ -4926,9 +4988,6 @@ void overlay_tick(Overlay *overlay) {
                        overlay, overlay->dialog_path)) {
             return;
         }
-        copy_dirname(overlay->config->last_media_dir,
-                     sizeof(overlay->config->last_media_dir),
-                     overlay->dialog_path);
         overlay->dirty = true;
         apply_config(overlay);
         return;
@@ -4945,9 +5004,6 @@ void overlay_tick(Overlay *overlay) {
         snprintf(overlay->pending_sunrise_rom_path,
                  sizeof(overlay->pending_sunrise_rom_path), "%s",
                  overlay->dialog_path);
-        copy_dirname(overlay->config->last_media_dir,
-                     sizeof(overlay->config->last_media_dir),
-                     overlay->dialog_path);
         overlay->sunrise_setup_row = SUNRISE_SETUP_DISK;
         notify_post("Sunrise IDE firmware selected: %s",
                     path_basename(overlay->dialog_path));
@@ -4965,9 +5021,6 @@ void overlay_tick(Overlay *overlay) {
         snprintf(overlay->pending_sd_mapper_rom_path,
                  sizeof(overlay->pending_sd_mapper_rom_path), "%s",
                  overlay->dialog_path);
-        copy_dirname(overlay->config->last_media_dir,
-                     sizeof(overlay->config->last_media_dir),
-                     overlay->dialog_path);
         overlay->sd_mapper_setup_row =
             SD_MAPPER_SETUP_CARD_A;
         notify_post("SD Mapper V2 firmware selected: %s",
@@ -4986,9 +5039,6 @@ void overlay_tick(Overlay *overlay) {
         snprintf(overlay->pending_megaflash_rom_path,
                  sizeof(overlay->pending_megaflash_rom_path),
                  "%s", overlay->dialog_path);
-        copy_dirname(overlay->config->last_media_dir,
-                     sizeof(overlay->config->last_media_dir),
-                     overlay->dialog_path);
         overlay->megaflash_setup_row =
             MEGAFLASH_SETUP_CARD_A;
         notify_post("MegaFlashROM image selected: %s",
@@ -5012,10 +5062,6 @@ void overlay_tick(Overlay *overlay) {
                      sizeof(
                          overlay->pending_sd_card_path[card]),
                      "%s", overlay->dialog_path);
-            copy_dirname(overlay->config->last_media_dir,
-                         sizeof(
-                             overlay->config->last_media_dir),
-                         overlay->dialog_path);
             overlay->sd_mapper_setup_row =
                 card ? SD_MAPPER_SETUP_RAM :
                        SD_MAPPER_SETUP_CARD_B;
@@ -5036,9 +5082,6 @@ void overlay_tick(Overlay *overlay) {
         snprintf(overlay->config->sd_card_path[card],
                  sizeof(overlay->config->sd_card_path[card]),
                  "%s", overlay->dialog_path);
-        copy_dirname(overlay->config->last_media_dir,
-                     sizeof(overlay->config->last_media_dir),
-                     overlay->dialog_path);
         overlay->dirty = true;
         notify_post("SD Card %c mounted %s: %s",
                     'A' + (int)card,
@@ -5065,10 +5108,6 @@ void overlay_tick(Overlay *overlay) {
                 sizeof(
                     overlay->pending_megaflash_card_path[card]),
                 "%s", overlay->dialog_path);
-            copy_dirname(overlay->config->last_media_dir,
-                         sizeof(
-                             overlay->config->last_media_dir),
-                         overlay->dialog_path);
             overlay->megaflash_setup_row =
                 card ? MEGAFLASH_SETUP_CONNECT :
                        MEGAFLASH_SETUP_CARD_B;
@@ -5091,9 +5130,6 @@ void overlay_tick(Overlay *overlay) {
                  sizeof(
                      overlay->config->megaflash_card_path[card]),
                  "%s", overlay->dialog_path);
-        copy_dirname(overlay->config->last_media_dir,
-                     sizeof(overlay->config->last_media_dir),
-                     overlay->dialog_path);
         overlay->dirty = true;
         notify_post("MegaFlash SD %c mounted %s: %s",
                     'A' + (int)card,
@@ -5112,9 +5148,6 @@ void overlay_tick(Overlay *overlay) {
             snprintf(overlay->pending_ide_image_path,
                      sizeof(overlay->pending_ide_image_path), "%s",
                      overlay->dialog_path);
-            copy_dirname(overlay->config->last_media_dir,
-                         sizeof(overlay->config->last_media_dir),
-                         overlay->dialog_path);
             overlay->sunrise_setup_row =
                 SUNRISE_SETUP_CONNECT;
             notify_post("IDE disk selected: %s",
@@ -5131,9 +5164,6 @@ void overlay_tick(Overlay *overlay) {
         snprintf(overlay->config->ide_image_path,
                  sizeof(overlay->config->ide_image_path), "%s",
                  overlay->dialog_path);
-        copy_dirname(overlay->config->last_media_dir,
-                     sizeof(overlay->config->last_media_dir),
-                     overlay->dialog_path);
         overlay->dirty = true;
         notify_post("IDE disk mounted %s: %s",
                     overlay->config->ide_image_mode ==
@@ -5153,9 +5183,6 @@ void overlay_tick(Overlay *overlay) {
             return;
         if (destination)
             snprintf(destination, PATH_MAX, "%s",
-                     overlay->dialog_path);
-        copy_dirname(overlay->config->last_media_dir,
-                     sizeof(overlay->config->last_media_dir),
                      overlay->dialog_path);
         overlay->model_editor_error[0] = '\0';
         return;
@@ -5186,9 +5213,6 @@ void overlay_tick(Overlay *overlay) {
     snprintf(overlay->config->cartridge_path[slot],
              sizeof(overlay->config->cartridge_path[slot]), "%s",
              overlay->dialog_path);
-    copy_dirname(overlay->config->last_media_dir,
-                 sizeof(overlay->config->last_media_dir),
-                 overlay->dialog_path);
     configure_leds(overlay->config, overlay->msx);
     overlay->dirty = true;
     notify_post("Cartridge %d mounted: %s (%s)", slot + 1,
@@ -5214,6 +5238,55 @@ static void editor_shorten(char *destination, size_t destination_size,
         snprintf(destination, destination_size, "%.*s",
                  (int)maximum, text);
     }
+}
+
+static void editor_path(char *destination, size_t destination_size,
+                        const char *path, size_t maximum) {
+    char compacted[PATH_MAX];
+    const char *home = getenv("HOME");
+    size_t home_length;
+
+#ifdef _WIN32
+    if (!home || !home[0])
+        home = getenv("USERPROFILE");
+#endif
+    if (!home || !home[0]) {
+        editor_shorten(destination, destination_size, path, maximum);
+        return;
+    }
+    home_length = strlen(home);
+    while (home_length > 1 &&
+           (home[home_length - 1] == '/' ||
+            home[home_length - 1] == '\\'))
+        --home_length;
+    if (strncmp(path, home, home_length) != 0 ||
+        (path[home_length] != '\0' && path[home_length] != '/' &&
+         path[home_length] != '\\')) {
+        editor_shorten(destination, destination_size, path, maximum);
+        return;
+    }
+    snprintf(compacted, sizeof(compacted), "~%s", path + home_length);
+    editor_shorten(destination, destination_size, compacted, maximum);
+}
+
+static void editor_path_with_suffix(
+    char *destination, size_t destination_size, const char *path,
+    const char *suffix, size_t maximum) {
+    size_t suffix_length = strlen(suffix);
+    size_t path_maximum = maximum > suffix_length
+                        ? maximum - suffix_length : 1;
+    size_t used;
+    size_t available;
+
+    if (!destination_size)
+        return;
+    editor_path(destination, destination_size, path, path_maximum);
+    used = strlen(destination);
+    available = destination_size - used - 1;
+    if (suffix_length > available)
+        suffix_length = available;
+    memcpy(destination + used, suffix, suffix_length);
+    destination[used + suffix_length] = '\0';
 }
 
 static const char *model_field_name(int field) {
@@ -5486,16 +5559,16 @@ static void render_sunrise_setup(const Overlay *overlay,
     const char *title = "Sunrise IDE setup";
 
     if (overlay->pending_sunrise_rom_path[0])
-        editor_shorten(
+        editor_path(
             firmware, sizeof(firmware),
-            path_basename(overlay->pending_sunrise_rom_path), 45);
+            overlay->pending_sunrise_rom_path, 50);
     else
         snprintf(firmware, sizeof(firmware),
                  "[required - choose 128 KiB ROM]");
     if (overlay->pending_ide_image_path[0])
-        editor_shorten(
+        editor_path(
             disk, sizeof(disk),
-            path_basename(overlay->pending_ide_image_path), 45);
+            overlay->pending_ide_image_path, 50);
     else
         snprintf(disk, sizeof(disk), "[optional - no disk]");
     values[SUNRISE_SETUP_FIRMWARE] = firmware;
@@ -5559,10 +5632,9 @@ static void render_sd_mapper_setup(const Overlay *overlay,
     const char *title = "MSX SD Mapper V2 setup";
 
     if (overlay->pending_sd_mapper_rom_path[0])
-        editor_shorten(
+        editor_path(
             firmware, sizeof(firmware),
-            path_basename(
-                overlay->pending_sd_mapper_rom_path), 42);
+            overlay->pending_sd_mapper_rom_path, 50);
     else
         snprintf(firmware, sizeof(firmware),
                  "[required - choose 128/256 KiB ROM]");
@@ -5570,10 +5642,9 @@ static void render_sd_mapper_setup(const Overlay *overlay,
         char *shown = card ? card_b : card_a;
 
         if (overlay->pending_sd_card_path[card][0])
-            editor_shorten(
+            editor_path(
                 shown, 52,
-                path_basename(
-                    overlay->pending_sd_card_path[card]), 42);
+                overlay->pending_sd_card_path[card], 50);
         else
             snprintf(shown, 52, "[optional - empty]");
     }
@@ -5646,10 +5717,9 @@ static void render_megaflash_setup(const Overlay *overlay,
     const char *title = "MegaFlashROM SCC+ SD setup";
 
     if (overlay->pending_megaflash_rom_path[0])
-        editor_shorten(
+        editor_path(
             firmware, sizeof(firmware),
-            path_basename(
-                overlay->pending_megaflash_rom_path), 42);
+            overlay->pending_megaflash_rom_path, 50);
     else
         snprintf(firmware, sizeof(firmware),
                  "[required - choose flash image]");
@@ -5657,10 +5727,9 @@ static void render_megaflash_setup(const Overlay *overlay,
         char *shown = card ? card_b : card_a;
 
         if (overlay->pending_megaflash_card_path[card][0])
-            editor_shorten(
+            editor_path(
                 shown, 52,
-                path_basename(
-                    overlay->pending_megaflash_card_path[card]), 42);
+                overlay->pending_megaflash_card_path[card], 50);
         else
             snprintf(shown, 52, "[optional - empty]");
     }

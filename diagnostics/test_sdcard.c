@@ -20,7 +20,7 @@ static void create_fixture(void) {
     assert(fclose(file) == 0);
 }
 
-static u8 command(SdCard *card, u8 number, u32 argument) {
+static void send_command(SdCard *card, u8 number, u32 argument) {
     u8 bytes[6] = {
         (u8)(0x40 | number),
         (u8)(argument >> 24),
@@ -32,6 +32,10 @@ static u8 command(SdCard *card, u8 number, u32 argument) {
 
     for (unsigned i = 0; i < sizeof(bytes); ++i)
         (void)sd_card_transfer(card, bytes[i]);
+}
+
+static u8 command(SdCard *card, u8 number, u32 argument) {
+    send_command(card, number, argument);
     for (unsigned i = 0; i < 32; ++i) {
         u8 response = sd_card_transfer(card, 0xff);
 
@@ -45,7 +49,7 @@ static u8 command(SdCard *card, u8 number, u32 argument) {
 static void initialize_card(SdCard *card, bool high_capacity) {
     assert(command(card, 0, 0) == 0x01);
     assert(command(card, 8, 0x1aa) == 0x01);
-    assert(sd_card_transfer(card, 0xff) == 0x00);
+    assert(sd_card_transfer(card, 0xff) == 0x02);
     assert(sd_card_transfer(card, 0xff) == 0x00);
     assert(sd_card_transfer(card, 0xff) == 0x01);
     assert(sd_card_transfer(card, 0xff) == 0xaa);
@@ -86,6 +90,7 @@ static void send_write_block(SdCard *card, u8 token,
         (void)sd_card_transfer(card, data[i]);
     (void)sd_card_transfer(card, 0xff);
     (void)sd_card_transfer(card, 0xff);
+    assert(sd_card_transfer(card, 0xff) == 0xff);
     assert((sd_card_transfer(card, 0xff) & 0x1f) == 0x05);
     assert(sd_card_transfer(card, 0xff) == 0x00);
     assert(sd_card_transfer(card, 0xff) == 0xff);
@@ -108,6 +113,13 @@ int main(void) {
     sd_card_select(&card, true);
     initialize_card(&card, true);
 
+    /* Commands take two SPI transfers before their response, like openMSX. */
+    send_command(&card, 13, 0);
+    assert(sd_card_transfer(&card, 0xff) == 0xff);
+    assert(sd_card_transfer(&card, 0xff) == 0xff);
+    assert(sd_card_transfer(&card, 0xff) == 0x00);
+    assert(sd_card_transfer(&card, 0xff) == 0x00);
+
     assert(command(&card, 9, 0) == 0x00);
     receive_data_block(&card, register_data, sizeof(register_data));
     assert((register_data[0] & 0xc0) == 0x40);
@@ -119,7 +131,22 @@ int main(void) {
     for (unsigned i = 0; i < sizeof(data); ++i)
         assert(data[i] == (u8)(3 ^ i));
     assert(command(&card, 18, 10) == 0x00);
-    receive_data_block(&card, data, sizeof(data));
+    for (unsigned i = 0;; ++i) {
+        u8 token = sd_card_transfer(&card, 0xff);
+
+        assert(i < 32);
+        if (token == 0xfe)
+            break;
+    }
+    for (unsigned i = 0; i < 100; ++i)
+        data[i] = sd_card_transfer(&card, 0xff);
+    sd_card_select(&card, false);
+    assert(sd_card_transfer(&card, 0xff) == 0xff);
+    sd_card_select(&card, true);
+    for (unsigned i = 100; i < sizeof(data); ++i)
+        data[i] = sd_card_transfer(&card, 0xff);
+    (void)sd_card_transfer(&card, 0xff);
+    (void)sd_card_transfer(&card, 0xff);
     receive_data_block(&card, second, sizeof(second));
     for (unsigned i = 0; i < sizeof(data); ++i) {
         assert(data[i] == (u8)(10 ^ i));

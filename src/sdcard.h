@@ -28,6 +28,7 @@ typedef struct {
     bool selected;
     bool idle;
     bool high_capacity;
+    bool force_high_capacity;
     bool app_command;
     u8 command[6];
     unsigned command_length;
@@ -35,6 +36,7 @@ typedef struct {
     u8 response[SD_CARD_RESPONSE_CAPACITY];
     size_t response_head;
     size_t response_count;
+    unsigned response_delay;
 
     u8 sector[SD_CARD_SECTOR_SIZE];
     u32 transfer_lba;
@@ -60,4 +62,5 @@ const char *sd_card_error(const SdCard *card);
 bool sd_card_take_activity(SdCard *card);
 
 void sd_card_select(SdCard *card, bool selected);
+void sd_card_force_high_capacity(SdCard *card, bool enabled);
 u8 sd_card_transfer(SdCard *card, u8 value);
