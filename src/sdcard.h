@@ -36,6 +36,7 @@ typedef struct {
     u8 response[SD_CARD_RESPONSE_CAPACITY];
     size_t response_head;
     size_t response_count;
+    unsigned response_delay;
 
     u8 sector[SD_CARD_SECTOR_SIZE];
     u32 transfer_lba;

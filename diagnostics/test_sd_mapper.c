@@ -24,7 +24,7 @@ static u8 sd_command(MsxSdMapper *mapper, u16 transfer_address,
         if (!(response & 0x80))
             return response;
     }
-    assert(!"MegaSD command did not return an R1 response");
+    assert(!"SD command did not return an R1 response");
     return 0xff;
 }
 
@@ -35,6 +35,7 @@ static void sd_write_payload(MsxSdMapper *mapper, u16 transfer_address,
         sd_mapper_write(mapper, transfer_address, value);
     sd_mapper_write(mapper, transfer_address, 0xff);
     sd_mapper_write(mapper, transfer_address, 0xff);
+    assert(sd_mapper_read(mapper, transfer_address) == 0xff);
     assert((sd_mapper_read(mapper, transfer_address) & 0x1f) == 0x05);
     assert(sd_mapper_read(mapper, transfer_address) == 0x00);
     assert(sd_mapper_read(mapper, transfer_address) == 0xff);
@@ -120,13 +121,16 @@ int main(void) {
     (void)sd_mapper_read(&mapper, 0x7b00);
     sd_write_sector(&mapper, 0x7b00, 164, 0x5a);
 
-    /*
-     * The SD Mapper driver probes an already-ready card with CMD0 before a
-     * bulk write, then proceeds directly to ACMD23/CMD25. Keep an emulated
-     * SDHC card ready across that probe, as openMSX's stateless card does.
-     */
+    /* A fresh CMD0 restarts the standard SD initialization handshake. */
     assert(sd_command(&mapper, 0x7b00, 0, 0) == 0x01);
     assert(sd_command(&mapper, 0x7b00, 0, 0) == 0x01);
+    assert(sd_command(&mapper, 0x7b00, 8, 0x1aa) == 0x01);
+    assert(sd_mapper_read(&mapper, 0x7b00) == 0x02);
+    assert(sd_mapper_read(&mapper, 0x7b00) == 0x00);
+    assert(sd_mapper_read(&mapper, 0x7b00) == 0x01);
+    assert(sd_mapper_read(&mapper, 0x7b00) == 0xaa);
+    assert(sd_command(&mapper, 0x7b00, 55, 0) == 0x01);
+    assert(sd_command(&mapper, 0x7b00, 41, 0x40000000) == 0x00);
     assert(sd_command(&mapper, 0x7b00, 55, 0) == 0x00);
     assert(sd_command(&mapper, 0x7b00, 23, 2) == 0x00);
     assert(sd_command(&mapper, 0x7b00, 25, 165) == 0x00);
@@ -135,18 +139,6 @@ int main(void) {
     sd_mapper_write(&mapper, 0x7b00, 0xfd);
     assert(sd_mapper_read(&mapper, 0x7b00) == 0xff);
 
-    /* SymbOS can later address the same card through its MegaSD driver. */
-    sd_mapper_write(&mapper, 0x6000, 0x40);
-    sd_mapper_write(&mapper, 0x5800, 0);
-    assert(sd_command(&mapper, 0x4000, 0, 0) == 0x01);
-    assert(sd_command(&mapper, 0x4000, 55, 0) == 0x00);
-    assert(sd_command(&mapper, 0x4000, 41, 0) == 0x00);
-    assert(sd_command(&mapper, 0x4000, 58, 0) == 0x00);
-    assert(sd_mapper_read(&mapper, 0x4000) == 0x40);
-    (void)sd_mapper_read(&mapper, 0x4000);
-    (void)sd_mapper_read(&mapper, 0x4000);
-    (void)sd_mapper_read(&mapper, 0x4000);
-    sd_write_sector(&mapper, 0x4000, 167, 0xc3);
     assert(sd_mapper_flush_card(&mapper, 0) == 0);
     assert(sd_mapper_eject_card(&mapper, 0) == 0);
 
@@ -161,23 +153,12 @@ int main(void) {
         assert(fgetc(file) == 0xa5);
     for (unsigned i = 0; i < SD_CARD_SECTOR_SIZE; ++i)
         assert(fgetc(file) == 0x3c);
-    for (unsigned i = 0; i < SD_CARD_SECTOR_SIZE; ++i)
-        assert(fgetc(file) == 0xc3);
     assert(fclose(file) == 0);
 
-    sd_mapper_write(&mapper, 0x5800, 1);
-    sd_mapper_write(&mapper, 0x4000, 0xff);
-    assert(mapper.mega_sd_compat);
-    assert(mapper.mega_sd_selected_card == 1);
-    assert(!mapper.cards[0].selected);
-    assert(mapper.cards[1].selected);
-    assert(sd_mapper_read(&mapper, 0x5000) == 0xff);
-    assert(!mapper.cards[1].selected);
-    sd_mapper_write(&mapper, 0x5800, 0);
-    sd_mapper_write(&mapper, 0x4000, 0xff);
-    assert(mapper.cards[0].selected);
-    sd_mapper_write(&mapper, 0x6000, 0);
-    assert(!mapper.mega_sd_compat);
+    /* High bank bits are ignored by the real SD Mapper V2 ROM mapper. */
+    sd_mapper_secondary_write(&mapper, 0);
+    sd_mapper_write(&mapper, 0x6000, 0x40);
+    assert(sd_mapper_read(&mapper, 0x4000) == 0);
     assert(!mapper.cards[0].selected);
 
     sd_mapper_set_alternate_driver(&mapper, true);

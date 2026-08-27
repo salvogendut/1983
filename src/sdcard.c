@@ -212,14 +212,11 @@ static void execute_command(SdCard *card) {
     u8 idle = card->idle ? 0x01 : 0x00;
 
     card->app_command = false;
+    card->response_delay = 2;
     switch (command) {
         case 0:
-            if (!card->force_high_capacity || card->idle) {
-                card->idle = true;
-                card->high_capacity = false;
-            } else {
-                card->high_capacity = true;
-            }
+            card->idle = true;
+            card->high_capacity = false;
             card->multi_read = false;
             card->write_wait_token = false;
             queue_clear(card);
@@ -231,7 +228,7 @@ static void execute_command(SdCard *card) {
             queue_push(card, 0x00);
             break;
         case 8: {
-            const u8 r7[4] = {0x00, 0x00, 0x01, 0xaa};
+            const u8 r7[4] = {0x02, 0x00, 0x01, 0xaa};
 
             queue_register_response(card, idle, r7, sizeof(r7));
             break;
@@ -257,7 +254,6 @@ static void execute_command(SdCard *card) {
         case 12:
             card->multi_read = false;
             queue_clear(card);
-            queue_push(card, 0xff);
             queue_push(card, 0x00);
             break;
         case 13:
@@ -365,6 +361,7 @@ static void receive_write_byte(SdCard *card, u8 value) {
         if (!card->crc_bytes) {
             bool stored = store_sector(card, card->transfer_lba);
 
+            card->response_delay = 1;
             queue_push(card, stored ? 0x05 : 0x0d);
             queue_push(card, 0x00);
             queue_push(card, 0xff);
@@ -403,6 +400,7 @@ void sd_card_reset(SdCard *card) {
     card->high_capacity = false;
     card->app_command = false;
     card->command_length = 0;
+    card->response_delay = 0;
     card->multi_read = false;
     card->write_wait_token = false;
     card->multi_write = false;
@@ -532,12 +530,6 @@ void sd_card_select(SdCard *card, bool selected) {
         return;
     card->selected = selected;
     card->command_length = 0;
-    if (!selected) {
-        card->multi_read = false;
-        card->write_wait_token = false;
-        card->multi_write = false;
-        queue_clear(card);
-    }
 }
 
 void sd_card_force_high_capacity(SdCard *card, bool enabled) {
@@ -550,7 +542,8 @@ u8 sd_card_transfer(SdCard *card, u8 value) {
 
     if (!card || !card->selected || !card->image)
         return 0xff;
-    if (!card->response_count && card->multi_read) {
+    if (!card->response_delay && !card->response_count &&
+        card->multi_read) {
         if ((u64)card->transfer_lba < card->sector_count &&
             load_sector(card, card->transfer_lba)) {
             queue_data_block(card, card->sector, sizeof(card->sector));
@@ -559,7 +552,12 @@ u8 sd_card_transfer(SdCard *card, u8 value) {
             card->multi_read = false;
         }
     }
-    result = queue_pop(card);
+    if (card->response_delay) {
+        --card->response_delay;
+        result = 0xff;
+    } else {
+        result = queue_pop(card);
+    }
     if (card->write_wait_token && !card->response_count)
         receive_write_byte(card, value);
     else

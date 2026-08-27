@@ -13,7 +13,7 @@ The implementation supports these complementary paths:
 | C-BIOS | Redistributable out-of-box firmware for cartridge software | Useful for early Z80, slot, VDP, input, and cartridge tests; no BASIC, cassette, or disk support |
 | User-supplied MSX BIOS/BASIC | Representative real-machine behaviour | Required for BASIC and for broad software and peripheral compatibility |
 | Nextor | Disk operating system for machines with a supported storage controller | Boots through Sunrise IDE on the GeoBench NMS 8250 target and through SD Mapper V2 on MSX1; MegaFlashROM provides an additional user-supplied preflash lane |
-| SymbOS | Graphical operating system using a direct mass-storage driver | Boots the reference SymZilla image through Sunrise IDE or the SD Mapper V2 MegaSD compatibility view |
+| SymbOS | Graphical operating system using a direct mass-storage driver | Boots through Sunrise IDE or a native SD Mapper V2 guest driver |
 
 C-BIOS and a vendor-compatible BIOS/BASIC set are alternatives at the machine
 firmware layer. Nextor is not a replacement for that layer: it is a disk
@@ -196,13 +196,11 @@ cp /path/to/MSXSYMBOS-SymZilla-H4-diag-368ee05-a07b93a.img \
   --ide /tmp/1983-symbos-sunrise.img --ide-mode read-write
 ```
 
-SymbOS 4 supplies a MegaSD mass-storage driver, but no native SD Mapper V2
-driver. 1983 consequently exposes a MegaSD-compatible SPI view only while
-that guest driver selects its otherwise invalid `40h` bank; the native SD
-Mapper V2 ROM, SPI registers, and 512 KiB mapper remain unchanged. To prepare
-an SD copy, first boot it through Sunrise and use SymSetup to select
-**MegaSD compatible**, physical slot **1**, subslot **0**, card A, partition
-1. Save `SYMBOS.CFG`, shut down, and relaunch the copy with:
+A SymbOS installation on this cartridge must use a native SD Mapper V2 guest
+driver, such as `-SDMAP2.DRV`, configured for physical slot **1**, subslot
+**0**, card A, partition 1. The generic MegaSD driver targets different
+cartridge registers and is not interchangeable. Save `SYMBOS.CFG`, shut down,
+and relaunch the copy with:
 
 ```sh
 ./1983 --model nms8250 \
@@ -210,8 +208,10 @@ an SD copy, first boot it through Sunrise and use SymSetup to select
   --sd-a /tmp/1983-symbos-sd.img --sd-mode read-write
 ```
 
-Both paths reach the SymZilla desktop with the 64 MiB reference image whose
-SHA-256 is
+Both paths reach the SymZilla desktop with a correctly configured reference
+image; the SD Mapper checkpoint requires the desktop picture to load and does
+not accept a solid-colour desktop as a successful storage boot. The original
+64 MiB reference image has SHA-256
 `0d599b41d9b138cb7e857fad6b37e56c958070b70e7fe5cd67609c1729220930`.
 The image and SymbOS remain user-supplied. The browser edition embeds the
 unmodified official Nextor 2.1.1 Sunrise controller ROM together with its

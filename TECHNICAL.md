@@ -315,7 +315,8 @@ an ordinary cartridge. The alternate-driver switch selects the second
 The controller uses two 16 KiB firmware bank registers. When firmware bank 1
 selects bank 7, `0x7B00` through `0x7EFF` become the SPI data window,
 `0x7FF0` reports card presence/change/write-protect state and selects either
-or both cards, and `0x7FF1` exposes the 16-bit 25 MHz timer latch. The mapper
+or both cards, and `0x7FF1` exposes the 8-bit countdown timer clocked at
+25 MHz / 256. The mapper
 uses standard ports `0xFC` through `0xFF`, resets to segments `3,2,1,0`, and
 shares those ports electrically with another mapper through the MSX
 active-low, wired-AND read convention.
@@ -324,7 +325,10 @@ active-low, wired-AND read convention.
 firmware and Nextor, including initialization, card identification, capacity,
 single/multiple block reads, single/multiple block writes, application
 commands, stop, and status. It supports conventional and high-capacity card
-addressing. The card backend is independent of the cartridge wrapper so the
+addressing. Command replies follow the two-transfer latency used by openMSX,
+and raising chip select pauses rather than destroys an in-progress transfer;
+both behaviours are required by native SymbOS mass-storage drivers. The card
+backend is independent of the cartridge wrapper so the
 same conservative image lifetime applies to both sockets: read-only by
 default, complete 512-byte writes, explicit flush and host synchronization,
 failed-mount preservation, failed-flush retention, and safe ejection.

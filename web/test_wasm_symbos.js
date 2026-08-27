@@ -68,6 +68,11 @@ async function main() {
     Buffer.concat([Buffer.from(`P6\n${width} ${height}\n255\n`), rgb])
   );
   const pixel = (x, y) => pixels[y * width + x] & 0x00ffffff;
+  const desktopColors = new Set();
+  for (let y = Math.floor(height / 8); y < height - 24; ++y) {
+    for (let x = Math.floor(width / 4); x < width - 16; ++x)
+      desktopColors.add(pixel(x, y));
+  }
   assert.strictEqual(width, 512, 'SymbOS must enter a 512-pixel MSX2 mode');
   assert.strictEqual(height, 212, 'SymbOS must enter a 212-line MSX2 mode');
   assert(
@@ -85,6 +90,11 @@ async function main() {
     pixel(width - 1, 0) === 0x00000092 ||
     pixel(width - 1, 0) === 0x000000ff,
     'expected SymbOS desktop or SymZilla chrome at the top-right corner'
+  );
+  assert(
+    desktopColors.size >= 6,
+    `solid-colour SymbOS desktop indicates failed storage startup (` +
+    `${desktopColors.size} background colours; ${screenshotPath})`
   );
   console.log(
     `WASM SymbOS ${controller} acceptance passed: ${frameCount} frames, ` +
