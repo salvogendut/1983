@@ -35,6 +35,13 @@ assert.match(
 assert.match(html, /id="memoryValue"[^>]*>64 KiB<\/output>/);
 assert.match(app, /m\._poc_set_ram_kb\(ramKb\)/);
 assert.match(app, /RAM_STORAGE_PREFIX \+ currentModel/);
+assert.match(
+  html,
+  /id="unifiedRomLoad"[\s\S]*id="unifiedRomFile"[\s\S]*id="unifiedRomName"/
+);
+assert.match(html, /Upload a 512 KiB Omega unified ROM/);
+assert.match(app, /validateOmegaUnifiedRomSize\(data\.byteLength\)/);
+assert.match(app, /m\._poc_install_omega_unified_rom\(pointer, data\.byteLength\)/);
 assert.match(app, /const slot = sunriseEnabled \? 1 : 0;/);
 assert.match(
   html,

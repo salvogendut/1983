@@ -20,6 +20,39 @@ async function main() {
   assert.strictEqual(module._poc_omega_unified_bank(), 1);
   assert.strictEqual(module._poc_flip_omega_unified_bank(), 0);
   assert.strictEqual(module._poc_omega_unified_bank(), 0);
+
+  const unifiedRom = module.FS.readFile('roms/rainbios_omega.rom');
+  assert.strictEqual(unifiedRom.byteLength, 512 * 1024);
+  const unifiedRomPointer = module._malloc(unifiedRom.byteLength);
+  assert.notStrictEqual(unifiedRomPointer, 0);
+  try {
+    module.HEAPU8.set(unifiedRom, unifiedRomPointer);
+    assert.strictEqual(
+      module._poc_install_omega_unified_rom(
+        unifiedRomPointer, unifiedRom.byteLength - 1
+      ),
+      -1,
+      'a unified ROM shorter than 512 KiB must be rejected'
+    );
+    assert.strictEqual(
+      module._poc_install_omega_unified_rom(
+        unifiedRomPointer, unifiedRom.byteLength
+      ),
+      0,
+      'a browser-supplied 512 KiB unified ROM must be installed'
+    );
+  } finally {
+    module._free(unifiedRomPointer);
+  }
+  assert.strictEqual(module._poc_omega_unified_bank(), 0);
+  assert.strictEqual(module._poc_flip_omega_unified_bank(), 1);
+  assert.strictEqual(
+    module._poc_init_model(2, 0),
+    0,
+    'the uploaded unified ROM must survive an Omega machine reboot'
+  );
+  assert.strictEqual(module._poc_omega_unified_bank(), 1);
+  assert.strictEqual(module._poc_flip_omega_unified_bank(), 0);
   assert.strictEqual(module._poc_ram_kb(), 128);
   assert.strictEqual(module._poc_set_ram_kb(16), -1);
   assert.strictEqual(module._poc_ram_kb(), 128);

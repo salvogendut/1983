@@ -4,11 +4,13 @@ const assert = require('assert');
 const {
   INPUT_JOYSTICK,
   INPUT_MOUSE,
+  OMEGA_UNIFIED_ROM_SIZE,
   RAM_SIZES_KB,
   ramSizesForModel,
   normalizeRamKb,
   defaultRamKb,
   formatRamKb,
+  validateOmegaUnifiedRomSize,
   normalizeInputDevice,
   createPeripheralState,
 } = require('./hardware-ui.js');
@@ -38,6 +40,16 @@ assert.strictEqual(defaultRamKb(2), 128);
 assert.strictEqual(formatRamKb(512), '512 KiB');
 assert.strictEqual(formatRamKb(1024), '1 MiB');
 assert.strictEqual(formatRamKb(4096), '4 MiB');
+assert.strictEqual(OMEGA_UNIFIED_ROM_SIZE, 524288);
+assert.strictEqual(validateOmegaUnifiedRomSize(524288), 524288);
+assert.throws(
+  () => validateOmegaUnifiedRomSize(524287),
+  /exactly 512 KiB/
+);
+assert.throws(
+  () => validateOmegaUnifiedRomSize(524289),
+  /exactly 512 KiB/
+);
 assert.throws(() => ramSizesForModel(3), /unsupported/);
 
 const state = createPeripheralState();

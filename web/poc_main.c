@@ -40,9 +40,12 @@ static bool g_sunrise_enabled;
 static bool g_sd_mapper_enabled;
 static bool g_unapi_enabled;
 static unsigned g_omega_unified_bank;
+static bool g_custom_omega_unified_rom;
+static u8 g_custom_omega_rom[MSX_OMEGA_UNIFIED_ROM_SIZE];
 
 #define SUNRISE_ROM_PATH "roms/nextor-sunrise.rom"
 #define SD_MAPPER_ROM_PATH "roms/sdmapper-v2-nextor.rom"
+#define OMEGA_ROM_PATH "roms/rainbios_omega.rom"
 
 static unsigned desired_sd_mapper_slot(void) {
     return g_sunrise_enabled ? 1u : 0u;
@@ -50,10 +53,14 @@ static unsigned desired_sd_mapper_slot(void) {
 
 static int poc_reload_firmware(void) {
     if (g_msx.profile &&
-        g_msx.profile->model == MSX_MODEL_GENERIC_MSX2)
+        g_msx.profile->model == MSX_MODEL_GENERIC_MSX2) {
+        if (g_custom_omega_unified_rom)
+            return msx_install_omega_unified_rom(
+                &g_msx, g_custom_omega_rom,
+                sizeof(g_custom_omega_rom), g_omega_unified_bank);
         return msx_load_omega_unified_rom(
-            &g_msx, "roms/rainbios_omega.rom",
-            g_omega_unified_bank);
+            &g_msx, OMEGA_ROM_PATH, g_omega_unified_bank);
+    }
     if (g_msx.profile &&
         g_msx.profile->model == MSX_MODEL_PHILIPS_NMS8250) {
         return msx_load_firmware_set(
@@ -250,6 +257,30 @@ EMSCRIPTEN_KEEPALIVE int poc_omega_unified_bank(void) {
     return (int)g_omega_unified_bank;
 }
 
+/* Install a browser-supplied 512 KiB Omega EEPROM image and cold-boot its
+ * lower JP1 bank. The full image is retained in WASM memory so subsequent F3
+ * bank changes and machine/extension resets keep using the uploaded ROM. */
+EMSCRIPTEN_KEEPALIVE int poc_install_omega_unified_rom(const u8 *data,
+                                                        int size) {
+    if (!data || size != (int)MSX_OMEGA_UNIFIED_ROM_SIZE ||
+        !g_machine_initialized || !g_msx.profile ||
+        g_msx.profile->model != MSX_MODEL_GENERIC_MSX2)
+        return -1;
+
+    poc_cancel_paste();
+    kbd_release_all(&g_kbd, &g_msx);
+    if (msx_install_omega_unified_rom(
+            &g_msx, data, (size_t)size, 0) != 0)
+        return -1;
+    memcpy(g_custom_omega_rom, data, sizeof(g_custom_omega_rom));
+    g_custom_omega_unified_rom = true;
+    g_omega_unified_bank = 0;
+    g_audio_w = 0;
+    g_audio_r = 0;
+    g_joy_pressed = 0;
+    return 0;
+}
+
 EMSCRIPTEN_KEEPALIVE int poc_flip_omega_unified_bank(void) {
     unsigned bank;
 
@@ -258,8 +289,12 @@ EMSCRIPTEN_KEEPALIVE int poc_flip_omega_unified_bank(void) {
     bank = g_omega_unified_bank ^ 1u;
     poc_cancel_paste();
     kbd_release_all(&g_kbd, &g_msx);
-    if (msx_load_omega_unified_rom(
-            &g_msx, "roms/rainbios_omega.rom", bank) != 0)
+    if ((g_custom_omega_unified_rom
+             ? msx_install_omega_unified_rom(
+                   &g_msx, g_custom_omega_rom,
+                   sizeof(g_custom_omega_rom), bank)
+             : msx_load_omega_unified_rom(
+                   &g_msx, OMEGA_ROM_PATH, bank)) != 0)
         return -1;
     g_omega_unified_bank = bank;
     g_audio_w = 0;

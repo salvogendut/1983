@@ -45,6 +45,11 @@ be selected directly with a case-insensitive query parameter:
   includes the MSX2 main ROM, Sub-ROM, generic WD2793 disk ROM, 128 KiB RAM,
   and 128 KiB VRAM. **MSX1 (C-BIOS)** at 60 Hz and **Philips NMS 8250
   (RainBIOS)** at 50 Hz remain selectable.
+- The **ROM Upload** button beside the machine selector accepts a user-provided
+  512 KiB Omega unified ROM. A valid image selects the Omega MSX2 profile when
+  necessary and immediately reboots into its lower 256 KiB JP1 bank. The ROM
+  remains only in browser memory for the current page session; its filename is
+  shown below the selector, and later Omega resets continue using it.
 - The **System RAM** slider below the machine selector exposes the same memory
   sizes as the native emulator. MSX1 supports 16, 32, 64, 128, 256 and 512 KiB,
   plus 1, 2 and 4 MiB; both MSX2 profiles support 64 KiB through 4 MiB. Each
@@ -120,8 +125,8 @@ aliases `omega` and `msx2`, `cbios`, and `philips` are also accepted for those
 profiles respectively. The requested machine is selected before extensions
 and media are applied and affects only that page load.
 
-With the display focused, unshifted **F3** flips the Omega unified image
-between its lower and upper 256 KiB JP1 banks and resets the guest.
+With the display focused, unshifted **F3** flips the bundled or uploaded Omega
+unified image between its lower and upper 256 KiB JP1 banks and resets the guest.
 **Shift+F3** continues to send the ordinary MSX F3 key. On the C-BIOS and
 Philips profiles, F3 reports that no unified ROM is active.
 
