@@ -33,6 +33,7 @@ static int slave_read_byte(const char *slave) {
 
 int main(void) {
     Rs232Device *dev;
+    u16 count;
     u8 v;
 
 #if !RS232_HAVE_HOST_BACKEND
@@ -42,7 +43,20 @@ int main(void) {
     dev = rs232dev_create();
     check(dev != NULL, "rs232 device creates");
     check(rs232dev_set_enabled(dev, true), "rs232 device enables");
-    rs232dev_io_reset(dev);
+
+    /* Exercise the creation lifecycle directly, without an artificial machine
+     * reset after the device is attached. Counter gates are hardware-high and
+     * a freshly programmed application counter must start immediately. */
+    rs232dev_io_write(dev, 0x87, 0xB0);          /* ch2: mode0, both */
+    rs232dev_io_write(dev, 0x86, 0xFF);
+    rs232dev_io_write(dev, 0x86, 0xFF);
+    rs232dev_io_advance(dev, 1000);
+    rs232dev_io_write(dev, 0x87, 0x80);          /* latch ch2 */
+    rs232dev_io_read(dev, 0x86, &v);
+    count = v;
+    rs232dev_io_read(dev, 0x86, &v);
+    count |= (u16)v << 8;
+    check(count < 0xFFFF, "8254 counter advances immediately after creation");
 
     /* Program 8254 counter 0 (mode 3, both bytes) so its output feeds the
      * USART clock. */
