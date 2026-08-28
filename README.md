@@ -26,7 +26,9 @@ and staying as multiplatform as SDL3 allows.
 
 ![1983 booting RainBIOS + Nextor, then the GEOBENCH desktop, captured to an animated GIF](sample-rainbios-nextor-geobench-on-1983-20260802-165621.gif)
 
-*Sample output of the built-in GIF screen capture.*
+![1983 booting RainBIOS + Nextor into SymbOS, captured to an animated GIF](sample-rainbios-nextor-symbos-on-1983-20260828-072418.gif)
+
+*Sample outputs of the built-in GIF screen capture.*
 
 ## Features at a glance
 
