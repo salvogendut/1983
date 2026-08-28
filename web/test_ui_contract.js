@@ -42,6 +42,16 @@ assert.match(
 assert.match(html, /Upload a 512 KiB Omega unified ROM/);
 assert.match(app, /validateOmegaUnifiedRomSize\(data\.byteLength\)/);
 assert.match(app, /m\._poc_install_omega_unified_rom\(pointer, data\.byteLength\)/);
+const repositoryLinks = [...html.matchAll(
+  /<a[^>]*href="https:\/\/github\.com\/salvogendut\/1983"[^>]*>/g
+)];
+assert.strictEqual(repositoryLinks.length, 2);
+for (const [link] of repositoryLinks) {
+  assert.match(link, /target="_blank"/);
+  assert.match(link, /rel="noopener noreferrer"/);
+}
+assert.match(html, /class="brand-repo-link"/);
+assert.match(html, /class="screen-brand"/);
 assert.match(app, /const slot = sunriseEnabled \? 1 : 0;/);
 assert.match(
   html,
