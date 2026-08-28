@@ -240,6 +240,8 @@ int main(void) {
     const char *machine_subrom_path = "diagnostics/test-machine-subrom.tmp";
     const char *machine_disk_rom_path =
         "diagnostics/test-machine-disk-rom.tmp";
+    const char *machine_unified_rom_path =
+        "diagnostics/test-machine-unified-rom.tmp";
     const char *sunrise_rom_path = "diagnostics/test-sunrise-rom.tmp";
     const char *sunrise_rom_path_2 = "diagnostics/test-sunrise-rom-2.tmp";
     const char *ide_image_path = "diagnostics/test-sunrise-disk.tmp";
@@ -313,6 +315,14 @@ int main(void) {
     assert(fixture);
     assert(fwrite(sunrise_rom, 1, MSX_DISK_ROM_SIZE, fixture) ==
            MSX_DISK_ROM_SIZE);
+    assert(fclose(fixture) == 0);
+    fixture = fopen(machine_unified_rom_path, "wb");
+    assert(fixture);
+    for (size_t chunk = 0;
+         chunk < MSX_OMEGA_UNIFIED_ROM_SIZE / sizeof(sunrise_rom);
+         ++chunk)
+        assert(fwrite(sunrise_rom, 1, sizeof(sunrise_rom), fixture) ==
+               sizeof(sunrise_rom));
     assert(fclose(fixture) == 0);
     fixture = fopen(ide_image_path, "wb");
     assert(fixture);
@@ -398,10 +408,15 @@ int main(void) {
     model_catalog_defaults(&models);
     {
         size_t cbios_index = model_catalog_index(&models, "cbios");
+        size_t omega_index = model_catalog_index(&models, "omega-msx2");
         size_t nms8250_index = model_catalog_index(&models, "nms8250");
 
         assert(cbios_index < models.count);
+        assert(omega_index < models.count);
         assert(nms8250_index < models.count);
+        snprintf(models.entries[omega_index].unified_rom_path,
+                 sizeof(models.entries[omega_index].unified_rom_path), "%s",
+                 machine_unified_rom_path);
         snprintf(models.entries[cbios_index].bios_path,
                  sizeof(models.entries[cbios_index].bios_path), "%s",
                  machine_bios_path);
@@ -1681,6 +1696,7 @@ int main(void) {
     assert(remove(machine_bios_path) == 0);
     assert(remove(machine_subrom_path) == 0);
     assert(remove(machine_disk_rom_path) == 0);
+    assert(remove(machine_unified_rom_path) == 0);
     assert(remove(sunrise_rom_path) == 0);
     assert(remove(sunrise_rom_path_2) == 0);
     assert(remove(ide_image_path) == 0);

@@ -1,5 +1,5 @@
 Name:           1983
-Version:        0.2.0
+Version:        0.3.0
 Release:        1%{?dist}
 Summary:        Generic MSX and MSX2 emulator
 
@@ -64,6 +64,12 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/io.github
 %{_datadir}/%{name}/ROMS/rainbios_omega.rom
 
 %changelog
+* Fri Aug 28 2026 Salvatore Bognanni <salvogendut@gmail.com> - 0.3.0-1
+- Add the WebAssembly browser edition and URL-configurable startup media.
+- Ship RainBIOS Omega MSX2 as the default with unified-ROM upload support.
+- Add V9958 selection, more floppy controllers, and SymbOS storage boot.
+- Add TCP/IP UNAPI networking, relay integration, and expanded media controls.
+
 * Thu Jul 30 2026 Salvatore Bognanni <salvogendut@gmail.com> - 0.2.0-1
 - Ship the first packaged release with a ready-to-run C-BIOS MSX1 default.
 - Add RPM, Flatpak, Windows, Linux, and dual-architecture macOS packaging.
