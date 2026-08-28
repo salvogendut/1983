@@ -34,6 +34,9 @@ be selected directly with a case-insensitive query parameter:
     http://localhost:8080/?theme=SONYHB-F1XD
     http://localhost:8080/?theme=retro-crt
 
+Both the red **1983** masthead wordmark and the 1983 monitor-side logo link to
+the project repository in a new browser tab.
+
 ## What works
 
 - The MSX core compiles to WebAssembly (z80, VDP, PSG, floppy, cassette,
