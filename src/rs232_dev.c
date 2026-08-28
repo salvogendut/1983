@@ -148,6 +148,7 @@ Rs232Device *rs232dev_create(void) {
     ser8251_init(&d->uart, &io);
     ser8254_init(&d->pit);
     setup_pit(&d->pit, d);
+    ser8254_reset(&d->pit, 0);
     d->now = 0;
     return d;
 }
