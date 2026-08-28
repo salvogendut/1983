@@ -24,6 +24,11 @@ and staying as multiplatform as SDL3 allows.
 > `UNAPINET.COM`. Protected floppy formats, cassette recording, MSX-MUSIC,
 > and other extensions remain in development.
 
+1983 has also been tested with original MSX and MSX2 BIOS images supplied by
+users; those system ROMs are not redistributed by this project. The default
+machine instead ships with the open-source, homebrew
+[RainBIOS](https://github.com/salvogendut/rainbios) firmware.
+
 ![1983 booting RainBIOS + Nextor, then the GEOBENCH desktop, captured to an animated GIF](sample-rainbios-nextor-geobench-on-1983-20260802-165621.gif)
 
 ![1983 booting RainBIOS + Nextor into SymbOS, captured to an animated GIF](sample-rainbios-nextor-symbos-on-1983-20260828-072418.gif)
