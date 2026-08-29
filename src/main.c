@@ -68,6 +68,7 @@ typedef struct {
     int cdx2;
     int cdx2_rom_bank;
     int rdf600;
+    int powergraph_v9990;
     int scale;
     int exit_after;
     int dump_screen_text;
@@ -280,6 +281,8 @@ static const char *usage =
     "  --rdf600            enable the RDF600/TDC-600-compatible FDC\n"
     "  --no-rdf600         disable the RDF600 floppy controller\n"
     "  --rdf600-rom PATH   load a user-provided 16 KB RDF600 ROM\n"
+    "  --powergraph-v9990 enable the PowerGraph V9990 video extension\n"
+    "  --no-powergraph-v9990 disable the PowerGraph V9990 extension\n"
     "  --sd-mode MODE       SD access: read-only (default) or read-write\n"
     "  --disk-a PATH       insert a raw MSX DSK in Drive A\n"
     "  --disk-b PATH       insert a raw MSX DSK in Drive B\n"
@@ -415,6 +418,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
     cli->cdx2 = -1;
     cli->cdx2_rom_bank = -1;
     cli->rdf600 = -1;
+    cli->powergraph_v9990 = -1;
     cli->scale = -1;
     cli->exit_after = -1;
     cli->dump_screen_text = -1;
@@ -474,6 +478,14 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
         }
         if (strcmp(argument, "--no-rdf600") == 0) {
             cli->rdf600 = 0;
+            continue;
+        }
+        if (strcmp(argument, "--powergraph-v9990") == 0) {
+            cli->powergraph_v9990 = 1;
+            continue;
+        }
+        if (strcmp(argument, "--no-powergraph-v9990") == 0) {
+            cli->powergraph_v9990 = 0;
             continue;
         }
         if ((strcmp(argument, "--config") == 0 ||
@@ -1040,6 +1052,11 @@ int main(int argc, char **argv) {
         if (config.rdf600)
             config.extra_hardware = true;
     }
+    if (cli.powergraph_v9990 >= 0) {
+        config.powergraph_v9990 = cli.powergraph_v9990 != 0;
+        if (config.powergraph_v9990)
+            config.extra_hardware = true;
+    }
     if (cli.cassette_path)
         snprintf(config.cassette_path,
                  sizeof(config.cassette_path),
@@ -1109,6 +1126,27 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
+    if (config.powergraph_v9990) {
+        int powergraph_slot = -1;
+
+        for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+            const char *owner =
+                config_cartridge_slot_owner(&config, slot);
+
+            if (owner && strcmp(owner, "PowerGraph V9990") == 0) {
+                powergraph_slot = (int)slot;
+                break;
+            }
+        }
+        if (powergraph_slot < 0 ||
+            msx_set_powergraph_v9990(
+                &msx, true, powergraph_slot) != 0) {
+            fprintf(stderr, "cannot connect PowerGraph V9990\n");
+            config.powergraph_v9990 = false;
+            config_normalize(&config);
+        }
+    }
+    msx_set_video_source(&msx, config.powergraph_video_source);
     if (config.cdx2) {
         int cdx2_slot = -1;
 
@@ -1575,6 +1613,11 @@ int main(int argc, char **argv) {
         startup_info(config.notifications,
                      "RDF600 FDC loaded in cartridge slot %d\n",
                      msx_rdf600_slot(&msx) + 1);
+    if (msx_powergraph_v9990_connected(&msx))
+        startup_info(config.notifications,
+                     "PowerGraph V9990 connected in cartridge slot %d "
+                     "(512 KB VRAM)\n",
+                     msx_powergraph_v9990_slot(&msx) + 1);
     if (msx_sunrise_connected(&msx))
         startup_info(config.notifications,
                      "Sunrise IDE loaded in cartridge slot %d%s\n",
@@ -2056,6 +2099,26 @@ int main(int argc, char **argv) {
                (unsigned long long)msx.cycles,
                (unsigned long long)msx.instructions, nonzero_vram,
                msx.vdp.registers[0], msx.vdp.registers[1]);
+        if (msx_powergraph_v9990_connected(&msx)) {
+            size_t v9990_nonzero = 0;
+
+            for (size_t i = 0; i < V9990_VRAM_SIZE; ++i)
+                if (msx.v9990.vram[i])
+                    ++v9990_nonzero;
+            printf("v9990 mode=%s size=%ux%u status=%02X irq=%02X "
+                   "cmd=%02X vram_nonzero=%zu regs=",
+                   v9990_mode_name(&msx.v9990),
+                   msx.v9990.render_width,
+                   msx.v9990.render_height,
+                   msx.v9990.status,
+                   msx.v9990.pending_irqs,
+                   msx.v9990.command_status,
+                   v9990_nonzero);
+            for (unsigned reg = 0; reg < V9990_REGISTER_COUNT; ++reg)
+                printf("%s%02X", reg ? "," : "",
+                       msx.v9990.registers[reg]);
+            putchar('\n');
+        }
     }
     int shutdown_status = 0;
     if (msx_flush_rtc_persistence(

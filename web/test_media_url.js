@@ -82,26 +82,26 @@ assert.deepStrictEqual(media, {
 });
 assert.deepStrictEqual(
   resolveStartupExtensions(media, {
-    sunrise: false, sdMapper: false, unapi: false,
+    sunrise: false, sdMapper: false, powergraph: false, unapi: false,
   }),
-  { sunrise: false, sdMapper: true, unapi: true }
+  { sunrise: false, sdMapper: true, powergraph: false, unapi: true }
 );
 
 media = parseStartupMedia('?sda=media%2Fsystem.img', base);
 assert.deepStrictEqual(
   resolveStartupExtensions(media, {
-    sunrise: false, sdMapper: false, unapi: true,
+    sunrise: false, sdMapper: false, powergraph: false, unapi: true,
   }),
-  { sunrise: false, sdMapper: true, unapi: true },
+  { sunrise: false, sdMapper: true, powergraph: false, unapi: true },
   'an SD image implies SD Mapper without replacing stored UNAPI state'
 );
 
 media = parseStartupMedia('?extensions=unapi', base);
 assert.deepStrictEqual(
   resolveStartupExtensions(media, {
-    sunrise: true, sdMapper: true, unapi: false,
+    sunrise: true, sdMapper: true, powergraph: true, unapi: false,
   }),
-  { sunrise: false, sdMapper: false, unapi: true },
+  { sunrise: false, sdMapper: false, powergraph: false, unapi: true },
   'an explicit extensions list overrides stored extension state'
 );
 
@@ -113,10 +113,28 @@ assert.strictEqual(media.ide, 'https://example.test/1983/media/symbos.img');
 assert.strictEqual(media.ideMode, 'readwrite');
 assert.deepStrictEqual(
   resolveStartupExtensions(media, {
-    sunrise: false, sdMapper: false, unapi: true,
+    sunrise: false, sdMapper: false, powergraph: false, unapi: true,
   }),
-  { sunrise: true, sdMapper: true, unapi: false },
+  { sunrise: true, sdMapper: true, powergraph: false, unapi: false },
   'an IDE image implies Sunrise alongside explicitly requested extensions'
+);
+
+media = parseStartupMedia('?extensions=powergraph%2Cunapi', base);
+assert.deepStrictEqual(
+  resolveStartupExtensions(media, {
+    sunrise: false, sdMapper: false, powergraph: false, unapi: false,
+  }),
+  { sunrise: false, sdMapper: false, powergraph: true, unapi: true },
+  'PowerGraph can be selected by URL without consuming the UNAPI port device'
+);
+
+assert.throws(
+  () => resolveStartupExtensions(
+    parseStartupMedia(
+      '?extensions=sunrise%2Csdmapper%2Cpowergraph', base
+    )
+  ),
+  /only two cartridge extensions/
 );
 
 assert.strictEqual(parseStartupMedia('?machine=msx1', base).machine, 0);

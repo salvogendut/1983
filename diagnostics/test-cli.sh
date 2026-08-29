@@ -226,6 +226,10 @@ if ./1983 --config /dev/null --rdf600-rom missing-rdf600.rom \
 fi
 grep -q "cannot load 16 KB RDF600 ROM" "$log"
 
+./1983 --config /dev/null --powergraph-v9990 \
+    --headless --unthrottled --exit-after 0 >"$log" 2>&1
+grep -q "PowerGraph V9990 connected in cartridge slot 1" "$log"
+
 if ./1983 --config /dev/null --cassette missing.cas >"$log" 2>&1; then
     echo "missing cassette was accepted" >&2
     exit 1
@@ -262,6 +266,8 @@ grep -q -- "--floppy-mode MODE" "$log"
 grep -q -- "--cdx2-rom PATH" "$log"
 grep -q -- "--cdx2-bank 0|1" "$log"
 grep -q -- "--rdf600-rom PATH" "$log"
+grep -q -- "--powergraph-v9990" "$log"
+grep -q -- "--no-powergraph-v9990" "$log"
 grep -q -- "--ide PATH" "$log"
 grep -q -- "--ide-mode MODE" "$log"
 grep -q -- "--cassette PATH" "$log"

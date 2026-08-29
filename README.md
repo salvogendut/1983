@@ -43,12 +43,14 @@ machine instead ships with the open-source, homebrew
   RainBIOS unified ROM; C-BIOS remains available for MSX1.
 - Linear, ASCII8/16, Konami, and Konami SCC cartridges.
 - MSX1 screen/sprite modes plus selectable V9938/V9958 video on MSX2,
-  including SCREEN 5-8, drawing commands, and V9958 YJK/YAE display support.
+  including SCREEN 5-8, drawing commands, and V9958 YJK/YAE display support,
+  plus initial PowerGraph V9990 cartridge video output.
 - Cycle-timed AY-3-8910/YM2149 audio.
 - Complete international MSX keyboard matrix, SDL3 joystick and mouse input.
 - RP-5C01 clock with persistent per-machine CMOS and offline continuity.
-- Sunrise IDE, SD Mapper V2, and MegaFlashROM SCC+ SD cartridges with safe
-  read-only/read-write raw images and Nextor boot.
+- Sunrise IDE, SD Mapper V2, MegaFlashROM SCC+ SD, and PowerGraph V9990
+  cartridges, with safe read-only/read-write raw images and Nextor boot for
+  the storage devices.
 - Philips/CDX-2 WD2793 (including dual-ROM Angeisa/FAST! EPROM images) and
   RDF600/TDC-600-compatible TC8566AF floppy,
   CAS cassette playback, GIF capture, and an optional openMSXnet TCP/IP bridge.

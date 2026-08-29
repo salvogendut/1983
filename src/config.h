@@ -81,6 +81,8 @@ typedef struct {
     bool rs232;
     bool cdx2;
     bool rdf600;
+    bool powergraph_v9990;
+    MsxVideoSource powergraph_video_source;
     unsigned cdx2_rom_bank;
     bool sd_mapper_ram;
     bool sd_mapper_alternate_driver;

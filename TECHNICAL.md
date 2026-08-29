@@ -143,10 +143,10 @@ kernels are cartridge firmware and
 therefore have no separate Media row.
 
 General > Extra Hardware reveals the Extensions section. Sunrise IDE, SD
-Mapper V2, MegaFlashROM SCC+ SD, SCC, and MSX-MUSIC are treated as
-cartridge-connected devices:
-the first enabled device reserves cartridge slot 2 and the second reserves
-slot 1. A catalogue floppy controller mapped to slot 1 or 2 reserves that
+Mapper V2, MegaFlashROM SCC+ SD, PowerGraph V9990, SCC, and MSX-MUSIC are
+treated as cartridge-connected devices:
+the first enabled device reserves cartridge slot 1 and the second reserves
+slot 2. A catalogue floppy controller mapped to slot 1 or 2 reserves that
 exact port before extensions are assigned; a configuration exceeding the
 remaining capacity is refused. Mounting, ejecting, mapper changes, asynchronous
 picker completion, and command-line startup all honor the same reservation
@@ -155,6 +155,41 @@ slot.
 
 The TCP/IP UNAPI host bridge is port-mapped, so it does not participate in
 that reservation policy and can coexist with two occupied cartridge slots.
+
+### PowerGraph V9990
+
+**Extensions > PowerGraph V9990** models the GFX9000-compatible expansion as
+a separate video cartridge rather than replacing the machine's internal VDP.
+The General VDP selector continues to configure the internal
+TMS9918/V9938/V9958 used by the BIOS. **PowerGraph output** models the choice a
+real two-monitor or switched-input setup provides: `MSX VDP` and `V9990` force
+one connector, while the default `Auto` source shows the internal boot display
+until V9990 software enables its display output. The extension does not require
+Tinker, reserves one physical cartridge slot, and exposes its 512 KiB VRAM,
+register, palette, command, status, interrupt, and system-control interfaces at
+ports `60h` through `6Fh`.
+
+The initial renderer covers P1/P2 pattern modes and B0/B1/B2/B3/B4/B7 bitmap
+modes with 2-, 4-, 8-, and 16-bit pixels, palette and direct-color output,
+P1/P2 sprites, bitmap-mode hardware cursors, basic logical drawing commands,
+and vertical/command interrupt signaling. Full command timing and exact
+YJK/YUV conversion remain compatibility work. SYMG9K booting SymbOS with its
+V9990 driver is the end-to-end compatibility target in addition to
+deterministic component tests.
+Run the opt-in native acceptance check with a user-supplied partitioned image
+that contains `\SYMBOS\SYMG9K.COM` and `SYMG9K.BIN`:
+
+```sh
+make check-v9990-symbos SYMBOS_IMAGE=/path/to/symbos.img
+```
+
+The target works on a temporary copy, installs a dedicated `AUTOEXEC.BAT`,
+boots the bundled Omega/RainBIOS and Sunrise firmware, and validates both the
+captured PowerGraph desktop and the SymbOS hardware mouse cursor. The default
+FAT partition begins at sector 32;
+override `SYMBOS_IMAGE_OFFSET` when an image uses a different byte offset.
+The installed startup file runs `CD \SYMBOS` followed by `SYMG9K`, so no
+manual keyboard timing is involved in the acceptance result.
 
 The footer always shows Cartridge I and Cartridge II indicators between
 Power and Caps Lock. An occupied ROM slot or a slot owned by Sunrise IDE,

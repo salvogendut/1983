@@ -101,10 +101,10 @@ check_PROGRAMS = test-cartridge$(EXEEXT) test-cassette$(EXEEXT) \
 	test-megaflash$(EXEEXT) test-unapinet$(EXEEXT) \
 	test-config$(EXEEXT) test-models$(EXEEXT) test-msx$(EXEEXT) \
 	test-gamepad$(EXEEXT) test-kbd$(EXEEXT) test-paste$(EXEEXT) \
-	test-overlay$(EXEEXT) test-vdp$(EXEEXT) test-psg$(EXEEXT) \
-	test-scc$(EXEEXT) test-rtc$(EXEEXT) test-gifcap$(EXEEXT) \
-	test-rs232$(EXEEXT) test-rs232dev$(EXEEXT) \
-	test-serial$(EXEEXT)
+	test-overlay$(EXEEXT) test-vdp$(EXEEXT) test-v9990$(EXEEXT) \
+	test-psg$(EXEEXT) test-scc$(EXEEXT) test-rtc$(EXEEXT) \
+	test-gifcap$(EXEEXT) test-rs232$(EXEEXT) \
+	test-rs232dev$(EXEEXT) test-serial$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -147,7 +147,8 @@ am_1983_OBJECTS = src/1983-config.$(OBJEXT) \
 	src/1983-serial_8254.$(OBJEXT) src/1983-sunrise.$(OBJEXT) \
 	src/1983-tc8566.$(OBJEXT) src/1983-ui.$(OBJEXT) \
 	src/1983-unapinet.$(OBJEXT) src/1983-vdp.$(OBJEXT) \
-	src/1983-wd2793.$(OBJEXT) src/1983-z80.$(OBJEXT)
+	src/1983-v9990.$(OBJEXT) src/1983-wd2793.$(OBJEXT) \
+	src/1983-z80.$(OBJEXT)
 1983_OBJECTS = $(am_1983_OBJECTS)
 am__DEPENDENCIES_1 =
 1983_LINK = $(CCLD) $(1983_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
@@ -186,6 +187,7 @@ am_test_config_OBJECTS =  \
 	src/test_config-sd_mapper.$(OBJEXT) \
 	src/test_config-sunrise.$(OBJEXT) \
 	src/test_config-tc8566.$(OBJEXT) src/test_config-vdp.$(OBJEXT) \
+	src/test_config-v9990.$(OBJEXT) \
 	src/test_config-wd2793.$(OBJEXT) src/test_config-z80.$(OBJEXT)
 test_config_OBJECTS = $(am_test_config_OBJECTS)
 test_config_LDADD = $(LDADD)
@@ -221,8 +223,8 @@ am_test_kbd_OBJECTS = diagnostics/test_kbd-test_kbd.$(OBJEXT) \
 	src/test_kbd-scc.$(OBJEXT) src/test_kbd-sdcard.$(OBJEXT) \
 	src/test_kbd-sd_mapper.$(OBJEXT) \
 	src/test_kbd-sunrise.$(OBJEXT) src/test_kbd-tc8566.$(OBJEXT) \
-	src/test_kbd-vdp.$(OBJEXT) src/test_kbd-wd2793.$(OBJEXT) \
-	src/test_kbd-z80.$(OBJEXT)
+	src/test_kbd-vdp.$(OBJEXT) src/test_kbd-v9990.$(OBJEXT) \
+	src/test_kbd-wd2793.$(OBJEXT) src/test_kbd-z80.$(OBJEXT)
 test_kbd_OBJECTS = $(am_test_kbd_OBJECTS)
 test_kbd_DEPENDENCIES = $(am__DEPENDENCIES_1)
 test_kbd_LINK = $(CCLD) $(test_kbd_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -250,6 +252,7 @@ am_test_models_OBJECTS =  \
 	src/test_models-sd_mapper.$(OBJEXT) \
 	src/test_models-sunrise.$(OBJEXT) \
 	src/test_models-tc8566.$(OBJEXT) src/test_models-vdp.$(OBJEXT) \
+	src/test_models-v9990.$(OBJEXT) \
 	src/test_models-wd2793.$(OBJEXT) src/test_models-z80.$(OBJEXT)
 test_models_OBJECTS = $(am_test_models_OBJECTS)
 test_models_LDADD = $(LDADD)
@@ -263,8 +266,8 @@ am_test_msx_OBJECTS = diagnostics/test_msx-test_msx.$(OBJEXT) \
 	src/test_msx-rtc.$(OBJEXT) src/test_msx-scc.$(OBJEXT) \
 	src/test_msx-sdcard.$(OBJEXT) src/test_msx-sd_mapper.$(OBJEXT) \
 	src/test_msx-sunrise.$(OBJEXT) src/test_msx-tc8566.$(OBJEXT) \
-	src/test_msx-vdp.$(OBJEXT) src/test_msx-wd2793.$(OBJEXT) \
-	src/test_msx-z80.$(OBJEXT)
+	src/test_msx-vdp.$(OBJEXT) src/test_msx-v9990.$(OBJEXT) \
+	src/test_msx-wd2793.$(OBJEXT) src/test_msx-z80.$(OBJEXT)
 test_msx_OBJECTS = $(am_test_msx_OBJECTS)
 test_msx_LDADD = $(LDADD)
 test_msx_LINK = $(CCLD) $(test_msx_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -296,6 +299,7 @@ am_test_overlay_OBJECTS =  \
 	src/test_overlay-ui.$(OBJEXT) \
 	src/test_overlay-unapinet.$(OBJEXT) \
 	src/test_overlay-vdp.$(OBJEXT) \
+	src/test_overlay-v9990.$(OBJEXT) \
 	src/test_overlay-wd2793.$(OBJEXT) \
 	src/test_overlay-z80.$(OBJEXT)
 test_overlay_OBJECTS = $(am_test_overlay_OBJECTS)
@@ -314,7 +318,8 @@ am_test_paste_OBJECTS = diagnostics/test_paste-test_paste.$(OBJEXT) \
 	src/test_paste-sd_mapper.$(OBJEXT) \
 	src/test_paste-sunrise.$(OBJEXT) \
 	src/test_paste-tc8566.$(OBJEXT) src/test_paste-vdp.$(OBJEXT) \
-	src/test_paste-wd2793.$(OBJEXT) src/test_paste-z80.$(OBJEXT)
+	src/test_paste-v9990.$(OBJEXT) src/test_paste-wd2793.$(OBJEXT) \
+	src/test_paste-z80.$(OBJEXT)
 test_paste_OBJECTS = $(am_test_paste_OBJECTS)
 test_paste_LDADD = $(LDADD)
 test_paste_LINK = $(CCLD) $(test_paste_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -400,6 +405,12 @@ test_unapinet_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 test_unapinet_LINK = $(CCLD) $(test_unapinet_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_test_v9990_OBJECTS = diagnostics/test_v9990-test_v9990.$(OBJEXT) \
+	src/test_v9990-v9990.$(OBJEXT)
+test_v9990_OBJECTS = $(am_test_v9990_OBJECTS)
+test_v9990_LDADD = $(LDADD)
+test_v9990_LINK = $(CCLD) $(test_v9990_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_test_vdp_OBJECTS = diagnostics/test_vdp-test_vdp.$(OBJEXT) \
 	src/test_vdp-vdp.$(OBJEXT)
 test_vdp_OBJECTS = $(am_test_vdp_OBJECTS)
@@ -454,6 +465,7 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po \
 	diagnostics/$(DEPDIR)/test_tc8566-test_tc8566.Po \
 	diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po \
+	diagnostics/$(DEPDIR)/test_v9990-test_v9990.Po \
 	diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po \
 	diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po \
 	src/$(DEPDIR)/1983-ata.Po src/$(DEPDIR)/1983-audio.Po \
@@ -473,8 +485,9 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/1983-serial_8254.Po \
 	src/$(DEPDIR)/1983-sunrise.Po src/$(DEPDIR)/1983-tc8566.Po \
 	src/$(DEPDIR)/1983-ui.Po src/$(DEPDIR)/1983-unapinet.Po \
-	src/$(DEPDIR)/1983-vdp.Po src/$(DEPDIR)/1983-wd2793.Po \
-	src/$(DEPDIR)/1983-z80.Po src/$(DEPDIR)/test_ata-ata.Po \
+	src/$(DEPDIR)/1983-v9990.Po src/$(DEPDIR)/1983-vdp.Po \
+	src/$(DEPDIR)/1983-wd2793.Po src/$(DEPDIR)/1983-z80.Po \
+	src/$(DEPDIR)/test_ata-ata.Po \
 	src/$(DEPDIR)/test_cartridge-cartridge.Po \
 	src/$(DEPDIR)/test_cartridge-scc.Po \
 	src/$(DEPDIR)/test_cassette-cassette.Po \
@@ -492,6 +505,7 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_config-sdcard.Po \
 	src/$(DEPDIR)/test_config-sunrise.Po \
 	src/$(DEPDIR)/test_config-tc8566.Po \
+	src/$(DEPDIR)/test_config-v9990.Po \
 	src/$(DEPDIR)/test_config-vdp.Po \
 	src/$(DEPDIR)/test_config-wd2793.Po \
 	src/$(DEPDIR)/test_config-z80.Po \
@@ -508,7 +522,8 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_kbd-sd_mapper.Po \
 	src/$(DEPDIR)/test_kbd-sdcard.Po \
 	src/$(DEPDIR)/test_kbd-sunrise.Po \
-	src/$(DEPDIR)/test_kbd-tc8566.Po src/$(DEPDIR)/test_kbd-vdp.Po \
+	src/$(DEPDIR)/test_kbd-tc8566.Po \
+	src/$(DEPDIR)/test_kbd-v9990.Po src/$(DEPDIR)/test_kbd-vdp.Po \
 	src/$(DEPDIR)/test_kbd-wd2793.Po src/$(DEPDIR)/test_kbd-z80.Po \
 	src/$(DEPDIR)/test_megaflash-megaflash.Po \
 	src/$(DEPDIR)/test_megaflash-psg.Po \
@@ -528,6 +543,7 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_models-sdcard.Po \
 	src/$(DEPDIR)/test_models-sunrise.Po \
 	src/$(DEPDIR)/test_models-tc8566.Po \
+	src/$(DEPDIR)/test_models-v9990.Po \
 	src/$(DEPDIR)/test_models-vdp.Po \
 	src/$(DEPDIR)/test_models-wd2793.Po \
 	src/$(DEPDIR)/test_models-z80.Po src/$(DEPDIR)/test_msx-ata.Po \
@@ -540,7 +556,8 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_msx-sd_mapper.Po \
 	src/$(DEPDIR)/test_msx-sdcard.Po \
 	src/$(DEPDIR)/test_msx-sunrise.Po \
-	src/$(DEPDIR)/test_msx-tc8566.Po src/$(DEPDIR)/test_msx-vdp.Po \
+	src/$(DEPDIR)/test_msx-tc8566.Po \
+	src/$(DEPDIR)/test_msx-v9990.Po src/$(DEPDIR)/test_msx-vdp.Po \
 	src/$(DEPDIR)/test_msx-wd2793.Po src/$(DEPDIR)/test_msx-z80.Po \
 	src/$(DEPDIR)/test_overlay-ata.Po \
 	src/$(DEPDIR)/test_overlay-cartridge.Po \
@@ -567,6 +584,7 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_overlay-tc8566.Po \
 	src/$(DEPDIR)/test_overlay-ui.Po \
 	src/$(DEPDIR)/test_overlay-unapinet.Po \
+	src/$(DEPDIR)/test_overlay-v9990.Po \
 	src/$(DEPDIR)/test_overlay-vdp.Po \
 	src/$(DEPDIR)/test_overlay-wd2793.Po \
 	src/$(DEPDIR)/test_overlay-z80.Po \
@@ -584,6 +602,7 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_paste-sdcard.Po \
 	src/$(DEPDIR)/test_paste-sunrise.Po \
 	src/$(DEPDIR)/test_paste-tc8566.Po \
+	src/$(DEPDIR)/test_paste-v9990.Po \
 	src/$(DEPDIR)/test_paste-vdp.Po \
 	src/$(DEPDIR)/test_paste-wd2793.Po \
 	src/$(DEPDIR)/test_paste-z80.Po src/$(DEPDIR)/test_psg-psg.Po \
@@ -603,6 +622,7 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_tc8566-floppy.Po \
 	src/$(DEPDIR)/test_tc8566-tc8566.Po \
 	src/$(DEPDIR)/test_unapinet-unapinet.Po \
+	src/$(DEPDIR)/test_v9990-v9990.Po \
 	src/$(DEPDIR)/test_vdp-vdp.Po \
 	src/$(DEPDIR)/test_wd2793-floppy.Po \
 	src/$(DEPDIR)/test_wd2793-wd2793.Po
@@ -635,8 +655,8 @@ SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_scc_SOURCES) $(test_sd_mapper_SOURCES) \
 	$(test_sdcard_SOURCES) $(test_serial_SOURCES) \
 	$(test_sunrise_SOURCES) $(test_tc8566_SOURCES) \
-	$(test_unapinet_SOURCES) $(test_vdp_SOURCES) \
-	$(test_wd2793_SOURCES)
+	$(test_unapinet_SOURCES) $(test_v9990_SOURCES) \
+	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
 DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_cartridge_SOURCES) $(test_cassette_SOURCES) \
 	$(test_config_SOURCES) $(test_floppy_SOURCES) \
@@ -649,8 +669,8 @@ DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_scc_SOURCES) $(test_sd_mapper_SOURCES) \
 	$(test_sdcard_SOURCES) $(test_serial_SOURCES) \
 	$(test_sunrise_SOURCES) $(test_tc8566_SOURCES) \
-	$(test_unapinet_SOURCES) $(test_vdp_SOURCES) \
-	$(test_wd2793_SOURCES)
+	$(test_unapinet_SOURCES) $(test_v9990_SOURCES) \
+	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -1064,6 +1084,7 @@ AM_LDFLAGS = $(WIN_STACK_LDFLAGS)
 	src/ui.c \
 	src/unapinet.c \
 	src/vdp.c \
+	src/v9990.c \
 	src/wd2793.c \
 	src/z80.c
 
@@ -1103,6 +1124,7 @@ noinst_HEADERS = \
 	src/ui.h \
 	src/unapinet.h \
 	src/vdp.h \
+	src/v9990.h \
 	src/wd2793.h \
 	src/z80.h
 
@@ -1148,33 +1170,36 @@ test_unapinet_SOURCES = diagnostics/test_unapinet.c src/unapinet.c
 test_unapinet_CPPFLAGS = -I$(top_srcdir)/src
 test_unapinet_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_unapinet_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS)
-test_config_SOURCES = diagnostics/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/wd2793.c src/z80.c
+test_config_SOURCES = diagnostics/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
 test_config_CPPFLAGS = -I$(top_srcdir)/src
 test_config_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
-test_models_SOURCES = diagnostics/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/wd2793.c src/z80.c
+test_models_SOURCES = diagnostics/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
 test_models_CPPFLAGS = -I$(top_srcdir)/src
 test_models_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_msx_SOURCES = diagnostics/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/wd2793.c src/z80.c
+test_msx_SOURCES = diagnostics/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_SOURCES = diagnostics/test_gamepad.c src/gamepad.c
 test_gamepad_CPPFLAGS = -I$(top_srcdir)/src
 test_gamepad_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_LDADD = $(SDL3_LIBS)
-test_kbd_SOURCES = diagnostics/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/kbd.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/wd2793.c src/z80.c
+test_kbd_SOURCES = diagnostics/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/kbd.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
-test_paste_SOURCES = diagnostics/test_paste.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/paste.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/wd2793.c src/z80.c
+test_paste_SOURCES = diagnostics/test_paste.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/paste.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
 test_paste_CPPFLAGS = -I$(top_srcdir)/src
 test_paste_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_overlay_SOURCES = diagnostics/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rs232.c src/rs232_dev.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/serial_8251.c src/serial_8254.c src/sunrise.c src/tc8566.c src/ui.c src/unapinet.c src/vdp.c src/wd2793.c src/z80.c
+test_overlay_SOURCES = diagnostics/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rs232.c src/rs232_dev.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/serial_8251.c src/serial_8254.c src/sunrise.c src/tc8566.c src/ui.c src/unapinet.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
 test_overlay_CPPFLAGS = -I$(top_srcdir)/src
 test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_overlay_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS) -lm
 test_vdp_SOURCES = diagnostics/test_vdp.c src/vdp.c
 test_vdp_CPPFLAGS = -I$(top_srcdir)/src
 test_vdp_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_v9990_SOURCES = diagnostics/test_v9990.c src/v9990.c
+test_v9990_CPPFLAGS = -I$(top_srcdir)/src
+test_v9990_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_psg_SOURCES = diagnostics/test_psg.c src/psg.c
 test_psg_CPPFLAGS = -I$(top_srcdir)/src
 test_psg_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
@@ -1214,7 +1239,8 @@ dist_cbios_DATA = \
 
 dist_noinst_SCRIPTS = \
 	tools/import-rainbios-roms.sh \
-	tools/build-omega-unified-rom.py
+	tools/build-omega-unified-rom.py \
+	diagnostics/test-v9990-symbos.sh
 
 icon16dir = $(datadir)/icons/hicolor/16x16/apps
 dist_icon16_DATA = icons/16x16/apps/io.github.salvogendut.Emulator1983.png
@@ -1250,6 +1276,8 @@ EXTRA_DIST = \
 	.github/workflows/build.yml \
 	packaging/macos/package.sh \
 	diagnostics/test-cli.sh \
+	diagnostics/SYMG9K-AUTOEXEC.BAT \
+	diagnostics/check-v9990-symbos.js \
 	icons/1983.png \
 	icons/README.md \
 	icons/1983.rc \
@@ -1409,6 +1437,8 @@ src/1983-unapinet.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-vdp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-v9990.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-z80.$(OBJEXT): src/$(am__dirstamp) \
@@ -1484,6 +1514,8 @@ src/test_config-tc8566.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-vdp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-v9990.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-z80.$(OBJEXT): src/$(am__dirstamp) \
@@ -1551,6 +1583,8 @@ src/test_kbd-tc8566.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-vdp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_kbd-v9990.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-z80.$(OBJEXT): src/$(am__dirstamp) \
@@ -1607,6 +1641,8 @@ src/test_models-tc8566.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-vdp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_models-v9990.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-z80.$(OBJEXT): src/$(am__dirstamp) \
@@ -1644,6 +1680,8 @@ src/test_msx-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 src/test_msx-tc8566.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-vdp.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_msx-v9990.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1708,6 +1746,8 @@ src/test_overlay-unapinet.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-vdp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-v9990.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-z80.$(OBJEXT): src/$(am__dirstamp) \
@@ -1748,6 +1788,8 @@ src/test_paste-sunrise.$(OBJEXT): src/$(am__dirstamp) \
 src/test_paste-tc8566.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_paste-vdp.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_paste-v9990.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_paste-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1867,6 +1909,15 @@ src/test_unapinet-unapinet.$(OBJEXT): src/$(am__dirstamp) \
 test-unapinet$(EXEEXT): $(test_unapinet_OBJECTS) $(test_unapinet_DEPENDENCIES) $(EXTRA_test_unapinet_DEPENDENCIES) 
 	@rm -f test-unapinet$(EXEEXT)
 	$(AM_V_CCLD)$(test_unapinet_LINK) $(test_unapinet_OBJECTS) $(test_unapinet_LDADD) $(LIBS)
+diagnostics/test_v9990-test_v9990.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
+src/test_v9990-v9990.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-v9990$(EXEEXT): $(test_v9990_OBJECTS) $(test_v9990_DEPENDENCIES) $(EXTRA_test_v9990_DEPENDENCIES)
+	@rm -f test-v9990$(EXEEXT)
+	$(AM_V_CCLD)$(test_v9990_LINK) $(test_v9990_OBJECTS) $(test_v9990_LDADD) $(LIBS)
 diagnostics/test_vdp-test_vdp.$(OBJEXT): diagnostics/$(am__dirstamp) \
 	diagnostics/$(DEPDIR)/$(am__dirstamp)
 src/test_vdp-vdp.$(OBJEXT): src/$(am__dirstamp) \
@@ -1919,6 +1970,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_tc8566-test_tc8566.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_v9990-test_v9990.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-ata.Po@am__quote@ # am--include-marker
@@ -1953,6 +2005,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-tc8566.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-ui.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-unapinet.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-v9990.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-wd2793.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-z80.Po@am__quote@ # am--include-marker
@@ -1974,6 +2027,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-tc8566.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-v9990.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-wd2793.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-z80.Po@am__quote@ # am--include-marker
@@ -1994,6 +2048,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-tc8566.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-v9990.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-wd2793.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-z80.Po@am__quote@ # am--include-marker
@@ -2015,6 +2070,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-tc8566.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-v9990.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-wd2793.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-z80.Po@am__quote@ # am--include-marker
@@ -2031,6 +2087,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-tc8566.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-v9990.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-wd2793.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-z80.Po@am__quote@ # am--include-marker
@@ -2059,6 +2116,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-tc8566.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-ui.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-unapinet.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-v9990.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-wd2793.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-z80.Po@am__quote@ # am--include-marker
@@ -2076,6 +2134,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-sunrise.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-tc8566.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-v9990.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-wd2793.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-z80.Po@am__quote@ # am--include-marker
@@ -2097,6 +2156,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_tc8566-floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_tc8566-tc8566.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_unapinet-unapinet.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_v9990-v9990.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_vdp-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_wd2793-floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_wd2793-wd2793.Po@am__quote@ # am--include-marker
@@ -2585,6 +2645,20 @@ src/1983-vdp.obj: src/vdp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
 
+src/1983-v9990.o: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-v9990.o -MD -MP -MF src/$(DEPDIR)/1983-v9990.Tpo -c -o src/1983-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-v9990.Tpo src/$(DEPDIR)/1983-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/1983-v9990.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+
+src/1983-v9990.obj: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-v9990.obj -MD -MP -MF src/$(DEPDIR)/1983-v9990.Tpo -c -o src/1983-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-v9990.Tpo src/$(DEPDIR)/1983-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/1983-v9990.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
+
 src/1983-wd2793.o: src/wd2793.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-wd2793.o -MD -MP -MF src/$(DEPDIR)/1983-wd2793.Tpo -c -o src/1983-wd2793.o `test -f 'src/wd2793.c' || echo '$(srcdir)/'`src/wd2793.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-wd2793.Tpo src/$(DEPDIR)/1983-wd2793.Po
@@ -2935,6 +3009,20 @@ src/test_config-vdp.obj: src/vdp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
 
+src/test_config-v9990.o: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-v9990.o -MD -MP -MF src/$(DEPDIR)/test_config-v9990.Tpo -c -o src/test_config-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-v9990.Tpo src/$(DEPDIR)/test_config-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_config-v9990.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+
+src/test_config-v9990.obj: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-v9990.obj -MD -MP -MF src/$(DEPDIR)/test_config-v9990.Tpo -c -o src/test_config-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-v9990.Tpo src/$(DEPDIR)/test_config-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_config-v9990.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
+
 src/test_config-wd2793.o: src/wd2793.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-wd2793.o -MD -MP -MF src/$(DEPDIR)/test_config-wd2793.Tpo -c -o src/test_config-wd2793.o `test -f 'src/wd2793.c' || echo '$(srcdir)/'`src/wd2793.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-wd2793.Tpo src/$(DEPDIR)/test_config-wd2793.Po
@@ -3271,6 +3359,20 @@ src/test_kbd-vdp.obj: src/vdp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
 
+src/test_kbd-v9990.o: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-v9990.o -MD -MP -MF src/$(DEPDIR)/test_kbd-v9990.Tpo -c -o src/test_kbd-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-v9990.Tpo src/$(DEPDIR)/test_kbd-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_kbd-v9990.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+
+src/test_kbd-v9990.obj: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-v9990.obj -MD -MP -MF src/$(DEPDIR)/test_kbd-v9990.Tpo -c -o src/test_kbd-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-v9990.Tpo src/$(DEPDIR)/test_kbd-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_kbd-v9990.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
+
 src/test_kbd-wd2793.o: src/wd2793.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-wd2793.o -MD -MP -MF src/$(DEPDIR)/test_kbd-wd2793.Tpo -c -o src/test_kbd-wd2793.o `test -f 'src/wd2793.c' || echo '$(srcdir)/'`src/wd2793.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-wd2793.Tpo src/$(DEPDIR)/test_kbd-wd2793.Po
@@ -3593,6 +3695,20 @@ src/test_models-vdp.obj: src/vdp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
 
+src/test_models-v9990.o: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-v9990.o -MD -MP -MF src/$(DEPDIR)/test_models-v9990.Tpo -c -o src/test_models-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-v9990.Tpo src/$(DEPDIR)/test_models-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_models-v9990.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+
+src/test_models-v9990.obj: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-v9990.obj -MD -MP -MF src/$(DEPDIR)/test_models-v9990.Tpo -c -o src/test_models-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-v9990.Tpo src/$(DEPDIR)/test_models-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_models-v9990.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
+
 src/test_models-wd2793.o: src/wd2793.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-wd2793.o -MD -MP -MF src/$(DEPDIR)/test_models-wd2793.Tpo -c -o src/test_models-wd2793.o `test -f 'src/wd2793.c' || echo '$(srcdir)/'`src/wd2793.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-wd2793.Tpo src/$(DEPDIR)/test_models-wd2793.Po
@@ -3830,6 +3946,20 @@ src/test_msx-vdp.obj: src/vdp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/vdp.c' object='src/test_msx-vdp.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
+
+src/test_msx-v9990.o: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-v9990.o -MD -MP -MF src/$(DEPDIR)/test_msx-v9990.Tpo -c -o src/test_msx-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-v9990.Tpo src/$(DEPDIR)/test_msx-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_msx-v9990.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+
+src/test_msx-v9990.obj: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-v9990.obj -MD -MP -MF src/$(DEPDIR)/test_msx-v9990.Tpo -c -o src/test_msx-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-v9990.Tpo src/$(DEPDIR)/test_msx-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_msx-v9990.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
 
 src/test_msx-wd2793.o: src/wd2793.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-wd2793.o -MD -MP -MF src/$(DEPDIR)/test_msx-wd2793.Tpo -c -o src/test_msx-wd2793.o `test -f 'src/wd2793.c' || echo '$(srcdir)/'`src/wd2793.c
@@ -4237,6 +4367,20 @@ src/test_overlay-vdp.obj: src/vdp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
 
+src/test_overlay-v9990.o: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-v9990.o -MD -MP -MF src/$(DEPDIR)/test_overlay-v9990.Tpo -c -o src/test_overlay-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-v9990.Tpo src/$(DEPDIR)/test_overlay-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_overlay-v9990.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+
+src/test_overlay-v9990.obj: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-v9990.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-v9990.Tpo -c -o src/test_overlay-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-v9990.Tpo src/$(DEPDIR)/test_overlay-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_overlay-v9990.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
+
 src/test_overlay-wd2793.o: src/wd2793.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-wd2793.o -MD -MP -MF src/$(DEPDIR)/test_overlay-wd2793.Tpo -c -o src/test_overlay-wd2793.o `test -f 'src/wd2793.c' || echo '$(srcdir)/'`src/wd2793.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-wd2793.Tpo src/$(DEPDIR)/test_overlay-wd2793.Po
@@ -4488,6 +4632,20 @@ src/test_paste-vdp.obj: src/vdp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/vdp.c' object='src/test_paste-vdp.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o src/test_paste-vdp.obj `if test -f 'src/vdp.c'; then $(CYGPATH_W) 'src/vdp.c'; else $(CYGPATH_W) '$(srcdir)/src/vdp.c'; fi`
+
+src/test_paste-v9990.o: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT src/test_paste-v9990.o -MD -MP -MF src/$(DEPDIR)/test_paste-v9990.Tpo -c -o src/test_paste-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_paste-v9990.Tpo src/$(DEPDIR)/test_paste-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_paste-v9990.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o src/test_paste-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+
+src/test_paste-v9990.obj: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT src/test_paste-v9990.obj -MD -MP -MF src/$(DEPDIR)/test_paste-v9990.Tpo -c -o src/test_paste-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_paste-v9990.Tpo src/$(DEPDIR)/test_paste-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_paste-v9990.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o src/test_paste-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
 
 src/test_paste-wd2793.o: src/wd2793.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT src/test_paste-wd2793.o -MD -MP -MF src/$(DEPDIR)/test_paste-wd2793.Tpo -c -o src/test_paste-wd2793.o `test -f 'src/wd2793.c' || echo '$(srcdir)/'`src/wd2793.c
@@ -4922,6 +5080,34 @@ src/test_unapinet-unapinet.obj: src/unapinet.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/unapinet.c' object='src/test_unapinet-unapinet.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_unapinet_CPPFLAGS) $(CPPFLAGS) $(test_unapinet_CFLAGS) $(CFLAGS) -c -o src/test_unapinet-unapinet.obj `if test -f 'src/unapinet.c'; then $(CYGPATH_W) 'src/unapinet.c'; else $(CYGPATH_W) '$(srcdir)/src/unapinet.c'; fi`
+
+diagnostics/test_v9990-test_v9990.o: diagnostics/test_v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_v9990_CPPFLAGS) $(CPPFLAGS) $(test_v9990_CFLAGS) $(CFLAGS) -MT diagnostics/test_v9990-test_v9990.o -MD -MP -MF diagnostics/$(DEPDIR)/test_v9990-test_v9990.Tpo -c -o diagnostics/test_v9990-test_v9990.o `test -f 'diagnostics/test_v9990.c' || echo '$(srcdir)/'`diagnostics/test_v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_v9990-test_v9990.Tpo diagnostics/$(DEPDIR)/test_v9990-test_v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_v9990.c' object='diagnostics/test_v9990-test_v9990.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_v9990_CPPFLAGS) $(CPPFLAGS) $(test_v9990_CFLAGS) $(CFLAGS) -c -o diagnostics/test_v9990-test_v9990.o `test -f 'diagnostics/test_v9990.c' || echo '$(srcdir)/'`diagnostics/test_v9990.c
+
+diagnostics/test_v9990-test_v9990.obj: diagnostics/test_v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_v9990_CPPFLAGS) $(CPPFLAGS) $(test_v9990_CFLAGS) $(CFLAGS) -MT diagnostics/test_v9990-test_v9990.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_v9990-test_v9990.Tpo -c -o diagnostics/test_v9990-test_v9990.obj `if test -f 'diagnostics/test_v9990.c'; then $(CYGPATH_W) 'diagnostics/test_v9990.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_v9990.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_v9990-test_v9990.Tpo diagnostics/$(DEPDIR)/test_v9990-test_v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_v9990.c' object='diagnostics/test_v9990-test_v9990.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_v9990_CPPFLAGS) $(CPPFLAGS) $(test_v9990_CFLAGS) $(CFLAGS) -c -o diagnostics/test_v9990-test_v9990.obj `if test -f 'diagnostics/test_v9990.c'; then $(CYGPATH_W) 'diagnostics/test_v9990.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_v9990.c'; fi`
+
+src/test_v9990-v9990.o: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_v9990_CPPFLAGS) $(CPPFLAGS) $(test_v9990_CFLAGS) $(CFLAGS) -MT src/test_v9990-v9990.o -MD -MP -MF src/$(DEPDIR)/test_v9990-v9990.Tpo -c -o src/test_v9990-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_v9990-v9990.Tpo src/$(DEPDIR)/test_v9990-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_v9990-v9990.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_v9990_CPPFLAGS) $(CPPFLAGS) $(test_v9990_CFLAGS) $(CFLAGS) -c -o src/test_v9990-v9990.o `test -f 'src/v9990.c' || echo '$(srcdir)/'`src/v9990.c
+
+src/test_v9990-v9990.obj: src/v9990.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_v9990_CPPFLAGS) $(CPPFLAGS) $(test_v9990_CFLAGS) $(CFLAGS) -MT src/test_v9990-v9990.obj -MD -MP -MF src/$(DEPDIR)/test_v9990-v9990.Tpo -c -o src/test_v9990-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_v9990-v9990.Tpo src/$(DEPDIR)/test_v9990-v9990.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/v9990.c' object='src/test_v9990-v9990.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_v9990_CPPFLAGS) $(CPPFLAGS) $(test_v9990_CFLAGS) $(CFLAGS) -c -o src/test_v9990-v9990.obj `if test -f 'src/v9990.c'; then $(CYGPATH_W) 'src/v9990.c'; else $(CYGPATH_W) '$(srcdir)/src/v9990.c'; fi`
 
 diagnostics/test_vdp-test_vdp.o: diagnostics/test_vdp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_vdp_CPPFLAGS) $(CPPFLAGS) $(test_vdp_CFLAGS) $(CFLAGS) -MT diagnostics/test_vdp-test_vdp.o -MD -MP -MF diagnostics/$(DEPDIR)/test_vdp-test_vdp.Tpo -c -o diagnostics/test_vdp-test_vdp.o `test -f 'diagnostics/test_vdp.c' || echo '$(srcdir)/'`diagnostics/test_vdp.c
@@ -5582,6 +5768,13 @@ test-vdp.log: test-vdp$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-v9990.log: test-v9990$(EXEEXT)
+	@p='test-v9990$(EXEEXT)'; \
+	b='test-v9990'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-psg.log: test-psg$(EXEEXT)
 	@p='test-psg$(EXEEXT)'; \
 	b='test-psg'; \
@@ -5909,6 +6102,7 @@ distclean: distclean-am
 	-rm -f diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po
 	-rm -f diagnostics/$(DEPDIR)/test_tc8566-test_tc8566.Po
 	-rm -f diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po
+	-rm -f diagnostics/$(DEPDIR)/test_v9990-test_v9990.Po
 	-rm -f diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po
 	-rm -f diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po
 	-rm -f src/$(DEPDIR)/1983-ata.Po
@@ -5943,6 +6137,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-tc8566.Po
 	-rm -f src/$(DEPDIR)/1983-ui.Po
 	-rm -f src/$(DEPDIR)/1983-unapinet.Po
+	-rm -f src/$(DEPDIR)/1983-v9990.Po
 	-rm -f src/$(DEPDIR)/1983-vdp.Po
 	-rm -f src/$(DEPDIR)/1983-wd2793.Po
 	-rm -f src/$(DEPDIR)/1983-z80.Po
@@ -5964,6 +6159,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_config-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_config-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_config-tc8566.Po
+	-rm -f src/$(DEPDIR)/test_config-v9990.Po
 	-rm -f src/$(DEPDIR)/test_config-vdp.Po
 	-rm -f src/$(DEPDIR)/test_config-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_config-z80.Po
@@ -5984,6 +6180,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_kbd-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_kbd-tc8566.Po
+	-rm -f src/$(DEPDIR)/test_kbd-v9990.Po
 	-rm -f src/$(DEPDIR)/test_kbd-vdp.Po
 	-rm -f src/$(DEPDIR)/test_kbd-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_kbd-z80.Po
@@ -6005,6 +6202,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_models-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_models-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_models-tc8566.Po
+	-rm -f src/$(DEPDIR)/test_models-v9990.Po
 	-rm -f src/$(DEPDIR)/test_models-vdp.Po
 	-rm -f src/$(DEPDIR)/test_models-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_models-z80.Po
@@ -6021,6 +6219,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_msx-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_msx-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_msx-tc8566.Po
+	-rm -f src/$(DEPDIR)/test_msx-v9990.Po
 	-rm -f src/$(DEPDIR)/test_msx-vdp.Po
 	-rm -f src/$(DEPDIR)/test_msx-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_msx-z80.Po
@@ -6049,6 +6248,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_overlay-tc8566.Po
 	-rm -f src/$(DEPDIR)/test_overlay-ui.Po
 	-rm -f src/$(DEPDIR)/test_overlay-unapinet.Po
+	-rm -f src/$(DEPDIR)/test_overlay-v9990.Po
 	-rm -f src/$(DEPDIR)/test_overlay-vdp.Po
 	-rm -f src/$(DEPDIR)/test_overlay-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_overlay-z80.Po
@@ -6066,6 +6266,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_paste-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_paste-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_paste-tc8566.Po
+	-rm -f src/$(DEPDIR)/test_paste-v9990.Po
 	-rm -f src/$(DEPDIR)/test_paste-vdp.Po
 	-rm -f src/$(DEPDIR)/test_paste-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_paste-z80.Po
@@ -6087,6 +6288,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_tc8566-floppy.Po
 	-rm -f src/$(DEPDIR)/test_tc8566-tc8566.Po
 	-rm -f src/$(DEPDIR)/test_unapinet-unapinet.Po
+	-rm -f src/$(DEPDIR)/test_v9990-v9990.Po
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-floppy.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-wd2793.Po
@@ -6166,6 +6368,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f diagnostics/$(DEPDIR)/test_sunrise-test_sunrise.Po
 	-rm -f diagnostics/$(DEPDIR)/test_tc8566-test_tc8566.Po
 	-rm -f diagnostics/$(DEPDIR)/test_unapinet-test_unapinet.Po
+	-rm -f diagnostics/$(DEPDIR)/test_v9990-test_v9990.Po
 	-rm -f diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po
 	-rm -f diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po
 	-rm -f src/$(DEPDIR)/1983-ata.Po
@@ -6200,6 +6403,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-tc8566.Po
 	-rm -f src/$(DEPDIR)/1983-ui.Po
 	-rm -f src/$(DEPDIR)/1983-unapinet.Po
+	-rm -f src/$(DEPDIR)/1983-v9990.Po
 	-rm -f src/$(DEPDIR)/1983-vdp.Po
 	-rm -f src/$(DEPDIR)/1983-wd2793.Po
 	-rm -f src/$(DEPDIR)/1983-z80.Po
@@ -6221,6 +6425,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_config-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_config-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_config-tc8566.Po
+	-rm -f src/$(DEPDIR)/test_config-v9990.Po
 	-rm -f src/$(DEPDIR)/test_config-vdp.Po
 	-rm -f src/$(DEPDIR)/test_config-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_config-z80.Po
@@ -6241,6 +6446,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_kbd-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_kbd-tc8566.Po
+	-rm -f src/$(DEPDIR)/test_kbd-v9990.Po
 	-rm -f src/$(DEPDIR)/test_kbd-vdp.Po
 	-rm -f src/$(DEPDIR)/test_kbd-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_kbd-z80.Po
@@ -6262,6 +6468,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_models-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_models-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_models-tc8566.Po
+	-rm -f src/$(DEPDIR)/test_models-v9990.Po
 	-rm -f src/$(DEPDIR)/test_models-vdp.Po
 	-rm -f src/$(DEPDIR)/test_models-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_models-z80.Po
@@ -6278,6 +6485,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_msx-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_msx-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_msx-tc8566.Po
+	-rm -f src/$(DEPDIR)/test_msx-v9990.Po
 	-rm -f src/$(DEPDIR)/test_msx-vdp.Po
 	-rm -f src/$(DEPDIR)/test_msx-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_msx-z80.Po
@@ -6306,6 +6514,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_overlay-tc8566.Po
 	-rm -f src/$(DEPDIR)/test_overlay-ui.Po
 	-rm -f src/$(DEPDIR)/test_overlay-unapinet.Po
+	-rm -f src/$(DEPDIR)/test_overlay-v9990.Po
 	-rm -f src/$(DEPDIR)/test_overlay-vdp.Po
 	-rm -f src/$(DEPDIR)/test_overlay-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_overlay-z80.Po
@@ -6323,6 +6532,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_paste-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_paste-sunrise.Po
 	-rm -f src/$(DEPDIR)/test_paste-tc8566.Po
+	-rm -f src/$(DEPDIR)/test_paste-v9990.Po
 	-rm -f src/$(DEPDIR)/test_paste-vdp.Po
 	-rm -f src/$(DEPDIR)/test_paste-wd2793.Po
 	-rm -f src/$(DEPDIR)/test_paste-z80.Po
@@ -6344,6 +6554,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_tc8566-floppy.Po
 	-rm -f src/$(DEPDIR)/test_tc8566-tc8566.Po
 	-rm -f src/$(DEPDIR)/test_unapinet-unapinet.Po
+	-rm -f src/$(DEPDIR)/test_v9990-v9990.Po
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-floppy.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-wd2793.Po
@@ -6406,6 +6617,15 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_cbiosDATA \
 icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 	@mkdir -p icons
 	$(WINDRES) -I$(srcdir)/icons -i $< -O coff -o $@
+
+.PHONY: check-v9990-symbos
+check-v9990-symbos: 1983
+	test -n "$(SYMBOS_IMAGE)"
+	SYMBOS_IMAGE="$(SYMBOS_IMAGE)" \
+	SYMBOS_IMAGE_OFFSET="$(or $(SYMBOS_IMAGE_OFFSET),16384)" \
+	SYMBOS_FRAMES="$(or $(SYMBOS_FRAMES),8000)" \
+	SYMBOS_SCREENSHOT="$(SYMBOS_SCREENSHOT)" \
+	$(srcdir)/diagnostics/test-v9990-symbos.sh
 
 RAINBIOS_DIR ?= $(srcdir)/../rainbios
 .PHONY: import-rainbios-roms

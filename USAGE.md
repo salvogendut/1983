@@ -39,6 +39,7 @@ record that complete firmware choice in the per-user `1983.conf`. The bundled
  --cdx2-rom FILE         16 KB ROM or 32 KB dual-ROM CDX-2 EPROM image
  --cdx2-bank 0|1         select its lower/upper 16 KB jumper position
  --rdf600-rom FILE       user-provided RDF600/TDC-600 controller ROM
+ --powergraph-v9990       PowerGraph V9990 external video cartridge
  --unapi                   optional openMSXnet host bridge on NMS 8250
  --rs232                   RS-232C interface on ports 80h-87h (PTY /tmp/1983-rs232)
  --rs232-rom PATH          user-provided RS-232C EXTBIO/driver ROM
@@ -120,8 +121,8 @@ implemented yet).
 
 ## Extensions
 
-Cartridge-connected devices: the first configured reserves cartridge slot 2,
-the second slot 1; reserved cartridge/mapper controls stay visible but unusable.
+Cartridge-connected devices: the first configured reserves cartridge slot 1,
+the second slot 2; reserved cartridge/mapper controls stay visible but unusable.
 The optional openMSXnet UNAPI bridge is port-mapped and uses no cartridge
 slot — guest software must run openMSXnet v0.9.7's separate `UNAPINET.COM` TSR.
 
@@ -147,6 +148,19 @@ its TC8566AF-compatible command controller through the original mirrored
 memory windows. Space replaces the ROM and Delete disconnects and clears it.
 `--rdf600-rom FILE` provides the same startup setup. Firmware is not bundled.
 Floppy media remains a conventional raw MSX `.dsk` selected under Media.
+
+### PowerGraph V9990
+
+**Extensions > PowerGraph V9990** connects a GFX9000-compatible external
+video cartridge with 512 KiB VRAM. It reserves one physical cartridge slot,
+does not require Tinker, and resets the machine when connected or removed.
+The adjacent **PowerGraph output** setting defaults to `Auto`: BIOS, BASIC and
+DOS remain visible through the internal VDP, then 1983 follows PowerGraph when
+V9990 software enables its display. `MSX VDP` and `V9990` force either output,
+matching a real dual-monitor or manually switched setup. SYMG9K is the
+recommended deterministic guest test: it starts SymbOS with the V9990 display
+driver. The V9990 bitmap cursor used by the SymbOS mouse is rendered by 1983;
+select `Mouse` for the active joy port and click the display to capture it.
 
 ### Sunrise IDE
 

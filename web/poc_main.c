@@ -38,6 +38,8 @@ static int g_input_device;
 static UnapiNet *g_unapinet;
 static bool g_sunrise_enabled;
 static bool g_sd_mapper_enabled;
+static bool g_powergraph_enabled;
+static MsxVideoSource g_powergraph_video_source = MSX_VIDEO_SOURCE_AUTO;
 static bool g_unapi_enabled;
 static unsigned g_omega_unified_bank;
 static bool g_custom_omega_unified_rom;
@@ -49,6 +51,11 @@ static u8 g_custom_omega_rom[MSX_OMEGA_UNIFIED_ROM_SIZE];
 
 static unsigned desired_sd_mapper_slot(void) {
     return g_sunrise_enabled ? 1u : 0u;
+}
+
+static unsigned desired_powergraph_slot(void) {
+    return (g_sunrise_enabled ? 1u : 0u) +
+           (g_sd_mapper_enabled ? 1u : 0u);
 }
 
 static int poc_reload_firmware(void) {
@@ -176,6 +183,11 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
         msx_sd_mapper_set_ram_enabled(&g_msx, true);
         msx_sd_mapper_set_alternate_driver(&g_msx, false);
     }
+    if (g_powergraph_enabled &&
+        msx_set_powergraph_v9990(
+            &g_msx, true, desired_powergraph_slot()) != 0)
+        return -1;
+    msx_set_video_source(&g_msx, g_powergraph_video_source);
     msx_set_io_extension(&g_msx, g_unapinet,
                          unapinet_io_read, unapinet_io_write,
                          unapinet_io_reset);
@@ -316,11 +328,20 @@ EMSCRIPTEN_KEEPALIVE int poc_step(void) {
 }
 
 EMSCRIPTEN_KEEPALIVE unsigned int *poc_pixels(void) {
-    return g_msx.vdp.pixels;
+    return msx_video_output_is_powergraph(&g_msx)
+         ? g_msx.v9990.pixels : g_msx.vdp.pixels;
 }
 
-EMSCRIPTEN_KEEPALIVE int poc_width(void)  { return (int)g_msx.vdp.render_width; }
-EMSCRIPTEN_KEEPALIVE int poc_height(void) { return (int)g_msx.vdp.render_height; }
+EMSCRIPTEN_KEEPALIVE int poc_width(void) {
+    return msx_video_output_is_powergraph(&g_msx)
+         ? (int)g_msx.v9990.render_width
+         : (int)g_msx.vdp.render_width;
+}
+EMSCRIPTEN_KEEPALIVE int poc_height(void) {
+    return msx_video_output_is_powergraph(&g_msx)
+         ? (int)g_msx.v9990.render_height
+         : (int)g_msx.vdp.render_height;
+}
 EMSCRIPTEN_KEEPALIVE int poc_frame_hz(void) { return g_msx.frame_hz; }
 
 EMSCRIPTEN_KEEPALIVE void poc_key(int scancode, int pressed) {
@@ -420,9 +441,9 @@ EMSCRIPTEN_KEEPALIVE void poc_eject_cassette(void) {
 EMSCRIPTEN_KEEPALIVE int poc_disk_motor(void) { return g_msx.fdc.motor ? 1 : 0; }
 
 /* ---- browser expansion bay ----
- * Sunrise IDE and SD Mapper V2 are cartridge devices. Sunrise owns cartridge
- * slot I when connected; SD Mapper then moves to slot II. With Sunrise absent,
- * SD Mapper owns slot I. TCP/IP UNAPI is port mapped and reserves no slot. */
+ * Sunrise IDE, SD Mapper V2, and PowerGraph V9990 are cartridge devices,
+ * assigned to slots I and II in that order while skipping disabled devices.
+ * TCP/IP UNAPI is port mapped and reserves no slot. */
 EMSCRIPTEN_KEEPALIVE int poc_set_sunrise(int enabled) {
     const bool requested = enabled != 0;
 
@@ -431,6 +452,9 @@ EMSCRIPTEN_KEEPALIVE int poc_set_sunrise(int enabled) {
     if (requested == g_sunrise_enabled)
         return requested ? 1 : 0;
     if (requested) {
+        if ((g_sd_mapper_enabled ? 1 : 0) +
+            (g_powergraph_enabled ? 1 : 0) >= 2)
+            return -1;
         if (g_sd_mapper_enabled) {
             msx_eject_cartridge(&g_msx, 1);
             msx_reassign_extension_slots(&g_msx, -1, 1, -1);
@@ -442,6 +466,9 @@ EMSCRIPTEN_KEEPALIVE int poc_set_sunrise(int enabled) {
             return -1;
         }
         g_sunrise_enabled = true;
+        if (g_powergraph_enabled &&
+            msx_set_powergraph_v9990(&g_msx, true, 1) != 0)
+            return -1;
         if (poc_reload_firmware() != 0)
             return -1;
         return 1;
@@ -451,6 +478,10 @@ EMSCRIPTEN_KEEPALIVE int poc_set_sunrise(int enabled) {
     g_sunrise_enabled = false;
     if (g_sd_mapper_enabled)
         msx_reassign_extension_slots(&g_msx, -1, 0, -1);
+    if (g_powergraph_enabled &&
+        msx_set_powergraph_v9990(
+            &g_msx, true, desired_powergraph_slot()) != 0)
+        return -1;
     if (poc_reload_firmware() != 0)
         return -1;
     return 0;
@@ -496,6 +527,9 @@ EMSCRIPTEN_KEEPALIVE int poc_set_sd_mapper(int enabled) {
     if (requested == g_sd_mapper_enabled)
         return requested ? 1 : 0;
     if (requested) {
+        if ((g_sunrise_enabled ? 1 : 0) +
+            (g_powergraph_enabled ? 1 : 0) >= 2)
+            return -1;
         const unsigned slot = desired_sd_mapper_slot();
 
         msx_eject_cartridge(&g_msx, slot);
@@ -504,11 +538,19 @@ EMSCRIPTEN_KEEPALIVE int poc_set_sd_mapper(int enabled) {
         msx_sd_mapper_set_ram_enabled(&g_msx, true);
         msx_sd_mapper_set_alternate_driver(&g_msx, false);
         g_sd_mapper_enabled = true;
+        if (g_powergraph_enabled &&
+            msx_set_powergraph_v9990(
+                &g_msx, true, desired_powergraph_slot()) != 0)
+            return -1;
         return 1;
     }
     if (msx_eject_sd_mapper(&g_msx) != 0)
         return -1;
     g_sd_mapper_enabled = false;
+    if (g_powergraph_enabled &&
+        msx_set_powergraph_v9990(
+            &g_msx, true, desired_powergraph_slot()) != 0)
+        return -1;
     return 0;
 }
 
@@ -549,6 +591,53 @@ EMSCRIPTEN_KEEPALIVE int poc_sd_activity_mask(void) {
         if (msx_sd_card_take_activity(&g_msx, card))
             mask |= 1 << card;
     return mask;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_set_powergraph_v9990(int enabled) {
+    const bool requested = enabled != 0;
+
+    if (!g_machine_initialized)
+        return -1;
+    if (requested == g_powergraph_enabled)
+        return requested ? 1 : 0;
+    if (requested) {
+        unsigned slot = desired_powergraph_slot();
+
+        if (slot >= MSX_CARTRIDGE_SLOTS ||
+            msx_set_powergraph_v9990(&g_msx, true, slot) != 0)
+            return -1;
+        g_powergraph_enabled = true;
+        return 1;
+    }
+    if (msx_set_powergraph_v9990(&g_msx, false, 0) != 0)
+        return -1;
+    g_powergraph_enabled = false;
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_powergraph_v9990_enabled(void) {
+    return g_powergraph_enabled &&
+           msx_powergraph_v9990_connected(&g_msx) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_powergraph_v9990_slot(void) {
+    return msx_powergraph_v9990_slot(&g_msx);
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_set_powergraph_video_source(int source) {
+    if (source < 0 || source >= MSX_VIDEO_SOURCE_COUNT)
+        return -1;
+    g_powergraph_video_source = (MsxVideoSource)source;
+    msx_set_video_source(&g_msx, g_powergraph_video_source);
+    return source;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_powergraph_video_source(void) {
+    return g_powergraph_video_source;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_powergraph_output_active(void) {
+    return msx_video_output_is_powergraph(&g_msx) ? 1 : 0;
 }
 
 EMSCRIPTEN_KEEPALIVE int poc_set_unapi(int enabled) {
