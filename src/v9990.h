@@ -32,6 +32,7 @@ typedef struct {
     u8 pending_irqs;
     u8 command_status;
     u8 command_data;
+    u8 command_partial;
     u8 read_buffer;
     u32 read_address;
     u32 write_address;
@@ -50,6 +51,7 @@ typedef struct {
     bool command_cpu_write;
     bool command_cpu_read;
     bool command_end_after_read;
+    bool command_high_byte;
     unsigned slot;
     unsigned render_width;
     unsigned render_height;

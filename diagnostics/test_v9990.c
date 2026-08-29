@@ -287,6 +287,61 @@ static void test_command_opcode_uses_high_nibble(void) {
     v9990_destroy(&v9990);
 }
 
+static void test_lmcm_cpu_read_transfer(void) {
+    static const u8 source[] = {0x12, 0x30};
+    MsxV9990 v9990;
+    u8 value = 0;
+
+    v9990_init(&v9990);
+    assert(v9990_set_enabled(&v9990, true, 0) == 0);
+    write_register(&v9990, 6, 0x81); /* B1, 4 bits per pixel. */
+    write_vram(&v9990, 0, source, sizeof(source));
+    write_register(&v9990, 32, 0);   /* SX */
+    write_register(&v9990, 33, 0);
+    write_register(&v9990, 34, 0);   /* SY */
+    write_register(&v9990, 35, 0);
+    write_register(&v9990, 40, 3);   /* Three pixels -> two CPU bytes. */
+    write_register(&v9990, 41, 0);
+    write_register(&v9990, 42, 1);
+    write_register(&v9990, 43, 0);
+    write_register(&v9990, 52, 0x30); /* LMCM. */
+
+    assert((v9990.command_status & 0x81) == 0x81);
+    assert(v9990_io_read(&v9990, 0x62, &value));
+    assert(value == 0x12);
+    assert((v9990.command_status & 0x81) == 0x81);
+    assert(v9990.command_remaining_x == 3);
+    assert(v9990.command_remaining_y == 0);
+    assert(v9990_io_read(&v9990, 0x62, &value));
+    assert(value == 0x30);
+    assert((v9990.command_status & 0x81) == 0);
+    assert(v9990_io_read(&v9990, 0x62, &value));
+    assert(value == 0xff);
+    v9990_destroy(&v9990);
+
+    v9990_init(&v9990);
+    assert(v9990_set_enabled(&v9990, true, 0) == 0);
+    write_register(&v9990, 6, 0x83); /* B1, 16 bits per pixel. */
+    v9990.vram[0] = 0x34;
+    v9990.vram[0x40000] = 0x12;
+    write_register(&v9990, 32, 0);
+    write_register(&v9990, 33, 0);
+    write_register(&v9990, 34, 0);
+    write_register(&v9990, 35, 0);
+    write_register(&v9990, 40, 1);
+    write_register(&v9990, 41, 0);
+    write_register(&v9990, 42, 1);
+    write_register(&v9990, 43, 0);
+    write_register(&v9990, 52, 0x30);
+    assert(v9990_io_read(&v9990, 0x62, &value));
+    assert(value == 0x34);
+    assert((v9990.command_status & 0x81) == 0x81);
+    assert(v9990_io_read(&v9990, 0x62, &value));
+    assert(value == 0x12);
+    assert((v9990.command_status & 0x81) == 0);
+    v9990_destroy(&v9990);
+}
+
 int main(void) {
     test_enable_and_ports();
     test_vram_and_palette_ports();
@@ -295,6 +350,7 @@ int main(void) {
     test_bitmap_cursor_overscan_offset();
     test_pattern_mode_sprites();
     test_command_opcode_uses_high_nibble();
+    test_lmcm_cpu_read_transfer();
     puts("V9990 port, VRAM, palette, sprite/cursor, renderer, and IRQ tests passed");
     return 0;
 }

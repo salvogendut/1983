@@ -172,6 +172,7 @@ static void finish_command(MsxV9990 *v9990) {
     v9990->command_cpu_write = false;
     v9990->command_cpu_read = false;
     v9990->command_end_after_read = false;
+    v9990->command_high_byte = false;
     v9990->command_status &= (u8)~(V9990_STATUS_CE | V9990_STATUS_TR);
     v9990->pending_irqs |= V9990_IRQ_COMMAND;
     update_irq(v9990);
@@ -284,7 +285,7 @@ static unsigned wrapped_ny(const MsxV9990 *v9990) {
     return v9990->command_ny ? v9990->command_ny : 4096;
 }
 
-static void advance_command_position(MsxV9990 *v9990, bool source) {
+static bool step_command_position(MsxV9990 *v9990, bool source) {
     int dx = (v9990->registers[44] & 0x04) ? -1 : 1;
     int dy = (v9990->registers[44] & 0x08) ? -1 : 1;
     u16 *x = source ? &v9990->command_sx : &v9990->command_dx;
@@ -292,11 +293,15 @@ static void advance_command_position(MsxV9990 *v9990, bool source) {
 
     *x = (u16)(*x + dx);
     if (--v9990->command_remaining_x)
-        return;
+        return false;
     *x = v9990->command_line_start_x;
     *y = (u16)(*y + dy);
     v9990->command_remaining_x = (u16)wrapped_nx(v9990);
-    if (!--v9990->command_remaining_y)
+    return !--v9990->command_remaining_y;
+}
+
+static void advance_command_position(MsxV9990 *v9990, bool source) {
+    if (step_command_position(v9990, source))
         finish_command(v9990);
 }
 
@@ -372,6 +377,63 @@ static void run_immediate_command(MsxV9990 *v9990, u8 command) {
     }
 }
 
+static void prepare_lmcm_data(MsxV9990 *v9990) {
+    unsigned bpp = bits_per_pixel(v9990);
+    unsigned pixels = bpp < 8 ? 8 / bpp : 1;
+    u8 data = 0;
+
+    if (bpp == 16) {
+        u16 colour = point(
+            v9990, v9990->command_sx, v9990->command_sy);
+
+        v9990->command_data = (u8)colour;
+        v9990->command_partial = (u8)(colour >> 8);
+        v9990->command_high_byte = false;
+        v9990->command_status |= V9990_STATUS_TR;
+        return;
+    }
+    for (unsigned i = 0; i < pixels; ++i) {
+        u16 colour = point(
+            v9990, v9990->command_sx, v9990->command_sy);
+
+        if (bpp < 8)
+            data |= (u8)(colour << (8 - bpp * (i + 1)));
+        else
+            data = (u8)colour;
+        if (step_command_position(v9990, true)) {
+            v9990->command_end_after_read = true;
+            break;
+        }
+    }
+    v9990->command_data = data;
+    v9990->command_status |= V9990_STATUS_TR;
+}
+
+static void consume_lmcm_data(MsxV9990 *v9990) {
+    unsigned bpp = bits_per_pixel(v9990);
+
+    v9990->command_status &= (u8)~V9990_STATUS_TR;
+    if (bpp == 16) {
+        if (!v9990->command_high_byte) {
+            v9990->command_data = v9990->command_partial;
+            v9990->command_high_byte = true;
+            v9990->command_status |= V9990_STATUS_TR;
+            return;
+        }
+        v9990->command_high_byte = false;
+        if (step_command_position(v9990, true)) {
+            finish_command(v9990);
+            return;
+        }
+        prepare_lmcm_data(v9990);
+        return;
+    }
+    if (v9990->command_end_after_read)
+        finish_command(v9990);
+    else
+        prepare_lmcm_data(v9990);
+}
+
 static void start_command(MsxV9990 *v9990, u8 value) {
     u8 command = value >> 4;
 
@@ -380,6 +442,7 @@ static void start_command(MsxV9990 *v9990, u8 value) {
     v9990->command_cpu_write = false;
     v9990->command_cpu_read = false;
     v9990->command_end_after_read = false;
+    v9990->command_high_byte = false;
     if (command == 0) {
         finish_command(v9990);
     } else if (command == 1 || command == 5) {
@@ -389,6 +452,7 @@ static void start_command(MsxV9990 *v9990, u8 value) {
     } else if (command == 3) {
         v9990->command_cpu_read = true;
         v9990->command_line_start_x = v9990->command_sx;
+        prepare_lmcm_data(v9990);
     } else {
         run_immediate_command(v9990, command);
     }
@@ -884,20 +948,16 @@ bool v9990_io_read(MsxV9990 *v9990, u16 port, u8 *value) {
                 v9990->registers[V9990_REG_PALETTE_POINTER]];
             return true;
         case V9990_PORT_COMMAND:
-            *value = v9990->command_data;
+            *value = (v9990->command_status & V9990_STATUS_TR)
+                   ? v9990->command_data : 0xff;
             if (v9990->command_cpu_read &&
                 (v9990->command_status & V9990_STATUS_TR)) {
-                v9990->command_status &= (u8)~V9990_STATUS_TR;
-                if (v9990->command_end_after_read) {
-                    finish_command(v9990);
+                if ((v9990->registers[V9990_REG_COMMAND] >> 4) == 3) {
+                    consume_lmcm_data(v9990);
                 } else {
-                    advance_command_position(v9990, true);
-                    if (v9990->command_cpu_read) {
-                        v9990->command_data = (u8)point(
-                            v9990, v9990->command_sx,
-                            v9990->command_sy);
-                        v9990->command_status |= V9990_STATUS_TR;
-                    }
+                    v9990->command_status &= (u8)~V9990_STATUS_TR;
+                    if (v9990->command_end_after_read)
+                        finish_command(v9990);
                 }
             }
             return true;
