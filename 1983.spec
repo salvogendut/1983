@@ -1,5 +1,5 @@
 Name:           1983
-Version:        0.3.0
+Version:        0.4.0
 Release:        1%{?dist}
 Summary:        Generic MSX and MSX2 emulator
 
@@ -17,11 +17,12 @@ BuildRequires:  libappstream-glib
 
 %description
 1983 is a compatibility-focused MSX and MSX2 emulator written in C with
-SDL3. It emulates the Z80, TMS9918-family and V9938 video, AY/YM audio,
-keyboard, joystick and mouse input, cartridges and common mappers, cassettes,
-Philips floppy drives, Sunrise IDE, SD Mapper V2, MegaFlashROM SCC+ SD, and
-the MSX2 real-time clock. An openMSXnet-compatible host bridge can expose
-TCP/IP UNAPI networking through the separately supplied guest TSR.
+SDL3. It emulates the Z80, TMS9918-family, V9938/V9958, and PowerGraph V9990
+video, AY/YM audio, keyboard, joystick and mouse input, cartridges and common
+mappers, cassettes, Philips floppy drives, Sunrise IDE, SD Mapper V2,
+MegaFlashROM SCC+ SD, and the MSX2 real-time clock. An openMSXnet-compatible
+host bridge can expose TCP/IP UNAPI networking through the separately supplied
+guest TSR.
 
 The redistributable RainBIOS Omega MSX2 firmware is included as the
 ready-to-run default. C-BIOS 0.29 remains available as a bundled MSX1 model.
@@ -64,6 +65,12 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/io.github
 %{_datadir}/%{name}/ROMS/rainbios_omega.rom
 
 %changelog
+* Sat Aug 29 2026 Salvatore Bognanni <salvogendut@gmail.com> - 0.4.0-1
+- Add PowerGraph/GFX9000 V9990 emulation to native and WebAssembly builds.
+- Add automatic VDP/V9990 output switching and SYMG9K/SymbOS integration.
+- Emulate V9990 bitmap modes, hardware cursors, and CPU command transfers.
+- Correct RS-232 8254 timer gate state after device creation.
+
 * Fri Aug 28 2026 Salvatore Bognanni <salvogendut@gmail.com> - 0.3.0-1
 - Add the WebAssembly browser edition and URL-configurable startup media.
 - Ship RainBIOS Omega MSX2 as the default with unified-ROM upload support.

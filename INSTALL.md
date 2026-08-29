@@ -54,7 +54,7 @@ autoreconf -iv
 ./configure
 make -j"$(nproc)"
 make dist
-rpmbuild -ta 1983-0.3.0.tar.gz
+rpmbuild -ta 1983-0.4.0.tar.gz
 ```
 
 On Windows, run the normal Autotools sequence from an MSYS2 MinGW64 shell
