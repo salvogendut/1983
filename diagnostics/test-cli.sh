@@ -274,6 +274,6 @@ grep -q -- "--cassette PATH" "$log"
 grep -q -- "--screenshot PATH" "$log"
 
 ./1983 --version >"$log"
-grep -q '^1983 0\.3\.0 (git ' "$log"
+grep -q '^1983 0\.4\.0 (git ' "$log"
 
 echo "command-line media and mapper tests passed"
