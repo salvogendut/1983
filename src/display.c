@@ -56,11 +56,16 @@ void display_calculate_layout(int output_w, int output_h,
 void display_set_title(Display *display, const MsxMachine *msx,
                        const char *model_name) {
     char title[96];
+    if (model_name && model_name[0] && model_name != display->model_name)
+        snprintf(display->model_name, sizeof(display->model_name),
+                 "%s", model_name);
     snprintf(title, sizeof(title), "1983 - %s (%s)",
-             model_name && model_name[0]
-             ? model_name : msx->profile->name,
-             msx_vdp_name(msx));
+             display->model_name[0]
+             ? display->model_name : msx->profile->name,
+             msx_video_output_name(msx));
     SDL_SetWindowTitle(display->window, title);
+    display->powergraph_output =
+        msx_video_output_is_powergraph(msx);
 }
 
 int display_init(Display *display, const Config *config,
@@ -329,13 +334,42 @@ void display_compose_vdp(u32 *destination, const MsxVdp *vdp) {
     }
 }
 
+static void display_compose_v9990(u32 *destination,
+                                  const MsxV9990 *v9990) {
+    unsigned width;
+    unsigned height;
+
+    if (!destination || !v9990 || !v9990->pixels)
+        return;
+    width = v9990->render_width;
+    height = v9990->render_height;
+    if (!width || !height)
+        return;
+    for (int y = 0; y < DISPLAY_FB_H; ++y) {
+        unsigned source_y = (unsigned)y * height / DISPLAY_FB_H;
+
+        for (int x = 0; x < DISPLAY_FB_W; ++x) {
+            unsigned source_x = (unsigned)x * width / DISPLAY_FB_W;
+
+            destination[y * DISPLAY_FB_W + x] =
+                v9990->pixels[source_y * width + source_x];
+        }
+    }
+}
+
 void display_draw(Display *display, const MsxMachine *msx) {
     SDL_FRect destination = {
         0.0f, 0.0f, (float)DISPLAY_FB_W, (float)DISPLAY_FB_H
     };
 
+    if (display->powergraph_output !=
+        msx_video_output_is_powergraph(msx))
+        display_set_title(display, msx, NULL);
     if (msx_can_boot(msx)) {
-        display_compose_vdp(display->pixels, &msx->vdp);
+        if (msx_video_output_is_powergraph(msx))
+            display_compose_v9990(display->pixels, &msx->v9990);
+        else
+            display_compose_vdp(display->pixels, &msx->vdp);
     }
 
     SDL_UpdateTexture(display->texture, NULL, display->pixels,

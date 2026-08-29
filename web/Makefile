@@ -21,6 +21,7 @@ CFLAGS    = -O2 -std=c11 -Wall -Wextra -I../src -Icompat -I.
 SRCS = \
 	../src/z80.c \
 	../src/vdp.c \
+	../src/v9990.c \
 	../src/psg.c \
 	../src/msx.c \
 	../src/cartridge.c \
@@ -100,7 +101,7 @@ check-wasm-symbos: all
 $(WASM_ASSETS) &: $(OBJS) $(FIRMWARE_ASSETS) | $(DIST_DIR)
 	$(EMCC) $(CFLAGS) $(OBJS) -o $(DIST_DIR)/1983.js \
 	    -sMODULARIZE -sEXPORT_NAME=create1983 \
-	    -sEXPORTED_FUNCTIONS='_poc_init,_poc_init_model,_poc_ram_kb,_poc_set_ram_kb,_poc_load_cartridge,_poc_load_cartridge_slot,_poc_eject_cartridge,_poc_cartridge_loaded,_poc_reset,_poc_omega_unified_bank,_poc_install_omega_unified_rom,_poc_flip_omega_unified_bank,_poc_step,_poc_pixels,_poc_width,_poc_height,_poc_frame_hz,_poc_key,_poc_key_mod,_poc_joy,_poc_joy_matrix,_poc_set_input_device,_poc_mouse_motion,_poc_mouse_button,_poc_mouse_clear,_poc_audio_reset,_poc_audio_avail,_poc_audio_read_pos,_poc_audio_buffer,_poc_audio_advance,_poc_load_disk,_poc_eject_disk,_poc_has_floppy,_poc_load_cassette,_poc_eject_cassette,_poc_disk_motor,_poc_set_sunrise,_poc_sunrise_enabled,_poc_sunrise_slot,_poc_mount_ide,_poc_eject_ide,_poc_ide_mounted,_poc_ide_writable,_poc_ide_activity,_poc_set_sd_mapper,_poc_sd_mapper_enabled,_poc_sd_mapper_slot,_poc_mount_sd_card,_poc_eject_sd_card,_poc_sd_card_mounted,_poc_sd_activity_mask,_poc_set_unapi,_poc_unapi_enabled,_poc_unapi_guest_active,_poc_unapi_activity,_poc_unapi_probe,_poc_unapi_dns_result,_poc_unapi_tcp_open_result,_poc_unapi_udp_open_result,_poc_autorun,_malloc,_free' \
+	    -sEXPORTED_FUNCTIONS='_poc_init,_poc_init_model,_poc_ram_kb,_poc_set_ram_kb,_poc_load_cartridge,_poc_load_cartridge_slot,_poc_eject_cartridge,_poc_cartridge_loaded,_poc_reset,_poc_omega_unified_bank,_poc_install_omega_unified_rom,_poc_flip_omega_unified_bank,_poc_step,_poc_pixels,_poc_width,_poc_height,_poc_frame_hz,_poc_key,_poc_key_mod,_poc_joy,_poc_joy_matrix,_poc_set_input_device,_poc_mouse_motion,_poc_mouse_button,_poc_mouse_clear,_poc_audio_reset,_poc_audio_avail,_poc_audio_read_pos,_poc_audio_buffer,_poc_audio_advance,_poc_load_disk,_poc_eject_disk,_poc_has_floppy,_poc_load_cassette,_poc_eject_cassette,_poc_disk_motor,_poc_set_sunrise,_poc_sunrise_enabled,_poc_sunrise_slot,_poc_mount_ide,_poc_eject_ide,_poc_ide_mounted,_poc_ide_writable,_poc_ide_activity,_poc_set_sd_mapper,_poc_sd_mapper_enabled,_poc_sd_mapper_slot,_poc_mount_sd_card,_poc_eject_sd_card,_poc_sd_card_mounted,_poc_sd_activity_mask,_poc_set_powergraph_v9990,_poc_powergraph_v9990_enabled,_poc_powergraph_v9990_slot,_poc_set_powergraph_video_source,_poc_powergraph_video_source,_poc_powergraph_output_active,_poc_set_unapi,_poc_unapi_enabled,_poc_unapi_guest_active,_poc_unapi_activity,_poc_unapi_probe,_poc_unapi_dns_result,_poc_unapi_tcp_open_result,_poc_unapi_udp_open_result,_poc_autorun,_malloc,_free' \
 	    -sEXPORTED_RUNTIME_METHODS='HEAPU8,HEAPU32,wasmMemory,getValue,setValue,ccall,cwrap,FS' \
 	    -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 \
 	    --embed-file ../ROMS/cbios_main_msx1.rom@roms/cbios_main_msx1.rom \

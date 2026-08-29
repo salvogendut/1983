@@ -82,6 +82,8 @@ enum {
     EXTENSION_CDX2,
     EXTENSION_CDX2_ROM_SWITCH,
     EXTENSION_RDF600,
+    EXTENSION_POWERGRAPH_V9990,
+    EXTENSION_POWERGRAPH_OUTPUT,
     EXTENSION_ROWS
 };
 
@@ -296,6 +298,24 @@ static void cartridge_extension_text(const Config *config,
         }
     }
     snprintf(value, value_size, "Off (no free cartridge slot)");
+}
+
+static void powergraph_extension_text(const Overlay *overlay,
+                                      char *value, size_t value_size) {
+    const Config *config = overlay->config;
+    int slot = cartridge_extension_slot(config, "PowerGraph V9990");
+
+    if (!config->powergraph_v9990) {
+        snprintf(value, value_size, "Off");
+    } else if (slot < 0) {
+        snprintf(value, value_size, "Off (no free cartridge slot)");
+    } else if (!msx_powergraph_v9990_connected(overlay->msx)) {
+        snprintf(value, value_size,
+                 "On (Cartridge %d, device unavailable)", slot + 1);
+    } else {
+        snprintf(value, value_size,
+                 "On (Cartridge %d, 512 KB VRAM)", slot + 1);
+    }
 }
 
 static void sunrise_extension_text(const Overlay *overlay,
@@ -725,7 +745,8 @@ static void item_text(const Overlay *overlay, int row,
                 case GENERAL_VRAM:
                     snprintf(label, label_size, "VRAM");
                     snprintf(value, value_size, "%d KB (%s)",
-                             msx->profile->vram_kb, msx_vdp_name(msx));
+                             msx->profile->vram_kb,
+                             msx_vdp_name(msx));
                     break;
                 case GENERAL_PSG_VOLUME:
                     snprintf(label, label_size, "PSG volume");
@@ -865,6 +886,17 @@ static void item_text(const Overlay *overlay, int row,
                     snprintf(label, label_size, "RDF600 FDC");
                     rdf600_extension_text(
                         overlay, value, value_size);
+                    break;
+                case EXTENSION_POWERGRAPH_V9990:
+                    snprintf(label, label_size, "PowerGraph V9990");
+                    powergraph_extension_text(
+                        overlay, value, value_size);
+                    break;
+                case EXTENSION_POWERGRAPH_OUTPUT:
+                    snprintf(label, label_size, "PowerGraph output");
+                    snprintf(value, value_size, "%s",
+                             msx_video_source_name(
+                                 config->powergraph_video_source));
                     break;
                 case EXTENSION_KONAMI_SCC:
                     snprintf(label, label_size, "Konami SCC");
@@ -1078,6 +1110,9 @@ static void apply_config(Overlay *overlay) {
     bool floppy_changed;
     bool cdx2_changed;
     bool rdf600_changed;
+    bool powergraph_changed;
+    bool video_source_changed;
+    int powergraph_slot;
 
     config_normalize(config);
     active_floppy = msx_floppy_config(msx);
@@ -1096,6 +1131,15 @@ static void apply_config(Overlay *overlay) {
          msx_cdx2_rom_bank(msx) != config->cdx2_rom_bank);
     rdf600_changed =
         msx_rdf600_connected(msx) != config->rdf600;
+    powergraph_slot = cartridge_extension_slot(
+        config, "PowerGraph V9990");
+    powergraph_changed =
+        msx_powergraph_v9990_connected(msx) !=
+            config->powergraph_v9990 ||
+        (config->powergraph_v9990 &&
+         msx_powergraph_v9990_slot(msx) != powergraph_slot);
+    video_source_changed =
+        msx->video_source != config->powergraph_video_source;
     if (machine_changed) {
         if (msx_set_rtc_persistence(
                 msx, "", rtc_host_seconds()) != 0) {
@@ -1164,6 +1208,30 @@ static void apply_config(Overlay *overlay) {
             }
         }
         overlay->machine_reset_requested = true;
+    }
+    if (powergraph_changed) {
+        if (msx_set_powergraph_v9990(
+                msx, config->powergraph_v9990,
+                powergraph_slot) != 0) {
+            config->powergraph_v9990 = false;
+            config_normalize(config);
+            notify_post("Could not connect PowerGraph V9990");
+        } else {
+            notify_post("PowerGraph V9990 %s",
+                        config->powergraph_v9990
+                        ? "connected" : "disconnected");
+        }
+        overlay->machine_reset_requested = true;
+        display_set_title(overlay->display, msx,
+                          selected_model_name(overlay));
+    }
+    if (video_source_changed) {
+        msx_set_video_source(msx, config->powergraph_video_source);
+        display_set_title(overlay->display, msx,
+                          selected_model_name(overlay));
+        notify_post("Video source: %s",
+                    msx_video_source_name(
+                        config->powergraph_video_source));
     }
     (void)sync_rtc_persistence(overlay);
     display_set_smoothing(overlay->display, config->smoothing);
@@ -3792,8 +3860,8 @@ static void activate_item(Overlay *overlay) {
                         return;
                     }
                     config->vdp_type =
-                        config->vdp_type == MSX_VDP_V9938
-                        ? MSX_VDP_V9958 : MSX_VDP_V9938;
+                        config->vdp_type == MSX_VDP_V9958
+                        ? MSX_VDP_V9938 : MSX_VDP_V9958;
                     break;
                 case GENERAL_RAM:
                     config->memory_kb =
@@ -4048,6 +4116,18 @@ static void activate_item(Overlay *overlay) {
                         open_rdf600_rom_dialog(overlay);
                         return;
                     }
+                    break;
+                case EXTENSION_POWERGRAPH_V9990:
+                    if (!toggle_cartridge_extension(
+                            overlay, &config->powergraph_v9990,
+                            "PowerGraph V9990"))
+                        return;
+                    break;
+                case EXTENSION_POWERGRAPH_OUTPUT:
+                    config->powergraph_video_source =
+                        (MsxVideoSource)(
+                            (config->powergraph_video_source + 1) %
+                            MSX_VIDEO_SOURCE_COUNT);
                     break;
                 case EXTENSION_KONAMI_SCC:
                     if (!toggle_cartridge_extension(

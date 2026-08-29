@@ -1837,6 +1837,33 @@ int main(void) {
     assert(msx.vdp.type == MSX_VDP_V9958);
     assert(msx.ram == msx.internal_ram);
 
+    assert(!msx_powergraph_v9990_connected(&msx));
+    assert(msx_set_powergraph_v9990(&msx, true, 1) == 0);
+    assert(msx_powergraph_v9990_connected(&msx));
+    assert(msx_powergraph_v9990_slot(&msx) == 1);
+    assert(msx.video_source == MSX_VIDEO_SOURCE_AUTO);
+    assert(!msx_video_output_is_powergraph(&msx));
+    assert(strcmp(msx_video_output_name(&msx), "V9958") == 0);
+    msx_set_video_source(&msx, MSX_VIDEO_SOURCE_POWERGRAPH);
+    assert(msx_video_output_is_powergraph(&msx));
+    assert(strcmp(msx_video_output_name(&msx),
+                  "PowerGraph V9990") == 0);
+    msx_set_video_source(&msx, MSX_VIDEO_SOURCE_AUTO);
+    msx_io_write(&msx, 0x64, 0x80); /* Select V9990 R#0. */
+    msx_io_write(&msx, 0x63, 0x34);
+    msx_io_write(&msx, 0x64, 0x81); /* Select V9990 R#1. */
+    msx_io_write(&msx, 0x63, 0x12);
+    msx_io_write(&msx, 0x64, 0x82); /* Select V9990 R#2. */
+    msx_io_write(&msx, 0x63, 0x00);
+    msx_io_write(&msx, 0x60, 0x83);
+    assert(msx.v9990.vram[0x1234] == 0x83);
+    msx_io_write(&msx, 0x64, 0x88); /* Select V9990 display control. */
+    msx_io_write(&msx, 0x63, 0x80); /* Enable the external display. */
+    assert(msx_video_output_is_powergraph(&msx));
+    assert(msx_set_powergraph_v9990(&msx, false, -1) == 0);
+    assert(!msx_powergraph_v9990_connected(&msx));
+    assert(strcmp(msx_video_output_name(&msx), "V9958") == 0);
+
     test_slot_bus_and_cpu();
     test_dual_cartridge_slots_and_mapper_reset();
     test_sunrise_cartridge_slot_bus();

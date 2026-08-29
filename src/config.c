@@ -208,6 +208,7 @@ void config_defaults(Config *config) {
     config->ide_image_mode = ATA_IMAGE_READ_ONLY;
     config->sd_image_mode = SD_IMAGE_READ_ONLY;
     config->sd_mapper_ram = true;
+    config->powergraph_video_source = MSX_VIDEO_SOURCE_AUTO;
 }
 
 void config_normalize(Config *config) {
@@ -220,6 +221,7 @@ void config_normalize(Config *config) {
         &config->rs232,
         &config->cdx2,
         &config->rdf600,
+        &config->powergraph_v9990,
     };
     unsigned connected = 0;
     unsigned cartridge_capacity = MSX_CARTRIDGE_SLOTS;
@@ -238,6 +240,9 @@ void config_normalize(Config *config) {
         config->region = MSX_REGION_PAL;
     config->vdp_type =
         msx_normalize_vdp_type(config->model, config->vdp_type);
+    if ((unsigned)config->powergraph_video_source >=
+        MSX_VIDEO_SOURCE_COUNT)
+        config->powergraph_video_source = MSX_VIDEO_SOURCE_AUTO;
     config->memory_kb =
         msx_normalize_ram_kb(config->model, config->memory_kb);
     if (config->scale < 1)
@@ -417,6 +422,22 @@ void config_load(Config *config, const char *path) {
             config->cdx2_rom_bank = (unsigned)atoi(value);
         else if (strcmp(key, "rdf600") == 0)
             config->rdf600 = parse_bool(value, config->rdf600);
+        else if (strcmp(key, "powergraph_v9990") == 0)
+            config->powergraph_v9990 =
+                parse_bool(value, config->powergraph_v9990);
+        else if (strcmp(key, "powergraph_video_source") == 0) {
+            if (strcmp(value, "msx") == 0 ||
+                strcmp(value, "internal") == 0)
+                config->powergraph_video_source =
+                    MSX_VIDEO_SOURCE_INTERNAL;
+            else if (strcmp(value, "v9990") == 0 ||
+                     strcmp(value, "powergraph") == 0)
+                config->powergraph_video_source =
+                    MSX_VIDEO_SOURCE_POWERGRAPH;
+            else
+                config->powergraph_video_source =
+                    MSX_VIDEO_SOURCE_AUTO;
+        }
         else if (strcmp(key, "sd_mapper_ram") == 0)
             config->sd_mapper_ram =
                 parse_bool(value, config->sd_mapper_ram);
@@ -664,6 +685,13 @@ int config_save(const Config *config) {
             bool_name(config->cdx2));
     fprintf(file, "rdf600 = %s\n",
             bool_name(config->rdf600));
+    fprintf(file, "powergraph_v9990 = %s\n",
+            bool_name(config->powergraph_v9990));
+    fprintf(file, "powergraph_video_source = %s\n",
+            config->powergraph_video_source == MSX_VIDEO_SOURCE_INTERNAL
+            ? "msx" :
+            config->powergraph_video_source == MSX_VIDEO_SOURCE_POWERGRAPH
+            ? "v9990" : "auto");
     fprintf(file, "megaflash_rom = %s\n",
             config->megaflash_rom_path);
     fprintf(file, "scc = %s\n", bool_name(config->scc));
@@ -833,7 +861,8 @@ unsigned config_cartridge_extension_count(const Config *config) {
            (config->msx_music ? 1u : 0u) +
            (config->rs232 ? 1u : 0u) +
            (config->cdx2 ? 1u : 0u) +
-           (config->rdf600 ? 1u : 0u);
+           (config->rdf600 ? 1u : 0u) +
+           (config->powergraph_v9990 ? 1u : 0u);
 }
 
 const char *config_cartridge_slot_owner(const Config *config,
@@ -864,6 +893,9 @@ const char *config_cartridge_slot_owner(const Config *config,
         extensions[extension_count++] = "CDX-2 FDC";
     if (config->rdf600 && extension_count < MSX_CARTRIDGE_SLOTS)
         extensions[extension_count++] = "RDF600 FDC";
+    if (config->powergraph_v9990 &&
+        extension_count < MSX_CARTRIDGE_SLOTS)
+        extensions[extension_count++] = "PowerGraph V9990";
 
     /*
      * Match the standard MSX/openMSX external-slot order: the first

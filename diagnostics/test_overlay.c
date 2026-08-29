@@ -522,6 +522,10 @@ int main(void) {
     assert(config.vdp_type == MSX_VDP_V9958);
     send_key(&overlay, SDLK_RETURN);
     assert(config.vdp_type == MSX_VDP_V9938);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.vdp_type == MSX_VDP_V9958);
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.vdp_type == MSX_VDP_V9938);
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 3);
     send_key(&overlay, SDLK_RETURN);
@@ -1162,6 +1166,50 @@ int main(void) {
     assert(!config.rdf600);
     assert(!msx_rdf600_connected(&msx));
     assert(!msx_floppy_supported(&msx));
+    assert(overlay_take_machine_reset_request(&overlay));
+
+    /* PowerGraph is a regular Extra Hardware extension.  It must not
+     * depend on Tinker, but it does reserve a physical cartridge slot and
+     * switching the video output requires a cold machine reset. */
+    config_defaults(&config);
+    config.extra_hardware = true;
+    config.tinker = false;
+    msx_configure(&msx, config.model, config.region,
+                  config.memory_kb);
+    overlay_init(&overlay, &config, &models, &display, &msx, NULL, NULL);
+    send_key(&overlay, SDLK_F9);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_RIGHT);
+    for (int row = 0; row < 11; ++row)
+        send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 11); /* EXTENSION_POWERGRAPH_V9990 */
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.powergraph_v9990);
+    assert(msx_powergraph_v9990_connected(&msx));
+    assert(msx_powergraph_v9990_slot(&msx) == 0);
+    assert(strcmp(config_cartridge_slot_owner(&config, 0),
+                  "PowerGraph V9990") == 0);
+    assert(config.powergraph_video_source == MSX_VIDEO_SOURCE_AUTO);
+    assert(!msx_video_output_is_powergraph(&msx));
+    assert(strcmp(msx_video_output_name(&msx), "V9958") == 0);
+    assert(overlay_take_machine_reset_request(&overlay));
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.row == 12); /* EXTENSION_POWERGRAPH_OUTPUT */
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.powergraph_video_source == MSX_VIDEO_SOURCE_INTERNAL);
+    assert(!msx_video_output_is_powergraph(&msx));
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.powergraph_video_source ==
+           MSX_VIDEO_SOURCE_POWERGRAPH);
+    assert(msx_video_output_is_powergraph(&msx));
+    send_key(&overlay, SDLK_RETURN);
+    assert(config.powergraph_video_source == MSX_VIDEO_SOURCE_AUTO);
+    assert(!msx_video_output_is_powergraph(&msx));
+    send_key(&overlay, SDLK_UP);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!config.powergraph_v9990);
+    assert(!msx_powergraph_v9990_connected(&msx));
+    assert(config_cartridge_slot_available(&config, 0));
     assert(overlay_take_machine_reset_request(&overlay));
 
     /* SD Mapper setup keeps controller firmware separate from card media. */

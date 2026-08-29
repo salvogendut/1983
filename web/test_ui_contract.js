@@ -13,6 +13,13 @@ for (const match of app.matchAll(/\$\("([^"]+)"\)/g)) {
 
 assert.match(html, /SD Mapper V2/);
 assert.match(html, /Sunrise IDE/);
+assert.match(html, /PowerGraph V9990/);
+assert.match(html, /id="powergraphToggle"/);
+assert.match(html, /V9990 \/ 512 KB VRAM/);
+assert.match(
+  html,
+  /name="powergraphOutput" value="auto" checked[\s\S]*name="powergraphOutput" value="msx"[\s\S]*name="powergraphOutput" value="v9990"/
+);
 assert.match(html, /id="ledA"[\s\S]*id="ledIde"[\s\S]*<span>IDE<\/span>/);
 assert.match(html, /Embedded Nextor 2\.1\.1/);
 assert.match(html, /href="nextor-license\.txt"/);
@@ -27,6 +34,9 @@ assert.match(
 assert.match(app, /relayHealthEndpoint\(unapiEndpoint\)/);
 assert.match(app, /window\.open\(unapiCertificateUrl, "_blank", "noopener,noreferrer"\)/);
 assert.match(app, /m\._poc_set_sunrise\(requested \? 1 : 0\)/);
+assert.match(app, /m\._poc_set_powergraph_v9990\(requested \? 1 : 0\)/);
+assert.match(app, /m\._poc_set_powergraph_video_source\(source\)/);
+assert.match(app, /framebufferPtr = m\._poc_pixels\(\);[\s\S]*const w = m\._poc_width\(\)/);
 assert.match(app, /ledIdeEl\.classList\.add\("on"\)/);
 assert.match(
   html,

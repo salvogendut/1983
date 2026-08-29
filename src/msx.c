@@ -336,6 +336,7 @@ static void advance_machine(MsxMachine *msx, int cycles) {
 
     msx->cycles += (unsigned)cycles;
     vdp_advance(&msx->vdp, (unsigned)cycles);
+    v9990_advance(&msx->v9990, (unsigned)cycles);
     wd2793_advance(&msx->fdc, (unsigned)cycles);
     if (msx->io_extension_advance)
         msx->io_extension_advance(msx->io_extension_context,
@@ -383,7 +384,7 @@ static void update_interrupt_line(MsxMachine *msx) {
      * the line, so an interrupt acknowledged before EI must not survive
      * as a stale edge in the CPU.
      */
-    msx->cpu.pending_irq = msx->vdp.irq;
+    msx->cpu.pending_irq = msx->vdp.irq || msx->v9990.irq;
 }
 
 static void bus_tick(void *context, int cycles) {
@@ -538,6 +539,35 @@ const char *msx_vdp_name(const MsxMachine *msx) {
          ? "TMS9918A" : "TMS9929A";
 }
 
+const char *msx_video_output_name(const MsxMachine *msx) {
+    return msx_video_output_is_powergraph(msx)
+         ? "PowerGraph V9990" : msx_vdp_name(msx);
+}
+
+const char *msx_video_source_name(MsxVideoSource source) {
+    switch (source) {
+        case MSX_VIDEO_SOURCE_INTERNAL: return "MSX VDP";
+        case MSX_VIDEO_SOURCE_POWERGRAPH: return "V9990";
+        default: return "Auto";
+    }
+}
+
+void msx_set_video_source(MsxMachine *msx, MsxVideoSource source) {
+    if (!msx)
+        return;
+    msx->video_source = (unsigned)source < MSX_VIDEO_SOURCE_COUNT
+                      ? source : MSX_VIDEO_SOURCE_AUTO;
+}
+
+bool msx_video_output_is_powergraph(const MsxMachine *msx) {
+    if (!msx_powergraph_v9990_connected(msx) ||
+        msx->video_source == MSX_VIDEO_SOURCE_INTERNAL)
+        return false;
+    if (msx->video_source == MSX_VIDEO_SOURCE_POWERGRAPH)
+        return true;
+    return v9990_display_active(&msx->v9990);
+}
+
 const char *msx_vdp_type_name(MsxVdpType type) {
     switch (type) {
         case MSX_VDP_V9938: return "V9938";
@@ -565,6 +595,28 @@ void msx_set_vdp_type(MsxMachine *msx, MsxVdpType type) {
         return;
     vdp_set_type(&msx->vdp, type);
     msx_reset(msx);
+}
+
+int msx_set_powergraph_v9990(MsxMachine *msx, bool enabled, int slot) {
+    if (!msx || (enabled &&
+        (slot < 0 || (unsigned)slot >= MSX_CARTRIDGE_SLOTS)))
+        return -1;
+    if (enabled && msx->v9990.enabled &&
+        msx->v9990.slot == (unsigned)slot)
+        return 0;
+    if (v9990_set_enabled(
+            &msx->v9990, enabled, enabled ? (unsigned)slot : 0) != 0)
+        return -1;
+    msx_reset(msx);
+    return 0;
+}
+
+bool msx_powergraph_v9990_connected(const MsxMachine *msx) {
+    return msx && msx->v9990.enabled;
+}
+
+int msx_powergraph_v9990_slot(const MsxMachine *msx) {
+    return msx && msx->v9990.enabled ? (int)msx->v9990.slot : -1;
 }
 
 int msx_default_ram_kb(MsxModel model) {
@@ -685,6 +737,7 @@ void msx_reset(MsxMachine *msx) {
     z80_init(&msx->cpu);
     z80_reset(&msx->cpu);
     vdp_reset(&msx->vdp);
+    v9990_reset(&msx->v9990);
     if (msx->io_extension_reset)
         msx->io_extension_reset(msx->io_extension_context);
 }
@@ -769,6 +822,7 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     msx->rdf600_slot = -1;
     z80_init(&msx->cpu);
     vdp_init(&msx->vdp);
+    v9990_init(&msx->v9990);
     psg_init(&msx->psg, PSG_VARIANT_AY8910);
     rtc_init(&msx->rtc);
     msx->bus.mem_read = bus_memory_read;
@@ -791,6 +845,7 @@ void msx_destroy(MsxMachine *msx) {
     sd_mapper_destroy(&msx->sd_mapper);
     sunrise_destroy(&msx->sunrise);
     wd2793_destroy(&msx->fdc);
+    v9990_destroy(&msx->v9990);
     msx->megaflash_slot = -1;
     msx->sd_mapper_slot = -1;
     msx->sunrise_slot = -1;
@@ -824,6 +879,7 @@ void msx_run_frame(MsxMachine *msx) {
         &msx->vdp, (unsigned)frame_cycles,
         msx->region == MSX_REGION_NTSC
         ? MSX_NTSC_SCANLINES : MSX_PAL_SCANLINES);
+    v9990_begin_frame(&msx->v9990, (unsigned)frame_cycles);
     msx->cycle_balance += frame_cycles;
     while (msx->cycle_balance > 0) {
         msx->cpu.int_accepted = false;
@@ -838,6 +894,7 @@ void msx_run_frame(MsxMachine *msx) {
     }
 
     vdp_end_frame(&msx->vdp);
+    v9990_end_frame(&msx->v9990);
     update_interrupt_line(msx);
 }
 
@@ -1094,6 +1151,8 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
                 &msx->fdc, (u8)(low - 0xd0));
         }
     }
+    if (v9990_io_read(&msx->v9990, port, &extension_value))
+        return extension_value;
     if (msx->io_extension_read &&
         msx->io_extension_read(
             msx->io_extension_context, port, &extension_value))
@@ -1183,6 +1242,8 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
             return;
         }
     }
+    if (v9990_io_write(&msx->v9990, port, value))
+        return;
     if (msx->io_extension_write &&
         msx->io_extension_write(
             msx->io_extension_context, port, value))

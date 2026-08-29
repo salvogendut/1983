@@ -205,6 +205,48 @@ async function main() {
   assert.strictEqual(module._poc_set_sd_mapper(0), 0);
   assert.strictEqual(module._poc_sd_mapper_enabled(), 0);
 
+  const internalVdpPixels = module._poc_pixels();
+  assert.strictEqual(module._poc_set_powergraph_v9990(1), 1);
+  assert.strictEqual(module._poc_powergraph_v9990_enabled(), 1);
+  assert.strictEqual(module._poc_powergraph_v9990_slot(), 0);
+  assert.strictEqual(module._poc_powergraph_video_source(), 0);
+  assert.strictEqual(module._poc_powergraph_output_active(), 0);
+  assert.strictEqual(
+    module._poc_pixels(), internalVdpPixels,
+    'Auto must retain the MSX VDP until V9990 software enables its display'
+  );
+  assert.strictEqual(module._poc_set_powergraph_video_source(3), -1);
+  assert.strictEqual(module._poc_set_powergraph_video_source(2), 2);
+  assert.strictEqual(module._poc_powergraph_output_active(), 1);
+  assert.notStrictEqual(
+    module._poc_pixels(), internalVdpPixels,
+    'the V9990 override must expose the PowerGraph framebuffer'
+  );
+  assert.strictEqual(module._poc_set_powergraph_video_source(1), 1);
+  assert.strictEqual(module._poc_powergraph_output_active(), 0);
+  assert.strictEqual(module._poc_pixels(), internalVdpPixels);
+  assert.strictEqual(module._poc_set_powergraph_video_source(0), 0);
+  assert.strictEqual(module._poc_set_sunrise(1), 1);
+  assert.strictEqual(module._poc_sunrise_slot(), 0);
+  assert.strictEqual(
+    module._poc_powergraph_v9990_slot(), 1,
+    'PowerGraph must move to cartridge II behind Sunrise'
+  );
+  assert.strictEqual(
+    module._poc_set_sd_mapper(1), -1,
+    'a third cartridge extension must be rejected'
+  );
+  assert.strictEqual(module._poc_sd_mapper_enabled(), 0);
+  assert.strictEqual(module._poc_set_sunrise(0), 0);
+  assert.strictEqual(module._poc_powergraph_v9990_slot(), 0);
+  assert.strictEqual(module._poc_set_sd_mapper(1), 1);
+  assert.strictEqual(module._poc_sd_mapper_slot(), 0);
+  assert.strictEqual(module._poc_powergraph_v9990_slot(), 1);
+  assert.strictEqual(module._poc_set_powergraph_v9990(0), 0);
+  assert.strictEqual(module._poc_powergraph_v9990_enabled(), 0);
+  assert.strictEqual(module._poc_pixels(), internalVdpPixels);
+  assert.strictEqual(module._poc_set_sd_mapper(0), 0);
+
   assert.strictEqual(module._poc_set_input_device(0), 0);
   module._poc_joy(4, 1);
   assert.strictEqual(module._poc_joy_matrix() & 0x10, 0);
@@ -222,6 +264,7 @@ async function main() {
 
   assert.strictEqual(module._poc_set_sunrise(1), 1);
   assert.strictEqual(module._poc_set_sd_mapper(1), 1);
+  assert.strictEqual(module._poc_set_powergraph_v9990(1), -1);
   assert.strictEqual(module._poc_set_unapi(1), 1);
   assert.strictEqual(module._poc_init_model(0, 0), 0);
   assert.strictEqual(module._poc_frame_hz(), 60);
@@ -232,6 +275,8 @@ async function main() {
   assert.strictEqual(module._poc_sunrise_enabled(), 1);
   assert.strictEqual(module._poc_sunrise_slot(), 0);
   assert.strictEqual(module._poc_sd_mapper_slot(), 1);
+  assert.strictEqual(module._poc_powergraph_v9990_enabled(), 0);
+  assert.strictEqual(module._poc_powergraph_video_source(), 0);
   assert.strictEqual(module._poc_unapi_enabled(), 1);
   assert.strictEqual(module._poc_set_sunrise(0), 0);
   assert.strictEqual(module._poc_set_sd_mapper(0), 0);

@@ -13,6 +13,7 @@
 #include "tc8566.h"
 #include "types.h"
 #include "vdp.h"
+#include "v9990.h"
 #include "wd2793.h"
 #include "z80.h"
 
@@ -73,6 +74,13 @@ typedef enum {
 } MsxRegion;
 
 typedef enum {
+    MSX_VIDEO_SOURCE_AUTO = 0,
+    MSX_VIDEO_SOURCE_INTERNAL,
+    MSX_VIDEO_SOURCE_POWERGRAPH,
+    MSX_VIDEO_SOURCE_COUNT
+} MsxVideoSource;
+
+typedef enum {
     MSX_FLOPPY_CONTROLLER_NONE = 0,
     MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793,
     MSX_FLOPPY_CONTROLLER_COUNT
@@ -104,6 +112,7 @@ typedef void (*MsxIoExtensionAdvance)(void *context, unsigned cycles);
 typedef struct {
     const MsxProfile *profile;
     MsxRegion region;
+    MsxVideoSource video_source;
     int       ram_kb;
     int       frame_hz;
     u64       frame;
@@ -125,6 +134,7 @@ typedef struct {
     Z80    cpu;
     Z80Bus bus;
     MsxVdp vdp;
+    MsxV9990 v9990;
     Psg    psg;
     MsxRtc rtc;
     char rtc_persistence_path[MSX_RTC_PATH_MAX];
@@ -202,10 +212,17 @@ bool msx_model_is_msx2(MsxModel model);
 bool msx_has_memory_mapper(const MsxMachine *msx);
 const char *msx_region_name(MsxRegion region);
 const char *msx_vdp_name(const MsxMachine *msx);
+const char *msx_video_output_name(const MsxMachine *msx);
+const char *msx_video_source_name(MsxVideoSource source);
+void msx_set_video_source(MsxMachine *msx, MsxVideoSource source);
+bool msx_video_output_is_powergraph(const MsxMachine *msx);
 const char *msx_vdp_type_name(MsxVdpType type);
 MsxVdpType msx_default_vdp_type(MsxModel model);
 MsxVdpType msx_normalize_vdp_type(MsxModel model, MsxVdpType type);
 void msx_set_vdp_type(MsxMachine *msx, MsxVdpType type);
+int  msx_set_powergraph_v9990(MsxMachine *msx, bool enabled, int slot);
+bool msx_powergraph_v9990_connected(const MsxMachine *msx);
+int  msx_powergraph_v9990_slot(const MsxMachine *msx);
 
 int  msx_default_ram_kb(MsxModel model);
 int  msx_normalize_ram_kb(MsxModel model, int ram_kb);

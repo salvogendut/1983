@@ -125,6 +125,10 @@ cdx2_rom_bank = 0
 rdf600 = false
 # User-supplied exact 16 KiB controller/driver ROM (not distributed by 1983).
 rdf600_rom =
+# PowerGraph/GFX9000-compatible external V9990 with 512 KiB VRAM.
+powergraph_v9990 = false
+# auto follows V9990 display enable; msx and v9990 force one output.
+powergraph_video_source = auto
 
 [advanced]
 tinker = false

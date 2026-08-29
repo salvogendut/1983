@@ -32,6 +32,8 @@ int main(void) {
     assert(config.cdx2_rom_bank == 0);
     assert(!config.rdf600);
     assert(!config.rdf600_rom_path[0]);
+    assert(!config.powergraph_v9990);
+    assert(config.powergraph_video_source == MSX_VIDEO_SOURCE_AUTO);
     assert(!config.megaflash_rom_path[0]);
     assert(!config.megaflash_card_path[0][0]);
     assert(!config.megaflash_card_path[1][0]);
@@ -310,6 +312,26 @@ int main(void) {
                       "RDF600 FDC") == 0);
     }
 
+    {
+        Config powergraph = loaded;
+
+        powergraph.sunrise_ide = false;
+        powergraph.sd_mapper = false;
+        powergraph.megaflash = false;
+        powergraph.cdx2 = false;
+        powergraph.rdf600 = false;
+        powergraph.powergraph_v9990 = true;
+        powergraph.tinker = false;
+        config_normalize(&powergraph);
+        assert(powergraph.powergraph_v9990);
+        assert(config_cartridge_extension_count(&powergraph) == 1);
+        assert(strcmp(config_cartridge_slot_owner(&powergraph, 0),
+                      "PowerGraph V9990") == 0);
+        assert(!config_cartridge_slot_available(&powergraph, 0));
+        assert(config_cartridge_slot_available(&powergraph, 1));
+        assert(powergraph.powergraph_video_source == MSX_VIDEO_SOURCE_AUTO);
+    }
+
     loaded.scc = true;
     config_normalize(&loaded);
     assert(loaded.sunrise_ide);
@@ -336,6 +358,24 @@ int main(void) {
     loaded.vdp_type = MSX_VDP_V9938;
     config_normalize(&loaded);
     assert(loaded.vdp_type == MSX_VDP_TMS9918);
+
+    {
+        FILE *powergraph = fopen(path, "w");
+
+        assert(powergraph != NULL);
+        assert(fputs("[extensions]\n"
+                     "powergraph_v9990 = true\n"
+                     "powergraph_video_source = v9990\n",
+                     powergraph) >= 0);
+        assert(fclose(powergraph) == 0);
+        config_load(&loaded, path);
+        assert(!loaded.tinker);
+        assert(loaded.powergraph_v9990);
+        assert(loaded.powergraph_video_source ==
+               MSX_VIDEO_SOURCE_POWERGRAPH);
+        assert(strcmp(config_cartridge_slot_owner(&loaded, 0),
+                      "PowerGraph V9990") == 0);
+    }
 
     /* A catalogue-defined controller can occupy either physical
      * cartridge port. The remaining port still accepts one extension. */

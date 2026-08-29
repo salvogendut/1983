@@ -36,7 +36,9 @@ typedef struct {
     bool smoothing;
     bool real_crt;
     bool mouse_captured;
+    bool powergraph_output;
     int  crt_scanlines;
+    char model_name[64];
 } Display;
 
 int  display_init(Display *display, const Config *config,

@@ -71,10 +71,12 @@ the project repository in a new browser tab.
 - Selecting **Mouse** captures relative pointer motion when the display is
   clicked. Press **Ctrl+Enter** (or the browser's pointer-lock escape key) to
   release it.
-- **AUX expansion bay** with Sunrise IDE, SD Mapper V2 and MSX TCP/IP UNAPI
-  controls. Sunrise and SD Mapper have fixed embedded Nextor firmware and safe
-  read-only/read-write image handling. They reserve cartridge slots in device
-  order; UNAPI is port-mapped and leaves both slots available.
+- **AUX expansion bay** with Sunrise IDE, SD Mapper V2, PowerGraph V9990 and
+  MSX TCP/IP UNAPI controls. Sunrise and SD Mapper have fixed embedded Nextor
+  firmware and safe read-only/read-write image handling. PowerGraph supplies
+  the external V9990 video output and 512 KiB of video RAM. The three cartridge
+  devices reserve slots in device order; UNAPI is port-mapped and leaves both
+  slots available.
 
 ## AUX expansion bay
 
@@ -97,16 +99,26 @@ image into SD A or SD B. Read/write images live in the browser's in-memory
 filesystem while mounted. Safe ejection flushes the image and downloads its
 updated contents. Disabling the mapper also safely ejects mounted images.
 
+**PowerGraph V9990** exposes the external V9990 video ports, 512 KiB VRAM and
+the PowerGraph video output. It needs no firmware chooser. Software such as
+SymbOS selects that output through its V9990 driver. The default **Auto**
+display source shows the internal MSX VDP during boot and follows PowerGraph
+when software enables the V9990 display. The `MSX VDP` and `V9990` choices
+force either connector, like selecting an input in a real two-monitor setup.
+V9990 pattern sprites and bitmap hardware cursors are rendered, including the
+SymbOS mouse pointer; select `Mouse` in the input channel and click the display
+to capture the host pointer.
+
 **MSX TCP/IP UNAPI** implements the same 28h/29h host bridge used by the native
 openMSXnet-compatible device. The guest must load `UNAPINET.COM`. Web browsers
 cannot open arbitrary TCP or UDP sockets, so the browser bridge connects to a
 restricted WebSocket relay. See [UNAPI-WASM.md](UNAPI-WASM.md) for setup and
 security details.
 
-Sunrise occupies cartridge I. If both cartridge extensions are enabled, SD
-Mapper moves to cartridge II; if Sunrise is disabled, SD Mapper moves back to
-cartridge I. The normal cartridge controls display the corresponding reserved
-slots.
+Sunrise, SD Mapper and PowerGraph are assigned cartridge I then II in that
+order, skipping disabled devices. Only two may be connected at once. Removing
+an earlier device moves the later device down to cartridge I. The normal
+cartridge controls display the corresponding reserved slots.
 
 ## URL-configured hardware and media
 
@@ -139,13 +151,18 @@ bootable disk starts without an `autorun` parameter. An explicit `machine=msx1`
 combined with a `disk` reports that the selected machine has no floppy
 controller instead of silently changing profiles.
 
-The `extensions` parameter accepts `sunrise`, `sdmapper`, and `unapi` as a
-comma-separated list. An explicit list overrides stored extension toggles for
-that page load without rewriting browser storage. `ide` loads an IDE master
-image and implicitly enables Sunrise; `sda` and `sdb` load the two SD Mapper
-cards and implicitly enable that mapper. URL-loaded images are read-only unless
+The `extensions` parameter accepts `sunrise`, `sdmapper`, `powergraph`, and
+`unapi` as a comma-separated list. An explicit list overrides stored extension
+toggles for that page load without rewriting browser storage. At most two of
+the three cartridge extensions may be selected. `ide` loads an IDE master image
+and implicitly enables Sunrise; `sda` and `sdb` load the two SD Mapper cards and
+implicitly enable that mapper. URL-loaded images are read-only unless
 `idemode=readwrite` or `sdmode=readwrite` is supplied. Writable changes remain
 local and use the download-on-eject path.
+
+For example, this exposes the V9990 output for a prepared SymbOS image:
+
+    http://127.0.0.1:1983/?machine=omega-msx2&extensions=sunrise,powergraph&ide=media/MSXSYMBOS.img&idemode=readwrite
 
 For example, a Sunrise-configured SymbOS image can be launched with:
 
