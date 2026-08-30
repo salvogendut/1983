@@ -23,6 +23,11 @@ int main(void) {
     assert(!config.subrom_path[0]);
     assert(!config.disk_rom_path[0]);
     assert(!config.sunrise_rom_path[0]);
+    assert(!config.msx_scsi);
+    assert(!config.scsi_rom_path[0]);
+    assert(!config.scsi_image_path[0]);
+    assert(config.scsi_target_id == 0);
+    assert(config.scsi_image_mode == ATA_IMAGE_READ_ONLY);
     assert(!config.sd_mapper);
     assert(!config.sd_mapper_rom_path[0]);
     assert(!config.megaflash);
@@ -119,6 +124,14 @@ int main(void) {
     snprintf(config.sunrise_rom_path,
              sizeof(config.sunrise_rom_path),
              "/roms/Nextor-2.1.1.SunriseIDE.ROM");
+    snprintf(config.scsi_rom_path,
+             sizeof(config.scsi_rom_path),
+             "/roms/bert-scsi.rom");
+    snprintf(config.scsi_image_path,
+             sizeof(config.scsi_image_path),
+             "/disks/MSXDOS2-SCSI.IMG");
+    config.scsi_target_id = 3;
+    config.scsi_image_mode = ATA_IMAGE_READ_WRITE;
     snprintf(config.cdx2_rom_path,
              sizeof(config.cdx2_rom_path),
              "/roms/cdx-2.rom");
@@ -193,6 +206,13 @@ int main(void) {
     assert(loaded.sunrise_ide);
     assert(strcmp(loaded.sunrise_rom_path,
                   "/roms/Nextor-2.1.1.SunriseIDE.ROM") == 0);
+    assert(!loaded.msx_scsi);
+    assert(strcmp(loaded.scsi_rom_path,
+                  "/roms/bert-scsi.rom") == 0);
+    assert(strcmp(loaded.scsi_image_path,
+                  "/disks/MSXDOS2-SCSI.IMG") == 0);
+    assert(loaded.scsi_target_id == 3);
+    assert(loaded.scsi_image_mode == ATA_IMAGE_READ_WRITE);
     assert(strcmp(loaded.cdx2_rom_path,
                   "/roms/cdx-2.rom") == 0);
     assert(loaded.cdx2_rom_bank == 1);
@@ -283,9 +303,30 @@ int main(void) {
     }
 
     {
+        Config scsi_config = loaded;
+
+        scsi_config.sunrise_ide = false;
+        scsi_config.sd_mapper = false;
+        scsi_config.megaflash = false;
+        scsi_config.msx_scsi = true;
+        config_normalize(&scsi_config);
+        assert(config_cartridge_extension_count(&scsi_config) == 1);
+        assert(strcmp(config_cartridge_slot_owner(&scsi_config, 0),
+                      "MSX SCSI") == 0);
+        scsi_config.cdx2 = true;
+        config_normalize(&scsi_config);
+        assert(scsi_config.msx_scsi);
+        assert(!scsi_config.cdx2);
+        scsi_config.scsi_target_id = 7;
+        config_normalize(&scsi_config);
+        assert(scsi_config.scsi_target_id == 0);
+    }
+
+    {
         Config cdx_config = loaded;
 
         cdx_config.sunrise_ide = false;
+        cdx_config.msx_scsi = false;
         cdx_config.sd_mapper = false;
         cdx_config.megaflash = false;
         cdx_config.cdx2 = true;

@@ -1,0 +1,14 @@
+MSX SCSI controller ROM
+=======================
+
+1983 supports compatible banked MSX SCSI cartridge firmware, including the
+Z5380-based interface documented at:
+
+  https://hackaday.io/project/205465-scsi-interface-for-msx-computers
+
+No SCSI controller ROM is shipped or tracked in this repository. Put a ROM
+you are entitled to use anywhere on the host and select it from Extensions >
+MSX SCSI, or pass it with --scsi-rom. Its copyright and redistribution terms
+remain those supplied by its author.
+
+See ../SCSI.md for image preparation and boot instructions.

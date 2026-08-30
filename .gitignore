@@ -14,6 +14,7 @@
 /test-wd2793
 /test-tc8566
 /test-sunrise
+/test-scsi
 /test-sdcard
 /test-sd-mapper
 /test-megaflash
@@ -47,6 +48,7 @@
 !/ROMS/Nextor-2.1.1.SunriseIDE.ROM
 !/ROMS/README-NEXTOR-SUNRISE
 !/ROMS/LICENSE-NEXTOR
+!/ROMS/README-MSXSCSI
 /rtc/
 /DOS/*
 /src/.deps/

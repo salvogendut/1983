@@ -23,6 +23,8 @@ static const char *const file_chooser_keys[CONFIG_FILE_CHOOSER_COUNT] = {
     [CONFIG_FILE_CHOOSER_DRIVE_B] = "last_drive_b_dir",
     [CONFIG_FILE_CHOOSER_SUNRISE_ROM] = "last_sunrise_rom_dir",
     [CONFIG_FILE_CHOOSER_IDE_IMAGE] = "last_ide_image_dir",
+    [CONFIG_FILE_CHOOSER_SCSI_ROM] = "last_scsi_rom_dir",
+    [CONFIG_FILE_CHOOSER_SCSI_IMAGE] = "last_scsi_image_dir",
     [CONFIG_FILE_CHOOSER_SD_MAPPER_ROM] = "last_sd_mapper_rom_dir",
     [CONFIG_FILE_CHOOSER_SD_CARD_A] = "last_sd_card_a_dir",
     [CONFIG_FILE_CHOOSER_SD_CARD_B] = "last_sd_card_b_dir",
@@ -206,6 +208,8 @@ void config_defaults(Config *config) {
     config->floppy.primary_slot = -1;
     config->floppy.secondary_slot = -1;
     config->ide_image_mode = ATA_IMAGE_READ_ONLY;
+    config->scsi_image_mode = ATA_IMAGE_READ_ONLY;
+    config->scsi_target_id = MSX_SCSI_DEFAULT_TARGET_ID;
     config->sd_image_mode = SD_IMAGE_READ_ONLY;
     config->sd_mapper_ram = true;
     config->powergraph_video_source = MSX_VIDEO_SOURCE_AUTO;
@@ -214,6 +218,7 @@ void config_defaults(Config *config) {
 void config_normalize(Config *config) {
     bool *cartridge_extensions[] = {
         &config->sunrise_ide,
+        &config->msx_scsi,
         &config->sd_mapper,
         &config->megaflash,
         &config->scc,
@@ -259,12 +264,20 @@ void config_normalize(Config *config) {
         config->audio_volume = 100;
     if (config->ide_image_mode != ATA_IMAGE_READ_WRITE)
         config->ide_image_mode = ATA_IMAGE_READ_ONLY;
+    if (config->scsi_image_mode != ATA_IMAGE_READ_WRITE)
+        config->scsi_image_mode = ATA_IMAGE_READ_ONLY;
+    if (config->scsi_target_id >= 7)
+        config->scsi_target_id = MSX_SCSI_DEFAULT_TARGET_ID;
     if (config->sd_image_mode != SD_IMAGE_READ_WRITE)
         config->sd_image_mode = SD_IMAGE_READ_ONLY;
     if (config->floppy_image_mode != FLOPPY_IMAGE_READ_WRITE)
         config->floppy_image_mode = FLOPPY_IMAGE_READ_ONLY;
     if (config->cdx2_rom_bank > 1)
         config->cdx2_rom_bank = 0;
+    /* Both cartridges decode the D0h-D7h I/O range. The physical devices
+     * cannot coexist even when two cartridge slots are available. */
+    if (config->msx_scsi && config->cdx2)
+        config->cdx2 = false;
     if (!msx_floppy_config_valid(config->model, &config->floppy)) {
         config->floppy.controller = MSX_FLOPPY_CONTROLLER_NONE;
         config->floppy.primary_slot = -1;
@@ -407,6 +420,8 @@ void config_load(Config *config, const char *path) {
             config->second_drive = parse_bool(value, config->second_drive);
         else if (strcmp(key, "sunrise_ide") == 0)
             config->sunrise_ide = parse_bool(value, config->sunrise_ide);
+        else if (strcmp(key, "msx_scsi") == 0)
+            config->msx_scsi = parse_bool(value, config->msx_scsi);
         else if (strcmp(key, "sd_mapper") == 0)
             config->sd_mapper = parse_bool(value, config->sd_mapper);
         else if (strcmp(key, "megaflash") == 0)
@@ -481,6 +496,9 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "sunrise_rom") == 0)
             snprintf(config->sunrise_rom_path,
                      sizeof(config->sunrise_rom_path), "%s", value);
+        else if (strcmp(key, "scsi_rom") == 0)
+            snprintf(config->scsi_rom_path,
+                     sizeof(config->scsi_rom_path), "%s", value);
         else if (strcmp(key, "sd_mapper_rom") == 0)
             snprintf(config->sd_mapper_rom_path,
                      sizeof(config->sd_mapper_rom_path), "%s", value);
@@ -513,6 +531,11 @@ void config_load(Config *config, const char *path) {
         else if (strcmp(key, "ide_image") == 0)
             snprintf(config->ide_image_path,
                      sizeof(config->ide_image_path), "%s", value);
+        else if (strcmp(key, "scsi_image") == 0)
+            snprintf(config->scsi_image_path,
+                     sizeof(config->scsi_image_path), "%s", value);
+        else if (strcmp(key, "scsi_target_id") == 0)
+            config->scsi_target_id = (unsigned)atoi(value);
         else if (strcmp(key, "drive_a") == 0)
             snprintf(config->drive_a_path,
                      sizeof(config->drive_a_path), "%s", value);
@@ -527,6 +550,11 @@ void config_load(Config *config, const char *path) {
                   FLOPPY_IMAGE_READ_ONLY;
         else if (strcmp(key, "ide_image_mode") == 0)
             config->ide_image_mode =
+                strcmp(value, "read-write") == 0 ||
+                strcmp(value, "rw") == 0
+                ? ATA_IMAGE_READ_WRITE : ATA_IMAGE_READ_ONLY;
+        else if (strcmp(key, "scsi_image_mode") == 0)
+            config->scsi_image_mode =
                 strcmp(value, "read-write") == 0 ||
                 strcmp(value, "rw") == 0
                 ? ATA_IMAGE_READ_WRITE : ATA_IMAGE_READ_ONLY;
@@ -641,6 +669,10 @@ int config_save(const Config *config) {
     fprintf(file, "ide_image_mode = %s\n",
             config->ide_image_mode == ATA_IMAGE_READ_WRITE
             ? "read-write" : "read-only");
+    fprintf(file, "scsi_image = %s\n", config->scsi_image_path);
+    fprintf(file, "scsi_image_mode = %s\n",
+            config->scsi_image_mode == ATA_IMAGE_READ_WRITE
+            ? "read-write" : "read-only");
     fprintf(file, "sd_card_a = %s\n", config->sd_card_path[0]);
     fprintf(file, "sd_card_b = %s\n", config->sd_card_path[1]);
     fprintf(file, "megaflash_sd_a = %s\n",
@@ -664,6 +696,9 @@ int config_save(const Config *config) {
             bool_name(config->second_drive));
     fprintf(file, "sunrise_ide = %s\n", bool_name(config->sunrise_ide));
     fprintf(file, "sunrise_rom = %s\n", config->sunrise_rom_path);
+    fprintf(file, "msx_scsi = %s\n", bool_name(config->msx_scsi));
+    fprintf(file, "scsi_rom = %s\n", config->scsi_rom_path);
+    fprintf(file, "scsi_target_id = %u\n", config->scsi_target_id);
     fprintf(file, "sd_mapper = %s\n", bool_name(config->sd_mapper));
     fprintf(file, "sd_mapper_rom = %s\n",
             config->sd_mapper_rom_path);
@@ -855,6 +890,7 @@ unsigned config_cartridge_extension_count(const Config *config) {
             (config->floppy.primary_slot == 1 ||
              config->floppy.primary_slot == 2) ? 1u : 0u) +
            (config->sunrise_ide ? 1u : 0u) +
+           (config->msx_scsi ? 1u : 0u) +
            (config->sd_mapper ? 1u : 0u) +
            (config->megaflash ? 1u : 0u) +
            (config->scc ? 1u : 0u) +
@@ -879,6 +915,8 @@ const char *config_cartridge_slot_owner(const Config *config,
         owners[config->floppy.primary_slot - 1] = "Floppy controller";
     if (config->sunrise_ide && extension_count < MSX_CARTRIDGE_SLOTS)
         extensions[extension_count++] = "Sunrise IDE";
+    if (config->msx_scsi && extension_count < MSX_CARTRIDGE_SLOTS)
+        extensions[extension_count++] = "MSX SCSI";
     if (config->sd_mapper && extension_count < MSX_CARTRIDGE_SLOTS)
         extensions[extension_count++] = "SD Mapper V2";
     if (config->megaflash && extension_count < MSX_CARTRIDGE_SLOTS)

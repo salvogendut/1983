@@ -6,6 +6,7 @@
 #include "cassette.h"
 #include "cartridge.h"
 #include "megaflash.h"
+#include "msx_scsi.h"
 #include "psg.h"
 #include "rtc.h"
 #include "sd_mapper.h"
@@ -153,12 +154,14 @@ typedef struct {
     MsxMegaFlashRom megaflash;
     MsxSdMapper sd_mapper;
     MsxSunriseIde sunrise;
+    MsxScsi scsi;
     Wd2793 fdc;
     Tc8566 rdf600_fdc;
     MsxFloppyConfig floppy_config;
     int megaflash_slot;
     int sd_mapper_slot;
     int sunrise_slot;
+    int scsi_slot;
     int rs232_slot;
     int cdx2_slot;
     int rdf600_slot;
@@ -340,6 +343,28 @@ bool msx_sunrise_disk_dirty(const MsxMachine *msx);
 bool msx_sunrise_disk_has_error(const MsxMachine *msx);
 const char *msx_sunrise_disk_error(const MsxMachine *msx);
 bool msx_sunrise_take_activity(MsxMachine *msx);
+int msx_install_scsi(MsxMachine *msx, unsigned slot,
+                     const u8 *data, size_t size, unsigned target_id);
+int msx_load_scsi(MsxMachine *msx, unsigned slot,
+                  const char *path, unsigned target_id);
+int msx_replace_scsi(MsxMachine *msx, const char *rom_path,
+                     const char *disk_path, AtaImageMode mode,
+                     unsigned target_id);
+int msx_eject_scsi(MsxMachine *msx);
+bool msx_scsi_connected(const MsxMachine *msx);
+int msx_scsi_slot(const MsxMachine *msx);
+void msx_reassign_scsi_slot(MsxMachine *msx, int slot);
+unsigned msx_scsi_configured_target_id(const MsxMachine *msx);
+int msx_mount_scsi_disk(MsxMachine *msx, const char *path,
+                        AtaImageMode mode);
+int msx_flush_scsi_disk(MsxMachine *msx);
+int msx_eject_scsi_disk(MsxMachine *msx);
+bool msx_scsi_disk_is_mounted(const MsxMachine *msx);
+bool msx_scsi_disk_is_writable(const MsxMachine *msx);
+bool msx_scsi_disk_is_dirty(const MsxMachine *msx);
+bool msx_scsi_disk_has_io_error(const MsxMachine *msx);
+const char *msx_scsi_disk_last_error(const MsxMachine *msx);
+bool msx_scsi_take_disk_activity(MsxMachine *msx);
 int msx_install_sd_mapper(MsxMachine *msx, unsigned slot,
                           const u8 *data, size_t size);
 int msx_load_sd_mapper(MsxMachine *msx, unsigned slot,
