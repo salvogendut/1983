@@ -23,6 +23,7 @@ typedef enum {
     OVERLAY_STATE_CONFIRM,
     OVERLAY_STATE_MACHINE,
     OVERLAY_STATE_SUNRISE_SETUP,
+    OVERLAY_STATE_SCSI_SETUP,
     OVERLAY_STATE_SD_MAPPER_SETUP,
     OVERLAY_STATE_MEGAFLASH_SETUP,
     OVERLAY_STATE_MODEL_LIST,
@@ -41,6 +42,8 @@ typedef enum {
     OVERLAY_DIALOG_DRIVE_B,
     OVERLAY_DIALOG_SUNRISE_ROM,
     OVERLAY_DIALOG_IDE_IMAGE,
+    OVERLAY_DIALOG_SCSI_ROM,
+    OVERLAY_DIALOG_SCSI_IMAGE,
     OVERLAY_DIALOG_SD_MAPPER_ROM,
     OVERLAY_DIALOG_SD_CARD_A,
     OVERLAY_DIALOG_SD_CARD_B,
@@ -85,6 +88,11 @@ typedef struct {
     int sunrise_setup_row;
     char pending_sunrise_rom_path[PATH_MAX];
     char pending_ide_image_path[PATH_MAX];
+
+    int scsi_setup_row;
+    char pending_scsi_rom_path[PATH_MAX];
+    char pending_scsi_image_path[PATH_MAX];
+    unsigned pending_scsi_target_id;
 
     int sd_mapper_setup_row;
     char pending_sd_mapper_rom_path[PATH_MAX];

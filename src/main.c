@@ -41,6 +41,8 @@ typedef struct {
     const char *subrom_path;
     const char *disk_rom_path;
     const char *sunrise_rom_path;
+    const char *scsi_rom_path;
+    const char *scsi_image_path;
     const char *sd_mapper_rom_path;
     const char *sd_card_path[MSX_SD_MAPPER_CARDS];
     const char *megaflash_rom_path;
@@ -62,10 +64,13 @@ typedef struct {
     int region;
     int floppy_image_mode;
     int ide_image_mode;
+    int scsi_image_mode;
     int sd_image_mode;
     int tcpip_unapi;
     int rs232;
     int cdx2;
+    int msx_scsi;
+    int scsi_target_id;
     int cdx2_rom_bank;
     int rdf600;
     int powergraph_v9990;
@@ -263,6 +268,12 @@ static const char *usage =
     "  --subrom PATH       load a 16 KB MSX2 Sub-ROM in slot 3-0\n"
     "  --disk-rom PATH     load a 16 KB floppy-controller disk ROM\n"
     "  --sunrise-rom PATH  load a 128 KB Sunrise IDE/Nextor kernel ROM\n"
+    "  --msx-scsi          enable the NCR/Z5380 MSX SCSI cartridge\n"
+    "  --no-msx-scsi       disable the NCR/Z5380 MSX SCSI cartridge\n"
+    "  --scsi-rom PATH     load a user-provided banked MSX SCSI ROM\n"
+    "  --scsi-disk PATH    attach a raw 512-byte-sector SCSI disk image\n"
+    "  --scsi-id N         expose the disk as target ID 0 through 6\n"
+    "  --scsi-mode MODE    SCSI access: read-only (default) or read-write\n"
     "  --sd-mapper-rom PATH load a 128/256 KB MSX SD Mapper V2 ROM\n"
     "  --sd-a PATH          insert a raw image in SD Mapper card A\n"
     "  --sd-b PATH          insert a raw image in SD Mapper card B\n"
@@ -370,15 +381,14 @@ static int parse_mapper(const char *text, const char *option,
     return -1;
 }
 
-static int parse_ide_mode(const char *text) {
+static int parse_ata_mode(const char *text, const char *option) {
     if (strcmp(text, "read-only") == 0 ||
         strcmp(text, "ro") == 0)
         return ATA_IMAGE_READ_ONLY;
     if (strcmp(text, "read-write") == 0 ||
         strcmp(text, "rw") == 0)
         return ATA_IMAGE_READ_WRITE;
-    fprintf(stderr,
-            "--ide-mode: expected read-only or read-write\n");
+    fprintf(stderr, "%s: expected read-only or read-write\n", option);
     return -1;
 }
 
@@ -412,10 +422,13 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
     cli->region = -1;
     cli->floppy_image_mode = -1;
     cli->ide_image_mode = -1;
+    cli->scsi_image_mode = -1;
     cli->sd_image_mode = -1;
     cli->tcpip_unapi = -1;
     cli->rs232 = -1;
     cli->cdx2 = -1;
+    cli->msx_scsi = -1;
+    cli->scsi_target_id = -1;
     cli->cdx2_rom_bank = -1;
     cli->rdf600 = -1;
     cli->powergraph_v9990 = -1;
@@ -472,6 +485,14 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->cdx2 = 0;
             continue;
         }
+        if (strcmp(argument, "--msx-scsi") == 0) {
+            cli->msx_scsi = 1;
+            continue;
+        }
+        if (strcmp(argument, "--no-msx-scsi") == 0) {
+            cli->msx_scsi = 0;
+            continue;
+        }
         if (strcmp(argument, "--rdf600") == 0) {
             cli->rdf600 = 1;
             continue;
@@ -498,6 +519,10 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--subrom") == 0 ||
              strcmp(argument, "--disk-rom") == 0 ||
              strcmp(argument, "--sunrise-rom") == 0 ||
+             strcmp(argument, "--scsi-rom") == 0 ||
+             strcmp(argument, "--scsi-disk") == 0 ||
+             strcmp(argument, "--scsi-id") == 0 ||
+             strcmp(argument, "--scsi-mode") == 0 ||
              strcmp(argument, "--sd-mapper-rom") == 0 ||
              strcmp(argument, "--sd-a") == 0 ||
              strcmp(argument, "--sd-b") == 0 ||
@@ -547,6 +572,20 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->disk_rom_path = argv[++i];
         } else if (strcmp(argument, "--sunrise-rom") == 0) {
             cli->sunrise_rom_path = argv[++i];
+        } else if (strcmp(argument, "--scsi-rom") == 0) {
+            cli->scsi_rom_path = argv[++i];
+        } else if (strcmp(argument, "--scsi-disk") == 0) {
+            cli->scsi_image_path = argv[++i];
+        } else if (strcmp(argument, "--scsi-id") == 0) {
+            cli->scsi_target_id = parse_integer(
+                argv[++i], 0, 6, "--scsi-id");
+            if (cli->scsi_target_id < 0)
+                return -1;
+        } else if (strcmp(argument, "--scsi-mode") == 0) {
+            cli->scsi_image_mode = parse_ata_mode(
+                argv[++i], "--scsi-mode");
+            if (cli->scsi_image_mode < 0)
+                return -1;
         } else if (strcmp(argument, "--sd-mapper-rom") == 0) {
             cli->sd_mapper_rom_path = argv[++i];
         } else if (strcmp(argument, "--sd-a") == 0) {
@@ -585,7 +624,8 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
         } else if (strcmp(argument, "--ide") == 0) {
             cli->ide_image_path = argv[++i];
         } else if (strcmp(argument, "--ide-mode") == 0) {
-            cli->ide_image_mode = parse_ide_mode(argv[++i]);
+            cli->ide_image_mode = parse_ata_mode(
+                argv[++i], "--ide-mode");
             if (cli->ide_image_mode < 0)
                 return -1;
         } else if (strcmp(argument, "--cassette") == 0) {
@@ -951,6 +991,22 @@ int main(int argc, char **argv) {
         config.extra_hardware = true;
         config.sunrise_ide = true;
     }
+    if (cli.scsi_rom_path) {
+        snprintf(config.scsi_rom_path,
+                 sizeof(config.scsi_rom_path),
+                 "%s", cli.scsi_rom_path);
+        config.extra_hardware = true;
+        config.msx_scsi = true;
+    }
+    if (cli.scsi_image_path) {
+        snprintf(config.scsi_image_path,
+                 sizeof(config.scsi_image_path),
+                 "%s", cli.scsi_image_path);
+        config.extra_hardware = true;
+        config.msx_scsi = true;
+    }
+    if (cli.scsi_target_id >= 0)
+        config.scsi_target_id = (unsigned)cli.scsi_target_id;
     if (cli.sd_mapper_rom_path) {
         snprintf(config.sd_mapper_rom_path,
                  sizeof(config.sd_mapper_rom_path),
@@ -1029,6 +1085,9 @@ int main(int argc, char **argv) {
     if (cli.ide_image_mode >= 0)
         config.ide_image_mode =
             (AtaImageMode)cli.ide_image_mode;
+    if (cli.scsi_image_mode >= 0)
+        config.scsi_image_mode =
+            (AtaImageMode)cli.scsi_image_mode;
     if (cli.sd_image_mode >= 0)
         config.sd_image_mode =
             (SdImageMode)cli.sd_image_mode;
@@ -1045,6 +1104,11 @@ int main(int argc, char **argv) {
     if (cli.cdx2 >= 0) {
         config.cdx2 = cli.cdx2 != 0;
         if (config.cdx2)
+            config.extra_hardware = true;
+    }
+    if (cli.msx_scsi >= 0) {
+        config.msx_scsi = cli.msx_scsi != 0;
+        if (config.msx_scsi)
             config.extra_hardware = true;
     }
     if (cli.rdf600 >= 0) {
@@ -1290,6 +1354,50 @@ int main(int argc, char **argv) {
                     config.ide_image_path,
                     msx_sunrise_disk_error(&msx));
             if (cli.ide_image_path) {
+                msx_destroy(&msx);
+                return 1;
+            }
+        }
+    }
+    if (config.msx_scsi) {
+        int scsi_slot = -1;
+
+        for (unsigned slot = 0; slot < MSX_CARTRIDGE_SLOTS; ++slot) {
+            const char *owner =
+                config_cartridge_slot_owner(&config, slot);
+
+            if (owner && strcmp(owner, "MSX SCSI") == 0) {
+                scsi_slot = (int)slot;
+                break;
+            }
+        }
+        if (scsi_slot < 0 || !config.scsi_rom_path[0] ||
+            msx_load_scsi(
+                &msx, (unsigned)scsi_slot,
+                config.scsi_rom_path,
+                config.scsi_target_id) != 0) {
+            fprintf(stderr,
+                    "cannot load banked MSX SCSI ROM: %s\n",
+                    config.scsi_rom_path[0]
+                    ? config.scsi_rom_path : "[not configured]");
+            if (cli.msx_scsi > 0 || cli.scsi_rom_path ||
+                cli.scsi_image_path) {
+                msx_destroy(&msx);
+                return 1;
+            }
+            config.msx_scsi = false;
+            config_normalize(&config);
+        } else if (config.scsi_image_path[0] &&
+                   msx_mount_scsi_disk(
+                       &msx, config.scsi_image_path,
+                       config.scsi_image_mode) != 0) {
+            fprintf(stderr,
+                    "cannot mount raw SCSI disk image %s: %s (%s)\n",
+                    config.scsi_image_path,
+                    config.scsi_image_mode == ATA_IMAGE_READ_WRITE
+                    ? "read/write" : "read-only",
+                    msx_scsi_disk_last_error(&msx));
+            if (cli.scsi_image_path) {
                 msx_destroy(&msx);
                 return 1;
             }
@@ -1624,6 +1732,16 @@ int main(int argc, char **argv) {
                      msx_sunrise_slot(&msx) + 1,
                      msx_sunrise_disk_mounted(&msx)
                      ? (msx_sunrise_disk_writable(&msx)
+                        ? ", raw disk mounted read/write"
+                        : ", raw disk mounted read-only")
+                     : ", no disk mounted");
+    if (msx_scsi_connected(&msx))
+        startup_info(config.notifications,
+                     "MSX SCSI loaded in cartridge slot %d, target %u%s\n",
+                     msx_scsi_slot(&msx) + 1,
+                     msx_scsi_configured_target_id(&msx),
+                     msx_scsi_disk_is_mounted(&msx)
+                     ? (msx_scsi_disk_is_writable(&msx)
                         ? ", raw disk mounted read/write"
                         : ", raw disk mounted read-only")
                      : ", no disk mounted");
@@ -1988,6 +2106,8 @@ int main(int argc, char **argv) {
         leds_set_state(LED_TAPE, msx_cassette_rolling(&msx));
         if (msx_sunrise_take_activity(&msx))
             leds_ping(LED_IDE);
+        if (msx_scsi_take_disk_activity(&msx))
+            leds_ping(LED_SCSI);
         if (msx_sd_card_take_activity(&msx, 0))
             leds_ping(LED_SD_A);
         if (msx_sd_card_take_activity(&msx, 1))
@@ -2131,6 +2251,12 @@ int main(int argc, char **argv) {
         msx_flush_sunrise_disk(&msx) != 0) {
         fprintf(stderr, "cannot flush IDE image at shutdown: %s\n",
                 msx_sunrise_disk_error(&msx));
+        shutdown_status = 1;
+    }
+    if (msx_scsi_disk_is_mounted(&msx) &&
+        msx_flush_scsi_disk(&msx) != 0) {
+        fprintf(stderr, "cannot flush SCSI disk at shutdown: %s\n",
+                msx_scsi_disk_last_error(&msx));
         shutdown_status = 1;
     }
     if (msx_megaflash_connected(&msx) &&

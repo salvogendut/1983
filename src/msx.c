@@ -706,6 +706,7 @@ void msx_reset(MsxMachine *msx) {
     megaflash_reset(&msx->megaflash);
     sd_mapper_reset(&msx->sd_mapper);
     sunrise_reset(&msx->sunrise);
+    msx_scsi_reset(&msx->scsi);
     wd2793_reset(&msx->fdc);
     tc8566_reset(&msx->rdf600_fdc);
     msx->paused = false;
@@ -808,6 +809,7 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     megaflash_init(&msx->megaflash);
     sd_mapper_init(&msx->sd_mapper);
     sunrise_init(&msx->sunrise);
+    msx_scsi_init(&msx->scsi);
     wd2793_init(&msx->fdc);
     tc8566_init(&msx->rdf600_fdc,
                 &msx->fdc.drive_a, &msx->fdc.drive_b);
@@ -817,6 +819,7 @@ void msx_init(MsxMachine *msx, MsxModel model, MsxRegion region, int ram_kb) {
     msx->megaflash_slot = -1;
     msx->sd_mapper_slot = -1;
     msx->sunrise_slot = -1;
+    msx->scsi_slot = -1;
     msx->rs232_slot = -1;
     msx->cdx2_slot = -1;
     msx->rdf600_slot = -1;
@@ -844,11 +847,13 @@ void msx_destroy(MsxMachine *msx) {
     megaflash_destroy(&msx->megaflash);
     sd_mapper_destroy(&msx->sd_mapper);
     sunrise_destroy(&msx->sunrise);
+    msx_scsi_destroy(&msx->scsi);
     wd2793_destroy(&msx->fdc);
     v9990_destroy(&msx->v9990);
     msx->megaflash_slot = -1;
     msx->sd_mapper_slot = -1;
     msx->sunrise_slot = -1;
+    msx->scsi_slot = -1;
     msx->rs232_slot = -1;
     msx->cdx2_slot = -1;
     msx->rdf600_slot = -1;
@@ -1051,6 +1056,8 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
                 return megaflash_read(&msx->megaflash, address);
             if (msx->sunrise_slot == (int)slot)
                 return sunrise_read(&msx->sunrise, address);
+            if (msx->scsi_slot == (int)slot)
+                return msx_scsi_memory_read(&msx->scsi, address);
             return msx_cartridge_read(&msx->cartridges[slot], address);
         }
         case 3: {
@@ -1108,6 +1115,8 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
             megaflash_write(&msx->megaflash, address, value);
         else if (msx->sunrise_slot == (int)slot)
             sunrise_write(&msx->sunrise, address, value);
+        else if (msx->scsi_slot == (int)slot)
+            msx_scsi_memory_write(&msx->scsi, address, value);
         else
             msx_cartridge_write(&msx->cartridges[slot],
                                 address, value);
@@ -1133,6 +1142,9 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
 
     if (!msx)
         return 0xff;
+    if (msx_scsi_connected(msx) &&
+        msx_scsi_io_read(&msx->scsi, port, &extension_value))
+        return extension_value;
     if (msx->cdx2_enabled) {
         u8 low = (u8)port;
 
@@ -1218,6 +1230,9 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
     u8 low;
 
     if (!msx)
+        return;
+    if (msx_scsi_connected(msx) &&
+        msx_scsi_io_write(&msx->scsi, port, value))
         return;
     if (msx->cdx2_enabled) {
         u8 low = (u8)port;
@@ -1462,6 +1477,11 @@ int msx_install_cartridge_slot(MsxMachine *msx, unsigned slot,
                                MsxCartridgeMapper mapper) {
     if (!msx || slot >= MSX_CARTRIDGE_SLOTS)
         return -1;
+    if (msx->scsi_slot == (int)slot) {
+        if (msx_scsi_eject_rom(&msx->scsi) != 0)
+            return -1;
+        msx->scsi_slot = -1;
+    }
     if (msx->cdx2_slot == (int)slot) {
         msx->cdx2_slot = -1;
         msx->cdx2_enabled = false;
@@ -1494,7 +1514,7 @@ int msx_install_cdx2(MsxMachine *msx, unsigned slot,
         !data ||
         (size != MSX_CDX2_ROM_SIZE &&
          size != MSX_CDX2_COMBINED_ROM_SIZE) ||
-        rom_bank > 1)
+        rom_bank > 1 || msx_scsi_connected(msx))
         return -1;
     selected = data;
     if (size == MSX_CDX2_COMBINED_ROM_SIZE)
@@ -1928,6 +1948,155 @@ const char *msx_sunrise_disk_error(const MsxMachine *msx) {
 bool msx_sunrise_take_activity(MsxMachine *msx) {
     return msx_sunrise_connected(msx) &&
            sunrise_take_activity(&msx->sunrise);
+}
+
+int msx_install_scsi(MsxMachine *msx, unsigned slot,
+                     const u8 *data, size_t size, unsigned target_id) {
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS || target_id >= 7 ||
+        msx->cdx2_enabled ||
+        msx_scsi_install_rom(&msx->scsi, data, size) != 0)
+        return -1;
+    msx_cartridge_eject(&msx->cartridges[slot]);
+    msx_scsi_set_target_id(&msx->scsi, target_id);
+    msx->scsi_slot = (int)slot;
+    msx_reset(msx);
+    return 0;
+}
+
+int msx_load_scsi(MsxMachine *msx, unsigned slot,
+                  const char *path, unsigned target_id) {
+    u8 *data;
+    size_t size;
+    int result;
+
+    if (!msx || slot >= MSX_CARTRIDGE_SLOTS || !path || !path[0] ||
+        read_rom_file(path, MSX_SCSI_ROM_MAX_SIZE, &data, &size) != 0)
+        return -1;
+    result = msx_install_scsi(msx, slot, data, size, target_id);
+    free(data);
+    return result;
+}
+
+int msx_replace_scsi(MsxMachine *msx, const char *rom_path,
+                     const char *disk_path, AtaImageMode mode,
+                     unsigned target_id) {
+    MsxScsi *candidate;
+    MsxScsi *previous;
+    u8 *data = NULL;
+    size_t size;
+    int result = -1;
+
+    if (!msx_scsi_connected(msx) || !rom_path || !rom_path[0] ||
+        target_id >= 7)
+        return -1;
+    candidate = malloc(sizeof(*candidate));
+    previous = malloc(sizeof(*previous));
+    if (!candidate || !previous)
+        goto done;
+    msx_scsi_init(candidate);
+    if (read_rom_file(
+            rom_path, MSX_SCSI_ROM_MAX_SIZE, &data, &size) != 0 ||
+        msx_scsi_install_rom(candidate, data, size) != 0)
+        goto destroy_candidate;
+    msx_scsi_set_target_id(candidate, target_id);
+    if (msx_scsi_flush_disk(&msx->scsi) != 0)
+        goto destroy_candidate;
+    if (disk_path && disk_path[0] &&
+        msx_scsi_mount_disk(candidate, disk_path, mode) != 0)
+        goto destroy_candidate;
+
+    *previous = msx->scsi;
+    msx->scsi = *candidate;
+    free(candidate);
+    candidate = NULL;
+    msx_scsi_destroy(previous);
+    msx_reset(msx);
+    result = 0;
+
+destroy_candidate:
+    if (candidate)
+        msx_scsi_destroy(candidate);
+done:
+    free(data);
+    free(candidate);
+    free(previous);
+    return result;
+}
+
+int msx_eject_scsi(MsxMachine *msx) {
+    if (!msx)
+        return -1;
+    if (msx_scsi_eject_rom(&msx->scsi) != 0)
+        return -1;
+    msx->scsi_slot = -1;
+    msx_reset(msx);
+    return 0;
+}
+
+bool msx_scsi_connected(const MsxMachine *msx) {
+    return msx && msx->scsi_slot >= 0 &&
+           msx->scsi_slot < (int)MSX_CARTRIDGE_SLOTS &&
+           msx_scsi_rom_loaded(&msx->scsi);
+}
+
+int msx_scsi_slot(const MsxMachine *msx) {
+    return msx_scsi_connected(msx) ? msx->scsi_slot : -1;
+}
+
+void msx_reassign_scsi_slot(MsxMachine *msx, int slot) {
+    if (!msx_scsi_connected(msx) || slot < 0 ||
+        slot >= (int)MSX_CARTRIDGE_SLOTS ||
+        msx->scsi_slot == slot)
+        return;
+    msx->scsi_slot = slot;
+    msx_reset(msx);
+}
+
+unsigned msx_scsi_configured_target_id(const MsxMachine *msx) {
+    return msx ? msx_scsi_target_id(&msx->scsi)
+               : MSX_SCSI_DEFAULT_TARGET_ID;
+}
+
+int msx_mount_scsi_disk(MsxMachine *msx, const char *path,
+                        AtaImageMode mode) {
+    return msx_scsi_connected(msx)
+         ? msx_scsi_mount_disk(&msx->scsi, path, mode) : -1;
+}
+
+int msx_flush_scsi_disk(MsxMachine *msx) {
+    return msx ? msx_scsi_flush_disk(&msx->scsi) : -1;
+}
+
+int msx_eject_scsi_disk(MsxMachine *msx) {
+    return msx ? msx_scsi_eject_disk(&msx->scsi) : -1;
+}
+
+bool msx_scsi_disk_is_mounted(const MsxMachine *msx) {
+    return msx_scsi_connected(msx) &&
+           msx_scsi_disk_mounted(&msx->scsi);
+}
+
+bool msx_scsi_disk_is_writable(const MsxMachine *msx) {
+    return msx_scsi_connected(msx) &&
+           msx_scsi_disk_writable(&msx->scsi);
+}
+
+bool msx_scsi_disk_is_dirty(const MsxMachine *msx) {
+    return msx_scsi_connected(msx) &&
+           msx_scsi_disk_dirty(&msx->scsi);
+}
+
+bool msx_scsi_disk_has_io_error(const MsxMachine *msx) {
+    return msx && msx_scsi_disk_has_error(&msx->scsi);
+}
+
+const char *msx_scsi_disk_last_error(const MsxMachine *msx) {
+    return msx ? msx_scsi_disk_error(&msx->scsi) : "";
+}
+
+bool msx_scsi_take_disk_activity(MsxMachine *msx) {
+    return msx_scsi_connected(msx) &&
+           msx_scsi_take_activity(&msx->scsi);
 }
 
 int msx_install_sd_mapper(MsxMachine *msx, unsigned slot,
@@ -2515,6 +2684,11 @@ int msx_set_cartridge_mapper(MsxMachine *msx, unsigned slot,
 void msx_eject_cartridge(MsxMachine *msx, unsigned slot) {
     if (!msx || slot >= MSX_CARTRIDGE_SLOTS)
         return;
+    if (msx->scsi_slot == (int)slot) {
+        if (msx_scsi_eject_rom(&msx->scsi) != 0)
+            return;
+        msx->scsi_slot = -1;
+    }
     if (msx->cdx2_slot == (int)slot) {
         msx->cdx2_slot = -1;
         msx->cdx2_enabled = false;

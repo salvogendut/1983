@@ -807,6 +807,52 @@ static void test_model_change_reset_preserves_floppy(void) {
     assert(remove(image_path) == 0);
 }
 
+static void test_scsi_cartridge_slot_bus(void) {
+    MsxMachine msx;
+    u8 rom[4 * MSX_SCSI_ROM_BANK_SIZE];
+    u8 cdx2_rom[MSX_CDX2_ROM_SIZE] = { 0 };
+    u8 sector[SCSI_DISK_SECTOR_SIZE] = { 0 };
+    const char *image_path = "diagnostics/test-msx-scsi.img";
+    FILE *image;
+
+    for (unsigned bank = 0; bank < 4; ++bank)
+        memset(rom + bank * MSX_SCSI_ROM_BANK_SIZE,
+               (int)(0x40u + bank), MSX_SCSI_ROM_BANK_SIZE);
+    image = fopen(image_path, "wb");
+    assert(image);
+    for (unsigned logical = 0; logical < 4; ++logical)
+        assert(fwrite(sector, 1, sizeof(sector), image) ==
+               sizeof(sector));
+    assert(fclose(image) == 0);
+
+    msx_init(&msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
+    assert(msx_install_scsi(&msx, 1, rom, sizeof(rom), 0) == 0);
+    assert(msx_scsi_connected(&msx));
+    assert(msx_scsi_slot(&msx) == 1);
+    assert(msx_scsi_configured_target_id(&msx) == 0);
+    assert(msx_mount_scsi_disk(
+               &msx, image_path, ATA_IMAGE_READ_WRITE) == 0);
+
+    /* Physical cartridge slot 2 occupies primary slot 2. */
+    msx_io_write(&msx, 0xa8, 0x28);
+    assert(msx_memory_read(&msx, 0x4000) == 0x40);
+    msx_memory_write(&msx, 0x6000, 2);
+    assert(msx_memory_read(&msx, 0x4000) == 0x42);
+    msx_reset(&msx);
+    assert(msx_scsi_connected(&msx));
+    assert(msx_scsi_disk_is_mounted(&msx));
+    msx_io_write(&msx, 0xa8, 0x28);
+    assert(msx_memory_read(&msx, 0x4000) == 0x40);
+
+    /* The CDX-2 and this interface both decode D0h-D7h. */
+    assert(msx_install_cdx2(
+               &msx, 0, cdx2_rom, sizeof(cdx2_rom), 0) != 0);
+    assert(msx_eject_scsi(&msx) == 0);
+    assert(!msx_scsi_connected(&msx));
+    msx_destroy(&msx);
+    assert(remove(image_path) == 0);
+}
+
 static void test_vdp_ports_and_renderer(void) {
     MsxVdp vdp;
 
@@ -1875,6 +1921,7 @@ int main(void) {
     test_omega_unified_boot_if_available();
     test_msx2_configured_floppy_slots_and_firmware();
     test_model_change_reset_preserves_floppy();
+    test_scsi_cartridge_slot_bus();
     test_vdp_ports_and_renderer();
     test_msx2_vdp_extended_ports();
     test_rtc_ports_and_reset_persistence();

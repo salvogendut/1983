@@ -26,9 +26,11 @@ complete MSX hardware specification.
 | `src/notify.*` | On-screen and console notifications |
 | `src/ui.*` | Small renderer primitives used by the frontend |
 | `src/msx.*` | Machine profiles, slot-aware memory and I/O bus, keyboard/joystick/mouse protocols, ROM loading, and frame scheduler |
+| `src/msx_scsi.*` | Banked MSX SCSI cartridge and NCR/Z5380 register, selection, handshake, and pseudo-DMA behavior |
 | `src/psg.*` | Host-independent AY-3-8910/YM2149 tone, noise, envelope, mixer, and sample generation |
 | `src/rtc.*` | Host-independent RP-5C01 registers, test modes, calendar, validated CMOS serialization, and atomic host persistence |
 | `src/scc.*` | Host-independent SCC/SCC-I waveform memory, registers, modes, and sample generation |
+| `src/scsi_disk.*` | Host-independent SCSI direct-access target, command phases, raw-image I/O, flush, errors, and safe lifetime |
 | `src/sdcard.*` | Host-independent SPI SD command state, raw-card image lifetime, complete-sector writes, flush, errors, and activity |
 | `src/sd_mapper.*` | SD Mapper V2 expanded-slot, firmware banking, dual-card registers, timer, and independent 512 KiB mapper |
 | `src/sunrise.*` | Sunrise IDE cartridge ROM banking, address decode, 16-bit data latch, and ATA bridge |
@@ -42,6 +44,7 @@ complete MSX hardware specification.
 | `diagnostics/test_wd2793.c` | Commands, register mirrors, dual-drive selection, IRQ/DRQ, sector transfers, reset, and write protection |
 | `diagnostics/test_tc8566.c` | TC8566AF status, seek/sense, read/write, format, memory mirrors, and write protection |
 | `diagnostics/test_sunrise.c` | Sunrise banking, overlay decode, data latch, master/slave, soft reset, and disk lifetime |
+| `diagnostics/test_scsi.c` | Z5380 detection and selection, ROM banking, PIO/DMA commands, sector I/O, reset, flush, and safe ejection |
 | `diagnostics/test_msx.c` | Profiles, slots, CPU execution, device ports, interrupt acknowledgement, and optional C-BIOS/MSX-DIAG/NMS 8250/Nextor boot checks |
 | `diagnostics/test_cartridge.c` | Linear, ASCII8/16, Konami, Konami SCC, detection, bank wrapping, reset, and eject checks |
 | `diagnostics/test_cassette.c` | CAS type and command detection, waveform layout and monitor sampling, emulated-time transport, reset, rewind, eject, and conservative mounts |

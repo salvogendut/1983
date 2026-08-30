@@ -137,13 +137,14 @@ SCC waveform core and mix their output with the machine PSG.
 The Media overlay can load, eject, and independently configure both
 cartridges, the cassette, the active floppy drives, and media belonging to
 connected storage extensions. The IDE hard-disk selector appears only when
-Sunrise IDE is connected; device-specific SD Card A and SD Card B rows appear
+Sunrise IDE is connected; the SCSI disk selector appears only with MSX SCSI;
+device-specific SD Card A and SD Card B rows appear
 only when SD Mapper V2 or MegaFlashROM SCC+ SD is connected. Nextor controller
 kernels are cartridge firmware and
 therefore have no separate Media row.
 
-General > Extra Hardware reveals the Extensions section. Sunrise IDE, SD
-Mapper V2, MegaFlashROM SCC+ SD, PowerGraph V9990, SCC, and MSX-MUSIC are
+General > Extra Hardware reveals the Extensions section. Sunrise IDE, MSX
+SCSI, SD Mapper V2, MegaFlashROM SCC+ SD, PowerGraph V9990, SCC, and MSX-MUSIC are
 treated as cartridge-connected devices:
 the first enabled device reserves cartridge slot 1 and the second reserves
 slot 2. A catalogue floppy controller mapped to slot 1 or 2 reserves that
@@ -193,9 +194,10 @@ manual keyboard timing is involved in the acceptance result.
 
 The footer always shows Cartridge I and Cartridge II indicators between
 Power and Caps Lock. An occupied ROM slot or a slot owned by Sunrise IDE,
-SD Mapper V2, or MegaFlashROM is orange. IDE reads use the dedicated Sunrise
-IDE indicator; SD traffic uses independent green SD A and SD B indicators,
-and TCP/IP bridge traffic uses a dedicated white network indicator.
+MSX SCSI, SD Mapper V2, or MegaFlashROM is orange. IDE reads use the dedicated
+Sunrise IDE indicator, SCSI traffic uses its dedicated blue indicator, SD
+traffic uses independent green SD A and SD B indicators, and TCP/IP bridge
+traffic uses a dedicated white network indicator.
 
 ## MSX TCP/IP UNAPI
 
@@ -353,6 +355,29 @@ external controller owns boot. The Sunrise kernel boots the 32 MiB GeoBench
 FAT16 image through Nextor to the GeoBench desktop using the stock 128 KiB
 mapper. Independently, the NMS 8250 disk ROM boots conventional floppy
 images through its native WD2793 path.
+
+## MSX SCSI and Z5380 storage
+
+The MSX SCSI extension maps a banked ROM into cartridge page 1. Exact writes
+to `6000h` select one of up to 32 16 KiB banks, while ports `D0h-D7h` expose
+the NCR/Z5380-compatible controller. The implementation covers the
+write-only tri-state test used for controller detection, arbitration and the
+firmware's SEL-before-target-ID selection sequence, programmed REQ/ACK
+handshakes, phase matching, and pseudo-DMA through `D0h`.
+
+The direct-access target implements SCSI-1 inquiry, sense, capacity, mode,
+seek, read/write, and synchronization commands over a raw 512-byte-sector
+file. Completed writes are flushed before replacement, ejection, and
+shutdown. A failed flush retains the mounted image; reset discards an
+incomplete sector. Read-only remains the default and has a dedicated Advanced
+toggle and blue activity LED. MSX SCSI and CDX-2 are mutually exclusive
+because both decode `D0h-D7h`.
+
+The end-to-end checkpoint uses a user-supplied BERT SCSI V2.7 ROM at target 0
+and a type-01 FAT12 BERT partition. It boots `MSXDOS2.SYS`, launches
+`COMMAND2.COM`, and reads the directory at `A>`. See [`SCSI.md`](SCSI.md) for
+the reproducible blank-image recipe and why conventional Nextor/Sunrise
+partition images are not interchangeable with this firmware.
 
 ## MSX SD Mapper V2
 

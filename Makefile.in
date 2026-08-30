@@ -96,7 +96,7 @@ host_triplet = @host@
 bin_PROGRAMS = 1983$(EXEEXT)
 check_PROGRAMS = test-cartridge$(EXEEXT) test-cassette$(EXEEXT) \
 	test-ata$(EXEEXT) test-floppy$(EXEEXT) test-wd2793$(EXEEXT) \
-	test-tc8566$(EXEEXT) test-sunrise$(EXEEXT) \
+	test-tc8566$(EXEEXT) test-sunrise$(EXEEXT) test-scsi$(EXEEXT) \
 	test-sdcard$(EXEEXT) test-sd-mapper$(EXEEXT) \
 	test-megaflash$(EXEEXT) test-unapinet$(EXEEXT) \
 	test-config$(EXEEXT) test-models$(EXEEXT) test-msx$(EXEEXT) \
@@ -138,11 +138,12 @@ am_1983_OBJECTS = src/1983-config.$(OBJEXT) \
 	src/1983-ffmpeg_gif.$(OBJEXT) src/1983-kbd.$(OBJEXT) \
 	src/1983-leds.$(OBJEXT) src/1983-main.$(OBJEXT) \
 	src/1983-megaflash.$(OBJEXT) src/1983-models.$(OBJEXT) \
-	src/1983-msx.$(OBJEXT) src/1983-notify.$(OBJEXT) \
-	src/1983-overlay.$(OBJEXT) src/1983-paste.$(OBJEXT) \
-	src/1983-psg.$(OBJEXT) src/1983-rs232.$(OBJEXT) \
-	src/1983-rs232_dev.$(OBJEXT) src/1983-rtc.$(OBJEXT) \
-	src/1983-scc.$(OBJEXT) src/1983-sdcard.$(OBJEXT) \
+	src/1983-msx.$(OBJEXT) src/1983-msx_scsi.$(OBJEXT) \
+	src/1983-notify.$(OBJEXT) src/1983-overlay.$(OBJEXT) \
+	src/1983-paste.$(OBJEXT) src/1983-psg.$(OBJEXT) \
+	src/1983-rs232.$(OBJEXT) src/1983-rs232_dev.$(OBJEXT) \
+	src/1983-rtc.$(OBJEXT) src/1983-scc.$(OBJEXT) \
+	src/1983-scsi_disk.$(OBJEXT) src/1983-sdcard.$(OBJEXT) \
 	src/1983-sd_mapper.$(OBJEXT) src/1983-serial_8251.$(OBJEXT) \
 	src/1983-serial_8254.$(OBJEXT) src/1983-sunrise.$(OBJEXT) \
 	src/1983-tc8566.$(OBJEXT) src/1983-ui.$(OBJEXT) \
@@ -181,8 +182,11 @@ am_test_config_OBJECTS =  \
 	src/test_config-cassette.$(OBJEXT) \
 	src/test_config-ata.$(OBJEXT) src/test_config-floppy.$(OBJEXT) \
 	src/test_config-megaflash.$(OBJEXT) \
-	src/test_config-msx.$(OBJEXT) src/test_config-psg.$(OBJEXT) \
-	src/test_config-rtc.$(OBJEXT) src/test_config-scc.$(OBJEXT) \
+	src/test_config-msx.$(OBJEXT) \
+	src/test_config-msx_scsi.$(OBJEXT) \
+	src/test_config-psg.$(OBJEXT) src/test_config-rtc.$(OBJEXT) \
+	src/test_config-scc.$(OBJEXT) \
+	src/test_config-scsi_disk.$(OBJEXT) \
 	src/test_config-sdcard.$(OBJEXT) \
 	src/test_config-sd_mapper.$(OBJEXT) \
 	src/test_config-sunrise.$(OBJEXT) \
@@ -219,8 +223,9 @@ am_test_kbd_OBJECTS = diagnostics/test_kbd-test_kbd.$(OBJEXT) \
 	src/test_kbd-cassette.$(OBJEXT) src/test_kbd-ata.$(OBJEXT) \
 	src/test_kbd-floppy.$(OBJEXT) src/test_kbd-kbd.$(OBJEXT) \
 	src/test_kbd-megaflash.$(OBJEXT) src/test_kbd-msx.$(OBJEXT) \
-	src/test_kbd-psg.$(OBJEXT) src/test_kbd-rtc.$(OBJEXT) \
-	src/test_kbd-scc.$(OBJEXT) src/test_kbd-sdcard.$(OBJEXT) \
+	src/test_kbd-msx_scsi.$(OBJEXT) src/test_kbd-psg.$(OBJEXT) \
+	src/test_kbd-rtc.$(OBJEXT) src/test_kbd-scc.$(OBJEXT) \
+	src/test_kbd-scsi_disk.$(OBJEXT) src/test_kbd-sdcard.$(OBJEXT) \
 	src/test_kbd-sd_mapper.$(OBJEXT) \
 	src/test_kbd-sunrise.$(OBJEXT) src/test_kbd-tc8566.$(OBJEXT) \
 	src/test_kbd-vdp.$(OBJEXT) src/test_kbd-v9990.$(OBJEXT) \
@@ -246,8 +251,11 @@ am_test_models_OBJECTS =  \
 	src/test_models-cassette.$(OBJEXT) \
 	src/test_models-ata.$(OBJEXT) src/test_models-floppy.$(OBJEXT) \
 	src/test_models-megaflash.$(OBJEXT) \
-	src/test_models-msx.$(OBJEXT) src/test_models-psg.$(OBJEXT) \
-	src/test_models-rtc.$(OBJEXT) src/test_models-scc.$(OBJEXT) \
+	src/test_models-msx.$(OBJEXT) \
+	src/test_models-msx_scsi.$(OBJEXT) \
+	src/test_models-psg.$(OBJEXT) src/test_models-rtc.$(OBJEXT) \
+	src/test_models-scc.$(OBJEXT) \
+	src/test_models-scsi_disk.$(OBJEXT) \
 	src/test_models-sdcard.$(OBJEXT) \
 	src/test_models-sd_mapper.$(OBJEXT) \
 	src/test_models-sunrise.$(OBJEXT) \
@@ -262,8 +270,9 @@ am_test_msx_OBJECTS = diagnostics/test_msx-test_msx.$(OBJEXT) \
 	src/test_msx-cartridge.$(OBJEXT) \
 	src/test_msx-cassette.$(OBJEXT) src/test_msx-ata.$(OBJEXT) \
 	src/test_msx-floppy.$(OBJEXT) src/test_msx-megaflash.$(OBJEXT) \
-	src/test_msx-msx.$(OBJEXT) src/test_msx-psg.$(OBJEXT) \
-	src/test_msx-rtc.$(OBJEXT) src/test_msx-scc.$(OBJEXT) \
+	src/test_msx-msx.$(OBJEXT) src/test_msx-msx_scsi.$(OBJEXT) \
+	src/test_msx-psg.$(OBJEXT) src/test_msx-rtc.$(OBJEXT) \
+	src/test_msx-scc.$(OBJEXT) src/test_msx-scsi_disk.$(OBJEXT) \
 	src/test_msx-sdcard.$(OBJEXT) src/test_msx-sd_mapper.$(OBJEXT) \
 	src/test_msx-sunrise.$(OBJEXT) src/test_msx-tc8566.$(OBJEXT) \
 	src/test_msx-vdp.$(OBJEXT) src/test_msx-v9990.$(OBJEXT) \
@@ -284,12 +293,14 @@ am_test_overlay_OBJECTS =  \
 	src/test_overlay-megaflash.$(OBJEXT) \
 	src/test_overlay-models.$(OBJEXT) \
 	src/test_overlay-msx.$(OBJEXT) \
+	src/test_overlay-msx_scsi.$(OBJEXT) \
 	src/test_overlay-notify.$(OBJEXT) \
 	src/test_overlay-overlay.$(OBJEXT) \
 	src/test_overlay-psg.$(OBJEXT) \
 	src/test_overlay-rs232.$(OBJEXT) \
 	src/test_overlay-rs232_dev.$(OBJEXT) \
 	src/test_overlay-rtc.$(OBJEXT) src/test_overlay-scc.$(OBJEXT) \
+	src/test_overlay-scsi_disk.$(OBJEXT) \
 	src/test_overlay-sdcard.$(OBJEXT) \
 	src/test_overlay-sd_mapper.$(OBJEXT) \
 	src/test_overlay-serial_8251.$(OBJEXT) \
@@ -312,9 +323,11 @@ am_test_paste_OBJECTS = diagnostics/test_paste-test_paste.$(OBJEXT) \
 	src/test_paste-cassette.$(OBJEXT) src/test_paste-ata.$(OBJEXT) \
 	src/test_paste-floppy.$(OBJEXT) \
 	src/test_paste-megaflash.$(OBJEXT) \
-	src/test_paste-msx.$(OBJEXT) src/test_paste-paste.$(OBJEXT) \
-	src/test_paste-psg.$(OBJEXT) src/test_paste-rtc.$(OBJEXT) \
-	src/test_paste-scc.$(OBJEXT) src/test_paste-sdcard.$(OBJEXT) \
+	src/test_paste-msx.$(OBJEXT) src/test_paste-msx_scsi.$(OBJEXT) \
+	src/test_paste-paste.$(OBJEXT) src/test_paste-psg.$(OBJEXT) \
+	src/test_paste-rtc.$(OBJEXT) src/test_paste-scc.$(OBJEXT) \
+	src/test_paste-scsi_disk.$(OBJEXT) \
+	src/test_paste-sdcard.$(OBJEXT) \
 	src/test_paste-sd_mapper.$(OBJEXT) \
 	src/test_paste-sunrise.$(OBJEXT) \
 	src/test_paste-tc8566.$(OBJEXT) src/test_paste-vdp.$(OBJEXT) \
@@ -357,6 +370,13 @@ am_test_scc_OBJECTS = diagnostics/test_scc-test_scc.$(OBJEXT) \
 test_scc_OBJECTS = $(am_test_scc_OBJECTS)
 test_scc_LDADD = $(LDADD)
 test_scc_LINK = $(CCLD) $(test_scc_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am_test_scsi_OBJECTS = diagnostics/test_scsi-test_scsi.$(OBJEXT) \
+	src/test_scsi-msx_scsi.$(OBJEXT) \
+	src/test_scsi-scsi_disk.$(OBJEXT)
+test_scsi_OBJECTS = $(am_test_scsi_OBJECTS)
+test_scsi_LDADD = $(LDADD)
+test_scsi_LINK = $(CCLD) $(test_scsi_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_test_sd_mapper_OBJECTS =  \
 	diagnostics/test_sd_mapper-test_sd_mapper.$(OBJEXT) \
@@ -459,6 +479,7 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Po \
 	diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po \
 	diagnostics/$(DEPDIR)/test_scc-test_scc.Po \
+	diagnostics/$(DEPDIR)/test_scsi-test_scsi.Po \
 	diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po \
 	diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po \
 	diagnostics/$(DEPDIR)/test_serial-test_serial.Po \
@@ -476,10 +497,11 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/1983-kbd.Po src/$(DEPDIR)/1983-leds.Po \
 	src/$(DEPDIR)/1983-main.Po src/$(DEPDIR)/1983-megaflash.Po \
 	src/$(DEPDIR)/1983-models.Po src/$(DEPDIR)/1983-msx.Po \
-	src/$(DEPDIR)/1983-notify.Po src/$(DEPDIR)/1983-overlay.Po \
-	src/$(DEPDIR)/1983-paste.Po src/$(DEPDIR)/1983-psg.Po \
-	src/$(DEPDIR)/1983-rs232.Po src/$(DEPDIR)/1983-rs232_dev.Po \
-	src/$(DEPDIR)/1983-rtc.Po src/$(DEPDIR)/1983-scc.Po \
+	src/$(DEPDIR)/1983-msx_scsi.Po src/$(DEPDIR)/1983-notify.Po \
+	src/$(DEPDIR)/1983-overlay.Po src/$(DEPDIR)/1983-paste.Po \
+	src/$(DEPDIR)/1983-psg.Po src/$(DEPDIR)/1983-rs232.Po \
+	src/$(DEPDIR)/1983-rs232_dev.Po src/$(DEPDIR)/1983-rtc.Po \
+	src/$(DEPDIR)/1983-scc.Po src/$(DEPDIR)/1983-scsi_disk.Po \
 	src/$(DEPDIR)/1983-sd_mapper.Po src/$(DEPDIR)/1983-sdcard.Po \
 	src/$(DEPDIR)/1983-serial_8251.Po \
 	src/$(DEPDIR)/1983-serial_8254.Po \
@@ -498,9 +520,11 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_config-floppy.Po \
 	src/$(DEPDIR)/test_config-megaflash.Po \
 	src/$(DEPDIR)/test_config-msx.Po \
+	src/$(DEPDIR)/test_config-msx_scsi.Po \
 	src/$(DEPDIR)/test_config-psg.Po \
 	src/$(DEPDIR)/test_config-rtc.Po \
 	src/$(DEPDIR)/test_config-scc.Po \
+	src/$(DEPDIR)/test_config-scsi_disk.Po \
 	src/$(DEPDIR)/test_config-sd_mapper.Po \
 	src/$(DEPDIR)/test_config-sdcard.Po \
 	src/$(DEPDIR)/test_config-sunrise.Po \
@@ -517,8 +541,11 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_kbd-cassette.Po \
 	src/$(DEPDIR)/test_kbd-floppy.Po src/$(DEPDIR)/test_kbd-kbd.Po \
 	src/$(DEPDIR)/test_kbd-megaflash.Po \
-	src/$(DEPDIR)/test_kbd-msx.Po src/$(DEPDIR)/test_kbd-psg.Po \
-	src/$(DEPDIR)/test_kbd-rtc.Po src/$(DEPDIR)/test_kbd-scc.Po \
+	src/$(DEPDIR)/test_kbd-msx.Po \
+	src/$(DEPDIR)/test_kbd-msx_scsi.Po \
+	src/$(DEPDIR)/test_kbd-psg.Po src/$(DEPDIR)/test_kbd-rtc.Po \
+	src/$(DEPDIR)/test_kbd-scc.Po \
+	src/$(DEPDIR)/test_kbd-scsi_disk.Po \
 	src/$(DEPDIR)/test_kbd-sd_mapper.Po \
 	src/$(DEPDIR)/test_kbd-sdcard.Po \
 	src/$(DEPDIR)/test_kbd-sunrise.Po \
@@ -536,9 +563,11 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_models-megaflash.Po \
 	src/$(DEPDIR)/test_models-models.Po \
 	src/$(DEPDIR)/test_models-msx.Po \
+	src/$(DEPDIR)/test_models-msx_scsi.Po \
 	src/$(DEPDIR)/test_models-psg.Po \
 	src/$(DEPDIR)/test_models-rtc.Po \
 	src/$(DEPDIR)/test_models-scc.Po \
+	src/$(DEPDIR)/test_models-scsi_disk.Po \
 	src/$(DEPDIR)/test_models-sd_mapper.Po \
 	src/$(DEPDIR)/test_models-sdcard.Po \
 	src/$(DEPDIR)/test_models-sunrise.Po \
@@ -551,8 +580,11 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_msx-cassette.Po \
 	src/$(DEPDIR)/test_msx-floppy.Po \
 	src/$(DEPDIR)/test_msx-megaflash.Po \
-	src/$(DEPDIR)/test_msx-msx.Po src/$(DEPDIR)/test_msx-psg.Po \
-	src/$(DEPDIR)/test_msx-rtc.Po src/$(DEPDIR)/test_msx-scc.Po \
+	src/$(DEPDIR)/test_msx-msx.Po \
+	src/$(DEPDIR)/test_msx-msx_scsi.Po \
+	src/$(DEPDIR)/test_msx-psg.Po src/$(DEPDIR)/test_msx-rtc.Po \
+	src/$(DEPDIR)/test_msx-scc.Po \
+	src/$(DEPDIR)/test_msx-scsi_disk.Po \
 	src/$(DEPDIR)/test_msx-sd_mapper.Po \
 	src/$(DEPDIR)/test_msx-sdcard.Po \
 	src/$(DEPDIR)/test_msx-sunrise.Po \
@@ -569,6 +601,7 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_overlay-megaflash.Po \
 	src/$(DEPDIR)/test_overlay-models.Po \
 	src/$(DEPDIR)/test_overlay-msx.Po \
+	src/$(DEPDIR)/test_overlay-msx_scsi.Po \
 	src/$(DEPDIR)/test_overlay-notify.Po \
 	src/$(DEPDIR)/test_overlay-overlay.Po \
 	src/$(DEPDIR)/test_overlay-psg.Po \
@@ -576,6 +609,7 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_overlay-rs232_dev.Po \
 	src/$(DEPDIR)/test_overlay-rtc.Po \
 	src/$(DEPDIR)/test_overlay-scc.Po \
+	src/$(DEPDIR)/test_overlay-scsi_disk.Po \
 	src/$(DEPDIR)/test_overlay-sd_mapper.Po \
 	src/$(DEPDIR)/test_overlay-sdcard.Po \
 	src/$(DEPDIR)/test_overlay-serial_8251.Po \
@@ -594,10 +628,12 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_paste-floppy.Po \
 	src/$(DEPDIR)/test_paste-megaflash.Po \
 	src/$(DEPDIR)/test_paste-msx.Po \
+	src/$(DEPDIR)/test_paste-msx_scsi.Po \
 	src/$(DEPDIR)/test_paste-paste.Po \
 	src/$(DEPDIR)/test_paste-psg.Po \
 	src/$(DEPDIR)/test_paste-rtc.Po \
 	src/$(DEPDIR)/test_paste-scc.Po \
+	src/$(DEPDIR)/test_paste-scsi_disk.Po \
 	src/$(DEPDIR)/test_paste-sd_mapper.Po \
 	src/$(DEPDIR)/test_paste-sdcard.Po \
 	src/$(DEPDIR)/test_paste-sunrise.Po \
@@ -612,6 +648,8 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_rs232dev-serial_8251.Po \
 	src/$(DEPDIR)/test_rs232dev-serial_8254.Po \
 	src/$(DEPDIR)/test_rtc-rtc.Po src/$(DEPDIR)/test_scc-scc.Po \
+	src/$(DEPDIR)/test_scsi-msx_scsi.Po \
+	src/$(DEPDIR)/test_scsi-scsi_disk.Po \
 	src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po \
 	src/$(DEPDIR)/test_sd_mapper-sdcard.Po \
 	src/$(DEPDIR)/test_sdcard-sdcard.Po \
@@ -652,11 +690,12 @@ SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_overlay_SOURCES) $(test_paste_SOURCES) \
 	$(test_psg_SOURCES) $(test_rs232_SOURCES) \
 	$(test_rs232dev_SOURCES) $(test_rtc_SOURCES) \
-	$(test_scc_SOURCES) $(test_sd_mapper_SOURCES) \
-	$(test_sdcard_SOURCES) $(test_serial_SOURCES) \
-	$(test_sunrise_SOURCES) $(test_tc8566_SOURCES) \
-	$(test_unapinet_SOURCES) $(test_v9990_SOURCES) \
-	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
+	$(test_scc_SOURCES) $(test_scsi_SOURCES) \
+	$(test_sd_mapper_SOURCES) $(test_sdcard_SOURCES) \
+	$(test_serial_SOURCES) $(test_sunrise_SOURCES) \
+	$(test_tc8566_SOURCES) $(test_unapinet_SOURCES) \
+	$(test_v9990_SOURCES) $(test_vdp_SOURCES) \
+	$(test_wd2793_SOURCES)
 DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_cartridge_SOURCES) $(test_cassette_SOURCES) \
 	$(test_config_SOURCES) $(test_floppy_SOURCES) \
@@ -666,11 +705,12 @@ DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_overlay_SOURCES) $(test_paste_SOURCES) \
 	$(test_psg_SOURCES) $(test_rs232_SOURCES) \
 	$(test_rs232dev_SOURCES) $(test_rtc_SOURCES) \
-	$(test_scc_SOURCES) $(test_sd_mapper_SOURCES) \
-	$(test_sdcard_SOURCES) $(test_serial_SOURCES) \
-	$(test_sunrise_SOURCES) $(test_tc8566_SOURCES) \
-	$(test_unapinet_SOURCES) $(test_v9990_SOURCES) \
-	$(test_vdp_SOURCES) $(test_wd2793_SOURCES)
+	$(test_scc_SOURCES) $(test_scsi_SOURCES) \
+	$(test_sd_mapper_SOURCES) $(test_sdcard_SOURCES) \
+	$(test_serial_SOURCES) $(test_sunrise_SOURCES) \
+	$(test_tc8566_SOURCES) $(test_unapinet_SOURCES) \
+	$(test_v9990_SOURCES) $(test_vdp_SOURCES) \
+	$(test_wd2793_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -1067,6 +1107,7 @@ AM_LDFLAGS = $(WIN_STACK_LDFLAGS)
 	src/megaflash.c \
 	src/models.c \
 	src/msx.c \
+	src/msx_scsi.c \
 	src/notify.c \
 	src/overlay.c \
 	src/paste.c \
@@ -1075,6 +1116,7 @@ AM_LDFLAGS = $(WIN_STACK_LDFLAGS)
 	src/rs232_dev.c \
 	src/rtc.c \
 	src/scc.c \
+	src/scsi_disk.c \
 	src/sdcard.c \
 	src/sd_mapper.c \
 	src/serial_8251.c \
@@ -1104,6 +1146,7 @@ noinst_HEADERS = \
 	src/megaflash.h \
 	src/models.h \
 	src/msx.h \
+	src/msx_scsi.h \
 	src/notify.h \
 	src/overlay.h \
 	src/paste.h \
@@ -1112,6 +1155,7 @@ noinst_HEADERS = \
 	src/rs232_dev.h \
 	src/rtc.h \
 	src/scc.h \
+	src/scsi_disk.h \
 	src/sdcard.h \
 	src/sd_mapper.h \
 	src/serial_8251.h \
@@ -1157,6 +1201,9 @@ test_tc8566_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_sunrise_SOURCES = diagnostics/test_sunrise.c src/ata.c src/sunrise.c
 test_sunrise_CPPFLAGS = -I$(top_srcdir)/src
 test_sunrise_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+test_scsi_SOURCES = diagnostics/test_scsi.c src/msx_scsi.c src/scsi_disk.c
+test_scsi_CPPFLAGS = -I$(top_srcdir)/src
+test_scsi_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_sdcard_SOURCES = diagnostics/test_sdcard.c src/sdcard.c
 test_sdcard_CPPFLAGS = -I$(top_srcdir)/src
 test_sdcard_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
@@ -1170,27 +1217,27 @@ test_unapinet_SOURCES = diagnostics/test_unapinet.c src/unapinet.c
 test_unapinet_CPPFLAGS = -I$(top_srcdir)/src
 test_unapinet_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_unapinet_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS)
-test_config_SOURCES = diagnostics/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
+test_config_SOURCES = diagnostics/test_config.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/msx_scsi.c src/psg.c src/rtc.c src/scc.c src/scsi_disk.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
 test_config_CPPFLAGS = -I$(top_srcdir)/src
 test_config_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
-test_models_SOURCES = diagnostics/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
+test_models_SOURCES = diagnostics/test_models.c src/models.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/msx_scsi.c src/psg.c src/rtc.c src/scc.c src/scsi_disk.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
 test_models_CPPFLAGS = -I$(top_srcdir)/src
 test_models_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_msx_SOURCES = diagnostics/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
+test_msx_SOURCES = diagnostics/test_msx.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/msx_scsi.c src/psg.c src/rtc.c src/scc.c src/scsi_disk.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
 test_msx_CPPFLAGS = -I$(top_srcdir)/src
 test_msx_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_SOURCES = diagnostics/test_gamepad.c src/gamepad.c
 test_gamepad_CPPFLAGS = -I$(top_srcdir)/src
 test_gamepad_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_gamepad_LDADD = $(SDL3_LIBS)
-test_kbd_SOURCES = diagnostics/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/kbd.c src/megaflash.c src/msx.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
+test_kbd_SOURCES = diagnostics/test_kbd.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/kbd.c src/megaflash.c src/msx.c src/msx_scsi.c src/psg.c src/rtc.c src/scc.c src/scsi_disk.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
 test_kbd_CPPFLAGS = -I$(top_srcdir)/src
 test_kbd_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_kbd_LDADD = $(SDL3_LIBS)
-test_paste_SOURCES = diagnostics/test_paste.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/paste.c src/psg.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
+test_paste_SOURCES = diagnostics/test_paste.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/megaflash.c src/msx.c src/msx_scsi.c src/paste.c src/psg.c src/rtc.c src/scc.c src/scsi_disk.c src/sdcard.c src/sd_mapper.c src/sunrise.c src/tc8566.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
 test_paste_CPPFLAGS = -I$(top_srcdir)/src
 test_paste_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
-test_overlay_SOURCES = diagnostics/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/notify.c src/overlay.c src/psg.c src/rs232.c src/rs232_dev.c src/rtc.c src/scc.c src/sdcard.c src/sd_mapper.c src/serial_8251.c src/serial_8254.c src/sunrise.c src/tc8566.c src/ui.c src/unapinet.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
+test_overlay_SOURCES = diagnostics/test_overlay.c src/config.c src/cartridge.c src/cassette.c src/ata.c src/floppy.c src/display.c src/leds.c src/megaflash.c src/models.c src/msx.c src/msx_scsi.c src/notify.c src/overlay.c src/psg.c src/rs232.c src/rs232_dev.c src/rtc.c src/scc.c src/scsi_disk.c src/sdcard.c src/sd_mapper.c src/serial_8251.c src/serial_8254.c src/sunrise.c src/tc8566.c src/ui.c src/unapinet.c src/vdp.c src/v9990.c src/wd2793.c src/z80.c
 test_overlay_CPPFLAGS = -I$(top_srcdir)/src
 test_overlay_CFLAGS = $(AM_CFLAGS) $(SDL3_CFLAGS) -Wall -Wextra -Wpedantic
 test_overlay_LDADD = $(SDL3_LIBS) $(NETWORK_LIBS) -lm
@@ -1230,6 +1277,7 @@ cbiosdir = $(pkgdatadir)/ROMS
 dist_cbios_DATA = \
 	ROMS/README.C-BIOS \
 	ROMS/README-RainBIOS \
+	ROMS/README-MSXSCSI \
 	ROMS/cbios_logo_msx1.rom \
 	ROMS/cbios_main_msx1.rom \
 	ROMS/rainbios_msx2.rom \
@@ -1240,6 +1288,7 @@ dist_cbios_DATA = \
 dist_noinst_SCRIPTS = \
 	tools/import-rainbios-roms.sh \
 	tools/build-omega-unified-rom.py \
+	tools/create-bert-scsi-image.sh \
 	diagnostics/test-v9990-symbos.sh
 
 icon16dir = $(datadir)/icons/hicolor/16x16/apps
@@ -1260,10 +1309,11 @@ EXTRA_DIST = \
 	LICENSE \
 	README.md \
 	USAGE.md \
- 	CONTROLS.md \
- 	CONFIGURATION.md \
- 	RS232.md \
- 	1983.png \
+	CONTROLS.md \
+	CONFIGURATION.md \
+	SCSI.md \
+	RS232.md \
+	1983.png \
 	sample-rainbios-nextor-geobench-on-1983-20260802-165621.gif \
 	TECHNICAL.md \
 	DEVELOPMENT.md \
@@ -1403,6 +1453,8 @@ src/1983-models.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-msx_scsi.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-notify.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-overlay.$(OBJEXT): src/$(am__dirstamp) \
@@ -1418,6 +1470,8 @@ src/1983-rs232_dev.$(OBJEXT): src/$(am__dirstamp) \
 src/1983-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-scc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/1983-scsi_disk.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/1983-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1498,11 +1552,15 @@ src/test_config-megaflash.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-msx_scsi.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-scc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_config-scsi_disk.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_config-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1567,11 +1625,15 @@ src/test_kbd-megaflash.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_kbd-msx_scsi.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-scc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_kbd-scsi_disk.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_kbd-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1625,11 +1687,15 @@ src/test_models-megaflash.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_models-msx_scsi.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-scc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_models-scsi_disk.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_models-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1665,11 +1731,15 @@ src/test_msx-megaflash.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_msx-msx_scsi.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-psg.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-scc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_msx-scsi_disk.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_msx-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1714,6 +1784,8 @@ src/test_overlay-models.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-msx_scsi.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-notify.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-overlay.$(OBJEXT): src/$(am__dirstamp) \
@@ -1727,6 +1799,8 @@ src/test_overlay-rs232_dev.$(OBJEXT): src/$(am__dirstamp) \
 src/test_overlay-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-scc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_overlay-scsi_disk.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_overlay-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1771,6 +1845,8 @@ src/test_paste-megaflash.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_paste-msx.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/test_paste-msx_scsi.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/test_paste-paste.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_paste-psg.$(OBJEXT): src/$(am__dirstamp) \
@@ -1778,6 +1854,8 @@ src/test_paste-psg.$(OBJEXT): src/$(am__dirstamp) \
 src/test_paste-rtc.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_paste-scc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_paste-scsi_disk.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/test_paste-sdcard.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -1847,6 +1925,17 @@ src/test_scc-scc.$(OBJEXT): src/$(am__dirstamp) \
 test-scc$(EXEEXT): $(test_scc_OBJECTS) $(test_scc_DEPENDENCIES) $(EXTRA_test_scc_DEPENDENCIES) 
 	@rm -f test-scc$(EXEEXT)
 	$(AM_V_CCLD)$(test_scc_LINK) $(test_scc_OBJECTS) $(test_scc_LDADD) $(LIBS)
+diagnostics/test_scsi-test_scsi.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
+src/test_scsi-msx_scsi.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/test_scsi-scsi_disk.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-scsi$(EXEEXT): $(test_scsi_OBJECTS) $(test_scsi_DEPENDENCIES) $(EXTRA_test_scsi_DEPENDENCIES)
+	@rm -f test-scsi$(EXEEXT)
+	$(AM_V_CCLD)$(test_scsi_LINK) $(test_scsi_OBJECTS) $(test_scsi_LDADD) $(LIBS)
 diagnostics/test_sd_mapper-test_sd_mapper.$(OBJEXT):  \
 	diagnostics/$(am__dirstamp) \
 	diagnostics/$(DEPDIR)/$(am__dirstamp)
@@ -1964,6 +2053,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_scc-test_scc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_scsi-test_scsi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_serial-test_serial.Po@am__quote@ # am--include-marker
@@ -1989,6 +2079,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-models.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-msx.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-msx_scsi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-notify.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-overlay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-paste.Po@am__quote@ # am--include-marker
@@ -1997,6 +2088,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-rs232_dev.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-scc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-scsi_disk.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-serial_8251.Po@am__quote@ # am--include-marker
@@ -2020,9 +2112,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-msx.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-msx_scsi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-scc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-scsi_disk.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_config-sunrise.Po@am__quote@ # am--include-marker
@@ -2041,9 +2135,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-kbd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-msx.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-msx_scsi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-scc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-scsi_disk.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_kbd-sunrise.Po@am__quote@ # am--include-marker
@@ -2063,9 +2159,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-models.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-msx.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-msx_scsi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-scc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-scsi_disk.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_models-sunrise.Po@am__quote@ # am--include-marker
@@ -2080,9 +2178,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-msx.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-msx_scsi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-scc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-scsi_disk.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_msx-sunrise.Po@am__quote@ # am--include-marker
@@ -2101,6 +2201,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-models.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-msx.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-msx_scsi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-notify.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-overlay.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-psg.Po@am__quote@ # am--include-marker
@@ -2108,6 +2209,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-rs232_dev.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-scc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-scsi_disk.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_overlay-serial_8251.Po@am__quote@ # am--include-marker
@@ -2126,10 +2228,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-megaflash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-msx.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-msx_scsi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-paste.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-psg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-scc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-scsi_disk.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_paste-sunrise.Po@am__quote@ # am--include-marker
@@ -2146,6 +2250,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_rs232dev-serial_8254.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_rtc-rtc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_scc-scc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_scsi-msx_scsi.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_scsi-scsi_disk.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sd_mapper-sdcard.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_sdcard-sdcard.Po@am__quote@ # am--include-marker
@@ -2407,6 +2513,20 @@ src/1983-msx.obj: src/msx.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-msx.obj `if test -f 'src/msx.c'; then $(CYGPATH_W) 'src/msx.c'; else $(CYGPATH_W) '$(srcdir)/src/msx.c'; fi`
 
+src/1983-msx_scsi.o: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-msx_scsi.o -MD -MP -MF src/$(DEPDIR)/1983-msx_scsi.Tpo -c -o src/1983-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-msx_scsi.Tpo src/$(DEPDIR)/1983-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/1983-msx_scsi.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+
+src/1983-msx_scsi.obj: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-msx_scsi.obj -MD -MP -MF src/$(DEPDIR)/1983-msx_scsi.Tpo -c -o src/1983-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-msx_scsi.Tpo src/$(DEPDIR)/1983-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/1983-msx_scsi.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+
 src/1983-notify.o: src/notify.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-notify.o -MD -MP -MF src/$(DEPDIR)/1983-notify.Tpo -c -o src/1983-notify.o `test -f 'src/notify.c' || echo '$(srcdir)/'`src/notify.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-notify.Tpo src/$(DEPDIR)/1983-notify.Po
@@ -2518,6 +2638,20 @@ src/1983-scc.obj: src/scc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/1983-scc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+
+src/1983-scsi_disk.o: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-scsi_disk.o -MD -MP -MF src/$(DEPDIR)/1983-scsi_disk.Tpo -c -o src/1983-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-scsi_disk.Tpo src/$(DEPDIR)/1983-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/1983-scsi_disk.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+
+src/1983-scsi_disk.obj: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-scsi_disk.obj -MD -MP -MF src/$(DEPDIR)/1983-scsi_disk.Tpo -c -o src/1983-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/1983-scsi_disk.Tpo src/$(DEPDIR)/1983-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/1983-scsi_disk.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -c -o src/1983-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
 
 src/1983-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(1983_CPPFLAGS) $(CPPFLAGS) $(1983_CFLAGS) $(CFLAGS) -MT src/1983-sdcard.o -MD -MP -MF src/$(DEPDIR)/1983-sdcard.Tpo -c -o src/1983-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -2897,6 +3031,20 @@ src/test_config-msx.obj: src/msx.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-msx.obj `if test -f 'src/msx.c'; then $(CYGPATH_W) 'src/msx.c'; else $(CYGPATH_W) '$(srcdir)/src/msx.c'; fi`
 
+src/test_config-msx_scsi.o: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-msx_scsi.o -MD -MP -MF src/$(DEPDIR)/test_config-msx_scsi.Tpo -c -o src/test_config-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-msx_scsi.Tpo src/$(DEPDIR)/test_config-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_config-msx_scsi.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+
+src/test_config-msx_scsi.obj: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-msx_scsi.obj -MD -MP -MF src/$(DEPDIR)/test_config-msx_scsi.Tpo -c -o src/test_config-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-msx_scsi.Tpo src/$(DEPDIR)/test_config-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_config-msx_scsi.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+
 src/test_config-psg.o: src/psg.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-psg.o -MD -MP -MF src/$(DEPDIR)/test_config-psg.Tpo -c -o src/test_config-psg.o `test -f 'src/psg.c' || echo '$(srcdir)/'`src/psg.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-psg.Tpo src/$(DEPDIR)/test_config-psg.Po
@@ -2938,6 +3086,20 @@ src/test_config-scc.obj: src/scc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_config-scc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+
+src/test_config-scsi_disk.o: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-scsi_disk.o -MD -MP -MF src/$(DEPDIR)/test_config-scsi_disk.Tpo -c -o src/test_config-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-scsi_disk.Tpo src/$(DEPDIR)/test_config-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_config-scsi_disk.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+
+src/test_config-scsi_disk.obj: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-scsi_disk.obj -MD -MP -MF src/$(DEPDIR)/test_config-scsi_disk.Tpo -c -o src/test_config-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_config-scsi_disk.Tpo src/$(DEPDIR)/test_config-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_config-scsi_disk.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -c -o src/test_config-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
 
 src/test_config-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_config_CPPFLAGS) $(CPPFLAGS) $(test_config_CFLAGS) $(CFLAGS) -MT src/test_config-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_config-sdcard.Tpo -c -o src/test_config-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -3247,6 +3409,20 @@ src/test_kbd-msx.obj: src/msx.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-msx.obj `if test -f 'src/msx.c'; then $(CYGPATH_W) 'src/msx.c'; else $(CYGPATH_W) '$(srcdir)/src/msx.c'; fi`
 
+src/test_kbd-msx_scsi.o: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-msx_scsi.o -MD -MP -MF src/$(DEPDIR)/test_kbd-msx_scsi.Tpo -c -o src/test_kbd-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-msx_scsi.Tpo src/$(DEPDIR)/test_kbd-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_kbd-msx_scsi.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+
+src/test_kbd-msx_scsi.obj: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-msx_scsi.obj -MD -MP -MF src/$(DEPDIR)/test_kbd-msx_scsi.Tpo -c -o src/test_kbd-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-msx_scsi.Tpo src/$(DEPDIR)/test_kbd-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_kbd-msx_scsi.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+
 src/test_kbd-psg.o: src/psg.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-psg.o -MD -MP -MF src/$(DEPDIR)/test_kbd-psg.Tpo -c -o src/test_kbd-psg.o `test -f 'src/psg.c' || echo '$(srcdir)/'`src/psg.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-psg.Tpo src/$(DEPDIR)/test_kbd-psg.Po
@@ -3288,6 +3464,20 @@ src/test_kbd-scc.obj: src/scc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_kbd-scc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+
+src/test_kbd-scsi_disk.o: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-scsi_disk.o -MD -MP -MF src/$(DEPDIR)/test_kbd-scsi_disk.Tpo -c -o src/test_kbd-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-scsi_disk.Tpo src/$(DEPDIR)/test_kbd-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_kbd-scsi_disk.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+
+src/test_kbd-scsi_disk.obj: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-scsi_disk.obj -MD -MP -MF src/$(DEPDIR)/test_kbd-scsi_disk.Tpo -c -o src/test_kbd-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_kbd-scsi_disk.Tpo src/$(DEPDIR)/test_kbd-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_kbd-scsi_disk.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -c -o src/test_kbd-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
 
 src/test_kbd-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_kbd_CPPFLAGS) $(CPPFLAGS) $(test_kbd_CFLAGS) $(CFLAGS) -MT src/test_kbd-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_kbd-sdcard.Tpo -c -o src/test_kbd-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -3583,6 +3773,20 @@ src/test_models-msx.obj: src/msx.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-msx.obj `if test -f 'src/msx.c'; then $(CYGPATH_W) 'src/msx.c'; else $(CYGPATH_W) '$(srcdir)/src/msx.c'; fi`
 
+src/test_models-msx_scsi.o: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-msx_scsi.o -MD -MP -MF src/$(DEPDIR)/test_models-msx_scsi.Tpo -c -o src/test_models-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-msx_scsi.Tpo src/$(DEPDIR)/test_models-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_models-msx_scsi.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+
+src/test_models-msx_scsi.obj: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-msx_scsi.obj -MD -MP -MF src/$(DEPDIR)/test_models-msx_scsi.Tpo -c -o src/test_models-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-msx_scsi.Tpo src/$(DEPDIR)/test_models-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_models-msx_scsi.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+
 src/test_models-psg.o: src/psg.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-psg.o -MD -MP -MF src/$(DEPDIR)/test_models-psg.Tpo -c -o src/test_models-psg.o `test -f 'src/psg.c' || echo '$(srcdir)/'`src/psg.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-psg.Tpo src/$(DEPDIR)/test_models-psg.Po
@@ -3624,6 +3828,20 @@ src/test_models-scc.obj: src/scc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_models-scc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+
+src/test_models-scsi_disk.o: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-scsi_disk.o -MD -MP -MF src/$(DEPDIR)/test_models-scsi_disk.Tpo -c -o src/test_models-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-scsi_disk.Tpo src/$(DEPDIR)/test_models-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_models-scsi_disk.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+
+src/test_models-scsi_disk.obj: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-scsi_disk.obj -MD -MP -MF src/$(DEPDIR)/test_models-scsi_disk.Tpo -c -o src/test_models-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_models-scsi_disk.Tpo src/$(DEPDIR)/test_models-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_models-scsi_disk.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -c -o src/test_models-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
 
 src/test_models-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_models_CPPFLAGS) $(CPPFLAGS) $(test_models_CFLAGS) $(CFLAGS) -MT src/test_models-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_models-sdcard.Tpo -c -o src/test_models-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -3835,6 +4053,20 @@ src/test_msx-msx.obj: src/msx.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-msx.obj `if test -f 'src/msx.c'; then $(CYGPATH_W) 'src/msx.c'; else $(CYGPATH_W) '$(srcdir)/src/msx.c'; fi`
 
+src/test_msx-msx_scsi.o: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-msx_scsi.o -MD -MP -MF src/$(DEPDIR)/test_msx-msx_scsi.Tpo -c -o src/test_msx-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-msx_scsi.Tpo src/$(DEPDIR)/test_msx-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_msx-msx_scsi.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+
+src/test_msx-msx_scsi.obj: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-msx_scsi.obj -MD -MP -MF src/$(DEPDIR)/test_msx-msx_scsi.Tpo -c -o src/test_msx-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-msx_scsi.Tpo src/$(DEPDIR)/test_msx-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_msx-msx_scsi.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+
 src/test_msx-psg.o: src/psg.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-psg.o -MD -MP -MF src/$(DEPDIR)/test_msx-psg.Tpo -c -o src/test_msx-psg.o `test -f 'src/psg.c' || echo '$(srcdir)/'`src/psg.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-psg.Tpo src/$(DEPDIR)/test_msx-psg.Po
@@ -3876,6 +4108,20 @@ src/test_msx-scc.obj: src/scc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_msx-scc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+
+src/test_msx-scsi_disk.o: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-scsi_disk.o -MD -MP -MF src/$(DEPDIR)/test_msx-scsi_disk.Tpo -c -o src/test_msx-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-scsi_disk.Tpo src/$(DEPDIR)/test_msx-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_msx-scsi_disk.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+
+src/test_msx-scsi_disk.obj: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-scsi_disk.obj -MD -MP -MF src/$(DEPDIR)/test_msx-scsi_disk.Tpo -c -o src/test_msx-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_msx-scsi_disk.Tpo src/$(DEPDIR)/test_msx-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_msx-scsi_disk.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -c -o src/test_msx-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
 
 src/test_msx-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_msx_CPPFLAGS) $(CPPFLAGS) $(test_msx_CFLAGS) $(CFLAGS) -MT src/test_msx-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_msx-sdcard.Tpo -c -o src/test_msx-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -4143,6 +4389,20 @@ src/test_overlay-msx.obj: src/msx.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-msx.obj `if test -f 'src/msx.c'; then $(CYGPATH_W) 'src/msx.c'; else $(CYGPATH_W) '$(srcdir)/src/msx.c'; fi`
 
+src/test_overlay-msx_scsi.o: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-msx_scsi.o -MD -MP -MF src/$(DEPDIR)/test_overlay-msx_scsi.Tpo -c -o src/test_overlay-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-msx_scsi.Tpo src/$(DEPDIR)/test_overlay-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_overlay-msx_scsi.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+
+src/test_overlay-msx_scsi.obj: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-msx_scsi.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-msx_scsi.Tpo -c -o src/test_overlay-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-msx_scsi.Tpo src/$(DEPDIR)/test_overlay-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_overlay-msx_scsi.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+
 src/test_overlay-notify.o: src/notify.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-notify.o -MD -MP -MF src/$(DEPDIR)/test_overlay-notify.Tpo -c -o src/test_overlay-notify.o `test -f 'src/notify.c' || echo '$(srcdir)/'`src/notify.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-notify.Tpo src/$(DEPDIR)/test_overlay-notify.Po
@@ -4240,6 +4500,20 @@ src/test_overlay-scc.obj: src/scc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_overlay-scc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+
+src/test_overlay-scsi_disk.o: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-scsi_disk.o -MD -MP -MF src/$(DEPDIR)/test_overlay-scsi_disk.Tpo -c -o src/test_overlay-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-scsi_disk.Tpo src/$(DEPDIR)/test_overlay-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_overlay-scsi_disk.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+
+src/test_overlay-scsi_disk.obj: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-scsi_disk.obj -MD -MP -MF src/$(DEPDIR)/test_overlay-scsi_disk.Tpo -c -o src/test_overlay-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_overlay-scsi_disk.Tpo src/$(DEPDIR)/test_overlay-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_overlay-scsi_disk.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -c -o src/test_overlay-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
 
 src/test_overlay-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_CPPFLAGS) $(CPPFLAGS) $(test_overlay_CFLAGS) $(CFLAGS) -MT src/test_overlay-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_overlay-sdcard.Tpo -c -o src/test_overlay-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -4507,6 +4781,20 @@ src/test_paste-msx.obj: src/msx.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o src/test_paste-msx.obj `if test -f 'src/msx.c'; then $(CYGPATH_W) 'src/msx.c'; else $(CYGPATH_W) '$(srcdir)/src/msx.c'; fi`
 
+src/test_paste-msx_scsi.o: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT src/test_paste-msx_scsi.o -MD -MP -MF src/$(DEPDIR)/test_paste-msx_scsi.Tpo -c -o src/test_paste-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_paste-msx_scsi.Tpo src/$(DEPDIR)/test_paste-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_paste-msx_scsi.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o src/test_paste-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+
+src/test_paste-msx_scsi.obj: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT src/test_paste-msx_scsi.obj -MD -MP -MF src/$(DEPDIR)/test_paste-msx_scsi.Tpo -c -o src/test_paste-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_paste-msx_scsi.Tpo src/$(DEPDIR)/test_paste-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_paste-msx_scsi.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o src/test_paste-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+
 src/test_paste-paste.o: src/paste.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT src/test_paste-paste.o -MD -MP -MF src/$(DEPDIR)/test_paste-paste.Tpo -c -o src/test_paste-paste.o `test -f 'src/paste.c' || echo '$(srcdir)/'`src/paste.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_paste-paste.Tpo src/$(DEPDIR)/test_paste-paste.Po
@@ -4562,6 +4850,20 @@ src/test_paste-scc.obj: src/scc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_paste-scc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o src/test_paste-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+
+src/test_paste-scsi_disk.o: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT src/test_paste-scsi_disk.o -MD -MP -MF src/$(DEPDIR)/test_paste-scsi_disk.Tpo -c -o src/test_paste-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_paste-scsi_disk.Tpo src/$(DEPDIR)/test_paste-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_paste-scsi_disk.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o src/test_paste-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+
+src/test_paste-scsi_disk.obj: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT src/test_paste-scsi_disk.obj -MD -MP -MF src/$(DEPDIR)/test_paste-scsi_disk.Tpo -c -o src/test_paste-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_paste-scsi_disk.Tpo src/$(DEPDIR)/test_paste-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_paste-scsi_disk.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -c -o src/test_paste-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
 
 src/test_paste-sdcard.o: src/sdcard.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_paste_CPPFLAGS) $(CPPFLAGS) $(test_paste_CFLAGS) $(CFLAGS) -MT src/test_paste-sdcard.o -MD -MP -MF src/$(DEPDIR)/test_paste-sdcard.Tpo -c -o src/test_paste-sdcard.o `test -f 'src/sdcard.c' || echo '$(srcdir)/'`src/sdcard.c
@@ -4856,6 +5158,48 @@ src/test_scc-scc.obj: src/scc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scc.c' object='src/test_scc-scc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scc_CPPFLAGS) $(CPPFLAGS) $(test_scc_CFLAGS) $(CFLAGS) -c -o src/test_scc-scc.obj `if test -f 'src/scc.c'; then $(CYGPATH_W) 'src/scc.c'; else $(CYGPATH_W) '$(srcdir)/src/scc.c'; fi`
+
+diagnostics/test_scsi-test_scsi.o: diagnostics/test_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scsi_CPPFLAGS) $(CPPFLAGS) $(test_scsi_CFLAGS) $(CFLAGS) -MT diagnostics/test_scsi-test_scsi.o -MD -MP -MF diagnostics/$(DEPDIR)/test_scsi-test_scsi.Tpo -c -o diagnostics/test_scsi-test_scsi.o `test -f 'diagnostics/test_scsi.c' || echo '$(srcdir)/'`diagnostics/test_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_scsi-test_scsi.Tpo diagnostics/$(DEPDIR)/test_scsi-test_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_scsi.c' object='diagnostics/test_scsi-test_scsi.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scsi_CPPFLAGS) $(CPPFLAGS) $(test_scsi_CFLAGS) $(CFLAGS) -c -o diagnostics/test_scsi-test_scsi.o `test -f 'diagnostics/test_scsi.c' || echo '$(srcdir)/'`diagnostics/test_scsi.c
+
+diagnostics/test_scsi-test_scsi.obj: diagnostics/test_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scsi_CPPFLAGS) $(CPPFLAGS) $(test_scsi_CFLAGS) $(CFLAGS) -MT diagnostics/test_scsi-test_scsi.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_scsi-test_scsi.Tpo -c -o diagnostics/test_scsi-test_scsi.obj `if test -f 'diagnostics/test_scsi.c'; then $(CYGPATH_W) 'diagnostics/test_scsi.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_scsi.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_scsi-test_scsi.Tpo diagnostics/$(DEPDIR)/test_scsi-test_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_scsi.c' object='diagnostics/test_scsi-test_scsi.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scsi_CPPFLAGS) $(CPPFLAGS) $(test_scsi_CFLAGS) $(CFLAGS) -c -o diagnostics/test_scsi-test_scsi.obj `if test -f 'diagnostics/test_scsi.c'; then $(CYGPATH_W) 'diagnostics/test_scsi.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_scsi.c'; fi`
+
+src/test_scsi-msx_scsi.o: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scsi_CPPFLAGS) $(CPPFLAGS) $(test_scsi_CFLAGS) $(CFLAGS) -MT src/test_scsi-msx_scsi.o -MD -MP -MF src/$(DEPDIR)/test_scsi-msx_scsi.Tpo -c -o src/test_scsi-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_scsi-msx_scsi.Tpo src/$(DEPDIR)/test_scsi-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_scsi-msx_scsi.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scsi_CPPFLAGS) $(CPPFLAGS) $(test_scsi_CFLAGS) $(CFLAGS) -c -o src/test_scsi-msx_scsi.o `test -f 'src/msx_scsi.c' || echo '$(srcdir)/'`src/msx_scsi.c
+
+src/test_scsi-msx_scsi.obj: src/msx_scsi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scsi_CPPFLAGS) $(CPPFLAGS) $(test_scsi_CFLAGS) $(CFLAGS) -MT src/test_scsi-msx_scsi.obj -MD -MP -MF src/$(DEPDIR)/test_scsi-msx_scsi.Tpo -c -o src/test_scsi-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_scsi-msx_scsi.Tpo src/$(DEPDIR)/test_scsi-msx_scsi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/msx_scsi.c' object='src/test_scsi-msx_scsi.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scsi_CPPFLAGS) $(CPPFLAGS) $(test_scsi_CFLAGS) $(CFLAGS) -c -o src/test_scsi-msx_scsi.obj `if test -f 'src/msx_scsi.c'; then $(CYGPATH_W) 'src/msx_scsi.c'; else $(CYGPATH_W) '$(srcdir)/src/msx_scsi.c'; fi`
+
+src/test_scsi-scsi_disk.o: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scsi_CPPFLAGS) $(CPPFLAGS) $(test_scsi_CFLAGS) $(CFLAGS) -MT src/test_scsi-scsi_disk.o -MD -MP -MF src/$(DEPDIR)/test_scsi-scsi_disk.Tpo -c -o src/test_scsi-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_scsi-scsi_disk.Tpo src/$(DEPDIR)/test_scsi-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_scsi-scsi_disk.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scsi_CPPFLAGS) $(CPPFLAGS) $(test_scsi_CFLAGS) $(CFLAGS) -c -o src/test_scsi-scsi_disk.o `test -f 'src/scsi_disk.c' || echo '$(srcdir)/'`src/scsi_disk.c
+
+src/test_scsi-scsi_disk.obj: src/scsi_disk.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scsi_CPPFLAGS) $(CPPFLAGS) $(test_scsi_CFLAGS) $(CFLAGS) -MT src/test_scsi-scsi_disk.obj -MD -MP -MF src/$(DEPDIR)/test_scsi-scsi_disk.Tpo -c -o src/test_scsi-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_scsi-scsi_disk.Tpo src/$(DEPDIR)/test_scsi-scsi_disk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/scsi_disk.c' object='src/test_scsi-scsi_disk.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_scsi_CPPFLAGS) $(CPPFLAGS) $(test_scsi_CFLAGS) $(CFLAGS) -c -o src/test_scsi-scsi_disk.obj `if test -f 'src/scsi_disk.c'; then $(CYGPATH_W) 'src/scsi_disk.c'; else $(CYGPATH_W) '$(srcdir)/src/scsi_disk.c'; fi`
 
 diagnostics/test_sd_mapper-test_sd_mapper.o: diagnostics/test_sd_mapper.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sd_mapper_CPPFLAGS) $(CPPFLAGS) $(test_sd_mapper_CFLAGS) $(CFLAGS) -MT diagnostics/test_sd_mapper-test_sd_mapper.o -MD -MP -MF diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Tpo -c -o diagnostics/test_sd_mapper-test_sd_mapper.o `test -f 'diagnostics/test_sd_mapper.c' || echo '$(srcdir)/'`diagnostics/test_sd_mapper.c
@@ -5684,6 +6028,13 @@ test-sunrise.log: test-sunrise$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-scsi.log: test-scsi$(EXEEXT)
+	@p='test-scsi$(EXEEXT)'; \
+	b='test-scsi'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 test-sdcard.log: test-sdcard$(EXEEXT)
 	@p='test-sdcard$(EXEEXT)'; \
 	b='test-sdcard'; \
@@ -6096,6 +6447,7 @@ distclean: distclean-am
 	-rm -f diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Po
 	-rm -f diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po
 	-rm -f diagnostics/$(DEPDIR)/test_scc-test_scc.Po
+	-rm -f diagnostics/$(DEPDIR)/test_scsi-test_scsi.Po
 	-rm -f diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
 	-rm -f diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po
 	-rm -f diagnostics/$(DEPDIR)/test_serial-test_serial.Po
@@ -6121,6 +6473,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-megaflash.Po
 	-rm -f src/$(DEPDIR)/1983-models.Po
 	-rm -f src/$(DEPDIR)/1983-msx.Po
+	-rm -f src/$(DEPDIR)/1983-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/1983-notify.Po
 	-rm -f src/$(DEPDIR)/1983-overlay.Po
 	-rm -f src/$(DEPDIR)/1983-paste.Po
@@ -6129,6 +6482,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/1983-rs232_dev.Po
 	-rm -f src/$(DEPDIR)/1983-rtc.Po
 	-rm -f src/$(DEPDIR)/1983-scc.Po
+	-rm -f src/$(DEPDIR)/1983-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/1983-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/1983-sdcard.Po
 	-rm -f src/$(DEPDIR)/1983-serial_8251.Po
@@ -6152,9 +6506,11 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_config-floppy.Po
 	-rm -f src/$(DEPDIR)/test_config-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_config-msx.Po
+	-rm -f src/$(DEPDIR)/test_config-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/test_config-psg.Po
 	-rm -f src/$(DEPDIR)/test_config-rtc.Po
 	-rm -f src/$(DEPDIR)/test_config-scc.Po
+	-rm -f src/$(DEPDIR)/test_config-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_config-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_config-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_config-sunrise.Po
@@ -6173,9 +6529,11 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_kbd-kbd.Po
 	-rm -f src/$(DEPDIR)/test_kbd-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
+	-rm -f src/$(DEPDIR)/test_kbd-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/test_kbd-psg.Po
 	-rm -f src/$(DEPDIR)/test_kbd-rtc.Po
 	-rm -f src/$(DEPDIR)/test_kbd-scc.Po
+	-rm -f src/$(DEPDIR)/test_kbd-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sunrise.Po
@@ -6195,9 +6553,11 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_models-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_models-models.Po
 	-rm -f src/$(DEPDIR)/test_models-msx.Po
+	-rm -f src/$(DEPDIR)/test_models-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/test_models-psg.Po
 	-rm -f src/$(DEPDIR)/test_models-rtc.Po
 	-rm -f src/$(DEPDIR)/test_models-scc.Po
+	-rm -f src/$(DEPDIR)/test_models-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_models-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_models-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_models-sunrise.Po
@@ -6212,9 +6572,11 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_msx-floppy.Po
 	-rm -f src/$(DEPDIR)/test_msx-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
+	-rm -f src/$(DEPDIR)/test_msx-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/test_msx-psg.Po
 	-rm -f src/$(DEPDIR)/test_msx-rtc.Po
 	-rm -f src/$(DEPDIR)/test_msx-scc.Po
+	-rm -f src/$(DEPDIR)/test_msx-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_msx-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_msx-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_msx-sunrise.Po
@@ -6233,6 +6595,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_overlay-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_overlay-models.Po
 	-rm -f src/$(DEPDIR)/test_overlay-msx.Po
+	-rm -f src/$(DEPDIR)/test_overlay-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/test_overlay-notify.Po
 	-rm -f src/$(DEPDIR)/test_overlay-overlay.Po
 	-rm -f src/$(DEPDIR)/test_overlay-psg.Po
@@ -6240,6 +6603,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_overlay-rs232_dev.Po
 	-rm -f src/$(DEPDIR)/test_overlay-rtc.Po
 	-rm -f src/$(DEPDIR)/test_overlay-scc.Po
+	-rm -f src/$(DEPDIR)/test_overlay-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_overlay-serial_8251.Po
@@ -6258,10 +6622,12 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_paste-floppy.Po
 	-rm -f src/$(DEPDIR)/test_paste-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_paste-msx.Po
+	-rm -f src/$(DEPDIR)/test_paste-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/test_paste-paste.Po
 	-rm -f src/$(DEPDIR)/test_paste-psg.Po
 	-rm -f src/$(DEPDIR)/test_paste-rtc.Po
 	-rm -f src/$(DEPDIR)/test_paste-scc.Po
+	-rm -f src/$(DEPDIR)/test_paste-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_paste-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_paste-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_paste-sunrise.Po
@@ -6278,6 +6644,8 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_rs232dev-serial_8254.Po
 	-rm -f src/$(DEPDIR)/test_rtc-rtc.Po
 	-rm -f src/$(DEPDIR)/test_scc-scc.Po
+	-rm -f src/$(DEPDIR)/test_scsi-msx_scsi.Po
+	-rm -f src/$(DEPDIR)/test_scsi-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_sdcard-sdcard.Po
@@ -6362,6 +6730,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f diagnostics/$(DEPDIR)/test_rs232dev-test_rs232_dev.Po
 	-rm -f diagnostics/$(DEPDIR)/test_rtc-test_rtc.Po
 	-rm -f diagnostics/$(DEPDIR)/test_scc-test_scc.Po
+	-rm -f diagnostics/$(DEPDIR)/test_scsi-test_scsi.Po
 	-rm -f diagnostics/$(DEPDIR)/test_sd_mapper-test_sd_mapper.Po
 	-rm -f diagnostics/$(DEPDIR)/test_sdcard-test_sdcard.Po
 	-rm -f diagnostics/$(DEPDIR)/test_serial-test_serial.Po
@@ -6387,6 +6756,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-megaflash.Po
 	-rm -f src/$(DEPDIR)/1983-models.Po
 	-rm -f src/$(DEPDIR)/1983-msx.Po
+	-rm -f src/$(DEPDIR)/1983-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/1983-notify.Po
 	-rm -f src/$(DEPDIR)/1983-overlay.Po
 	-rm -f src/$(DEPDIR)/1983-paste.Po
@@ -6395,6 +6765,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/1983-rs232_dev.Po
 	-rm -f src/$(DEPDIR)/1983-rtc.Po
 	-rm -f src/$(DEPDIR)/1983-scc.Po
+	-rm -f src/$(DEPDIR)/1983-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/1983-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/1983-sdcard.Po
 	-rm -f src/$(DEPDIR)/1983-serial_8251.Po
@@ -6418,9 +6789,11 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_config-floppy.Po
 	-rm -f src/$(DEPDIR)/test_config-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_config-msx.Po
+	-rm -f src/$(DEPDIR)/test_config-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/test_config-psg.Po
 	-rm -f src/$(DEPDIR)/test_config-rtc.Po
 	-rm -f src/$(DEPDIR)/test_config-scc.Po
+	-rm -f src/$(DEPDIR)/test_config-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_config-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_config-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_config-sunrise.Po
@@ -6439,9 +6812,11 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_kbd-kbd.Po
 	-rm -f src/$(DEPDIR)/test_kbd-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_kbd-msx.Po
+	-rm -f src/$(DEPDIR)/test_kbd-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/test_kbd-psg.Po
 	-rm -f src/$(DEPDIR)/test_kbd-rtc.Po
 	-rm -f src/$(DEPDIR)/test_kbd-scc.Po
+	-rm -f src/$(DEPDIR)/test_kbd-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_kbd-sunrise.Po
@@ -6461,9 +6836,11 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_models-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_models-models.Po
 	-rm -f src/$(DEPDIR)/test_models-msx.Po
+	-rm -f src/$(DEPDIR)/test_models-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/test_models-psg.Po
 	-rm -f src/$(DEPDIR)/test_models-rtc.Po
 	-rm -f src/$(DEPDIR)/test_models-scc.Po
+	-rm -f src/$(DEPDIR)/test_models-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_models-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_models-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_models-sunrise.Po
@@ -6478,9 +6855,11 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_msx-floppy.Po
 	-rm -f src/$(DEPDIR)/test_msx-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_msx-msx.Po
+	-rm -f src/$(DEPDIR)/test_msx-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/test_msx-psg.Po
 	-rm -f src/$(DEPDIR)/test_msx-rtc.Po
 	-rm -f src/$(DEPDIR)/test_msx-scc.Po
+	-rm -f src/$(DEPDIR)/test_msx-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_msx-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_msx-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_msx-sunrise.Po
@@ -6499,6 +6878,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_overlay-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_overlay-models.Po
 	-rm -f src/$(DEPDIR)/test_overlay-msx.Po
+	-rm -f src/$(DEPDIR)/test_overlay-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/test_overlay-notify.Po
 	-rm -f src/$(DEPDIR)/test_overlay-overlay.Po
 	-rm -f src/$(DEPDIR)/test_overlay-psg.Po
@@ -6506,6 +6886,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_overlay-rs232_dev.Po
 	-rm -f src/$(DEPDIR)/test_overlay-rtc.Po
 	-rm -f src/$(DEPDIR)/test_overlay-scc.Po
+	-rm -f src/$(DEPDIR)/test_overlay-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_overlay-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_overlay-serial_8251.Po
@@ -6524,10 +6905,12 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_paste-floppy.Po
 	-rm -f src/$(DEPDIR)/test_paste-megaflash.Po
 	-rm -f src/$(DEPDIR)/test_paste-msx.Po
+	-rm -f src/$(DEPDIR)/test_paste-msx_scsi.Po
 	-rm -f src/$(DEPDIR)/test_paste-paste.Po
 	-rm -f src/$(DEPDIR)/test_paste-psg.Po
 	-rm -f src/$(DEPDIR)/test_paste-rtc.Po
 	-rm -f src/$(DEPDIR)/test_paste-scc.Po
+	-rm -f src/$(DEPDIR)/test_paste-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_paste-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_paste-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_paste-sunrise.Po
@@ -6544,6 +6927,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_rs232dev-serial_8254.Po
 	-rm -f src/$(DEPDIR)/test_rtc-rtc.Po
 	-rm -f src/$(DEPDIR)/test_scc-scc.Po
+	-rm -f src/$(DEPDIR)/test_scsi-msx_scsi.Po
+	-rm -f src/$(DEPDIR)/test_scsi-scsi_disk.Po
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sd_mapper.Po
 	-rm -f src/$(DEPDIR)/test_sd_mapper-sdcard.Po
 	-rm -f src/$(DEPDIR)/test_sdcard-sdcard.Po

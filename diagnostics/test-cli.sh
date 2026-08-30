@@ -144,6 +144,19 @@ if ./1983 --ide-mode unsafe >"$log" 2>&1; then
 fi
 grep -q "expected read-only or read-write" "$log"
 
+if ./1983 --config /dev/null --scsi-rom missing-scsi.rom \
+        >"$log" 2>&1; then
+    echo "missing MSX SCSI ROM was accepted" >&2
+    exit 1
+fi
+grep -q "cannot load banked MSX SCSI ROM" "$log"
+
+if ./1983 --scsi-mode unsafe >"$log" 2>&1; then
+    echo "invalid SCSI image mode was accepted" >&2
+    exit 1
+fi
+grep -q -- "--scsi-mode: expected read-only or read-write" "$log"
+
 if ./1983 --config /dev/null \
         --megaflash-rom missing-megaflash.rom \
         >"$log" 2>&1; then

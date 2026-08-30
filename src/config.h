@@ -34,6 +34,8 @@ typedef enum {
     CONFIG_FILE_CHOOSER_DRIVE_B,
     CONFIG_FILE_CHOOSER_SUNRISE_ROM,
     CONFIG_FILE_CHOOSER_IDE_IMAGE,
+    CONFIG_FILE_CHOOSER_SCSI_ROM,
+    CONFIG_FILE_CHOOSER_SCSI_IMAGE,
     CONFIG_FILE_CHOOSER_SD_MAPPER_ROM,
     CONFIG_FILE_CHOOSER_SD_CARD_A,
     CONFIG_FILE_CHOOSER_SD_CARD_B,
@@ -75,6 +77,7 @@ typedef struct {
     bool extra_hardware;
     bool second_drive;
     bool sunrise_ide;
+    bool msx_scsi;
     bool sd_mapper;
     bool megaflash;
     bool tcpip_unapi;
@@ -88,6 +91,7 @@ typedef struct {
     bool sd_mapper_alternate_driver;
     FloppyImageMode floppy_image_mode;
     AtaImageMode ide_image_mode;
+    AtaImageMode scsi_image_mode;
     SdImageMode sd_image_mode;
     bool scc;
     bool msx_music;
@@ -110,6 +114,7 @@ typedef struct {
     char subrom_path[PATH_MAX];
     char disk_rom_path[PATH_MAX];
     char sunrise_rom_path[PATH_MAX];
+    char scsi_rom_path[PATH_MAX];
     char sd_mapper_rom_path[PATH_MAX];
     char rs232_rom_path[PATH_MAX];
     char cdx2_rom_path[PATH_MAX];
@@ -120,6 +125,8 @@ typedef struct {
     char drive_a_path[PATH_MAX];
     char drive_b_path[PATH_MAX];
     char ide_image_path[PATH_MAX];
+    char scsi_image_path[PATH_MAX];
+    unsigned scsi_target_id;
     char cassette_path[PATH_MAX];
     char cartridge_path[MSX_CARTRIDGE_SLOTS][PATH_MAX];
     MsxCartridgeMapper cartridge_mapper[MSX_CARTRIDGE_SLOTS];

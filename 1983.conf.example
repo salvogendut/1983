@@ -54,6 +54,9 @@ floppy_image_mode = read-only
 ide_image =
 # read-only (safe default) or read-write.
 ide_image_mode = read-only
+# Raw, 512-byte-sector disk exposed by the MSX SCSI extension.
+scsi_image =
+scsi_image_mode = read-only
 # Raw, 512-byte-sector SD-card images for SD Mapper V2.
 sd_card_a =
 sd_card_b =
@@ -72,6 +75,8 @@ last_drive_a_dir =
 last_drive_b_dir =
 last_sunrise_rom_dir =
 last_ide_image_dir =
+last_scsi_rom_dir =
+last_scsi_image_dir =
 last_sd_mapper_rom_dir =
 last_sd_card_a_dir =
 last_sd_card_b_dir =
@@ -92,6 +97,11 @@ second_drive = false
 sunrise_ide = false
 # Exact 128 KiB Sunrise IDE/Nextor kernel ROM.
 sunrise_rom =
+# Banked NCR/Z5380 cartridge. The ROM is user supplied; target 0 is the
+# normal BERT SCSI boot device. This conflicts with CDX-2 ports D0h-D7h.
+msx_scsi = false
+scsi_rom =
+scsi_target_id = 0
 # Composite dual-SD controller and independent 512 KiB mapper cartridge.
 sd_mapper = false
 # Exact 128 or 256 KiB SD Mapper V2 controller ROM.

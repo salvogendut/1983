@@ -17,8 +17,8 @@ and staying as multiplatform as SDL3 allows.
 > matrix, dual cartridge slots, expanded slots, memory mapper, RTC, and
 > battery-backed CMOS. Native support covers catalogue-configured Philips
 > WD2793 floppy controllers with raw MSX DSK images, the
-> external Microsol CDX-2 and RDF600 cartridges, Sunrise IDE disks, and the
-> SD Mapper V2 and MegaFlashROM
+> external Microsol CDX-2 and RDF600 cartridges, Sunrise IDE and MSX SCSI
+> disks, and the SD Mapper V2 and MegaFlashROM
 > SCC+ SD cartridges — the official Nextor kernels boot GeoBench and other
 > media. An optional openMSXnet host bridge adds TCP/IP UNAPI under
 > `UNAPINET.COM`. Protected floppy formats, cassette recording, MSX-MUSIC,
@@ -48,9 +48,9 @@ machine instead ships with the open-source, homebrew
 - Cycle-timed AY-3-8910/YM2149 audio.
 - Complete international MSX keyboard matrix, SDL3 joystick and mouse input.
 - RP-5C01 clock with persistent per-machine CMOS and offline continuity.
-- Sunrise IDE, SD Mapper V2, MegaFlashROM SCC+ SD, and PowerGraph V9990
-  cartridges, with safe read-only/read-write raw images and Nextor boot for
-  the storage devices.
+- Sunrise IDE, NCR/Z5380 MSX SCSI, SD Mapper V2, MegaFlashROM SCC+ SD, and
+  PowerGraph V9990 cartridges, with safe read-only/read-write raw images;
+  the storage paths boot their matching Nextor or MSX-DOS firmware.
 - Philips/CDX-2 WD2793 (including dual-ROM Angeisa/FAST! EPROM images) and
   RDF600/TDC-600-compatible TC8566AF floppy,
   CAS cassette playback, GIF capture, and an optional openMSXnet TCP/IP bridge.
@@ -79,6 +79,7 @@ GitHub Releases page. See [`INSTALL.md`](INSTALL.md) for packaging details.
 - [`USAGE.md`](USAGE.md) — machines, media, extensions, and quick start.
 - [`CONTROLS.md`](CONTROLS.md) — keyboard, overlay, gamepad, and GIF controls.
 - [`CONFIGURATION.md`](CONFIGURATION.md) — config files, RTC, and catalogue.
+- [`SCSI.md`](SCSI.md) — MSX SCSI setup, BERT images, and DOS boot procedure.
 - [`TECHNICAL.md`](TECHNICAL.md) — implemented hardware, timing, media, and
   frontend behavior.
 - [`DEVELOPMENT.md`](DEVELOPMENT.md) — source layout, design boundaries, and
