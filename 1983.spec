@@ -20,9 +20,9 @@ BuildRequires:  libappstream-glib
 SDL3. It emulates the Z80, TMS9918-family, V9938/V9958, and PowerGraph V9990
 video, AY/YM audio, keyboard, joystick and mouse input, cartridges and common
 mappers, cassettes, Philips floppy drives, Sunrise IDE, SD Mapper V2,
-MegaFlashROM SCC+ SD, and the MSX2 real-time clock. An openMSXnet-compatible
-host bridge can expose TCP/IP UNAPI networking through the separately supplied
-guest TSR.
+MegaFlashROM SCC+ SD, NCR/Z5380 MSX SCSI, and the MSX2 real-time clock. An
+openMSXnet-compatible host bridge can expose TCP/IP UNAPI networking through
+the separately supplied guest TSR.
 
 The redistributable RainBIOS Omega MSX2 firmware is included as the
 ready-to-run default. C-BIOS 0.29 remains available as a bundled MSX1 model.
@@ -46,7 +46,7 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/io.github
 
 %files
 %license LICENSE
-%doc README.md INSTALL.md TECHNICAL.md DEVELOPMENT.md ROADMAP.md
+%doc README.md INSTALL.md TECHNICAL.md DEVELOPMENT.md ROADMAP.md SCSI.md
 %doc BOOT_TARGETS.md 1983.conf.example
 %{_bindir}/%{name}
 %{_datadir}/applications/io.github.salvogendut.Emulator1983.desktop
@@ -57,6 +57,7 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/io.github
 %dir %{_datadir}/%{name}/ROMS
 %{_datadir}/%{name}/ROMS/README.C-BIOS
 %{_datadir}/%{name}/ROMS/README-RainBIOS
+%{_datadir}/%{name}/ROMS/README-MSXSCSI
 %{_datadir}/%{name}/ROMS/cbios_logo_msx1.rom
 %{_datadir}/%{name}/ROMS/cbios_main_msx1.rom
 %{_datadir}/%{name}/ROMS/rainbios_msx2.rom
