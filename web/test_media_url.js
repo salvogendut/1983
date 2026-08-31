@@ -15,16 +15,21 @@ let media = parseStartupMedia(
 );
 assert.deepStrictEqual(media, {
   machine: null,
+  unifiedRom: null,
   disk: 'https://example.test/1983/media/thisdisk.dsk',
   cartridge: null,
   cartridge2: null,
   ide: null,
+  scsiRom: null,
+  scsi: null,
   sdA: null,
   sdB: null,
   extensions: null,
   autorun: 'disc.bas',
   sdMode: null,
   ideMode: null,
+  scsiMode: null,
+  scsiTargetId: null,
 });
 
 media = parseStartupMedia(
@@ -49,16 +54,21 @@ assert.strictEqual(
 );
 assert.deepStrictEqual(parseStartupMedia('?theme=default', base), {
   machine: null,
+  unifiedRom: null,
   disk: null,
   cartridge: null,
   cartridge2: null,
   ide: null,
+  scsiRom: null,
+  scsi: null,
   sdA: null,
   sdB: null,
   extensions: null,
   autorun: null,
   sdMode: null,
   ideMode: null,
+  scsiMode: null,
+  scsiTargetId: null,
 });
 
 media = parseStartupMedia(
@@ -69,39 +79,44 @@ media = parseStartupMedia(
 );
 assert.deepStrictEqual(media, {
   machine: null,
+  unifiedRom: null,
   disk: 'https://example.test/1983/media/GEOBENCH.DSK',
   cartridge: null,
   cartridge2: null,
   ide: null,
+  scsiRom: null,
+  scsi: null,
   sdA: 'https://example.test/1983/media/system.img',
   sdB: 'https://example.test/1983/media/data.img',
   extensions: ['sdmapper', 'unapi'],
   autorun: null,
   sdMode: 'readwrite',
   ideMode: null,
+  scsiMode: null,
+  scsiTargetId: null,
 });
 assert.deepStrictEqual(
   resolveStartupExtensions(media, {
-    sunrise: false, sdMapper: false, powergraph: false, unapi: false,
+    sunrise: false, scsi: false, sdMapper: false, powergraph: false, unapi: false,
   }),
-  { sunrise: false, sdMapper: true, powergraph: false, unapi: true }
+  { sunrise: false, scsi: false, sdMapper: true, powergraph: false, unapi: true }
 );
 
 media = parseStartupMedia('?sda=media%2Fsystem.img', base);
 assert.deepStrictEqual(
   resolveStartupExtensions(media, {
-    sunrise: false, sdMapper: false, powergraph: false, unapi: true,
+    sunrise: false, scsi: false, sdMapper: false, powergraph: false, unapi: true,
   }),
-  { sunrise: false, sdMapper: true, powergraph: false, unapi: true },
+  { sunrise: false, scsi: false, sdMapper: true, powergraph: false, unapi: true },
   'an SD image implies SD Mapper without replacing stored UNAPI state'
 );
 
 media = parseStartupMedia('?extensions=unapi', base);
 assert.deepStrictEqual(
   resolveStartupExtensions(media, {
-    sunrise: true, sdMapper: true, powergraph: true, unapi: false,
+    sunrise: true, scsi: false, sdMapper: true, powergraph: true, unapi: false,
   }),
-  { sunrise: false, sdMapper: false, powergraph: false, unapi: true },
+  { sunrise: false, scsi: false, sdMapper: false, powergraph: false, unapi: true },
   'an explicit extensions list overrides stored extension state'
 );
 
@@ -113,18 +128,18 @@ assert.strictEqual(media.ide, 'https://example.test/1983/media/symbos.img');
 assert.strictEqual(media.ideMode, 'readwrite');
 assert.deepStrictEqual(
   resolveStartupExtensions(media, {
-    sunrise: false, sdMapper: false, powergraph: false, unapi: true,
+    sunrise: false, scsi: false, sdMapper: false, powergraph: false, unapi: true,
   }),
-  { sunrise: true, sdMapper: true, powergraph: false, unapi: false },
+  { sunrise: true, scsi: false, sdMapper: true, powergraph: false, unapi: false },
   'an IDE image implies Sunrise alongside explicitly requested extensions'
 );
 
 media = parseStartupMedia('?extensions=powergraph%2Cunapi', base);
 assert.deepStrictEqual(
   resolveStartupExtensions(media, {
-    sunrise: false, sdMapper: false, powergraph: false, unapi: false,
+    sunrise: false, scsi: false, sdMapper: false, powergraph: false, unapi: false,
   }),
-  { sunrise: false, sdMapper: false, powergraph: true, unapi: true },
+  { sunrise: false, scsi: false, sdMapper: false, powergraph: true, unapi: true },
   'PowerGraph can be selected by URL without consuming the UNAPI port device'
 );
 
@@ -144,6 +159,10 @@ assert.strictEqual(parseStartupMedia('?machine=philips', base).machine, 1);
 assert.strictEqual(parseStartupMedia('?machine=omega', base).machine, 2);
 assert.strictEqual(parseStartupMedia('?machine=omega-msx2', base).machine, 2);
 assert.strictEqual(parseStartupMedia('?machine=MSX2', base).machine, 2);
+assert.strictEqual(
+  parseStartupMedia('?unifiedrom=media%2Fomega.rom', base).unifiedRom,
+  'https://example.test/1983/media/omega.rom'
+);
 assert.throws(
   () => parseStartupMedia('?machine=turbor', base),
   /machine must be msx1, omega-msx2, or nms8250/
@@ -176,6 +195,34 @@ assert.throws(
 assert.throws(
   () => parseStartupMedia('?sda=system.img&sdmode=unsafe', base),
   /readonly or readwrite/
+);
+
+media = parseStartupMedia(
+  '?extensions=scsi&scsirom=media%2FSCSI.ROM.BIN' +
+  '&scsi=media%2FMSXDOS2.img&scsimode=readwrite&scsiid=4',
+  base
+);
+assert.strictEqual(media.scsiRom, 'https://example.test/1983/media/SCSI.ROM.BIN');
+assert.strictEqual(media.scsi, 'https://example.test/1983/media/MSXDOS2.img');
+assert.strictEqual(media.scsiMode, 'readwrite');
+assert.strictEqual(media.scsiTargetId, 4);
+assert.deepStrictEqual(
+  resolveStartupExtensions(media, {
+    sunrise: false, scsi: false, sdMapper: false, powergraph: false, unapi: false,
+  }),
+  { sunrise: false, scsi: true, sdMapper: false, powergraph: false, unapi: false }
+);
+assert.throws(
+  () => parseStartupMedia('?scsi=media%2Fdisk.img', base),
+  /requires a scsirom URL/
+);
+assert.throws(
+  () => parseStartupMedia('?scsirom=media%2Fcontroller.rom&scsiid=7', base),
+  /integer from 0 through 6/
+);
+assert.throws(
+  () => parseStartupMedia('?scsimode=readwrite', base),
+  /requires a scsi URL/
 );
 assert.throws(
   () => parseStartupMedia('?idemode=readwrite', base),

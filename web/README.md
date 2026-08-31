@@ -115,15 +115,26 @@ cannot open arbitrary TCP or UDP sockets, so the browser bridge connects to a
 restricted WebSocket relay. See [UNAPI-WASM.md](UNAPI-WASM.md) for setup and
 security details.
 
-Sunrise, SD Mapper and PowerGraph are assigned cartridge I then II in that
-order, skipping disabled devices. Only two may be connected at once. Removing
-an earlier device moves the later device down to cartridge I. The normal
-cartridge controls display the corresponding reserved slots.
+Sunrise, MSX SCSI, SD Mapper and PowerGraph are assigned cartridge I then II in
+that order, skipping disabled devices. Only two may be connected at once.
+Removing an earlier device moves the later device down to cartridge I. The
+normal cartridge controls display the corresponding reserved slots.
+
+MSX SCSI uses the same BERT-compatible NCR/Z5380 controller and raw 512-byte
+sector disk implementation as the native application. Because the controller
+firmware is not distributed with 1983, load a banked controller ROM (16 KiB
+banks, up to 512 KiB) in the SCSI AUX panel before switching on cartridge
+power. Target IDs 0 through 6 are supported. Read/write images are flushed and
+offered as a download on safe ejection; uploaded firmware remains only for the
+current browser session. The tested BERT firmware also needs a compatible MSX2
+BIOS; upload a compatible 512 KiB Omega unified ROM when the bundled RainBIOS
+does not initialize that controller.
 
 ## URL-configured hardware and media
 
 Media URLs are resolved relative to the page URL. Two cartridge ROMs, a Drive A
-floppy, a Sunrise IDE image and both SD Mapper cards can be mounted at startup:
+floppy, a Sunrise IDE image, a user-supplied SCSI controller and disk image,
+and both SD Mapper cards can be mounted at startup:
 
     http://127.0.0.1:1983/?machine=msx1
     http://127.0.0.1:1983/?machine=omega-msx2
@@ -133,6 +144,7 @@ floppy, a Sunrise IDE image and both SD Mapper cards can be mounted at startup:
     http://127.0.0.1:1983/?disk=media/thisdisk.dsk
     http://127.0.0.1:1983/?disk=media/thisdisk.dsk&autorun=load.bas
     http://127.0.0.1:1983/?machine=omega-msx2&ide=media/symbos.img
+    http://127.0.0.1:1983/?machine=omega-msx2&unifiedrom=media/omega.rom&extensions=scsi&scsirom=media/SCSI.ROM.BIN&scsi=media/MSXDOS2.img
 
 The `machine` parameter accepts `omega-msx2` for the default Omega RainBIOS
 profile, `msx1` for C-BIOS, or `nms8250` for Philips NMS 8250 RainBIOS. The
@@ -151,14 +163,21 @@ bootable disk starts without an `autorun` parameter. An explicit `machine=msx1`
 combined with a `disk` reports that the selected machine has no floppy
 controller instead of silently changing profiles.
 
-The `extensions` parameter accepts `sunrise`, `sdmapper`, `powergraph`, and
-`unapi` as a comma-separated list. An explicit list overrides stored extension
-toggles for that page load without rewriting browser storage. At most two of
-the three cartridge extensions may be selected. `ide` loads an IDE master image
-and implicitly enables Sunrise; `sda` and `sdb` load the two SD Mapper cards and
-implicitly enable that mapper. URL-loaded images are read-only unless
-`idemode=readwrite` or `sdmode=readwrite` is supplied. Writable changes remain
-local and use the download-on-eject path.
+The `extensions` parameter accepts `sunrise`, `scsi`, `sdmapper`, `powergraph`,
+and `unapi` as a comma-separated list. An explicit list overrides stored
+extension toggles for that page load without rewriting browser storage. At
+most two of the four cartridge extensions may be selected. `ide` loads an IDE
+master image and implicitly enables Sunrise; `unifiedrom` loads a 512 KiB Omega
+unified machine ROM, `scsirom` loads the required SCSI
+controller ROM, `scsi` loads its disk image, and `sda` and `sdb` load the two SD
+Mapper cards. A SCSI disk URL requires `scsirom`; `scsiid=0` through `6`
+selects its target ID. URL-loaded images are read-only unless
+`idemode=readwrite`, `scsimode=readwrite`, or `sdmode=readwrite` is supplied.
+Writable changes remain local and use the download-on-eject path.
+
+For example, this boots a BERT-controller MSX-DOS2 disk at target 0:
+
+    http://127.0.0.1:1983/?machine=omega-msx2&unifiedrom=media/omega.rom&extensions=scsi&scsirom=media/SCSI.ROM.BIN&scsi=media/MSXDOS2.img&scsiid=0
 
 For example, this exposes the V9990 output for a prepared SymbOS image:
 
@@ -201,3 +220,10 @@ SymbOS desktop palette and window geometry:
     make -C web check-wasm-symbos SYMBOS_IMAGE=/path/to/symbos.img
     make -C web check-wasm-symbos SYMBOS_IMAGE=/path/to/symbos-sd.img \
       SYMBOS_CONTROLLER=sdmapper
+
+The opt-in SCSI acceptance boots a user-supplied controller ROM and raw disk,
+checks disk activity, and requires the guest to reach an MSX-DOS A: prompt:
+
+    make -C web check-wasm-scsi \
+      SCSI_ROM=/path/to/SCSI.ROM.BIN SCSI_IMAGE=/path/to/MSXDOS2.img \
+      SCSI_UNIFIED_ROM=/path/to/compatible-omega.rom
