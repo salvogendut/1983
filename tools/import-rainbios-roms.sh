@@ -3,7 +3,7 @@ set -eu
 
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 rainbios=${1:-"$root/../rainbios"}
-revision=d4925fcb58e8ba939ccfb45f23d650bb4cce10c2
+revision=381c36dc39aeeaa53f876a92ab6517b1f3d2eb74
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT HUP INT TERM
 
@@ -26,7 +26,7 @@ if test -n "$(git -C "$rainbios" status --porcelain)"; then
 fi
 
 make -C "$rainbios" \
-    msx2-main-rom msx2-sub-rom rainbios-disk-rom
+    msx2-main-rom msx2-sub-rom rainbios-disk-rom nms8250-disk-rom
 
 check_rom() {
     expected=$1
@@ -34,19 +34,21 @@ check_rom() {
     printf '%s  %s\n' "$expected" "$source" | sha256sum -c -
 }
 
-check_rom c128d92142531b9a68f9337d0f046d7cff3fdc3278996e7dad63613e981a4e5f \
+check_rom 04682c2fd04858d51e7a3dc4b75a6c2c62affe2e2fe5fbb62a8e1491f4d91709 \
     "$rainbios/build/rainbios_msx2.rom"
 check_rom f8230c25f45db88d4c032e59dd714c4bf65c1b3300000fc20a046fa32ef984ed \
     "$rainbios/build/rainbios_msx2_sub.rom"
 check_rom ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc \
     "$rainbios/build/rainbios_disk.rom"
+check_rom ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc \
+    "$rainbios/build/rainbios_nms8250_disk.rom"
 
 python3 "$root/tools/build-omega-unified-rom.py" \
     "$work/rainbios_omega.rom" \
     "$rainbios/build/rainbios_msx2.rom" \
     "$rainbios/build/rainbios_msx2_sub.rom" \
     "$rainbios/build/rainbios_disk.rom"
-check_rom 7e59f6f07c70780539c6369e4004155d68287bb3c11948c016f01f8c07dbc328 \
+check_rom 5d0568532d8c2dedf8ba9ce29781423567ec90a9b28306c1ec45443e54333b7b \
     "$work/rainbios_omega.rom"
 
 install -m 0644 "$rainbios/build/rainbios_msx2.rom" \
@@ -55,6 +57,8 @@ install -m 0644 "$rainbios/build/rainbios_msx2_sub.rom" \
     "$root/ROMS/rainbios_msx2_sub.rom"
 install -m 0644 "$rainbios/build/rainbios_disk.rom" \
     "$root/ROMS/rainbios_disk.rom"
+install -m 0644 "$rainbios/build/rainbios_nms8250_disk.rom" \
+    "$root/ROMS/rainbios_nms8250_disk.rom"
 install -m 0644 "$work/rainbios_omega.rom" \
     "$root/ROMS/rainbios_omega.rom"
 
