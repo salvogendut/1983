@@ -5,6 +5,38 @@ const fs = require('fs');
 const path = require('path');
 const create1983 = require('./dist/1983.js');
 
+function screen2PromptPresent(module) {
+  if (module._poc_width() !== 256 || module._poc_height() !== 192)
+    return false;
+  const width = module._poc_width();
+  const start = module._poc_pixels() >>> 2;
+  const pixels = module.HEAPU32.subarray(start, start + width * 192);
+  const glyphs = [
+    [
+      '..###...', '.#...#..', '.#...#..', '.#####..',
+      '.#...#..', '.#...#..', '.#...#..', '........',
+    ],
+    [
+      '........', '..##....', '..##....', '........',
+      '..##....', '..##....', '........', '........',
+    ],
+    [
+      '.#......', '..#.....', '...#....', '....#...',
+      '.....#..', '........', '........', '........',
+    ],
+    [
+      '..#.....', '...#....', '....#...', '.....#..',
+      '....#...', '...#....', '..#.....', '........',
+    ],
+  ];
+  return glyphs.every((rows, cell) => rows.every((row, y) =>
+    [...row].every((expected, x) => {
+      const pixel = pixels[(8 + y) * width + cell * 8 + x] & 0x00ffffff;
+      return (pixel === 0x00ffffff) === (expected === '#');
+    })
+  ));
+}
+
 async function main() {
   const romPath = process.argv[2];
   const imagePath = process.argv[3];
@@ -70,7 +102,10 @@ async function main() {
   assert(activity, 'the guest must access the SCSI disk while booting');
   module._poc_dump_screen_text();
   const text = output.join('\n');
-  assert.match(text, /A:\\?>/i, 'MSX-DOS2 must reach an A: prompt');
+  assert(
+    /A:\\?>/i.test(text) || screen2PromptPresent(module),
+    'MSX-DOS2 must reach an A: prompt in text or Screen 2 output'
+  );
   console.log(
     `WASM MSX SCSI boot acceptance passed: ${frameCount} frames, ` +
     `${rom.byteLength} byte ROM, ${fs.statSync(imagePath).size} byte image`
