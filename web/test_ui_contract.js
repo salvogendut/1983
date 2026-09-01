@@ -19,6 +19,10 @@ assert.match(html, /id="scsiRomFile"/);
 assert.match(html, /id="scsiDiskFile"/);
 assert.match(html, /id="scsiTargetId"/);
 assert.match(html, /id="scsiIoBase"/);
+assert.match(
+  html,
+  /id="scsiIoBase"[\s\S]*option value="48" selected>30h-37h<\/option>/
+);
 assert.match(html, /PowerGraph V9990/);
 assert.match(html, /id="powergraphToggle"/);
 assert.match(html, /V9990 \/ 512 KB VRAM/);
@@ -46,6 +50,10 @@ assert.match(app, /m\._poc_set_sunrise\(requested \? 1 : 0\)/);
 assert.match(app, /m\._poc_set_scsi\(requested \? 1 : 0\)/);
 assert.match(app, /m\._poc_set_scsi_io_base\(scsiIoBase\)/);
 assert.match(app, /m\._poc_install_scsi_rom\(pointer, data\.byteLength, scsiTargetId\)/);
+assert.match(app, /BertSCSI v2 \(30h-37h\)/);
+assert.match(app, /BertSCSI v1 \(D0h-D7h\)/);
+assert.match(app, /installBundledScsiController\(\)/);
+assert.match(app, /scsiIoBaseEl\.disabled = scsiEnabled/);
 assert.match(app, /m\._poc_eject_scsi_disk\(\)/);
 assert.match(app, /m\._poc_set_powergraph_v9990\(requested \? 1 : 0\)/);
 assert.match(app, /m\._poc_set_powergraph_video_source\(source\)/);

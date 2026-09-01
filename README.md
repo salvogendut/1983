@@ -103,5 +103,7 @@ issue before starting a substantial machine, device, or architecture change.
 (`GPL-2.0-only`). See [`LICENSE`](LICENSE). Redistributable firmware retained
 under its own terms carries a notice beside the ROM; the bundled official
 Nextor Sunrise ROM is covered by [`ROMS/LICENSE-NEXTOR`](ROMS/LICENSE-NEXTOR),
-and the RainBIOS firmware provenance and notices are recorded in
+the Bert SCSI ROM permission and checksums are recorded in
+[`ROMS/README-MSXSCSI`](ROMS/README-MSXSCSI), and the RainBIOS firmware
+provenance and notices are recorded in
 [`ROMS/README-RainBIOS`](ROMS/README-RainBIOS).

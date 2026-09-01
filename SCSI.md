@@ -7,10 +7,17 @@ The base is user-selectable because both CPLD revisions exist. One raw host
 file is exposed as a direct-access SCSI disk with 512-byte sectors. Target ID
 0 is the default because it is the first device probed by BERT SCSI V2.7.
 
-The controller ROM is not distributed with 1983. Select a compatible,
-legally obtained banked ROM in **Extensions > MSX SCSI**. The extension
-reserves one cartridge slot. The D0 setting cannot coexist with CDX-2 because
-the devices overlap at `D0h-D4h`; the 30 setting has no such I/O conflict.
+1983 includes both known controller revisions. The file names make their
+required port ranges explicit:
+
+- `ROMS/BertSCSI-v1-D0h-D7h.ROM` uses `D0h-D7h`;
+- `ROMS/BertSCSI-v2-30h-37h.ROM` uses `30h-37h` and is the default.
+
+Here v1/v2 identifies the controller I/O revision, not the ROM's internal
+firmware banner. The images are included with permission from their author;
+see `ROMS/README-MSXSCSI` for provenance and checksums. The extension reserves
+one cartridge slot. The D0 setting cannot coexist with CDX-2 because the
+devices overlap at `D0h-D4h`; the 30 setting has no such I/O conflict.
 
 ## Starting it
 
@@ -31,7 +38,7 @@ The equivalent command line is:
 
 ```sh
 ./1983 --model msx2 --msx-scsi \
-  --scsi-rom /path/to/SCSI.ROM.BIN \
+  --scsi-rom ROMS/BertSCSI-v2-30h-37h.ROM \
   --scsi-disk /path/to/MSXDOS2-SCSI.IMG \
   --scsi-id 0 --scsi-port 30 --scsi-mode read-only
 ```

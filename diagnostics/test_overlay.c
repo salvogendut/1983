@@ -1261,6 +1261,8 @@ int main(void) {
     assert(overlay.scsi_setup_row == 3);
     assert(overlay.pending_scsi_io_base == MSX_SCSI_DEFAULT_IO_BASE);
     send_key(&overlay, SDLK_RETURN);
+    assert(overlay.pending_scsi_io_base == MSX_SCSI_IO_BASE_D0);
+    send_key(&overlay, SDLK_RETURN);
     assert(overlay.pending_scsi_io_base == MSX_SCSI_IO_BASE_30);
     send_key(&overlay, SDLK_DOWN);
     send_key(&overlay, SDLK_RETURN);

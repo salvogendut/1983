@@ -56,7 +56,9 @@ FIRMWARE_ASSETS = \
 	../ROMS/rainbios_omega.rom \
 	../ROMS/rainbios_nms8250_disk.rom \
 	../ROMS/Nextor-2.1.1.SunriseIDE.ROM \
-	../ROMS/SDM\ V2\ Nextor2.1.1.rom
+	../ROMS/SDM\ V2\ Nextor2.1.1.rom \
+	../ROMS/BertSCSI-v1-D0h-D7h.ROM \
+	../ROMS/BertSCSI-v2-30h-37h.ROM
 
 all: $(DIST_DIR)/index.html $(addprefix $(DIST_DIR)/,$(STYLE_ASSETS)) $(DIST_DIR)/app.js \
 	$(DIST_DIR)/audio-scheduler.js $(DIST_DIR)/gamepad.js $(DIST_DIR)/hardware-ui.js \
@@ -119,7 +121,9 @@ $(WASM_ASSETS) &: $(OBJS) $(FIRMWARE_ASSETS) | $(DIST_DIR)
 	    --embed-file ../ROMS/rainbios_omega.rom@roms/rainbios_omega.rom \
 	    --embed-file ../ROMS/rainbios_nms8250_disk.rom@roms/rainbios_nms8250_disk.rom \
 	    --embed-file ../ROMS/Nextor-2.1.1.SunriseIDE.ROM@roms/nextor-sunrise.rom \
-	    --embed-file ../ROMS/SDM\ V2\ Nextor2.1.1.rom@roms/sdmapper-v2-nextor.rom
+	    --embed-file ../ROMS/SDM\ V2\ Nextor2.1.1.rom@roms/sdmapper-v2-nextor.rom \
+	    --embed-file ../ROMS/BertSCSI-v1-D0h-D7h.ROM@roms/bertscsi-v1-d0h-d7h.rom \
+	    --embed-file ../ROMS/BertSCSI-v2-30h-37h.ROM@roms/bertscsi-v2-30h-37h.rom
 
 $(BUILD_DIR)/%.o: ../src/%.c | $(BUILD_DIR)
 	$(EMCC) $(CFLAGS) -c $< -o $@

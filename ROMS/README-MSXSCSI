@@ -1,14 +1,27 @@
-MSX SCSI controller ROM
-=======================
+Bert SCSI controller ROMs
+=========================
 
-1983 supports compatible banked MSX SCSI cartridge firmware, including the
-Z5380-based interface documented at:
+1983 includes two controller ROM images for the Z5380-based MSX SCSI
+interface documented at:
 
   https://hackaday.io/project/205465-scsi-interface-for-msx-computers
 
-No SCSI controller ROM is shipped or tracked in this repository. Put a ROM
-you are entitled to use anywhere on the host and select it from Extensions >
-MSX SCSI, or pass it with --scsi-rom. Its copyright and redistribution terms
-remain those supplied by its author.
+The ROM images are included with permission from the author, Bert
+Hoogenboom. Copyright remains with the author.
+
+  BertSCSI-v1-D0h-D7h.ROM  original D0h-D7h controller revision
+  BertSCSI-v2-30h-37h.ROM  30h-37h controller revision (1983 default)
+
+The v1/v2 names above identify the controller I/O revision and are not the
+firmware's internal version banner. Select the matching ROM and Controller
+I/O base in Extensions > MSX SCSI, or pass both --scsi-rom and --scsi-port.
+Using the wrong pair prevents firmware disk I/O.
+
+SHA-256:
+
+  98263fa9c777d6dda3698d9bb579a41b8bac860c810b139f99745120b7c34b01
+    BertSCSI-v1-D0h-D7h.ROM
+  8cfd04fea780408d184dca5578072717f743c0f97eb4377b197bce001c9d648c
+    BertSCSI-v2-30h-37h.ROM
 
 See ../SCSI.md for image preparation and boot instructions.

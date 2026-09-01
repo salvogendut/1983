@@ -85,7 +85,7 @@ int main(void) {
     create_fixture();
     msx_scsi_init(&scsi);
     assert(msx_scsi_target_id(&scsi) == 0);
-    assert(msx_scsi_io_base(&scsi) == MSX_SCSI_IO_BASE_D0);
+    assert(msx_scsi_io_base(&scsi) == MSX_SCSI_IO_BASE_30);
     assert(msx_scsi_memory_read(&scsi, 0x4000) == 0xff);
     assert(msx_scsi_install_rom(&scsi, rom, sizeof(rom)) == 0);
     assert(msx_scsi_memory_read(&scsi, 0x4000) == 0);
@@ -93,13 +93,12 @@ int main(void) {
     {
         u8 ignored = 0xff;
 
-        assert(!msx_scsi_io_read(&scsi, 0x30, &ignored));
-        msx_scsi_set_io_base(&scsi, MSX_SCSI_IO_BASE_30);
-        assert(msx_scsi_io_base(&scsi) == MSX_SCSI_IO_BASE_30);
         io_write(&scsi, 0x31, 0x40);
         assert(io_read(&scsi, 0x30) == 0xff);
         assert(!msx_scsi_io_read(&scsi, 0xd0, &ignored));
         msx_scsi_set_io_base(&scsi, MSX_SCSI_IO_BASE_D0);
+        assert(msx_scsi_io_base(&scsi) == MSX_SCSI_IO_BASE_D0);
+        assert(!msx_scsi_io_read(&scsi, 0x30, &ignored));
     }
     msx_scsi_memory_write(&scsi, 0x6000, 3);
     assert(msx_scsi_memory_read(&scsi, 0x4000) == 3);

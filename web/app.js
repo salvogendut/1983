@@ -99,6 +99,16 @@ const IDE_ACCESS_STORAGE_KEY = "javascript1983.expansion.ideAccessMode";
 const SCSI_ACCESS_STORAGE_KEY = "javascript1983.expansion.scsiAccessMode";
 const SCSI_TARGET_STORAGE_KEY = "javascript1983.expansion.scsiTargetId";
 const SCSI_IO_BASE_STORAGE_KEY = "javascript1983.expansion.scsiIoBase";
+const BUNDLED_SCSI_ROMS = Object.freeze({
+  0x30: Object.freeze({
+    path: "roms/bertscsi-v2-30h-37h.rom",
+    name: "BertSCSI v2 (30h-37h)"
+  }),
+  0xd0: Object.freeze({
+    path: "roms/bertscsi-v1-d0h-d7h.rom",
+    name: "BertSCSI v1 (D0h-D7h)"
+  })
+});
 const SD_MAPPER_STORAGE_KEY = "javascript1983.expansion.sdMapper";
 const SD_ACCESS_STORAGE_KEY = "javascript1983.expansion.sdAccessMode";
 const POWERGRAPH_STORAGE_KEY = "javascript1983.expansion.powergraph";
@@ -113,7 +123,7 @@ let scsiEnabled = false;
 let scsiRomReady = false;
 let scsiAccessMode = "readonly";
 let scsiTargetId = 0;
-let scsiIoBase = 0xd0;
+let scsiIoBase = 0x30;
 let sdMapperEnabled = false;
 let sdAccessMode = "readonly";
 let powergraphEnabled = false;
@@ -262,6 +272,7 @@ function updateScsiUi() {
     : scsiRomReady ? "Ready - controller ROM loaded" : "Controller ROM required";
   scsiTargetIdEl.value = String(scsiTargetId);
   scsiIoBaseEl.value = String(scsiIoBase);
+  scsiIoBaseEl.disabled = scsiEnabled;
   for (const input of scsiAccessModeEls)
     input.checked = input.value === scsiAccessMode;
   updateCartridgeExtensionLabels();
@@ -769,6 +780,12 @@ create1983().then(m => {
     return;
   }
 
+  try {
+    installBundledScsiController();
+  } catch (error) {
+    setStatus("Bundled SCSI firmware unavailable: " + error.message);
+  }
+
   ledPowerEl.classList.add("on");
   setStatus("Omega MSX2 booting - click the display for keyboard focus");
 
@@ -1260,6 +1277,12 @@ create1983().then(m => {
     scsiRomNameEl.textContent = name;
     scsiRomNameEl.title = name;
     updateScsiUi();
+  }
+
+  function installBundledScsiController() {
+    const bundled = BUNDLED_SCSI_ROMS[scsiIoBase];
+    if (!bundled) throw new Error("unsupported controller I/O base");
+    installScsiController(m.FS.readFile(bundled.path), bundled.name);
   }
 
   async function loadScsiRomFile(file) {
@@ -1826,7 +1849,10 @@ create1983().then(m => {
 
   applyScsiIoBaseHardware = ioBase => {
     const actual = m._poc_set_scsi_io_base(Number(ioBase));
-    if (actual >= 0) scsiIoBase = actual;
+    if (actual >= 0) {
+      scsiIoBase = actual;
+      installBundledScsiController();
+    }
   };
 
   applySdMapperHardware = enabled => {
