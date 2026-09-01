@@ -27,6 +27,8 @@ SRCS = \
 	../src/cartridge.c \
 	../src/cassette.c \
 	../src/ata.c \
+	../src/scsi_disk.c \
+	../src/msx_scsi.c \
 	../src/floppy.c \
 	../src/wd2793.c \
 	../src/tc8566.c \
@@ -98,10 +100,16 @@ check-wasm-symbos: all
 	node test_wasm_symbos.js "$(SYMBOS_IMAGE)" \
 	    /tmp/1983-wasm-symbos.ppm 5000 "$(or $(SYMBOS_CONTROLLER),sunrise)"
 
+check-wasm-scsi: all
+	test -n "$(SCSI_ROM)"
+	test -n "$(SCSI_IMAGE)"
+	node test_wasm_scsi.js "$(SCSI_ROM)" "$(SCSI_IMAGE)" 1500 \
+	    "$(SCSI_UNIFIED_ROM)"
+
 $(WASM_ASSETS) &: $(OBJS) $(FIRMWARE_ASSETS) | $(DIST_DIR)
 	$(EMCC) $(CFLAGS) $(OBJS) -o $(DIST_DIR)/1983.js \
 	    -sMODULARIZE -sEXPORT_NAME=create1983 \
-	    -sEXPORTED_FUNCTIONS='_poc_init,_poc_init_model,_poc_ram_kb,_poc_set_ram_kb,_poc_load_cartridge,_poc_load_cartridge_slot,_poc_eject_cartridge,_poc_cartridge_loaded,_poc_reset,_poc_omega_unified_bank,_poc_install_omega_unified_rom,_poc_flip_omega_unified_bank,_poc_step,_poc_pixels,_poc_width,_poc_height,_poc_frame_hz,_poc_key,_poc_key_mod,_poc_joy,_poc_joy_matrix,_poc_set_input_device,_poc_mouse_motion,_poc_mouse_button,_poc_mouse_clear,_poc_audio_reset,_poc_audio_avail,_poc_audio_read_pos,_poc_audio_buffer,_poc_audio_advance,_poc_load_disk,_poc_eject_disk,_poc_has_floppy,_poc_load_cassette,_poc_eject_cassette,_poc_disk_motor,_poc_set_sunrise,_poc_sunrise_enabled,_poc_sunrise_slot,_poc_mount_ide,_poc_eject_ide,_poc_ide_mounted,_poc_ide_writable,_poc_ide_activity,_poc_set_sd_mapper,_poc_sd_mapper_enabled,_poc_sd_mapper_slot,_poc_mount_sd_card,_poc_eject_sd_card,_poc_sd_card_mounted,_poc_sd_activity_mask,_poc_set_powergraph_v9990,_poc_powergraph_v9990_enabled,_poc_powergraph_v9990_slot,_poc_set_powergraph_video_source,_poc_powergraph_video_source,_poc_powergraph_output_active,_poc_set_unapi,_poc_unapi_enabled,_poc_unapi_guest_active,_poc_unapi_activity,_poc_unapi_probe,_poc_unapi_dns_result,_poc_unapi_tcp_open_result,_poc_unapi_udp_open_result,_poc_autorun,_malloc,_free' \
+	    -sEXPORTED_FUNCTIONS='_poc_init,_poc_init_model,_poc_ram_kb,_poc_set_ram_kb,_poc_load_cartridge,_poc_load_cartridge_slot,_poc_eject_cartridge,_poc_cartridge_loaded,_poc_reset,_poc_omega_unified_bank,_poc_install_omega_unified_rom,_poc_flip_omega_unified_bank,_poc_step,_poc_pixels,_poc_width,_poc_height,_poc_frame_hz,_poc_key,_poc_key_mod,_poc_joy,_poc_joy_matrix,_poc_set_input_device,_poc_mouse_motion,_poc_mouse_button,_poc_mouse_clear,_poc_audio_reset,_poc_audio_avail,_poc_audio_read_pos,_poc_audio_buffer,_poc_audio_advance,_poc_load_disk,_poc_eject_disk,_poc_has_floppy,_poc_load_cassette,_poc_eject_cassette,_poc_disk_motor,_poc_dump_screen_text,_poc_set_sunrise,_poc_sunrise_enabled,_poc_sunrise_slot,_poc_mount_ide,_poc_eject_ide,_poc_ide_mounted,_poc_ide_writable,_poc_ide_activity,_poc_install_scsi_rom,_poc_scsi_rom_ready,_poc_set_scsi_target_id,_poc_scsi_target_id,_poc_set_scsi,_poc_scsi_enabled,_poc_scsi_slot,_poc_mount_scsi,_poc_eject_scsi_disk,_poc_scsi_disk_mounted,_poc_scsi_disk_writable,_poc_scsi_activity,_poc_set_sd_mapper,_poc_sd_mapper_enabled,_poc_sd_mapper_slot,_poc_mount_sd_card,_poc_eject_sd_card,_poc_sd_card_mounted,_poc_sd_activity_mask,_poc_set_powergraph_v9990,_poc_powergraph_v9990_enabled,_poc_powergraph_v9990_slot,_poc_set_powergraph_video_source,_poc_powergraph_video_source,_poc_powergraph_output_active,_poc_set_unapi,_poc_unapi_enabled,_poc_unapi_guest_active,_poc_unapi_activity,_poc_unapi_probe,_poc_unapi_dns_result,_poc_unapi_tcp_open_result,_poc_unapi_udp_open_result,_poc_autorun,_malloc,_free' \
 	    -sEXPORTED_RUNTIME_METHODS='HEAPU8,HEAPU32,wasmMemory,getValue,setValue,ccall,cwrap,FS' \
 	    -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 \
 	    --embed-file ../ROMS/cbios_main_msx1.rom@roms/cbios_main_msx1.rom \
@@ -172,6 +180,6 @@ clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)
 	rm -f *.o *.ppm poc.js poc.wasm 1983.js 1983.wasm
 
-.PHONY: all clean serve test check-wasm check-wasm-symbos test-audio-scheduler test-gamepad \
+.PHONY: all clean serve test check-wasm check-wasm-symbos check-wasm-scsi test-audio-scheduler test-gamepad \
 	test-hardware-ui test-media-url test-theme test-ui-contract test-unapi \
 	test-relay

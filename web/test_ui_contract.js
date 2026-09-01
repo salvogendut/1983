@@ -13,6 +13,11 @@ for (const match of app.matchAll(/\$\("([^"]+)"\)/g)) {
 
 assert.match(html, /SD Mapper V2/);
 assert.match(html, /Sunrise IDE/);
+assert.match(html, /MSX SCSI/);
+assert.match(html, /NCR Z5380/);
+assert.match(html, /id="scsiRomFile"/);
+assert.match(html, /id="scsiDiskFile"/);
+assert.match(html, /id="scsiTargetId"/);
 assert.match(html, /PowerGraph V9990/);
 assert.match(html, /id="powergraphToggle"/);
 assert.match(html, /V9990 \/ 512 KB VRAM/);
@@ -20,7 +25,10 @@ assert.match(
   html,
   /name="powergraphOutput" value="auto" checked[\s\S]*name="powergraphOutput" value="msx"[\s\S]*name="powergraphOutput" value="v9990"/
 );
-assert.match(html, /id="ledA"[\s\S]*id="ledIde"[\s\S]*<span>IDE<\/span>/);
+assert.match(
+  html,
+  /id="ledA"[\s\S]*id="ledIde"[\s\S]*<span>IDE<\/span>[\s\S]*id="ledScsi"[\s\S]*<span>SCSI<\/span>/
+);
 assert.match(html, /Embedded Nextor 2\.1\.1/);
 assert.match(html, /href="nextor-license\.txt"/);
 assert.match(html, /MSX TCP\/IP UNAPI/);
@@ -34,6 +42,9 @@ assert.match(
 assert.match(app, /relayHealthEndpoint\(unapiEndpoint\)/);
 assert.match(app, /window\.open\(unapiCertificateUrl, "_blank", "noopener,noreferrer"\)/);
 assert.match(app, /m\._poc_set_sunrise\(requested \? 1 : 0\)/);
+assert.match(app, /m\._poc_set_scsi\(requested \? 1 : 0\)/);
+assert.match(app, /m\._poc_install_scsi_rom\(pointer, data\.byteLength, scsiTargetId\)/);
+assert.match(app, /m\._poc_eject_scsi_disk\(\)/);
 assert.match(app, /m\._poc_set_powergraph_v9990\(requested \? 1 : 0\)/);
 assert.match(app, /m\._poc_set_powergraph_video_source\(source\)/);
 assert.match(app, /framebufferPtr = m\._poc_pixels\(\);[\s\S]*const w = m\._poc_width\(\)/);
@@ -62,17 +73,23 @@ for (const [link] of repositoryLinks) {
 }
 assert.match(html, /class="brand-repo-link"/);
 assert.match(html, /class="screen-brand"/);
-assert.match(app, /const slot = sunriseEnabled \? 1 : 0;/);
+assert.match(app, /const slot = cartridgeExtensionSlot\("SD Mapper V2"\);/);
 assert.match(
   html,
   /<input type="checkbox" id="pixelToggle">/,
   'Sharp pixels must be disabled by default'
 );
-assert.doesNotMatch(
-  html.slice(html.indexOf('id="expansionPanel"'), html.indexOf('<main')),
-  /accept="[^"]*\.rom/i,
-  'the AUX panel must not expose extension firmware choosers'
+const auxHtml = html.slice(
+  html.indexOf('id="expansionPanel"'), html.indexOf('<main')
 );
+const auxRomChoosers = [...auxHtml.matchAll(
+  /<input[^>]*type="file"[^>]*accept="[^"]*\.rom[^>]*>/gi
+)];
+assert.strictEqual(
+  auxRomChoosers.length, 1,
+  'only user-supplied MSX SCSI firmware may have an AUX ROM chooser'
+);
+assert.match(auxRomChoosers[0][0], /id="scsiRomFile"/);
 assert(
   html.indexOf('unapi-relay-protocol.js') < html.indexOf('unapi-bridge.js') &&
   html.indexOf('unapi-bridge.js') < html.indexOf('1983.js'),

@@ -205,6 +205,56 @@ async function main() {
   assert.strictEqual(module._poc_set_sd_mapper(0), 0);
   assert.strictEqual(module._poc_sd_mapper_enabled(), 0);
 
+  const scsiRom = new Uint8Array(32 * 1024);
+  scsiRom.fill(0xff);
+  const scsiRomPointer = module._malloc(scsiRom.byteLength);
+  assert.notStrictEqual(scsiRomPointer, 0);
+  try {
+    module.HEAPU8.set(scsiRom, scsiRomPointer);
+    assert.strictEqual(
+      module._poc_install_scsi_rom(scsiRomPointer, scsiRom.byteLength - 1, 0),
+      -1,
+      'a non-banked SCSI controller ROM must be rejected'
+    );
+    assert.strictEqual(
+      module._poc_install_scsi_rom(scsiRomPointer, scsiRom.byteLength, 0),
+      0,
+      'a user-supplied banked SCSI controller ROM must be accepted'
+    );
+  } finally {
+    module._free(scsiRomPointer);
+  }
+  assert.strictEqual(module._poc_scsi_rom_ready(), 1);
+  assert.strictEqual(module._poc_set_scsi_target_id(4), 4);
+  assert.strictEqual(module._poc_scsi_target_id(), 4);
+  assert.strictEqual(module._poc_set_scsi(1), 1);
+  assert.strictEqual(module._poc_scsi_enabled(), 1);
+  assert.strictEqual(module._poc_scsi_slot(), 0);
+  module.FS.writeFile('/test-scsi.img', new Uint8Array(1024 * 1024));
+  assert.strictEqual(
+    module.ccall(
+      'poc_mount_scsi', 'number', ['string', 'number'],
+      ['/test-scsi.img', 1]
+    ),
+    0
+  );
+  assert.strictEqual(module._poc_scsi_disk_mounted(), 1);
+  assert.strictEqual(module._poc_scsi_disk_writable(), 1);
+  module._poc_reset();
+  assert.strictEqual(module._poc_scsi_disk_mounted(), 1);
+  assert.strictEqual(module._poc_eject_scsi_disk(), 0);
+  assert.strictEqual(module._poc_scsi_disk_mounted(), 0);
+  assert.strictEqual(module._poc_set_sd_mapper(1), 1);
+  assert.strictEqual(module._poc_scsi_slot(), 0);
+  assert.strictEqual(module._poc_sd_mapper_slot(), 1);
+  assert.strictEqual(
+    module._poc_set_sunrise(1), -1,
+    'SCSI and SD Mapper must consume both cartridge slots'
+  );
+  assert.strictEqual(module._poc_set_scsi(0), 0);
+  assert.strictEqual(module._poc_sd_mapper_slot(), 0);
+  assert.strictEqual(module._poc_set_sd_mapper(0), 0);
+
   const internalVdpPixels = module._poc_pixels();
   assert.strictEqual(module._poc_set_powergraph_v9990(1), 1);
   assert.strictEqual(module._poc_powergraph_v9990_enabled(), 1);

@@ -37,6 +37,7 @@ static u8 g_joy_pressed;
 static int g_input_device;
 static UnapiNet *g_unapinet;
 static bool g_sunrise_enabled;
+static bool g_scsi_enabled;
 static bool g_sd_mapper_enabled;
 static bool g_powergraph_enabled;
 static MsxVideoSource g_powergraph_video_source = MSX_VIDEO_SOURCE_AUTO;
@@ -44,18 +45,49 @@ static bool g_unapi_enabled;
 static unsigned g_omega_unified_bank;
 static bool g_custom_omega_unified_rom;
 static u8 g_custom_omega_rom[MSX_OMEGA_UNIFIED_ROM_SIZE];
+static u8 g_scsi_rom[MSX_SCSI_ROM_MAX_SIZE];
+static size_t g_scsi_rom_size;
+static unsigned g_scsi_target_id = MSX_SCSI_DEFAULT_TARGET_ID;
 
 #define SUNRISE_ROM_PATH "roms/nextor-sunrise.rom"
 #define SD_MAPPER_ROM_PATH "roms/sdmapper-v2-nextor.rom"
 #define OMEGA_ROM_PATH "roms/rainbios_omega.rom"
 
 static unsigned desired_sd_mapper_slot(void) {
+    return (g_sunrise_enabled ? 1u : 0u) +
+           (g_scsi_enabled ? 1u : 0u);
+}
+
+static unsigned desired_scsi_slot(void) {
     return g_sunrise_enabled ? 1u : 0u;
 }
 
 static unsigned desired_powergraph_slot(void) {
     return (g_sunrise_enabled ? 1u : 0u) +
+           (g_scsi_enabled ? 1u : 0u) +
            (g_sd_mapper_enabled ? 1u : 0u);
+}
+
+static unsigned cartridge_extension_count(void) {
+    return (g_sunrise_enabled ? 1u : 0u) +
+           (g_scsi_enabled ? 1u : 0u) +
+           (g_sd_mapper_enabled ? 1u : 0u) +
+           (g_powergraph_enabled ? 1u : 0u);
+}
+
+static int rebalance_cartridge_extensions(void) {
+    msx_reassign_extension_slots(
+        &g_msx,
+        g_sunrise_enabled ? 0 : -1,
+        g_sd_mapper_enabled ? (int)desired_sd_mapper_slot() : -1,
+        -1);
+    if (g_scsi_enabled)
+        msx_reassign_scsi_slot(&g_msx, (int)desired_scsi_slot());
+    if (g_powergraph_enabled &&
+        msx_set_powergraph_v9990(
+            &g_msx, true, (int)desired_powergraph_slot()) != 0)
+        return -1;
+    return 0;
 }
 
 static int poc_reload_firmware(void) {
@@ -175,6 +207,11 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
         return -1;
     if (g_sunrise_enabled &&
         msx_load_sunrise_ide(&g_msx, 0, SUNRISE_ROM_PATH) != 0)
+        return -1;
+    if (g_scsi_enabled &&
+        msx_install_scsi(
+            &g_msx, desired_scsi_slot(), g_scsi_rom,
+            g_scsi_rom_size, g_scsi_target_id) != 0)
         return -1;
     if (g_sd_mapper_enabled) {
         if (msx_load_sd_mapper(
@@ -440,8 +477,12 @@ EMSCRIPTEN_KEEPALIVE void poc_eject_cassette(void) {
 /* Floppy activity: the FDC motor spins while a disk is being accessed. */
 EMSCRIPTEN_KEEPALIVE int poc_disk_motor(void) { return g_msx.fdc.motor ? 1 : 0; }
 
+EMSCRIPTEN_KEEPALIVE void poc_dump_screen_text(void) {
+    vdp_dump_screen_text(&g_msx.vdp, stdout);
+}
+
 /* ---- browser expansion bay ----
- * Sunrise IDE, SD Mapper V2, and PowerGraph V9990 are cartridge devices,
+ * Sunrise IDE, MSX SCSI, SD Mapper V2, and PowerGraph V9990 are cartridge devices,
  * assigned to slots I and II in that order while skipping disabled devices.
  * TCP/IP UNAPI is port mapped and reserves no slot. */
 EMSCRIPTEN_KEEPALIVE int poc_set_sunrise(int enabled) {
@@ -452,23 +493,19 @@ EMSCRIPTEN_KEEPALIVE int poc_set_sunrise(int enabled) {
     if (requested == g_sunrise_enabled)
         return requested ? 1 : 0;
     if (requested) {
-        if ((g_sd_mapper_enabled ? 1 : 0) +
-            (g_powergraph_enabled ? 1 : 0) >= 2)
+        if (cartridge_extension_count() >= MSX_CARTRIDGE_SLOTS)
             return -1;
-        if (g_sd_mapper_enabled) {
-            msx_eject_cartridge(&g_msx, 1);
-            msx_reassign_extension_slots(&g_msx, -1, 1, -1);
+        g_sunrise_enabled = true;
+        if (rebalance_cartridge_extensions() != 0) {
+            g_sunrise_enabled = false;
+            return -1;
         }
         msx_eject_cartridge(&g_msx, 0);
         if (msx_load_sunrise_ide(&g_msx, 0, SUNRISE_ROM_PATH) != 0) {
-            if (g_sd_mapper_enabled)
-                msx_reassign_extension_slots(&g_msx, -1, 0, -1);
+            g_sunrise_enabled = false;
+            (void)rebalance_cartridge_extensions();
             return -1;
         }
-        g_sunrise_enabled = true;
-        if (g_powergraph_enabled &&
-            msx_set_powergraph_v9990(&g_msx, true, 1) != 0)
-            return -1;
         if (poc_reload_firmware() != 0)
             return -1;
         return 1;
@@ -476,11 +513,7 @@ EMSCRIPTEN_KEEPALIVE int poc_set_sunrise(int enabled) {
     if (msx_eject_sunrise_ide(&g_msx) != 0)
         return -1;
     g_sunrise_enabled = false;
-    if (g_sd_mapper_enabled)
-        msx_reassign_extension_slots(&g_msx, -1, 0, -1);
-    if (g_powergraph_enabled &&
-        msx_set_powergraph_v9990(
-            &g_msx, true, desired_powergraph_slot()) != 0)
+    if (rebalance_cartridge_extensions() != 0)
         return -1;
     if (poc_reload_firmware() != 0)
         return -1;
@@ -519,6 +552,106 @@ EMSCRIPTEN_KEEPALIVE int poc_ide_activity(void) {
     return msx_sunrise_take_activity(&g_msx) ? 1 : 0;
 }
 
+EMSCRIPTEN_KEEPALIVE int poc_install_scsi_rom(
+    const u8 *data, int size, int target_id) {
+    if (!data || size <= 0 || size > (int)sizeof(g_scsi_rom) ||
+        size % (int)MSX_SCSI_ROM_BANK_SIZE != 0 ||
+        target_id < 0 || target_id >= 7 || g_scsi_enabled)
+        return -1;
+    memcpy(g_scsi_rom, data, (size_t)size);
+    g_scsi_rom_size = (size_t)size;
+    g_scsi_target_id = (unsigned)target_id;
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_scsi_rom_ready(void) {
+    return g_scsi_rom_size != 0 ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_set_scsi_target_id(int target_id) {
+    if (target_id < 0 || target_id >= 7)
+        return -1;
+    g_scsi_target_id = (unsigned)target_id;
+    if (msx_scsi_connected(&g_msx)) {
+        msx_scsi_set_target_id(&g_msx.scsi, g_scsi_target_id);
+        msx_reset(&g_msx);
+    }
+    return target_id;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_scsi_target_id(void) {
+    return (int)g_scsi_target_id;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_set_scsi(int enabled) {
+    const bool requested = enabled != 0;
+
+    if (!g_machine_initialized)
+        return -1;
+    if (requested == g_scsi_enabled)
+        return requested ? 1 : 0;
+    if (requested) {
+        unsigned slot;
+
+        if (!g_scsi_rom_size ||
+            cartridge_extension_count() >= MSX_CARTRIDGE_SLOTS)
+            return -1;
+        g_scsi_enabled = true;
+        if (rebalance_cartridge_extensions() != 0) {
+            g_scsi_enabled = false;
+            return -1;
+        }
+        slot = desired_scsi_slot();
+        msx_eject_cartridge(&g_msx, slot);
+        if (msx_install_scsi(
+                &g_msx, slot, g_scsi_rom,
+                g_scsi_rom_size, g_scsi_target_id) != 0) {
+            g_scsi_enabled = false;
+            (void)rebalance_cartridge_extensions();
+            return -1;
+        }
+        return 1;
+    }
+    if (msx_eject_scsi(&g_msx) != 0)
+        return -1;
+    g_scsi_enabled = false;
+    if (rebalance_cartridge_extensions() != 0)
+        return -1;
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_scsi_enabled(void) {
+    return g_scsi_enabled && msx_scsi_connected(&g_msx) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_scsi_slot(void) {
+    return msx_scsi_slot(&g_msx);
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_mount_scsi(const char *path, int writable) {
+    if (!path || !path[0])
+        return -1;
+    return msx_mount_scsi_disk(
+        &g_msx, path,
+        writable ? ATA_IMAGE_READ_WRITE : ATA_IMAGE_READ_ONLY);
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_eject_scsi_disk(void) {
+    return msx_eject_scsi_disk(&g_msx);
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_scsi_disk_mounted(void) {
+    return msx_scsi_disk_is_mounted(&g_msx) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_scsi_disk_writable(void) {
+    return msx_scsi_disk_is_writable(&g_msx) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_scsi_activity(void) {
+    return msx_scsi_take_disk_activity(&g_msx) ? 1 : 0;
+}
+
 EMSCRIPTEN_KEEPALIVE int poc_set_sd_mapper(int enabled) {
     const bool requested = enabled != 0;
 
@@ -527,29 +660,30 @@ EMSCRIPTEN_KEEPALIVE int poc_set_sd_mapper(int enabled) {
     if (requested == g_sd_mapper_enabled)
         return requested ? 1 : 0;
     if (requested) {
-        if ((g_sunrise_enabled ? 1 : 0) +
-            (g_powergraph_enabled ? 1 : 0) >= 2)
+        if (cartridge_extension_count() >= MSX_CARTRIDGE_SLOTS)
             return -1;
-        const unsigned slot = desired_sd_mapper_slot();
+        unsigned slot;
 
-        msx_eject_cartridge(&g_msx, slot);
-        if (msx_load_sd_mapper(&g_msx, slot, SD_MAPPER_ROM_PATH) != 0)
+        g_sd_mapper_enabled = true;
+        if (rebalance_cartridge_extensions() != 0) {
+            g_sd_mapper_enabled = false;
             return -1;
+        }
+        slot = desired_sd_mapper_slot();
+        msx_eject_cartridge(&g_msx, slot);
+        if (msx_load_sd_mapper(&g_msx, slot, SD_MAPPER_ROM_PATH) != 0) {
+            g_sd_mapper_enabled = false;
+            (void)rebalance_cartridge_extensions();
+            return -1;
+        }
         msx_sd_mapper_set_ram_enabled(&g_msx, true);
         msx_sd_mapper_set_alternate_driver(&g_msx, false);
-        g_sd_mapper_enabled = true;
-        if (g_powergraph_enabled &&
-            msx_set_powergraph_v9990(
-                &g_msx, true, desired_powergraph_slot()) != 0)
-            return -1;
         return 1;
     }
     if (msx_eject_sd_mapper(&g_msx) != 0)
         return -1;
     g_sd_mapper_enabled = false;
-    if (g_powergraph_enabled &&
-        msx_set_powergraph_v9990(
-            &g_msx, true, desired_powergraph_slot()) != 0)
+    if (rebalance_cartridge_extensions() != 0)
         return -1;
     return 0;
 }
@@ -601,13 +735,19 @@ EMSCRIPTEN_KEEPALIVE int poc_set_powergraph_v9990(int enabled) {
     if (requested == g_powergraph_enabled)
         return requested ? 1 : 0;
     if (requested) {
-        unsigned slot = desired_powergraph_slot();
+        unsigned slot;
 
-        if (slot >= MSX_CARTRIDGE_SLOTS ||
-            msx_set_powergraph_v9990(&g_msx, true, slot) != 0)
+        if (cartridge_extension_count() >= MSX_CARTRIDGE_SLOTS)
             return -1;
         g_powergraph_enabled = true;
+        slot = desired_powergraph_slot();
+        if (slot >= MSX_CARTRIDGE_SLOTS ||
+            msx_set_powergraph_v9990(&g_msx, true, slot) != 0)
+            goto powergraph_failed;
         return 1;
+powergraph_failed:
+        g_powergraph_enabled = false;
+        return -1;
     }
     if (msx_set_powergraph_v9990(&g_msx, false, 0) != 0)
         return -1;
