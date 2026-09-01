@@ -11,7 +11,7 @@ MSX2 default and the browser edition's Philips NMS 8250 profile:
   rainbios_nms8250_disk.rom   Philips WD2793 disk ROM, 16 KiB
 
 They were built from RainBIOS commit
-d4925fcb58e8ba939ccfb45f23d650bb4cce10c2:
+381c36dc39aeeaa53f876a92ab6517b1f3d2eb74:
 
   https://github.com/salvogendut/rainbios
 
@@ -24,9 +24,9 @@ For a checkout elsewhere, use:
 
   make import-rainbios-roms RAINBIOS_DIR=/path/to/rainbios
 
-The script invokes the RainBIOS MSX2 main, Sub-ROM, and generic disk-ROM
-targets, cooks the unified Omega image, verifies every digest, and only then
-replaces the bundled copies.
+The script invokes the RainBIOS MSX2 main, Sub-ROM, generic disk-ROM, and
+NMS8250 disk-ROM targets, cooks the unified Omega image, verifies every digest,
+and only then replaces the bundled copies.
 RainBIOS documents the required assembler, compiler, Python, and companion
 BBC BASIC checkout in its own README.
 
@@ -40,10 +40,10 @@ either emulated JP1 bank boots identically. See:
 
 SHA-256:
 
-  c128d92142531b9a68f9337d0f046d7cff3fdc3278996e7dad63613e981a4e5f  rainbios_msx2.rom
+  04682c2fd04858d51e7a3dc4b75a6c2c62affe2e2fe5fbb62a8e1491f4d91709  rainbios_msx2.rom
   f8230c25f45db88d4c032e59dd714c4bf65c1b3300000fc20a046fa32ef984ed  rainbios_msx2_sub.rom
   ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_disk.rom
-  7e59f6f07c70780539c6369e4004155d68287bb3c11948c016f01f8c07dbc328  rainbios_omega.rom
+  5d0568532d8c2dedf8ba9ce29781423567ec90a9b28306c1ec45443e54333b7b  rainbios_omega.rom
   ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_nms8250_disk.rom
 
 Licensing and attribution
