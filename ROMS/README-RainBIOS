@@ -11,7 +11,7 @@ MSX2 default and the browser edition's Philips NMS 8250 profile:
   rainbios_nms8250_disk.rom   Philips WD2793 disk ROM, 16 KiB
 
 They were built from RainBIOS commit
-381c36dc39aeeaa53f876a92ab6517b1f3d2eb74:
+605c4fafbd2ead6edceb633a114f7eb28c718a02:
 
   https://github.com/salvogendut/rainbios
 
@@ -40,10 +40,10 @@ either emulated JP1 bank boots identically. See:
 
 SHA-256:
 
-  04682c2fd04858d51e7a3dc4b75a6c2c62affe2e2fe5fbb62a8e1491f4d91709  rainbios_msx2.rom
+  21f966cd32694641906aa4f40b0e09ae3be0a815c145d2d154b04c875badea9d  rainbios_msx2.rom
   f8230c25f45db88d4c032e59dd714c4bf65c1b3300000fc20a046fa32ef984ed  rainbios_msx2_sub.rom
   ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_disk.rom
-  5d0568532d8c2dedf8ba9ce29781423567ec90a9b28306c1ec45443e54333b7b  rainbios_omega.rom
+  84f3aedc976bed4278f5d74a83e9e7e6e177e0dd989415510f2cf8a42bfd8eb0  rainbios_omega.rom
   ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_nms8250_disk.rom
 
 Licensing and attribution
@@ -205,4 +205,4 @@ otherwise supplies its public-license fallback, without warranty. The full
 legal code is available in the pinned RainBIOS source tree at:
 
   LICENSES/CC0-1.0.txt
-  https://github.com/salvogendut/rainbios/blob/d4925fcb58e8ba939ccfb45f23d650bb4cce10c2/LICENSES/CC0-1.0.txt
+  https://github.com/salvogendut/rainbios/blob/605c4fafbd2ead6edceb633a114f7eb28c718a02/LICENSES/CC0-1.0.txt
