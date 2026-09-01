@@ -56,7 +56,9 @@ FIRMWARE_ASSETS = \
 	../ROMS/rainbios_omega.rom \
 	../ROMS/rainbios_nms8250_disk.rom \
 	../ROMS/Nextor-2.1.1.SunriseIDE.ROM \
-	../ROMS/SDM\ V2\ Nextor2.1.1.rom
+	../ROMS/SDM\ V2\ Nextor2.1.1.rom \
+	../ROMS/BertSCSI-v1-D0h-D7h.ROM \
+	../ROMS/BertSCSI-v2-30h-37h.ROM
 
 all: $(DIST_DIR)/index.html $(addprefix $(DIST_DIR)/,$(STYLE_ASSETS)) $(DIST_DIR)/app.js \
 	$(DIST_DIR)/audio-scheduler.js $(DIST_DIR)/gamepad.js $(DIST_DIR)/hardware-ui.js \
@@ -109,7 +111,7 @@ check-wasm-scsi: all
 $(WASM_ASSETS) &: $(OBJS) $(FIRMWARE_ASSETS) | $(DIST_DIR)
 	$(EMCC) $(CFLAGS) $(OBJS) -o $(DIST_DIR)/1983.js \
 	    -sMODULARIZE -sEXPORT_NAME=create1983 \
-	    -sEXPORTED_FUNCTIONS='_poc_init,_poc_init_model,_poc_ram_kb,_poc_set_ram_kb,_poc_load_cartridge,_poc_load_cartridge_slot,_poc_eject_cartridge,_poc_cartridge_loaded,_poc_reset,_poc_omega_unified_bank,_poc_install_omega_unified_rom,_poc_flip_omega_unified_bank,_poc_step,_poc_pixels,_poc_width,_poc_height,_poc_frame_hz,_poc_key,_poc_key_mod,_poc_joy,_poc_joy_matrix,_poc_set_input_device,_poc_mouse_motion,_poc_mouse_button,_poc_mouse_clear,_poc_audio_reset,_poc_audio_avail,_poc_audio_read_pos,_poc_audio_buffer,_poc_audio_advance,_poc_load_disk,_poc_eject_disk,_poc_has_floppy,_poc_load_cassette,_poc_eject_cassette,_poc_disk_motor,_poc_dump_screen_text,_poc_set_sunrise,_poc_sunrise_enabled,_poc_sunrise_slot,_poc_mount_ide,_poc_eject_ide,_poc_ide_mounted,_poc_ide_writable,_poc_ide_activity,_poc_install_scsi_rom,_poc_scsi_rom_ready,_poc_set_scsi_target_id,_poc_scsi_target_id,_poc_set_scsi,_poc_scsi_enabled,_poc_scsi_slot,_poc_mount_scsi,_poc_eject_scsi_disk,_poc_scsi_disk_mounted,_poc_scsi_disk_writable,_poc_scsi_activity,_poc_set_sd_mapper,_poc_sd_mapper_enabled,_poc_sd_mapper_slot,_poc_mount_sd_card,_poc_eject_sd_card,_poc_sd_card_mounted,_poc_sd_activity_mask,_poc_set_powergraph_v9990,_poc_powergraph_v9990_enabled,_poc_powergraph_v9990_slot,_poc_set_powergraph_video_source,_poc_powergraph_video_source,_poc_powergraph_output_active,_poc_set_unapi,_poc_unapi_enabled,_poc_unapi_guest_active,_poc_unapi_activity,_poc_unapi_probe,_poc_unapi_dns_result,_poc_unapi_tcp_open_result,_poc_unapi_udp_open_result,_poc_autorun,_malloc,_free' \
+	    -sEXPORTED_FUNCTIONS='_poc_init,_poc_init_model,_poc_ram_kb,_poc_set_ram_kb,_poc_load_cartridge,_poc_load_cartridge_slot,_poc_eject_cartridge,_poc_cartridge_loaded,_poc_reset,_poc_omega_unified_bank,_poc_install_omega_unified_rom,_poc_flip_omega_unified_bank,_poc_step,_poc_pixels,_poc_width,_poc_height,_poc_frame_hz,_poc_key,_poc_key_mod,_poc_joy,_poc_joy_matrix,_poc_set_input_device,_poc_mouse_motion,_poc_mouse_button,_poc_mouse_clear,_poc_audio_reset,_poc_audio_avail,_poc_audio_read_pos,_poc_audio_buffer,_poc_audio_advance,_poc_load_disk,_poc_eject_disk,_poc_has_floppy,_poc_load_cassette,_poc_eject_cassette,_poc_disk_motor,_poc_dump_screen_text,_poc_set_sunrise,_poc_sunrise_enabled,_poc_sunrise_slot,_poc_mount_ide,_poc_eject_ide,_poc_ide_mounted,_poc_ide_writable,_poc_ide_activity,_poc_install_scsi_rom,_poc_scsi_rom_ready,_poc_set_scsi_target_id,_poc_scsi_target_id,_poc_set_scsi_io_base,_poc_scsi_io_base,_poc_set_scsi,_poc_scsi_enabled,_poc_scsi_slot,_poc_mount_scsi,_poc_eject_scsi_disk,_poc_scsi_disk_mounted,_poc_scsi_disk_writable,_poc_scsi_activity,_poc_set_sd_mapper,_poc_sd_mapper_enabled,_poc_sd_mapper_slot,_poc_mount_sd_card,_poc_eject_sd_card,_poc_sd_card_mounted,_poc_sd_activity_mask,_poc_set_powergraph_v9990,_poc_powergraph_v9990_enabled,_poc_powergraph_v9990_slot,_poc_set_powergraph_video_source,_poc_powergraph_video_source,_poc_powergraph_output_active,_poc_set_unapi,_poc_unapi_enabled,_poc_unapi_guest_active,_poc_unapi_activity,_poc_unapi_probe,_poc_unapi_dns_result,_poc_unapi_tcp_open_result,_poc_unapi_udp_open_result,_poc_autorun,_malloc,_free' \
 	    -sEXPORTED_RUNTIME_METHODS='HEAPU8,HEAPU32,wasmMemory,getValue,setValue,ccall,cwrap,FS' \
 	    -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 \
 	    --embed-file ../ROMS/cbios_main_msx1.rom@roms/cbios_main_msx1.rom \
@@ -119,7 +121,9 @@ $(WASM_ASSETS) &: $(OBJS) $(FIRMWARE_ASSETS) | $(DIST_DIR)
 	    --embed-file ../ROMS/rainbios_omega.rom@roms/rainbios_omega.rom \
 	    --embed-file ../ROMS/rainbios_nms8250_disk.rom@roms/rainbios_nms8250_disk.rom \
 	    --embed-file ../ROMS/Nextor-2.1.1.SunriseIDE.ROM@roms/nextor-sunrise.rom \
-	    --embed-file ../ROMS/SDM\ V2\ Nextor2.1.1.rom@roms/sdmapper-v2-nextor.rom
+	    --embed-file ../ROMS/SDM\ V2\ Nextor2.1.1.rom@roms/sdmapper-v2-nextor.rom \
+	    --embed-file ../ROMS/BertSCSI-v1-D0h-D7h.ROM@roms/bertscsi-v1-d0h-d7h.rom \
+	    --embed-file ../ROMS/BertSCSI-v2-30h-37h.ROM@roms/bertscsi-v2-30h-37h.rom
 
 $(BUILD_DIR)/%.o: ../src/%.c | $(BUILD_DIR)
 	$(EMCC) $(CFLAGS) -c $< -o $@

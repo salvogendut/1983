@@ -127,6 +127,7 @@ typedef struct {
     char ide_image_path[PATH_MAX];
     char scsi_image_path[PATH_MAX];
     unsigned scsi_target_id;
+    unsigned scsi_io_base;
     char cassette_path[PATH_MAX];
     char cartridge_path[MSX_CARTRIDGE_SLOTS][PATH_MAX];
     MsxCartridgeMapper cartridge_mapper[MSX_CARTRIDGE_SLOTS];

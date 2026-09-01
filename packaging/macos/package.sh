@@ -29,6 +29,9 @@ cp "$root/1983-models.conf" "$resources/1983-models.conf"
 mkdir -p "$resources/ROMS"
 cp "$root/ROMS/README.C-BIOS" \
     "$root/ROMS/README-RainBIOS" \
+    "$root/ROMS/README-MSXSCSI" \
+    "$root/ROMS/BertSCSI-v1-D0h-D7h.ROM" \
+    "$root/ROMS/BertSCSI-v2-30h-37h.ROM" \
     "$root/ROMS/cbios_logo_msx1.rom" \
     "$root/ROMS/cbios_main_msx1.rom" \
     "$root/ROMS/rainbios_msx2.rom" \
@@ -39,6 +42,7 @@ cp "$root/ROMS/README.C-BIOS" \
 cp "$root/LICENSE" "$resources/LICENSE.txt"
 cp "$root/ROMS/README.C-BIOS" "$resources/C-BIOS-LICENSE.txt"
 cp "$root/ROMS/README-RainBIOS" "$resources/RainBIOS-NOTICE.txt"
+cp "$root/ROMS/README-MSXSCSI" "$resources/BertSCSI-NOTICE.txt"
 
 cp "$root/icons/16x16/apps/io.github.salvogendut.Emulator1983.png" \
     "$iconset/icon_16x16.png"

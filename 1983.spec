@@ -58,6 +58,8 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/io.github
 %{_datadir}/%{name}/ROMS/README.C-BIOS
 %{_datadir}/%{name}/ROMS/README-RainBIOS
 %{_datadir}/%{name}/ROMS/README-MSXSCSI
+%{_datadir}/%{name}/ROMS/BertSCSI-v1-D0h-D7h.ROM
+%{_datadir}/%{name}/ROMS/BertSCSI-v2-30h-37h.ROM
 %{_datadir}/%{name}/ROMS/cbios_logo_msx1.rom
 %{_datadir}/%{name}/ROMS/cbios_main_msx1.rom
 %{_datadir}/%{name}/ROMS/rainbios_msx2.rom

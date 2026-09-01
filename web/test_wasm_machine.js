@@ -205,8 +205,16 @@ async function main() {
   assert.strictEqual(module._poc_set_sd_mapper(0), 0);
   assert.strictEqual(module._poc_sd_mapper_enabled(), 0);
 
-  const scsiRom = new Uint8Array(32 * 1024);
-  scsiRom.fill(0xff);
+  const scsiRom = module.FS.readFile('roms/bertscsi-v2-30h-37h.rom');
+  const alternateScsiRom = module.FS.readFile(
+    'roms/bertscsi-v1-d0h-d7h.rom'
+  );
+  assert.strictEqual(scsiRom.byteLength, 128 * 1024);
+  assert.strictEqual(alternateScsiRom.byteLength, 128 * 1024);
+  assert.notDeepStrictEqual(
+    scsiRom, alternateScsiRom,
+    'the two embedded SCSI controller revisions must remain distinct'
+  );
   const scsiRomPointer = module._malloc(scsiRom.byteLength);
   assert.notStrictEqual(scsiRomPointer, 0);
   try {
@@ -219,7 +227,7 @@ async function main() {
     assert.strictEqual(
       module._poc_install_scsi_rom(scsiRomPointer, scsiRom.byteLength, 0),
       0,
-      'a user-supplied banked SCSI controller ROM must be accepted'
+      'the bundled v2 SCSI controller ROM must be accepted'
     );
   } finally {
     module._free(scsiRomPointer);
@@ -227,6 +235,12 @@ async function main() {
   assert.strictEqual(module._poc_scsi_rom_ready(), 1);
   assert.strictEqual(module._poc_set_scsi_target_id(4), 4);
   assert.strictEqual(module._poc_scsi_target_id(), 4);
+  assert.strictEqual(module._poc_scsi_io_base(), 0x30);
+  assert.strictEqual(module._poc_set_scsi_io_base(0xd0), 0xd0);
+  assert.strictEqual(module._poc_scsi_io_base(), 0xd0);
+  assert.strictEqual(module._poc_set_scsi_io_base(0x30), 0x30);
+  assert.strictEqual(module._poc_scsi_io_base(), 0x30);
+  assert.strictEqual(module._poc_set_scsi_io_base(0x80), -1);
   assert.strictEqual(module._poc_set_scsi(1), 1);
   assert.strictEqual(module._poc_scsi_enabled(), 1);
   assert.strictEqual(module._poc_scsi_slot(), 0);

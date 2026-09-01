@@ -34,7 +34,8 @@ record that complete firmware choice in the per-user `1983.conf`. The bundled
 --cassette FILE          insert a CAS tape
 --disk-a/--disk-b FILE   floppy images (controller model), --floppy-mode access
 --sunrise-rom + --ide    Sunrise IDE controller ROM and image, --ide-mode
---scsi-rom + --scsi-disk NCR/Z5380 MSX SCSI ROM and raw image, --scsi-mode
+--scsi-rom + --scsi-disk NCR/Z5380 MSX SCSI ROM and raw image,
+                            --scsi-port 30|D0 and --scsi-mode
 --sd-mapper-rom + --sd-a/--sd-b      SD Mapper V2, --sd-mode
 --megaflash-rom + --megaflash-sd-a/--megaflash-sd-b  MegaFlashROM, --sd-mode
  --cdx2-rom FILE         16 KB ROM or 32 KB dual-ROM CDX-2 EPROM image
@@ -176,16 +177,19 @@ ejection. Keep backups of writable images.
 
 ### MSX SCSI
 
-**Extensions > MSX SCSI** connects a user-supplied banked controller ROM and
-one raw 512-byte-sector disk at target ID 0 by default. Media owns subsequent
-disk insertion and safe ejection; with Tinker, Advanced owns the explicit
-SCSI read-only/read/write mode. The cartridge reserves a physical slot and is
-mutually exclusive with CDX-2 because both decode `D0h-D7h`.
+**Extensions > MSX SCSI** connects a banked controller ROM and one raw
+512-byte-sector disk at target ID 0 by default. 1983 bundles
+`BertSCSI-v2-30h-37h.ROM` for the default `30h-37h` range and
+`BertSCSI-v1-D0h-D7h.ROM` for the alternate `D0h-D7h` range. Select matching
+ROM and port revisions. Media owns subsequent disk insertion and safe
+ejection; with Tinker, Advanced owns the explicit SCSI read-only/read/write
+mode. The cartridge reserves a physical slot. Its D0 revision is mutually
+exclusive with CDX-2 because both decode ports in the `D0h-D7h` range.
 
 The tested BERT SCSI V2.7 ROM boots MSX-DOS2 from its own type-01 FAT12
 partition format, not an ordinary Sunrise/Nextor FAT16 image. See
 [`SCSI.md`](SCSI.md) and `tools/create-bert-scsi-image.sh` for a reproducible
-image recipe. The controller ROM and DOS system files are not distributed.
+image recipe. The DOS system files are not distributed.
 
 ### SD Mapper V2
 

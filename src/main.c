@@ -71,6 +71,7 @@ typedef struct {
     int cdx2;
     int msx_scsi;
     int scsi_target_id;
+    int scsi_io_base;
     int cdx2_rom_bank;
     int rdf600;
     int powergraph_v9990;
@@ -270,9 +271,10 @@ static const char *usage =
     "  --sunrise-rom PATH  load a 128 KB Sunrise IDE/Nextor kernel ROM\n"
     "  --msx-scsi          enable the NCR/Z5380 MSX SCSI cartridge\n"
     "  --no-msx-scsi       disable the NCR/Z5380 MSX SCSI cartridge\n"
-    "  --scsi-rom PATH     load a user-provided banked MSX SCSI ROM\n"
+    "  --scsi-rom PATH     load a banked MSX SCSI controller ROM\n"
     "  --scsi-disk PATH    attach a raw 512-byte-sector SCSI disk image\n"
     "  --scsi-id N         expose the disk as target ID 0 through 6\n"
+    "  --scsi-port BASE    NCR/Z5380 I/O base: 30 or D0 (default 30)\n"
     "  --scsi-mode MODE    SCSI access: read-only (default) or read-write\n"
     "  --sd-mapper-rom PATH load a 128/256 KB MSX SD Mapper V2 ROM\n"
     "  --sd-a PATH          insert a raw image in SD Mapper card A\n"
@@ -346,6 +348,18 @@ static int parse_integer(const char *text, int minimum, int maximum,
         return -1;
     }
     return (int)value;
+}
+
+static int parse_scsi_io_base(const char *text) {
+    if (strcmp(text, "30") == 0 || strcmp(text, "0x30") == 0 ||
+        strcmp(text, "0X30") == 0)
+        return MSX_SCSI_IO_BASE_30;
+    if (strcmp(text, "d0") == 0 || strcmp(text, "D0") == 0 ||
+        strcmp(text, "0xd0") == 0 || strcmp(text, "0xD0") == 0 ||
+        strcmp(text, "0Xd0") == 0 || strcmp(text, "0XD0") == 0)
+        return MSX_SCSI_IO_BASE_D0;
+    fprintf(stderr, "--scsi-port: expected 30 or D0\n");
+    return -1;
 }
 
 static int parse_memory_kb(const char *text) {
@@ -429,6 +443,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
     cli->cdx2 = -1;
     cli->msx_scsi = -1;
     cli->scsi_target_id = -1;
+    cli->scsi_io_base = -1;
     cli->cdx2_rom_bank = -1;
     cli->rdf600 = -1;
     cli->powergraph_v9990 = -1;
@@ -522,6 +537,7 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
              strcmp(argument, "--scsi-rom") == 0 ||
              strcmp(argument, "--scsi-disk") == 0 ||
              strcmp(argument, "--scsi-id") == 0 ||
+             strcmp(argument, "--scsi-port") == 0 ||
              strcmp(argument, "--scsi-mode") == 0 ||
              strcmp(argument, "--sd-mapper-rom") == 0 ||
              strcmp(argument, "--sd-a") == 0 ||
@@ -580,6 +596,10 @@ static int parse_cli(int argc, char **argv, Cli *cli) {
             cli->scsi_target_id = parse_integer(
                 argv[++i], 0, 6, "--scsi-id");
             if (cli->scsi_target_id < 0)
+                return -1;
+        } else if (strcmp(argument, "--scsi-port") == 0) {
+            cli->scsi_io_base = parse_scsi_io_base(argv[++i]);
+            if (cli->scsi_io_base < 0)
                 return -1;
         } else if (strcmp(argument, "--scsi-mode") == 0) {
             cli->scsi_image_mode = parse_ata_mode(
@@ -1007,6 +1027,8 @@ int main(int argc, char **argv) {
     }
     if (cli.scsi_target_id >= 0)
         config.scsi_target_id = (unsigned)cli.scsi_target_id;
+    if (cli.scsi_io_base >= 0)
+        config.scsi_io_base = (unsigned)cli.scsi_io_base;
     if (cli.sd_mapper_rom_path) {
         snprintf(config.sd_mapper_rom_path,
                  sizeof(config.sd_mapper_rom_path),
@@ -1375,7 +1397,8 @@ int main(int argc, char **argv) {
             msx_load_scsi(
                 &msx, (unsigned)scsi_slot,
                 config.scsi_rom_path,
-                config.scsi_target_id) != 0) {
+                config.scsi_target_id,
+                config.scsi_io_base) != 0) {
             fprintf(stderr,
                     "cannot load banked MSX SCSI ROM: %s\n",
                     config.scsi_rom_path[0]
@@ -1737,8 +1760,11 @@ int main(int argc, char **argv) {
                      : ", no disk mounted");
     if (msx_scsi_connected(&msx))
         startup_info(config.notifications,
-                     "MSX SCSI loaded in cartridge slot %d, target %u%s\n",
+                     "MSX SCSI loaded in cartridge slot %d, "
+                     "I/O %02Xh-%02Xh, target %u%s\n",
                      msx_scsi_slot(&msx) + 1,
+                     msx_scsi_configured_io_base(&msx),
+                     msx_scsi_configured_io_base(&msx) + 7u,
                      msx_scsi_configured_target_id(&msx),
                      msx_scsi_disk_is_mounted(&msx)
                      ? (msx_scsi_disk_is_writable(&msx)

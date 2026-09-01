@@ -10,6 +10,9 @@
 #define MSX_SCSI_ROM_BANK_SIZE 0x4000u
 #define MSX_SCSI_ROM_MAX_SIZE  0x80000u
 #define MSX_SCSI_DEFAULT_TARGET_ID 0u
+#define MSX_SCSI_IO_BASE_30 0x30u
+#define MSX_SCSI_IO_BASE_D0 0xd0u
+#define MSX_SCSI_DEFAULT_IO_BASE MSX_SCSI_IO_BASE_30
 
 typedef enum {
     MSX_SCSI_DMA_NONE = 0,
@@ -25,6 +28,7 @@ typedef struct {
 
     ScsiDisk disk;
     unsigned target_id;
+    unsigned io_base;
 
     u8 output_data;
     u8 initiator_command;
@@ -60,6 +64,9 @@ bool msx_scsi_rom_loaded(const MsxScsi *scsi);
 
 void msx_scsi_set_target_id(MsxScsi *scsi, unsigned target_id);
 unsigned msx_scsi_target_id(const MsxScsi *scsi);
+bool msx_scsi_io_base_valid(unsigned io_base);
+void msx_scsi_set_io_base(MsxScsi *scsi, unsigned io_base);
+unsigned msx_scsi_io_base(const MsxScsi *scsi);
 
 int  msx_scsi_mount_disk(MsxScsi *scsi, const char *path,
                          AtaImageMode mode);

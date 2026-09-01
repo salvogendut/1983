@@ -48,6 +48,7 @@ static u8 g_custom_omega_rom[MSX_OMEGA_UNIFIED_ROM_SIZE];
 static u8 g_scsi_rom[MSX_SCSI_ROM_MAX_SIZE];
 static size_t g_scsi_rom_size;
 static unsigned g_scsi_target_id = MSX_SCSI_DEFAULT_TARGET_ID;
+static unsigned g_scsi_io_base = MSX_SCSI_DEFAULT_IO_BASE;
 
 #define SUNRISE_ROM_PATH "roms/nextor-sunrise.rom"
 #define SD_MAPPER_ROM_PATH "roms/sdmapper-v2-nextor.rom"
@@ -211,7 +212,8 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
     if (g_scsi_enabled &&
         msx_install_scsi(
             &g_msx, desired_scsi_slot(), g_scsi_rom,
-            g_scsi_rom_size, g_scsi_target_id) != 0)
+            g_scsi_rom_size, g_scsi_target_id,
+            g_scsi_io_base) != 0)
         return -1;
     if (g_sd_mapper_enabled) {
         if (msx_load_sd_mapper(
@@ -583,6 +585,21 @@ EMSCRIPTEN_KEEPALIVE int poc_scsi_target_id(void) {
     return (int)g_scsi_target_id;
 }
 
+EMSCRIPTEN_KEEPALIVE int poc_set_scsi_io_base(int io_base) {
+    if (!msx_scsi_io_base_valid((unsigned)io_base))
+        return -1;
+    g_scsi_io_base = (unsigned)io_base;
+    if (msx_scsi_connected(&g_msx)) {
+        msx_scsi_set_io_base(&g_msx.scsi, g_scsi_io_base);
+        msx_reset(&g_msx);
+    }
+    return io_base;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_scsi_io_base(void) {
+    return (int)g_scsi_io_base;
+}
+
 EMSCRIPTEN_KEEPALIVE int poc_set_scsi(int enabled) {
     const bool requested = enabled != 0;
 
@@ -605,7 +622,8 @@ EMSCRIPTEN_KEEPALIVE int poc_set_scsi(int enabled) {
         msx_eject_cartridge(&g_msx, slot);
         if (msx_install_scsi(
                 &g_msx, slot, g_scsi_rom,
-                g_scsi_rom_size, g_scsi_target_id) != 0) {
+                g_scsi_rom_size, g_scsi_target_id,
+                g_scsi_io_base) != 0) {
             g_scsi_enabled = false;
             (void)rebalance_cartridge_extensions();
             return -1;

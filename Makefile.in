@@ -1278,6 +1278,8 @@ dist_cbios_DATA = \
 	ROMS/README.C-BIOS \
 	ROMS/README-RainBIOS \
 	ROMS/README-MSXSCSI \
+	ROMS/BertSCSI-v1-D0h-D7h.ROM \
+	ROMS/BertSCSI-v2-30h-37h.ROM \
 	ROMS/cbios_logo_msx1.rom \
 	ROMS/cbios_main_msx1.rom \
 	ROMS/rainbios_msx2.rom \

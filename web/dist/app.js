@@ -50,6 +50,7 @@ const scsiSlotTextEl = $("scsiSlotText");
 const scsiRomFileEl = $("scsiRomFile");
 const scsiRomNameEl = $("scsiRomName");
 const scsiTargetIdEl = $("scsiTargetId");
+const scsiIoBaseEl = $("scsiIoBase");
 const scsiAccessModeEls = [...document.querySelectorAll('input[name="scsiAccessMode"]')];
 const sdMapperToggleEl = $("sdMapperToggle");
 const sdMapperStateEl = $("sdMapperState");
@@ -97,6 +98,17 @@ const SUNRISE_STORAGE_KEY = "javascript1983.expansion.sunrise";
 const IDE_ACCESS_STORAGE_KEY = "javascript1983.expansion.ideAccessMode";
 const SCSI_ACCESS_STORAGE_KEY = "javascript1983.expansion.scsiAccessMode";
 const SCSI_TARGET_STORAGE_KEY = "javascript1983.expansion.scsiTargetId";
+const SCSI_IO_BASE_STORAGE_KEY = "javascript1983.expansion.scsiIoBase";
+const BUNDLED_SCSI_ROMS = Object.freeze({
+  0x30: Object.freeze({
+    path: "roms/bertscsi-v2-30h-37h.rom",
+    name: "BertSCSI v2 (30h-37h)"
+  }),
+  0xd0: Object.freeze({
+    path: "roms/bertscsi-v1-d0h-d7h.rom",
+    name: "BertSCSI v1 (D0h-D7h)"
+  })
+});
 const SD_MAPPER_STORAGE_KEY = "javascript1983.expansion.sdMapper";
 const SD_ACCESS_STORAGE_KEY = "javascript1983.expansion.sdAccessMode";
 const POWERGRAPH_STORAGE_KEY = "javascript1983.expansion.powergraph";
@@ -111,6 +123,7 @@ let scsiEnabled = false;
 let scsiRomReady = false;
 let scsiAccessMode = "readonly";
 let scsiTargetId = 0;
+let scsiIoBase = 0x30;
 let sdMapperEnabled = false;
 let sdAccessMode = "readonly";
 let powergraphEnabled = false;
@@ -121,6 +134,7 @@ let unapiCertificateUrl = "";
 let applySunriseHardware = () => {};
 let applyScsiHardware = () => {};
 let applyScsiTargetHardware = () => {};
+let applyScsiIoBaseHardware = () => {};
 let applySdMapperHardware = () => {};
 let applyPowergraphHardware = () => {};
 let applyPowergraphVideoSourceHardware = () => {};
@@ -136,6 +150,10 @@ try {
   if (Number.isInteger(storedScsiTarget) && storedScsiTarget >= 0 &&
       storedScsiTarget <= 6)
     scsiTargetId = storedScsiTarget;
+  const storedScsiIoBase = Number(
+    localStorage.getItem(SCSI_IO_BASE_STORAGE_KEY));
+  if (storedScsiIoBase === 0x30 || storedScsiIoBase === 0xd0)
+    scsiIoBase = storedScsiIoBase;
   sdMapperEnabled = localStorage.getItem(SD_MAPPER_STORAGE_KEY) === "true";
   sdAccessMode = localStorage.getItem(SD_ACCESS_STORAGE_KEY) === "readwrite"
     ? "readwrite" : "readonly";
@@ -253,6 +271,8 @@ function updateScsiUi() {
       cartridgeRoman(cartridgeExtensionSlot("MSX SCSI")) + " reserved"
     : scsiRomReady ? "Ready - controller ROM loaded" : "Controller ROM required";
   scsiTargetIdEl.value = String(scsiTargetId);
+  scsiIoBaseEl.value = String(scsiIoBase);
+  scsiIoBaseEl.disabled = scsiEnabled;
   for (const input of scsiAccessModeEls)
     input.checked = input.value === scsiAccessMode;
   updateCartridgeExtensionLabels();
@@ -300,6 +320,19 @@ function setScsiTargetId(target, persist = true, announce = false) {
     try { localStorage.setItem(SCSI_TARGET_STORAGE_KEY, String(scsiTargetId)); } catch (_) {}
   }
   if (announce) showToast("SCSI target ID set to " + scsiTargetId);
+}
+
+function setScsiIoBase(ioBase, persist = true, announce = false) {
+  const selected = Number(ioBase);
+  if (selected !== 0x30 && selected !== 0xd0) return;
+  scsiIoBase = selected;
+  applyScsiIoBaseHardware(scsiIoBase);
+  updateScsiUi();
+  if (persist) {
+    try { localStorage.setItem(SCSI_IO_BASE_STORAGE_KEY, String(scsiIoBase)); } catch (_) {}
+  }
+  if (announce)
+    showToast("SCSI I/O base set to " + scsiIoBase.toString(16).toUpperCase() + "h");
 }
 
 function setIdeAccessMode(mode, persist = true, announce = false) {
@@ -532,6 +565,9 @@ scsiToggleEl.addEventListener("change", () => {
 scsiTargetIdEl.addEventListener("change", () => {
   setScsiTargetId(scsiTargetIdEl.value, true, true);
 });
+scsiIoBaseEl.addEventListener("change", () => {
+  setScsiIoBase(scsiIoBaseEl.value, true, true);
+});
 for (const input of scsiAccessModeEls) {
   input.addEventListener("change", () => {
     if (input.checked) setScsiAccessMode(input.value, true, true);
@@ -742,6 +778,12 @@ create1983().then(m => {
   if (m._poc_init() !== 0) {
     setStatus("Emulator initialization failed");
     return;
+  }
+
+  try {
+    installBundledScsiController();
+  } catch (error) {
+    setStatus("Bundled SCSI firmware unavailable: " + error.message);
   }
 
   ledPowerEl.classList.add("on");
@@ -1235,6 +1277,12 @@ create1983().then(m => {
     scsiRomNameEl.textContent = name;
     scsiRomNameEl.title = name;
     updateScsiUi();
+  }
+
+  function installBundledScsiController() {
+    const bundled = BUNDLED_SCSI_ROMS[scsiIoBase];
+    if (!bundled) throw new Error("unsupported controller I/O base");
+    installScsiController(m.FS.readFile(bundled.path), bundled.name);
   }
 
   async function loadScsiRomFile(file) {
@@ -1762,6 +1810,8 @@ create1983().then(m => {
 
   applyScsiHardware = enabled => {
     const requested = Boolean(enabled);
+    if (requested)
+      m._poc_set_scsi_io_base(scsiIoBase);
     if (!requested) {
       try {
         ejectScsiDisk();
@@ -1795,6 +1845,14 @@ create1983().then(m => {
   applyScsiTargetHardware = target => {
     const actual = m._poc_set_scsi_target_id(Number(target));
     if (actual >= 0) scsiTargetId = actual;
+  };
+
+  applyScsiIoBaseHardware = ioBase => {
+    const actual = m._poc_set_scsi_io_base(Number(ioBase));
+    if (actual >= 0) {
+      scsiIoBase = actual;
+      installBundledScsiController();
+    }
   };
 
   applySdMapperHardware = enabled => {

@@ -97,11 +97,12 @@ second_drive = false
 sunrise_ide = false
 # Exact 128 KiB Sunrise IDE/Nextor kernel ROM.
 sunrise_rom =
-# Banked NCR/Z5380 cartridge. The ROM is user supplied; target 0 is the
-# normal BERT SCSI boot device. This conflicts with CDX-2 ports D0h-D7h.
+# Banked NCR/Z5380 cartridge. Bundled ROM names state their matching port
+# range; target 0 is the normal BERT SCSI boot device.
 msx_scsi = false
 scsi_rom =
 scsi_target_id = 0
+scsi_io_base = 0x30
 # Composite dual-SD controller and independent 512 KiB mapper cartridge.
 sd_mapper = false
 # Exact 128 or 256 KiB SD Mapper V2 controller ROM.

@@ -121,10 +121,11 @@ Removing an earlier device moves the later device down to cartridge I. The
 normal cartridge controls display the corresponding reserved slots.
 
 MSX SCSI uses the same BERT-compatible NCR/Z5380 controller and raw 512-byte
-sector disk implementation as the native application. Because the controller
-firmware is not distributed with 1983, load a banked controller ROM (16 KiB
-banks, up to 512 KiB) in the SCSI AUX panel before switching on cartridge
-power. Target IDs 0 through 6 are supported. Read/write images are flushed and
+sector disk implementation as the native application. The browser build arms
+`BertSCSI-v2-30h-37h.ROM` for the default 30h range and
+`BertSCSI-v1-D0h-D7h.ROM` for the alternate D0h range automatically. The Load
+control accepts replacement banked firmware (16 KiB banks, up to 512 KiB).
+Target IDs 0 through 6 are supported. Read/write images are flushed and
 offered as a download on safe ejection; uploaded firmware remains only for the
 current browser session. The tested BERT firmware also needs a compatible MSX2
 BIOS; upload a compatible 512 KiB Omega unified ROM when the bundled RainBIOS

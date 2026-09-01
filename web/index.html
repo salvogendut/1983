@@ -84,7 +84,7 @@
         <div class="extension-media-list">
           <article id="scsiRomSlot" class="extension-media-slot extension-firmware-slot">
             <i class="extension-firmware-lamp" aria-hidden="true">ROM</i>
-            <div><strong>Controller firmware</strong><span id="scsiRomName">No ROM loaded</span></div>
+            <div><strong>Controller firmware</strong><span id="scsiRomName">Bundled ROM loading</span></div>
             <label class="extension-small-key" for="scsiRomFile">Load</label>
             <input class="visually-hidden" type="file" id="scsiRomFile"
                    accept=".rom,.ROM,.bin,.BIN,application/octet-stream">
@@ -100,6 +100,13 @@
             <option value="4">4</option>
             <option value="5">5</option>
             <option value="6">6</option>
+          </select>
+        </label>
+        <label class="expansion-select-field" for="scsiIoBase">
+          <span>Controller I/O base</span>
+          <select id="scsiIoBase">
+            <option value="48" selected>30h-37h</option>
+            <option value="208">D0h-D7h</option>
           </select>
         </label>
         <fieldset class="expansion-mode-field">

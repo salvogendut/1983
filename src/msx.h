@@ -344,17 +344,20 @@ bool msx_sunrise_disk_has_error(const MsxMachine *msx);
 const char *msx_sunrise_disk_error(const MsxMachine *msx);
 bool msx_sunrise_take_activity(MsxMachine *msx);
 int msx_install_scsi(MsxMachine *msx, unsigned slot,
-                     const u8 *data, size_t size, unsigned target_id);
+                     const u8 *data, size_t size, unsigned target_id,
+                     unsigned io_base);
 int msx_load_scsi(MsxMachine *msx, unsigned slot,
-                  const char *path, unsigned target_id);
+                  const char *path, unsigned target_id,
+                  unsigned io_base);
 int msx_replace_scsi(MsxMachine *msx, const char *rom_path,
                      const char *disk_path, AtaImageMode mode,
-                     unsigned target_id);
+                     unsigned target_id, unsigned io_base);
 int msx_eject_scsi(MsxMachine *msx);
 bool msx_scsi_connected(const MsxMachine *msx);
 int msx_scsi_slot(const MsxMachine *msx);
 void msx_reassign_scsi_slot(MsxMachine *msx, int slot);
 unsigned msx_scsi_configured_target_id(const MsxMachine *msx);
+unsigned msx_scsi_configured_io_base(const MsxMachine *msx);
 int msx_mount_scsi_disk(MsxMachine *msx, const char *path,
                         AtaImageMode mode);
 int msx_flush_scsi_disk(MsxMachine *msx);
