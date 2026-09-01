@@ -381,6 +381,7 @@ void msx_scsi_init(MsxScsi *scsi) {
     memset(scsi, 0, sizeof(*scsi));
     scsi_disk_init(&scsi->disk);
     scsi->target_id = MSX_SCSI_DEFAULT_TARGET_ID;
+    scsi->io_base = MSX_SCSI_DEFAULT_IO_BASE;
     controller_clear(scsi);
 }
 
@@ -445,6 +446,23 @@ void msx_scsi_set_target_id(MsxScsi *scsi, unsigned target_id) {
 
 unsigned msx_scsi_target_id(const MsxScsi *scsi) {
     return scsi ? scsi->target_id : MSX_SCSI_DEFAULT_TARGET_ID;
+}
+
+bool msx_scsi_io_base_valid(unsigned io_base) {
+    return io_base == MSX_SCSI_IO_BASE_30 ||
+           io_base == MSX_SCSI_IO_BASE_D0;
+}
+
+void msx_scsi_set_io_base(MsxScsi *scsi, unsigned io_base) {
+    if (!scsi)
+        return;
+    scsi->io_base = msx_scsi_io_base_valid(io_base)
+                  ? io_base : MSX_SCSI_DEFAULT_IO_BASE;
+    msx_scsi_reset(scsi);
+}
+
+unsigned msx_scsi_io_base(const MsxScsi *scsi) {
+    return scsi ? scsi->io_base : MSX_SCSI_DEFAULT_IO_BASE;
 }
 
 int msx_scsi_mount_disk(MsxScsi *scsi, const char *path,
@@ -517,16 +535,20 @@ void msx_scsi_memory_write(MsxScsi *scsi, u16 address, u8 value) {
 
 bool msx_scsi_io_read(MsxScsi *scsi, u16 port, u8 *value) {
     u8 low = (u8)port;
+    u8 base;
 
-    if (!msx_scsi_rom_loaded(scsi) || low < 0xd0 || low > 0xd7)
+    if (!msx_scsi_rom_loaded(scsi))
+        return false;
+    base = (u8)scsi->io_base;
+    if (low < base || low > (u8)(base + 7u))
         return false;
     if (scsi->test_mode)
         *value = 0xff;
-    else if (low == 0xd0 && scsi->dma_request &&
+    else if (low == base && scsi->dma_request &&
         scsi->dma_direction == MSX_SCSI_DMA_RECEIVE)
         *value = dma_read(scsi);
     else
-        *value = register_read(scsi, low - 0xd0);
+        *value = register_read(scsi, low - base);
     if (trace_enabled() && scsi->trace_io_events < 65536u) {
         fprintf(stderr,
                 "[scsi] in  %02X -> %02X phase=%u req=%u bsy=%u dma=%u\n",
@@ -540,14 +562,18 @@ bool msx_scsi_io_read(MsxScsi *scsi, u16 port, u8 *value) {
 
 bool msx_scsi_io_write(MsxScsi *scsi, u16 port, u8 value) {
     u8 low = (u8)port;
+    u8 base;
 
-    if (!msx_scsi_rom_loaded(scsi) || low < 0xd0 || low > 0xd7)
+    if (!msx_scsi_rom_loaded(scsi))
         return false;
-    if (low == 0xd0 && scsi->dma_request &&
+    base = (u8)scsi->io_base;
+    if (low < base || low > (u8)(base + 7u))
+        return false;
+    if (low == base && scsi->dma_request &&
         scsi->dma_direction == MSX_SCSI_DMA_SEND)
         dma_write(scsi, value);
     else
-        register_write(scsi, low - 0xd0, value);
+        register_write(scsi, low - base, value);
     if (trace_enabled() && scsi->trace_io_events < 65536u) {
         fprintf(stderr,
                 "[scsi] out %02X <- %02X phase=%u req=%u bsy=%u dma=%u\n",

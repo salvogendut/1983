@@ -102,6 +102,13 @@
             <option value="6">6</option>
           </select>
         </label>
+        <label class="expansion-select-field" for="scsiIoBase">
+          <span>Controller I/O base</span>
+          <select id="scsiIoBase">
+            <option value="48">30h-37h</option>
+            <option value="208" selected>D0h-D7h</option>
+          </select>
+        </label>
         <fieldset class="expansion-mode-field">
           <legend>SCSI image access</legend>
           <div class="segmented-control">

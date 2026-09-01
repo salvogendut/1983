@@ -27,6 +27,7 @@ int main(void) {
     assert(!config.scsi_rom_path[0]);
     assert(!config.scsi_image_path[0]);
     assert(config.scsi_target_id == 0);
+    assert(config.scsi_io_base == MSX_SCSI_DEFAULT_IO_BASE);
     assert(config.scsi_image_mode == ATA_IMAGE_READ_ONLY);
     assert(!config.sd_mapper);
     assert(!config.sd_mapper_rom_path[0]);
@@ -131,6 +132,7 @@ int main(void) {
              sizeof(config.scsi_image_path),
              "/disks/MSXDOS2-SCSI.IMG");
     config.scsi_target_id = 3;
+    config.scsi_io_base = MSX_SCSI_IO_BASE_30;
     config.scsi_image_mode = ATA_IMAGE_READ_WRITE;
     snprintf(config.cdx2_rom_path,
              sizeof(config.cdx2_rom_path),
@@ -212,6 +214,7 @@ int main(void) {
     assert(strcmp(loaded.scsi_image_path,
                   "/disks/MSXDOS2-SCSI.IMG") == 0);
     assert(loaded.scsi_target_id == 3);
+    assert(loaded.scsi_io_base == MSX_SCSI_IO_BASE_30);
     assert(loaded.scsi_image_mode == ATA_IMAGE_READ_WRITE);
     assert(strcmp(loaded.cdx2_rom_path,
                   "/roms/cdx-2.rom") == 0);
@@ -314,12 +317,20 @@ int main(void) {
         assert(strcmp(config_cartridge_slot_owner(&scsi_config, 0),
                       "MSX SCSI") == 0);
         scsi_config.cdx2 = true;
+        scsi_config.scsi_io_base = MSX_SCSI_IO_BASE_D0;
         config_normalize(&scsi_config);
         assert(scsi_config.msx_scsi);
         assert(!scsi_config.cdx2);
+        scsi_config.cdx2 = true;
+        scsi_config.scsi_io_base = MSX_SCSI_IO_BASE_30;
+        config_normalize(&scsi_config);
+        assert(scsi_config.cdx2);
+        assert(config_cartridge_extension_count(&scsi_config) == 2);
         scsi_config.scsi_target_id = 7;
+        scsi_config.scsi_io_base = 0x80;
         config_normalize(&scsi_config);
         assert(scsi_config.scsi_target_id == 0);
+        assert(scsi_config.scsi_io_base == MSX_SCSI_DEFAULT_IO_BASE);
     }
 
     {

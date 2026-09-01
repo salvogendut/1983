@@ -90,10 +90,11 @@ including `NEXTOR.SYS`, are ignored and are not distributed with 1983.
 
 ## MSX SCSI
 
-The `[extensions]` keys `msx_scsi`, `scsi_rom`, and `scsi_target_id` configure
-the banked NCR/Z5380 cartridge. `[media]` keys `scsi_image` and
-`scsi_image_mode` attach its raw disk as read-only or read-write. Target ID 0
-is the default. The ROM path and image chooser keep independent directory
+The `[extensions]` keys `msx_scsi`, `scsi_rom`, `scsi_target_id`, and
+`scsi_io_base` configure the banked NCR/Z5380 cartridge. The I/O base accepts
+`0x30` or `0xD0`; D0 is the compatibility default. `[media]` keys `scsi_image`
+and `scsi_image_mode` attach its raw disk as read-only or read-write. Target
+ID 0 is the default. The ROM path and image chooser keep independent directory
 histories. See [`SCSI.md`](SCSI.md) for BERT-specific partition requirements.
 
 ## RS-232C serial interface

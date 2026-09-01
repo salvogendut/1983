@@ -210,6 +210,7 @@ void config_defaults(Config *config) {
     config->ide_image_mode = ATA_IMAGE_READ_ONLY;
     config->scsi_image_mode = ATA_IMAGE_READ_ONLY;
     config->scsi_target_id = MSX_SCSI_DEFAULT_TARGET_ID;
+    config->scsi_io_base = MSX_SCSI_DEFAULT_IO_BASE;
     config->sd_image_mode = SD_IMAGE_READ_ONLY;
     config->sd_mapper_ram = true;
     config->powergraph_video_source = MSX_VIDEO_SOURCE_AUTO;
@@ -268,15 +269,18 @@ void config_normalize(Config *config) {
         config->scsi_image_mode = ATA_IMAGE_READ_ONLY;
     if (config->scsi_target_id >= 7)
         config->scsi_target_id = MSX_SCSI_DEFAULT_TARGET_ID;
+    if (!msx_scsi_io_base_valid(config->scsi_io_base))
+        config->scsi_io_base = MSX_SCSI_DEFAULT_IO_BASE;
     if (config->sd_image_mode != SD_IMAGE_READ_WRITE)
         config->sd_image_mode = SD_IMAGE_READ_ONLY;
     if (config->floppy_image_mode != FLOPPY_IMAGE_READ_WRITE)
         config->floppy_image_mode = FLOPPY_IMAGE_READ_ONLY;
     if (config->cdx2_rom_bank > 1)
         config->cdx2_rom_bank = 0;
-    /* Both cartridges decode the D0h-D7h I/O range. The physical devices
-     * cannot coexist even when two cartridge slots are available. */
-    if (config->msx_scsi && config->cdx2)
+    /* CDX-2 decodes D0h-D4h. It conflicts only with a Bert SCSI revision
+     * configured at D0h-D7h, not with the 30h-37h revision. */
+    if (config->msx_scsi && config->cdx2 &&
+        config->scsi_io_base == MSX_SCSI_IO_BASE_D0)
         config->cdx2 = false;
     if (!msx_floppy_config_valid(config->model, &config->floppy)) {
         config->floppy.controller = MSX_FLOPPY_CONTROLLER_NONE;
@@ -536,6 +540,8 @@ void config_load(Config *config, const char *path) {
                      sizeof(config->scsi_image_path), "%s", value);
         else if (strcmp(key, "scsi_target_id") == 0)
             config->scsi_target_id = (unsigned)atoi(value);
+        else if (strcmp(key, "scsi_io_base") == 0)
+            config->scsi_io_base = (unsigned)strtoul(value, NULL, 0);
         else if (strcmp(key, "drive_a") == 0)
             snprintf(config->drive_a_path,
                      sizeof(config->drive_a_path), "%s", value);
@@ -699,6 +705,7 @@ int config_save(const Config *config) {
     fprintf(file, "msx_scsi = %s\n", bool_name(config->msx_scsi));
     fprintf(file, "scsi_rom = %s\n", config->scsi_rom_path);
     fprintf(file, "scsi_target_id = %u\n", config->scsi_target_id);
+    fprintf(file, "scsi_io_base = 0x%02X\n", config->scsi_io_base);
     fprintf(file, "sd_mapper = %s\n", bool_name(config->sd_mapper));
     fprintf(file, "sd_mapper_rom = %s\n",
             config->sd_mapper_rom_path);

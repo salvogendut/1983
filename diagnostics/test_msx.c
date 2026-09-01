@@ -826,10 +826,13 @@ static void test_scsi_cartridge_slot_bus(void) {
     assert(fclose(image) == 0);
 
     msx_init(&msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 128);
-    assert(msx_install_scsi(&msx, 1, rom, sizeof(rom), 0) == 0);
+    assert(msx_install_scsi(
+               &msx, 1, rom, sizeof(rom), 0,
+               MSX_SCSI_IO_BASE_D0) == 0);
     assert(msx_scsi_connected(&msx));
     assert(msx_scsi_slot(&msx) == 1);
     assert(msx_scsi_configured_target_id(&msx) == 0);
+    assert(msx_scsi_configured_io_base(&msx) == MSX_SCSI_IO_BASE_D0);
     assert(msx_mount_scsi_disk(
                &msx, image_path, ATA_IMAGE_READ_WRITE) == 0);
 

@@ -227,6 +227,9 @@ async function main() {
   assert.strictEqual(module._poc_scsi_rom_ready(), 1);
   assert.strictEqual(module._poc_set_scsi_target_id(4), 4);
   assert.strictEqual(module._poc_scsi_target_id(), 4);
+  assert.strictEqual(module._poc_set_scsi_io_base(0x30), 0x30);
+  assert.strictEqual(module._poc_scsi_io_base(), 0x30);
+  assert.strictEqual(module._poc_set_scsi_io_base(0x80), -1);
   assert.strictEqual(module._poc_set_scsi(1), 1);
   assert.strictEqual(module._poc_scsi_enabled(), 1);
   assert.strictEqual(module._poc_scsi_slot(), 0);

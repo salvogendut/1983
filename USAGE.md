@@ -34,7 +34,8 @@ record that complete firmware choice in the per-user `1983.conf`. The bundled
 --cassette FILE          insert a CAS tape
 --disk-a/--disk-b FILE   floppy images (controller model), --floppy-mode access
 --sunrise-rom + --ide    Sunrise IDE controller ROM and image, --ide-mode
---scsi-rom + --scsi-disk NCR/Z5380 MSX SCSI ROM and raw image, --scsi-mode
+--scsi-rom + --scsi-disk NCR/Z5380 MSX SCSI ROM and raw image,
+                            --scsi-port 30|D0 and --scsi-mode
 --sd-mapper-rom + --sd-a/--sd-b      SD Mapper V2, --sd-mode
 --megaflash-rom + --megaflash-sd-a/--megaflash-sd-b  MegaFlashROM, --sd-mode
  --cdx2-rom FILE         16 KB ROM or 32 KB dual-ROM CDX-2 EPROM image

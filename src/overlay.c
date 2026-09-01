@@ -147,6 +147,7 @@ enum {
     SCSI_SETUP_FIRMWARE = 0,
     SCSI_SETUP_DISK,
     SCSI_SETUP_TARGET_ID,
+    SCSI_SETUP_IO_BASE,
     SCSI_SETUP_CONNECT,
     SCSI_SETUP_ROWS
 };
@@ -376,8 +377,8 @@ static void scsi_extension_text(const Overlay *overlay,
                  "On (Cartridge %d, ROM not loaded)", slot + 1);
     } else {
         snprintf(value, value_size,
-                 "On (Cartridge %d, target %u)", slot + 1,
-                 config->scsi_target_id);
+                 "On (Cartridge %d, I/O %02Xh, target %u)", slot + 1,
+                 config->scsi_io_base, config->scsi_target_id);
     }
 }
 
@@ -1450,6 +1451,7 @@ static bool restore_scsi(Overlay *overlay) {
         strcmp(current->scsi_image_path, saved->scsi_image_path) != 0 ||
         current->scsi_image_mode != saved->scsi_image_mode ||
         current->scsi_target_id != saved->scsi_target_id ||
+        current->scsi_io_base != saved->scsi_io_base ||
         msx_scsi_slot(overlay->msx) !=
             (saved->msx_scsi ? saved_slot : -1) ||
         (msx_scsi_disk_is_mounted(overlay->msx) &&
@@ -1468,7 +1470,8 @@ static bool restore_scsi(Overlay *overlay) {
         return true;
     if (msx_load_scsi(
             overlay->msx, (unsigned)saved_slot,
-            saved->scsi_rom_path, saved->scsi_target_id) != 0) {
+            saved->scsi_rom_path, saved->scsi_target_id,
+            saved->scsi_io_base) != 0) {
         notify_post("Could not restore MSX SCSI ROM");
         return false;
     }
@@ -3179,7 +3182,8 @@ static bool connect_cdx2(Overlay *overlay, const char *rom_path) {
 
     snprintf(selected_rom, sizeof(selected_rom), "%s",
              rom_path ? rom_path : "");
-    if (config->msx_scsi) {
+    if (config->msx_scsi &&
+        config->scsi_io_base == MSX_SCSI_IO_BASE_D0) {
         notify_post("Disconnect MSX SCSI first; it shares CDX-2 I/O ports");
         return false;
     }
@@ -3445,12 +3449,14 @@ static void begin_scsi_setup(Overlay *overlay, bool editing) {
              sizeof(overlay->pending_scsi_image_path), "%s",
              config->scsi_image_path);
     overlay->pending_scsi_target_id = config->scsi_target_id;
+    overlay->pending_scsi_io_base = config->scsi_io_base;
     overlay->state = OVERLAY_STATE_SCSI_SETUP;
 }
 
 static bool validate_scsi_settings(const char *rom_path,
                                    const char *image_path,
-                                   unsigned target_id) {
+                                   unsigned target_id,
+                                   unsigned io_base) {
     if (!scsi_rom_file_is_valid(rom_path)) {
         notify_post("MSX SCSI needs a banked 16-512 KB ROM");
         return false;
@@ -3464,30 +3470,38 @@ static bool validate_scsi_settings(const char *rom_path,
         notify_post("SCSI target ID must be from 0 through 6");
         return false;
     }
+    if (!msx_scsi_io_base_valid(io_base)) {
+        notify_post("SCSI I/O base must be 30h or D0h");
+        return false;
+    }
     return true;
 }
 
 static void store_scsi_settings(Config *config,
                                 const char *rom_path,
                                 const char *image_path,
-                                unsigned target_id) {
+                                unsigned target_id,
+                                unsigned io_base) {
     snprintf(config->scsi_rom_path,
              sizeof(config->scsi_rom_path), "%s", rom_path);
     snprintf(config->scsi_image_path,
              sizeof(config->scsi_image_path), "%s", image_path);
     config->scsi_target_id = target_id;
+    config->scsi_io_base = io_base;
 }
 
 static bool connect_scsi(Overlay *overlay, const char *rom_path,
                          const char *image_path,
                          AtaImageMode image_mode,
-                         unsigned target_id) {
+                         unsigned target_id,
+                         unsigned io_base) {
     Config *config = overlay->config;
     int slot;
 
-    if (!validate_scsi_settings(rom_path, image_path, target_id))
+    if (!validate_scsi_settings(
+            rom_path, image_path, target_id, io_base))
         return false;
-    if (config->cdx2) {
+    if (config->cdx2 && io_base == MSX_SCSI_IO_BASE_D0) {
         notify_post("Disconnect CDX-2 first; it shares SCSI I/O ports");
         return false;
     }
@@ -3497,7 +3511,7 @@ static bool connect_scsi(Overlay *overlay, const char *rom_path,
     slot = cartridge_extension_slot(config, "MSX SCSI");
     if (slot < 0 || msx_load_scsi(
             overlay->msx, (unsigned)slot,
-            rom_path, target_id) != 0) {
+            rom_path, target_id, io_base) != 0) {
         config->msx_scsi = false;
         reconcile_extension_slots(overlay);
         notify_post("Could not load MSX SCSI ROM: %s",
@@ -3518,11 +3532,12 @@ static bool connect_scsi(Overlay *overlay, const char *rom_path,
                     path_basename(image_path));
         return false;
     }
-    store_scsi_settings(config, rom_path, image_path, target_id);
+    store_scsi_settings(
+        config, rom_path, image_path, target_id, io_base);
     config->scsi_image_mode = image_mode;
     overlay->machine_reset_requested = true;
-    notify_post("MSX SCSI connected at target %u%s",
-                target_id, image_path[0]
+    notify_post("MSX SCSI connected at I/O %02Xh, target %u%s",
+                io_base, target_id, image_path[0]
                 ? " with disk image" : " without a disk");
     return true;
 }
@@ -3532,25 +3547,28 @@ static void finish_scsi_setup(Overlay *overlay) {
     const char *rom_path = overlay->pending_scsi_rom_path;
     const char *image_path = overlay->pending_scsi_image_path;
     unsigned target_id = overlay->pending_scsi_target_id;
+    unsigned io_base = overlay->pending_scsi_io_base;
 
     if (overlay->extension_setup_editing) {
         bool changed = strcmp(config->scsi_rom_path, rom_path) != 0 ||
             strcmp(config->scsi_image_path, image_path) != 0 ||
-            config->scsi_target_id != target_id;
+            config->scsi_target_id != target_id ||
+            config->scsi_io_base != io_base;
 
-        if (!validate_scsi_settings(rom_path, image_path, target_id))
+        if (!validate_scsi_settings(
+                rom_path, image_path, target_id, io_base))
             return;
         if (changed && config->msx_scsi &&
             msx_replace_scsi(
                 overlay->msx, rom_path, image_path,
-                config->scsi_image_mode, target_id) != 0) {
+                config->scsi_image_mode, target_id, io_base) != 0) {
             notify_post("Could not apply MSX SCSI settings: %s",
                         msx_scsi_disk_last_error(overlay->msx));
             return;
         }
         if (changed) {
             store_scsi_settings(
-                config, rom_path, image_path, target_id);
+                config, rom_path, image_path, target_id, io_base);
             overlay->dirty = true;
             overlay->machine_reset_requested = true;
             apply_config(overlay);
@@ -3562,7 +3580,7 @@ static void finish_scsi_setup(Overlay *overlay) {
     }
     if (!connect_scsi(
             overlay, rom_path, image_path,
-            config->scsi_image_mode, target_id))
+            config->scsi_image_mode, target_id, io_base))
         return;
     overlay->dirty = true;
     overlay->state = OVERLAY_STATE_MENU;
@@ -4370,7 +4388,8 @@ static void activate_item(Overlay *overlay) {
                                 overlay, config->scsi_rom_path,
                                 config->scsi_image_path,
                                 config->scsi_image_mode,
-                                config->scsi_target_id))
+                                config->scsi_target_id,
+                                config->scsi_io_base))
                             return;
                     } else {
                         begin_scsi_setup(overlay, false);
@@ -4888,14 +4907,19 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
             ++overlay->scsi_setup_row;
             if (overlay->scsi_setup_row >= SCSI_SETUP_ROWS)
                 overlay->scsi_setup_row = 0;
-        } else if ((key == SDLK_LEFT || key == SDLK_RIGHT) &&
-                   overlay->scsi_setup_row == SCSI_SETUP_TARGET_ID) {
-            if (key == SDLK_RIGHT)
-                overlay->pending_scsi_target_id =
-                    (overlay->pending_scsi_target_id + 1u) % 7u;
-            else
-                overlay->pending_scsi_target_id =
-                    (overlay->pending_scsi_target_id + 6u) % 7u;
+        } else if (key == SDLK_LEFT || key == SDLK_RIGHT) {
+            if (overlay->scsi_setup_row == SCSI_SETUP_TARGET_ID) {
+                if (key == SDLK_RIGHT)
+                    overlay->pending_scsi_target_id =
+                        (overlay->pending_scsi_target_id + 1u) % 7u;
+                else
+                    overlay->pending_scsi_target_id =
+                        (overlay->pending_scsi_target_id + 6u) % 7u;
+            } else if (overlay->scsi_setup_row == SCSI_SETUP_IO_BASE) {
+                overlay->pending_scsi_io_base =
+                    overlay->pending_scsi_io_base == MSX_SCSI_IO_BASE_D0
+                    ? MSX_SCSI_IO_BASE_30 : MSX_SCSI_IO_BASE_D0;
+            }
         } else if (key == SDLK_RETURN || key == SDLK_KP_ENTER) {
             switch (overlay->scsi_setup_row) {
                 case SCSI_SETUP_FIRMWARE:
@@ -4907,6 +4931,12 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 case SCSI_SETUP_TARGET_ID:
                     overlay->pending_scsi_target_id =
                         (overlay->pending_scsi_target_id + 1u) % 7u;
+                    break;
+                case SCSI_SETUP_IO_BASE:
+                    overlay->pending_scsi_io_base =
+                        overlay->pending_scsi_io_base ==
+                            MSX_SCSI_IO_BASE_D0
+                        ? MSX_SCSI_IO_BASE_30 : MSX_SCSI_IO_BASE_D0;
                     break;
                 case SCSI_SETUP_CONNECT:
                     finish_scsi_setup(overlay);
@@ -5347,6 +5377,8 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                 overlay->config->scsi_image_path[0] = '\0';
                 overlay->config->scsi_target_id =
                     MSX_SCSI_DEFAULT_TARGET_ID;
+                overlay->config->scsi_io_base =
+                    MSX_SCSI_DEFAULT_IO_BASE;
                 overlay->dirty = true;
                 apply_config(overlay);
                 notify_post("MSX SCSI settings cleared");
@@ -6345,11 +6377,12 @@ static void render_sunrise_setup(const Overlay *overlay,
 static void render_scsi_setup(const Overlay *overlay,
                               SDL_Renderer *renderer) {
     static const char *labels[SCSI_SETUP_ROWS] = {
-        "Firmware ROM", "SCSI hard disk", "Target ID", "Action"
+        "Firmware ROM", "SCSI hard disk", "Target ID", "I/O base", "Action"
     };
     char firmware[52];
     char disk[52];
     char target[16];
+    char io_base[16];
     const char *values[SCSI_SETUP_ROWS];
     const float box_x = 28.0f;
     const float box_y = 116.0f;
@@ -6370,9 +6403,13 @@ static void render_scsi_setup(const Overlay *overlay,
         snprintf(disk, sizeof(disk), "[optional - no disk]");
     snprintf(target, sizeof(target), "%u",
              overlay->pending_scsi_target_id);
+    snprintf(io_base, sizeof(io_base), "%02Xh-%02Xh",
+             overlay->pending_scsi_io_base,
+             overlay->pending_scsi_io_base + 7u);
     values[SCSI_SETUP_FIRMWARE] = firmware;
     values[SCSI_SETUP_DISK] = disk;
     values[SCSI_SETUP_TARGET_ID] = target;
+    values[SCSI_SETUP_IO_BASE] = io_base;
     values[SCSI_SETUP_CONNECT] =
         !overlay->extension_setup_editing ? "Connect MSX SCSI" :
         overlay->config->msx_scsi ? "Apply and reconnect" :
@@ -6389,7 +6426,7 @@ static void render_scsi_setup(const Overlay *overlay,
                  box_x + (box_w - (float)strlen(title) * 8.0f) * 0.5f,
                  box_y + 12.0f, title, 255, 255, 255);
     ui_draw_text(renderer, box_x + 22.0f, box_y + 42.0f,
-                 "Banked ROM cartridge with NCR/Z5380 at D0h-D7h.",
+                 "Banked ROM cartridge with selectable NCR/Z5380 I/O.",
                  180, 210, 235);
     ui_draw_text(renderer, box_x + 22.0f, box_y + 60.0f,
                  "The raw image is exposed as one SCSI disk target.",
@@ -6411,7 +6448,7 @@ static void render_scsi_setup(const Overlay *overlay,
                      red, green, blue);
     }
     ui_draw_text(renderer, box_x + 38.0f, box_y + box_h - 24.0f,
-                 "Left/Right target  Enter select  Delete clear  Esc cancel",
+                 "Left/Right change  Enter select  Delete clear  Esc cancel",
                  160, 180, 210);
 }
 

@@ -93,6 +93,7 @@ typedef struct {
     char pending_scsi_rom_path[PATH_MAX];
     char pending_scsi_image_path[PATH_MAX];
     unsigned pending_scsi_target_id;
+    unsigned pending_scsi_io_base;
 
     int sd_mapper_setup_row;
     char pending_sd_mapper_rom_path[PATH_MAX];

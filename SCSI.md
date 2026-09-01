@@ -1,15 +1,16 @@
 # MSX SCSI cartridge
 
 1983 models the banked MSX SCSI interface built around the NCR/Z5380 family:
-a 16 KiB ROM window at `4000h-7FFFh`, bank selection at `6000h`, and the
-controller registers and pseudo-DMA port at `D0h-D7h`. One raw host file is
-exposed as a direct-access SCSI disk with 512-byte sectors. Target ID 0 is the
-default because it is the first device probed by BERT SCSI V2.7.
+a 16 KiB ROM window at `4000h-7FFFh`, bank selection at `6000h`, and
+controller registers plus pseudo-DMA at either `30h-37h` or `D0h-D7h`.
+The base is user-selectable because both CPLD revisions exist. One raw host
+file is exposed as a direct-access SCSI disk with 512-byte sectors. Target ID
+0 is the default because it is the first device probed by BERT SCSI V2.7.
 
 The controller ROM is not distributed with 1983. Select a compatible,
 legally obtained banked ROM in **Extensions > MSX SCSI**. The extension
-reserves one cartridge slot and cannot coexist with CDX-2 because both
-devices decode ports `D0h-D7h`.
+reserves one cartridge slot. The D0 setting cannot coexist with CDX-2 because
+the devices overlap at `D0h-D4h`; the 30 setting has no such I/O conflict.
 
 ## Starting it
 
@@ -18,7 +19,8 @@ In the F9 overlay, enable **General > Extra Hardware**, select
 
 - the controller firmware ROM;
 - an optional raw disk image;
-- target ID 0-6 (normally 0).
+- target ID 0-6 (normally 0);
+- I/O base `30h` or `D0h`, matching the CPLD and ROM revision.
 
 The mounted disk subsequently appears under **Media > SCSI hard disk**.
 Read-only is the safe default. With Tinker enabled, **Advanced > SCSI access
@@ -31,7 +33,7 @@ The equivalent command line is:
 ./1983 --model msx2 --msx-scsi \
   --scsi-rom /path/to/SCSI.ROM.BIN \
   --scsi-disk /path/to/MSXDOS2-SCSI.IMG \
-  --scsi-id 0 --scsi-mode read-only
+  --scsi-id 0 --scsi-port 30 --scsi-mode read-only
 ```
 
 Use `--scsi-mode read-write` only when the guest must install or modify the

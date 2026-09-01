@@ -1514,7 +1514,9 @@ int msx_install_cdx2(MsxMachine *msx, unsigned slot,
         !data ||
         (size != MSX_CDX2_ROM_SIZE &&
          size != MSX_CDX2_COMBINED_ROM_SIZE) ||
-        rom_bank > 1 || msx_scsi_connected(msx))
+        rom_bank > 1 ||
+        (msx_scsi_connected(msx) &&
+         msx_scsi_io_base(&msx->scsi) == MSX_SCSI_IO_BASE_D0))
         return -1;
     selected = data;
     if (size == MSX_CDX2_COMBINED_ROM_SIZE)
@@ -1951,20 +1953,24 @@ bool msx_sunrise_take_activity(MsxMachine *msx) {
 }
 
 int msx_install_scsi(MsxMachine *msx, unsigned slot,
-                     const u8 *data, size_t size, unsigned target_id) {
+                     const u8 *data, size_t size, unsigned target_id,
+                     unsigned io_base) {
     if (!msx || slot >= MSX_CARTRIDGE_SLOTS || target_id >= 7 ||
-        msx->cdx2_enabled ||
+        !msx_scsi_io_base_valid(io_base) ||
+        (msx->cdx2_enabled && io_base == MSX_SCSI_IO_BASE_D0) ||
         msx_scsi_install_rom(&msx->scsi, data, size) != 0)
         return -1;
     msx_cartridge_eject(&msx->cartridges[slot]);
     msx_scsi_set_target_id(&msx->scsi, target_id);
+    msx_scsi_set_io_base(&msx->scsi, io_base);
     msx->scsi_slot = (int)slot;
     msx_reset(msx);
     return 0;
 }
 
 int msx_load_scsi(MsxMachine *msx, unsigned slot,
-                  const char *path, unsigned target_id) {
+                  const char *path, unsigned target_id,
+                  unsigned io_base) {
     u8 *data;
     size_t size;
     int result;
@@ -1972,14 +1978,15 @@ int msx_load_scsi(MsxMachine *msx, unsigned slot,
     if (!msx || slot >= MSX_CARTRIDGE_SLOTS || !path || !path[0] ||
         read_rom_file(path, MSX_SCSI_ROM_MAX_SIZE, &data, &size) != 0)
         return -1;
-    result = msx_install_scsi(msx, slot, data, size, target_id);
+    result = msx_install_scsi(
+        msx, slot, data, size, target_id, io_base);
     free(data);
     return result;
 }
 
 int msx_replace_scsi(MsxMachine *msx, const char *rom_path,
                      const char *disk_path, AtaImageMode mode,
-                     unsigned target_id) {
+                     unsigned target_id, unsigned io_base) {
     MsxScsi *candidate;
     MsxScsi *previous;
     u8 *data = NULL;
@@ -1987,7 +1994,8 @@ int msx_replace_scsi(MsxMachine *msx, const char *rom_path,
     int result = -1;
 
     if (!msx_scsi_connected(msx) || !rom_path || !rom_path[0] ||
-        target_id >= 7)
+        target_id >= 7 || !msx_scsi_io_base_valid(io_base) ||
+        (msx->cdx2_enabled && io_base == MSX_SCSI_IO_BASE_D0))
         return -1;
     candidate = malloc(sizeof(*candidate));
     previous = malloc(sizeof(*previous));
@@ -1999,6 +2007,7 @@ int msx_replace_scsi(MsxMachine *msx, const char *rom_path,
         msx_scsi_install_rom(candidate, data, size) != 0)
         goto destroy_candidate;
     msx_scsi_set_target_id(candidate, target_id);
+    msx_scsi_set_io_base(candidate, io_base);
     if (msx_scsi_flush_disk(&msx->scsi) != 0)
         goto destroy_candidate;
     if (disk_path && disk_path[0] &&
@@ -2055,6 +2064,11 @@ void msx_reassign_scsi_slot(MsxMachine *msx, int slot) {
 unsigned msx_scsi_configured_target_id(const MsxMachine *msx) {
     return msx ? msx_scsi_target_id(&msx->scsi)
                : MSX_SCSI_DEFAULT_TARGET_ID;
+}
+
+unsigned msx_scsi_configured_io_base(const MsxMachine *msx) {
+    return msx ? msx_scsi_io_base(&msx->scsi)
+               : MSX_SCSI_DEFAULT_IO_BASE;
 }
 
 int msx_mount_scsi_disk(MsxMachine *msx, const char *path,
