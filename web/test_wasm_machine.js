@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
 const path = require('path');
 const create1983 = require('./dist/1983.js');
 
@@ -23,6 +24,11 @@ async function main() {
 
   const unifiedRom = module.FS.readFile('roms/rainbios_omega.rom');
   assert.strictEqual(unifiedRom.byteLength, 512 * 1024);
+  assert.deepStrictEqual(
+    Buffer.from(unifiedRom),
+    fs.readFileSync(path.join(__dirname, '..', 'ROMS', 'rainbios_omega.rom')),
+    'the embedded Omega ROM must match the tracked firmware artifact'
+  );
   const unifiedRomPointer = module._malloc(unifiedRom.byteLength);
   assert.notStrictEqual(unifiedRomPointer, 0);
   try {
