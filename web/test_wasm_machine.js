@@ -22,13 +22,21 @@ async function main() {
   assert.strictEqual(module._poc_flip_omega_unified_bank(), 0);
   assert.strictEqual(module._poc_omega_unified_bank(), 0);
 
+  for (const filename of [
+    'rainbios_msx2.rom',
+    'rainbios_msx2_sub.rom',
+    'rainbios_omega.rom',
+    'rainbios_nms8250_disk.rom',
+  ]) {
+    assert.deepStrictEqual(
+      Buffer.from(module.FS.readFile(`roms/${filename}`)),
+      fs.readFileSync(path.join(__dirname, '..', 'ROMS', filename)),
+      `the embedded ${filename} must match the tracked firmware artifact`
+    );
+  }
+
   const unifiedRom = module.FS.readFile('roms/rainbios_omega.rom');
   assert.strictEqual(unifiedRom.byteLength, 512 * 1024);
-  assert.deepStrictEqual(
-    Buffer.from(unifiedRom),
-    fs.readFileSync(path.join(__dirname, '..', 'ROMS', 'rainbios_omega.rom')),
-    'the embedded Omega ROM must match the tracked firmware artifact'
-  );
   const unifiedRomPointer = module._malloc(unifiedRom.byteLength);
   assert.notStrictEqual(unifiedRomPointer, 0);
   try {
