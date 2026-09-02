@@ -3,7 +3,7 @@ set -eu
 
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 rainbios=${1:-"$root/../rainbios"}
-revision=605c4fafbd2ead6edceb633a114f7eb28c718a02
+revision=b1e1ad9aef50f12a36e3e4724ad3c6e93ce90265
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT HUP INT TERM
 
@@ -26,7 +26,7 @@ if test -n "$(git -C "$rainbios" status --porcelain)"; then
 fi
 
 make -C "$rainbios" \
-    msx2-main-rom msx2-sub-rom rainbios-disk-rom nms8250-disk-rom
+    all msx2-sub-rom rainbios-disk-rom nms8250-disk-rom
 
 check_rom() {
     expected=$1
@@ -34,7 +34,9 @@ check_rom() {
     printf '%s  %s\n' "$expected" "$source" | sha256sum -c -
 }
 
-check_rom 21f966cd32694641906aa4f40b0e09ae3be0a815c145d2d154b04c875badea9d \
+check_rom d8fd300cc9da423e8df57fdea693f74245ef8bc50d84db10c31788499b3f1e69 \
+    "$rainbios/build/rainbios_msx1.rom"
+check_rom 3fe33f0717c8eb8ed3ec04caef7803ac9a4354fff2933e9f969e6866b748187f \
     "$rainbios/build/rainbios_msx2.rom"
 check_rom f8230c25f45db88d4c032e59dd714c4bf65c1b3300000fc20a046fa32ef984ed \
     "$rainbios/build/rainbios_msx2_sub.rom"
@@ -48,9 +50,11 @@ python3 "$root/tools/build-omega-unified-rom.py" \
     "$rainbios/build/rainbios_msx2.rom" \
     "$rainbios/build/rainbios_msx2_sub.rom" \
     "$rainbios/build/rainbios_disk.rom"
-check_rom 84f3aedc976bed4278f5d74a83e9e7e6e177e0dd989415510f2cf8a42bfd8eb0 \
+check_rom 137e6c801283f9e3aed9983ab1045742da61eab521e9ca0f941e5e74e4574cb7 \
     "$work/rainbios_omega.rom"
 
+install -m 0644 "$rainbios/build/rainbios_msx1.rom" \
+    "$root/ROMS/rainbios_msx1.rom"
 install -m 0644 "$rainbios/build/rainbios_msx2.rom" \
     "$root/ROMS/rainbios_msx2.rom"
 install -m 0644 "$rainbios/build/rainbios_msx2_sub.rom" \
@@ -62,4 +66,4 @@ install -m 0644 "$rainbios/build/rainbios_nms8250_disk.rom" \
 install -m 0644 "$work/rainbios_omega.rom" \
     "$root/ROMS/rainbios_omega.rom"
 
-echo "Imported RainBIOS Omega MSX2 firmware from $revision"
+echo "Imported RainBIOS MSX1 and Omega MSX2 firmware from $revision"

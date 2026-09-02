@@ -1,9 +1,11 @@
 RainBIOS firmware for Javascript 1983
 =====================================
 
-These redistributable ROM images provide the native and browser-edition Omega
-MSX2 default and the browser edition's Philips NMS 8250 profile:
+These redistributable ROM images provide RainBIOS MSX1 firmware, the native and
+browser-edition Omega MSX2 default, and the browser edition's Philips NMS 8250
+profile:
 
+  rainbios_msx1.rom           MSX1 main BIOS, 32 KiB
   rainbios_msx2.rom           MSX2 main BIOS, 32 KiB
   rainbios_msx2_sub.rom       MSX2 Sub-ROM, 16 KiB
   rainbios_disk.rom           Generic WD2793 disk ROM, 16 KiB
@@ -11,7 +13,7 @@ MSX2 default and the browser edition's Philips NMS 8250 profile:
   rainbios_nms8250_disk.rom   Philips WD2793 disk ROM, 16 KiB
 
 They were built from RainBIOS commit
-605c4fafbd2ead6edceb633a114f7eb28c718a02:
+b1e1ad9aef50f12a36e3e4724ad3c6e93ce90265:
 
   https://github.com/salvogendut/rainbios
 
@@ -24,9 +26,9 @@ For a checkout elsewhere, use:
 
   make import-rainbios-roms RAINBIOS_DIR=/path/to/rainbios
 
-The script invokes the RainBIOS MSX2 main, Sub-ROM, generic disk-ROM, and
-NMS8250 disk-ROM targets, cooks the unified Omega image, verifies every digest,
-and only then replaces the bundled copies.
+The script invokes the RainBIOS MSX1 and MSX2 main, Sub-ROM, generic disk-ROM,
+and NMS8250 disk-ROM targets, cooks the unified Omega image, verifies every
+digest, and only then replaces the bundled copies.
 RainBIOS documents the required assembler, compiler, Python, and companion
 BBC BASIC checkout in its own README.
 
@@ -40,10 +42,11 @@ either emulated JP1 bank boots identically. See:
 
 SHA-256:
 
-  21f966cd32694641906aa4f40b0e09ae3be0a815c145d2d154b04c875badea9d  rainbios_msx2.rom
+  d8fd300cc9da423e8df57fdea693f74245ef8bc50d84db10c31788499b3f1e69  rainbios_msx1.rom
+  3fe33f0717c8eb8ed3ec04caef7803ac9a4354fff2933e9f969e6866b748187f  rainbios_msx2.rom
   f8230c25f45db88d4c032e59dd714c4bf65c1b3300000fc20a046fa32ef984ed  rainbios_msx2_sub.rom
   ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_disk.rom
-  84f3aedc976bed4278f5d74a83e9e7e6e177e0dd989415510f2cf8a42bfd8eb0  rainbios_omega.rom
+  137e6c801283f9e3aed9983ab1045742da61eab521e9ca0f941e5e74e4574cb7  rainbios_omega.rom
   ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_nms8250_disk.rom
 
 Licensing and attribution
@@ -51,9 +54,9 @@ Licensing and attribution
 
 The license information below is copied from RainBIOS LICENSE,
 THIRD_PARTY_NOTICES.md, and LICENSES/ at the pinned source revision. It applies
-to rainbios_msx2.rom and therefore also to every copy of that main ROM embedded
-in rainbios_omega.rom. The Sub-ROM and disk ROM are original RainBIOS firmware
-under BSD-3-Clause.
+to rainbios_msx1.rom and rainbios_msx2.rom, and therefore also to every copy of
+the MSX2 main ROM embedded in rainbios_omega.rom. The Sub-ROM and disk ROM are
+original RainBIOS firmware under BSD-3-Clause.
 
 The combined MSX2 main ROM is an aggregate of separately licensed components:
 
@@ -205,4 +208,4 @@ otherwise supplies its public-license fallback, without warranty. The full
 legal code is available in the pinned RainBIOS source tree at:
 
   LICENSES/CC0-1.0.txt
-  https://github.com/salvogendut/rainbios/blob/605c4fafbd2ead6edceb633a114f7eb28c718a02/LICENSES/CC0-1.0.txt
+  https://github.com/salvogendut/rainbios/blob/b1e1ad9aef50f12a36e3e4724ad3c6e93ce90265/LICENSES/CC0-1.0.txt
