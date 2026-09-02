@@ -14,6 +14,15 @@ async function main() {
     module._poc_init(), 0,
     'the default RainBIOS Omega MSX2 must initialize'
   );
+  assert.strictEqual(module._poc_video_standard(), 0);
+  assert.strictEqual(module._poc_frame_hz(), 50);
+  assert.strictEqual(module._poc_set_video_standard(2), -1);
+  assert.strictEqual(module._poc_video_standard(), 0);
+  assert.strictEqual(module._poc_set_video_standard(1), 1);
+  assert.strictEqual(module._poc_video_standard(), 1);
+  assert.strictEqual(module._poc_frame_hz(), 60);
+  assert.strictEqual(module._poc_set_video_standard(0), 0);
+  assert.strictEqual(module._poc_video_standard(), 0);
   assert.strictEqual(module._poc_frame_hz(), 50);
   assert.strictEqual(module._poc_has_floppy(), 1);
   assert.strictEqual(module._poc_omega_unified_bank(), 0);
@@ -344,7 +353,9 @@ async function main() {
   assert.strictEqual(module._poc_set_sd_mapper(1), 1);
   assert.strictEqual(module._poc_set_powergraph_v9990(1), -1);
   assert.strictEqual(module._poc_set_unapi(1), 1);
+  assert.strictEqual(module._poc_set_video_standard(1), 1);
   assert.strictEqual(module._poc_init_model(0, 0), 0);
+  assert.strictEqual(module._poc_video_standard(), 1);
   assert.strictEqual(module._poc_frame_hz(), 60);
   assert.strictEqual(module._poc_has_floppy(), 0);
   assert.strictEqual(module._poc_cartridge_loaded(0), 0);

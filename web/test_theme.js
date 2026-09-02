@@ -23,8 +23,12 @@ assert(
   'Trinitron decorations must stay hidden in non-Sony themes'
 );
 assert(
-  /class="trinitron-console" aria-hidden="true"/.test(html),
-  'decorative monitor controls must be hidden from assistive technology'
+  /class="trinitron-console" aria-label="Monitor controls"/.test(html),
+  'the interactive monitor fascia must be exposed to assistive technology'
+);
+assert(
+  /class="trinitron-standard-key"[^>]*data-video-standard-toggle/.test(html),
+  'the Sony monitor fascia must expose the video-standard switch'
 );
 assert(
   /\.trinitron-console\s*\{[^}]*display:\s*grid;/s.test(sonyCss),
@@ -35,7 +39,7 @@ assert(
   'the Sony theme must enable the Trinitron mark'
 );
 assert(
-  html.includes('class="trinitron-sony">THONY</strong>'),
+  /class="trinitron-sony"[^>]*>THONY<\/strong>/.test(html),
   'the monitor fascia must use the THONY parody mark'
 );
 assert(

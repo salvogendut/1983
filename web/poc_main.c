@@ -33,6 +33,7 @@ static int g_autorun_frames;
 static char g_autorun_command[256];
 static bool g_initialized;
 static bool g_machine_initialized;
+static MsxRegion g_video_region = MSX_REGION_PAL;
 static u8 g_joy_pressed;
 static int g_input_device;
 static UnapiNet *g_unapinet;
@@ -158,7 +159,6 @@ EMSCRIPTEN_KEEPALIVE void poc_audio_advance(int n) {
  * machines. */
 EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
     MsxModel m;
-    MsxRegion region = MSX_REGION_NTSC;
     MsxFloppyConfig floppy = {
         .controller = MSX_FLOPPY_CONTROLLER_NONE,
         .primary_slot = -1,
@@ -183,13 +183,11 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
 
     if (model == 1) {
         m = MSX_MODEL_PHILIPS_NMS8250;
-        region = MSX_REGION_PAL;
         floppy.controller = MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
         floppy.primary_slot = 3;
         floppy.secondary_slot = 3;
     } else if (model == 2) {
         m = MSX_MODEL_GENERIC_MSX2;
-        region = MSX_REGION_PAL;
         floppy.controller = MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793;
         floppy.primary_slot = 3;
         floppy.secondary_slot = 3;
@@ -198,7 +196,7 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
     } else {
         return -1;
     }
-    msx_init(&g_msx, m, region, msx_default_ram_kb(m));
+    msx_init(&g_msx, m, g_video_region, msx_default_ram_kb(m));
     g_machine_initialized = true;
     g_joy_pressed = 0;
     if (msx_configure_floppy(&g_msx, &floppy) != 0)
@@ -240,6 +238,29 @@ EMSCRIPTEN_KEEPALIVE int poc_init_model(int model, const char *cartridge) {
 }
 
 EMSCRIPTEN_KEEPALIVE int poc_init(void) { return poc_init_model(2, NULL); }
+
+/* standard 0 = PAL 50 Hz, 1 = NTSC 60 Hz.  The selection belongs to the
+ * browser, rather than to a hard-coded machine profile, and survives model
+ * changes.  On a running machine msx_configure() performs the required cold
+ * reset while retaining attached cartridge and storage media. */
+EMSCRIPTEN_KEEPALIVE int poc_set_video_standard(int standard) {
+    MsxRegion requested;
+
+    if (standard != 0 && standard != 1)
+        return -1;
+    requested = standard == 1 ? MSX_REGION_NTSC : MSX_REGION_PAL;
+    if (requested == g_video_region)
+        return standard;
+    g_video_region = requested;
+    if (g_machine_initialized && g_msx.profile)
+        msx_configure(
+            &g_msx, g_msx.profile->model, g_video_region, g_msx.ram_kb);
+    return standard;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_video_standard(void) {
+    return g_video_region == MSX_REGION_NTSC ? 1 : 0;
+}
 
 EMSCRIPTEN_KEEPALIVE int poc_ram_kb(void) {
     return g_machine_initialized ? g_msx.ram_kb : 0;

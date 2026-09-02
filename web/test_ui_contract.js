@@ -66,6 +66,14 @@ assert.match(
 assert.match(html, /id="memoryValue"[^>]*>64 KiB<\/output>/);
 assert.match(app, /m\._poc_set_ram_kb\(ramKb\)/);
 assert.match(app, /RAM_STORAGE_PREFIX \+ currentModel/);
+assert.strictEqual(
+  [...html.matchAll(/data-video-standard-toggle/g)].length,
+  2,
+  'the monitor and non-Sony picture panel must expose the video standard'
+);
+assert.match(app, /m\._poc_set_video_standard\(requested\)/);
+assert.match(app, /VIDEO_STANDARD_STORAGE_KEY/);
+assert.match(app, /frameClock\.setRate\(m\._poc_frame_hz\(\)\)/);
 assert.match(
   html,
   /id="unifiedRomLoad"[\s\S]*id="unifiedRomFile"[\s\S]*id="unifiedRomName"/

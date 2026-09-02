@@ -43,11 +43,16 @@ the project repository in a new browser tab.
   cartridge, keyboard, mouse, paste) with host-only modules stubbed. It boots
   fully client-side — no host process and no frame streaming.
 - Three redistributable machine profiles are bundled. **Omega MSX2
-  (RainBIOS)** is the 50 Hz default and boots the same 512 KiB unified Omega
+  (RainBIOS)** is the default and boots the same 512 KiB unified Omega
   EEPROM image as the native application, selecting its lower JP1 bank. It
   includes the MSX2 main ROM, Sub-ROM, generic WD2793 disk ROM, 128 KiB RAM,
-  and 128 KiB VRAM. **MSX1 (C-BIOS)** at 60 Hz and **Philips NMS 8250
-  (RainBIOS)** at 50 Hz remain selectable.
+  and 128 KiB VRAM. **MSX1 (C-BIOS)** and **Philips NMS 8250 (RainBIOS)**
+  remain selectable. PAL/NTSC is a separate user choice rather than a fixed
+  property of those browser profiles.
+- The monitor's **Standard** button switches between PAL 50 Hz and NTSC 60 Hz,
+  cold-resets the guest without ejecting its media, updates video/audio pacing,
+  and remembers the choice in browser storage. Non-default visual themes expose
+  the same control in the Picture panel.
 - The **ROM Upload** button beside the machine selector accepts a user-provided
   512 KiB Omega unified ROM. A valid image selects the Omega MSX2 profile when
   necessary and immediately reboots into its lower 256 KiB JP1 bank. The ROM
