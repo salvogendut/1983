@@ -1,5 +1,5 @@
 Name:           1983
-Version:        0.4.0
+Version:        0.5.0
 Release:        1%{?dist}
 Summary:        Generic MSX and MSX2 emulator
 
@@ -68,6 +68,12 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/io.github
 %{_datadir}/%{name}/ROMS/rainbios_omega.rom
 
 %changelog
+* Wed Sep 02 2026 Salvatore Bognanni <salvogendut@gmail.com> - 0.5.0-1
+- Add bootable NCR/Z5380 MSX SCSI emulation to native and WebAssembly builds.
+- Add selectable 30h/D0h SCSI I/O ranges and bundle both controller ROMs.
+- Validate raw SCSI disks with MSX-DOS and SymbOS storage drivers.
+- Refresh RainBIOS with live RAM, VRAM, and RTC boot information.
+
 * Sat Aug 29 2026 Salvatore Bognanni <salvogendut@gmail.com> - 0.4.0-1
 - Add PowerGraph/GFX9000 V9990 emulation to native and WebAssembly builds.
 - Add automatic VDP/V9990 output switching and SYMG9K/SymbOS integration.

@@ -1,4 +1,4 @@
-AC_INIT([1983], [0.4.0], [https://github.com/salvogendut/1983/issues], [1983],
+AC_INIT([1983], [0.5.0], [https://github.com/salvogendut/1983/issues], [1983],
         [https://github.com/salvogendut/1983])
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_AUX_DIR([build-aux])
