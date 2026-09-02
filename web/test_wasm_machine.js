@@ -24,6 +24,19 @@ async function main() {
   assert.strictEqual(module._poc_set_video_standard(0), 0);
   assert.strictEqual(module._poc_video_standard(), 0);
   assert.strictEqual(module._poc_frame_hz(), 50);
+  assert.strictEqual(module._poc_paste_text(0), -1);
+  assert.strictEqual(module._poc_paste_active(), 0);
+  assert.strictEqual(
+    module.ccall('poc_paste_text', 'number', ['string'], ['10 PRINT "WEB"\n']),
+    0,
+    'browser clipboard text must enter the frame-paced MSX paste queue'
+  );
+  assert.strictEqual(module._poc_paste_active(), 1);
+  for (let frame = 0; frame < 120; ++frame) module._poc_step();
+  assert.strictEqual(
+    module._poc_paste_active(), 0,
+    'the browser paste queue must drain through emulated frames'
+  );
   assert.strictEqual(module._poc_has_floppy(), 1);
   assert.strictEqual(module._poc_omega_unified_bank(), 0);
   assert.strictEqual(module._poc_flip_omega_unified_bank(), 1);

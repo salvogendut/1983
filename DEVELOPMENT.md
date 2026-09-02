@@ -394,7 +394,9 @@ currently provides idealized simultaneous-key rollover rather than
 model-specific electrical ghosting.
 
 Ctrl+V obtains UTF-8 clipboard text from SDL, releases the physical shortcut,
-and hands a private copy to `src/paste.c`. Printable ASCII, Tab, Backspace,
+and hands a private copy to `src/paste.c`. The WASM frontend performs the same
+operation from the browser's trusted `paste` event when its display canvas has
+focus; Cmd+V is accepted on macOS. Printable ASCII, Tab, Backspace,
 and newline are translated using the international openMSX Unicode map;
 carriage returns and unsupported UTF-8 bytes are skipped. Paste does not add
 a trailing Return. A queued character is held for two complete frames with a

@@ -81,6 +81,10 @@ assert.match(app, /VIDEO_STANDARD_STORAGE_KEY/);
 assert.match(app, /frameClock\.setRate\(m\._poc_frame_hz\(\)\)/);
 assert.match(app, /locateFile\(path\)/);
 assert.match(html, /app\.js\?v=@ASSET_REV@/);
+assert.match(app, /window\.addEventListener\("paste"/);
+assert.match(app, /event\.clipboardData\.getData\("text\/plain"\)/);
+assert.match(app, /m\.ccall\("poc_paste_text"/);
+assert.match(app, /event\.ctrlKey \|\| event\.metaKey/);
 assert.match(
   html,
   /id="unifiedRomLoad"[\s\S]*id="unifiedRomFile"[\s\S]*id="unifiedRomName"/
