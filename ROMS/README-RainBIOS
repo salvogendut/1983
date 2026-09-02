@@ -13,7 +13,7 @@ profile:
   rainbios_nms8250_disk.rom   Philips WD2793 disk ROM, 16 KiB
 
 They were built from RainBIOS commit
-abb1a34df3830fa0771b4a4bd35889207c812b6d:
+dc95be25177b06d9887ba33cfafa5c01e2697677:
 
   https://github.com/salvogendut/rainbios
 
@@ -42,11 +42,11 @@ either emulated JP1 bank boots identically. See:
 
 SHA-256:
 
-  09bb82e378f03cf6ebc18d7fc8711cba2ad14f9f313aca24db40f909ae2f90c9  rainbios_msx1.rom
-  ec1a75ad620e91610f8b8f4f825e0097685dde5325620947f8b3c63d528f9118  rainbios_msx2.rom
+  0fc120911009815db7e69736f3eedba641ba9ee6913ae544f1ed21563d082ab7  rainbios_msx1.rom
+  f36c53326363da025944153856117c8d7b36cf88d0112a417303f0ebefaba710  rainbios_msx2.rom
   f79e9664d94f78640331232c74fd67032fff8dcb7e667ee18f16e79dd8e9d486  rainbios_msx2_sub.rom
   ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_disk.rom
-  77f9c812b534e03ebd8c7bd0aee14b78e6ca7a4b030a947780291dd910470773  rainbios_omega.rom
+  2cdf2bc23ae489a746b246b31ff8331951ec63203125964c72c512039edc0ff4  rainbios_omega.rom
   ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_nms8250_disk.rom
 
 Licensing and attribution
@@ -208,4 +208,4 @@ otherwise supplies its public-license fallback, without warranty. The full
 legal code is available in the pinned RainBIOS source tree at:
 
   LICENSES/CC0-1.0.txt
-  https://github.com/salvogendut/rainbios/blob/abb1a34df3830fa0771b4a4bd35889207c812b6d/LICENSES/CC0-1.0.txt
+  https://github.com/salvogendut/rainbios/blob/dc95be25177b06d9887ba33cfafa5c01e2697677/LICENSES/CC0-1.0.txt
