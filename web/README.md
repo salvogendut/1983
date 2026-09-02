@@ -52,7 +52,7 @@ the project repository in a new browser tab.
 - The monitor's **Standard** button switches between PAL 50 Hz and NTSC 60 Hz,
   cold-resets the guest without ejecting its media, updates video/audio pacing,
   and remembers the choice in browser storage. Non-default visual themes expose
-  the same control in the Picture panel.
+  the same control on their monitor badge.
 - The **ROM Upload** button beside the machine selector accepts a user-provided
   512 KiB Omega unified ROM. A valid image selects the Omega MSX2 profile when
   necessary and immediately reboots into its lower 256 KiB JP1 bank. The ROM
@@ -72,7 +72,9 @@ the project repository in a new browser tab.
   queue uses only samples actually produced by the machine, with bounded
   catch-up after browser stalls and no silence-padding between buffers.
 - Physical keyboard input and the collapsible on-screen MSX keyboard, including
-  F1-F5, SELECT, STOP, GRAPH, CODE, cursor keys and numeric keypad.
+  F1-F5, SELECT, STOP, GRAPH, CODE, cursor keys and numeric keypad. With the
+  display focused, **Ctrl+V** (or **Cmd+V** on macOS) pastes host clipboard
+  text through the emulated MSX keyboard matrix.
 - Selecting **Mouse** captures relative pointer motion when the display is
   clicked. Press **Ctrl+Enter** (or the browser's pointer-lock escape key) to
   release it.

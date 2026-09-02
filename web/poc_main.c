@@ -423,6 +423,20 @@ EMSCRIPTEN_KEEPALIVE void poc_key_mod(int scancode, int pressed, int mod) {
     kbd_handle(&g_kbd, &g_msx, &event);
 }
 
+/* Queue browser clipboard text through the same frame-paced MSX keyboard
+ * matrix path as the native SDL frontend. */
+EMSCRIPTEN_KEEPALIVE int poc_paste_text(const char *text) {
+    if (!g_machine_initialized || !text || !text[0])
+        return -1;
+    poc_cancel_paste();
+    kbd_release_all(&g_kbd, &g_msx);
+    return paste_start(&g_paste, &g_msx, text) ? 0 : -1;
+}
+
+EMSCRIPTEN_KEEPALIVE int poc_paste_active(void) {
+    return paste_active(&g_paste) ? 1 : 0;
+}
+
 /* The browser maps gamepad directions and buttons onto joystick port 1. */
 EMSCRIPTEN_KEEPALIVE void poc_joy(int col, int pressed) {
     u8 mask;
