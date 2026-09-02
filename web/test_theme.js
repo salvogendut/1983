@@ -31,12 +31,20 @@ assert(
   'the Sony monitor fascia must expose the video-standard switch'
 );
 assert(
+  /class="monitor-standard-key"[^>]*data-video-standard-toggle/.test(html),
+  'the monitor badge must expose the video-standard switch in other themes'
+);
+assert(
   /\.trinitron-console\s*\{[^}]*display:\s*grid;/s.test(sonyCss),
   'the Sony theme must enable the monitor control fascia'
 );
 assert(
   /\.trinitron-mark\s*\{[^}]*display:\s*flex;/s.test(sonyCss),
   'the Sony theme must enable the Trinitron mark'
+);
+assert(
+  /html\[data-theme="sonyhb-f1xd"\] \.screen-badge\s*\{[^}]*display:\s*none;/s.test(sonyCss),
+  'the Sony theme must replace the generic monitor controls with its fascia'
 );
 assert(
   /class="trinitron-sony"[^>]*>THONY<\/strong>/.test(html),

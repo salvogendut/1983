@@ -60,11 +60,13 @@ FIRMWARE_ASSETS = \
 	../ROMS/BertSCSI-v1-D0h-D7h.ROM \
 	../ROMS/BertSCSI-v2-30h-37h.ROM
 
-all: $(DIST_DIR)/index.html $(addprefix $(DIST_DIR)/,$(STYLE_ASSETS)) $(DIST_DIR)/app.js \
+RUNTIME_ASSETS = $(addprefix $(DIST_DIR)/,$(STYLE_ASSETS)) $(DIST_DIR)/app.js \
 	$(DIST_DIR)/audio-scheduler.js $(DIST_DIR)/gamepad.js $(DIST_DIR)/hardware-ui.js \
 	$(DIST_DIR)/media-url.js $(DIST_DIR)/unapi-relay-protocol.js \
 	$(DIST_DIR)/unapi-bridge.js $(DIST_DIR)/nextor-license.txt \
 	$(DIST_DIR)/brand-1983.png $(WASM_ASSETS)
+
+all: $(DIST_DIR)/index.html $(RUNTIME_ASSETS)
 
 test: test-audio-scheduler test-gamepad test-hardware-ui test-media-url test-theme \
 	test-ui-contract test-unapi
@@ -140,8 +142,9 @@ $(BUILD_DIR)/unapinet_wasm.o: unapinet_wasm.c unapinet_web.h | $(BUILD_DIR)
 $(BUILD_DIR)/unapinet_web.o: unapinet_web.c unapinet_web.h | $(BUILD_DIR)
 	$(EMCC) $(CFLAGS) -c unapinet_web.c -o $@
 
-$(DIST_DIR)/index.html: index.html | $(DIST_DIR)
-	cp $< $@
+$(DIST_DIR)/index.html: index.html $(RUNTIME_ASSETS) | $(DIST_DIR)
+	asset_revision=$$(sha256sum $(RUNTIME_ASSETS) | sha256sum | cut -c1-16); \
+	    sed "s/@ASSET_REV@/$$asset_revision/g" $< > $@
 
 $(DIST_DIR)/gamepad.js: gamepad.js | $(DIST_DIR)
 	cp $< $@
