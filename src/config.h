@@ -73,6 +73,7 @@ typedef struct {
 
     InputPort     main_input;
     JoyPortDevice joy_port_device[2];
+    bool          joystick_hidapi;
 
     bool extra_hardware;
     bool second_drive;

@@ -201,6 +201,7 @@ void config_defaults(Config *config) {
     config->main_input = INPUT_PORT_A;
     config->joy_port_device[0] = JOY_PORT_JOYSTICK;
     config->joy_port_device[1] = JOY_PORT_JOYSTICK;
+    config->joystick_hidapi = false;
     config->notifications = NOTIFY_MODE_SCREEN;
     config->rtc_persistence = true;
     config->floppy_image_mode = FLOPPY_IMAGE_READ_ONLY;
@@ -417,6 +418,9 @@ void config_load(Config *config, const char *path) {
             config->joy_port_device[1] =
                 parse_joy_port_device(
                     value, config->joy_port_device[1]);
+        else if (strcmp(key, "joystick_hidapi") == 0)
+            config->joystick_hidapi =
+                parse_bool(value, config->joystick_hidapi);
         else if (strcmp(key, "extra_hardware") == 0)
             config->extra_hardware =
                 parse_bool(value, config->extra_hardware);
@@ -655,9 +659,11 @@ int config_save(const Config *config) {
     fprintf(file, "joy_port_a = %s\n",
             config->joy_port_device[0] == JOY_PORT_MOUSE
             ? "mouse" : "joystick");
-    fprintf(file, "joy_port_b = %s\n\n",
+    fprintf(file, "joy_port_b = %s\n",
             config->joy_port_device[1] == JOY_PORT_MOUSE
             ? "mouse" : "joystick");
+    fprintf(file, "joystick_hidapi = %s\n\n",
+            bool_name(config->joystick_hidapi));
     fprintf(file, "[media]\n");
     fprintf(file, "cartridge1 = %s\n", config->cartridge_path[0]);
     fprintf(file, "cartridge1_mapper = %s\n",
