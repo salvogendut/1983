@@ -64,6 +64,7 @@ int main(void) {
     assert(config.main_input == INPUT_PORT_A);
     assert(config.joy_port_device[0] == JOY_PORT_JOYSTICK);
     assert(config.joy_port_device[1] == JOY_PORT_JOYSTICK);
+    assert(!config.joystick_hidapi);
     assert(!config.extra_hardware);
     assert(config.rtc_persistence);
     assert(!config.cassette_audible_monitor);
@@ -120,6 +121,7 @@ int main(void) {
     config.cartridge_mapper[1] = MSX_CART_MAPPER_ASCII8;
     config.main_input = INPUT_PORT_B;
     config.joy_port_device[0] = JOY_PORT_MOUSE;
+    config.joystick_hidapi = true;
     config.extra_hardware = true;
     config.sunrise_ide = true;
     snprintf(config.sunrise_rom_path,
@@ -257,6 +259,7 @@ int main(void) {
     assert(!loaded.sd_mapper_ram);
     assert(loaded.sd_mapper_alternate_driver);
     assert(loaded.tinker);
+    assert(loaded.joystick_hidapi);
     assert(loaded.cassette_audible_monitor);
     assert(loaded.cassette_visual_monitor);
     assert(loaded.gif_width == 360);

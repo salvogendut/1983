@@ -107,6 +107,7 @@ enum {
     ADVANCED_CASSETTE_VISUAL,
     ADVANCED_NOTIFICATIONS,
     ADVANCED_DEBUG,
+    ADVANCED_JOYSTICK_HIDAPI,
     ADVANCED_VERSION,
     ADVANCED_ROWS
 };
@@ -1113,6 +1114,11 @@ static void item_text(const Overlay *overlay, int row,
                     snprintf(label, label_size, "Debug overlay");
                     snprintf(value, value_size, "%s",
                              toggle_name(config->debug));
+                    break;
+                case ADVANCED_JOYSTICK_HIDAPI:
+                    snprintf(label, label_size, "Joystick HIDAPI");
+                    snprintf(value, value_size, "%s [restart to apply]",
+                             toggle_name(config->joystick_hidapi));
                     break;
                 case ADVANCED_VERSION:
                     snprintf(label, label_size, "Version");
@@ -4679,6 +4685,13 @@ static void activate_item(Overlay *overlay) {
                     break;
                 case ADVANCED_DEBUG:
                     config->debug = !config->debug;
+                    break;
+                case ADVANCED_JOYSTICK_HIDAPI:
+                    config->joystick_hidapi =
+                        !config->joystick_hidapi;
+                    notify_post("Joystick HIDAPI %s after restart",
+                                config->joystick_hidapi
+                                ? "enabled" : "disabled");
                     break;
                 case ADVANCED_VERSION:
                     return;

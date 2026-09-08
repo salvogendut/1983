@@ -86,6 +86,9 @@ int display_init(Display *display, const Config *config,
     display->crt_scanlines =
         clamp_int(config->crt_scanlines, 0, 95);
 
+    SDL_SetHintWithPriority(SDL_HINT_JOYSTICK_HIDAPI,
+                            config->joystick_hidapi ? "1" : "0",
+                            SDL_HINT_NORMAL);
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
         fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
         return -1;
