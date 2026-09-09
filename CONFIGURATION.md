@@ -28,6 +28,7 @@ entry adds these keys alongside its disk ROM:
 [model my-floppy-msx2]
 name = My floppy MSX2
 hardware = msx2
+default_ram_kb = 256
 bios = ROMS/MSX2.ROM
 subrom = ROMS/MSX2EXT.ROM
 disk_rom = ROMS/my-disk.rom
@@ -35,6 +36,11 @@ floppy_controller = philips-wd2793
 floppy_primary_slot = 3
 floppy_secondary_slot = 3
 ```
+
+`default_ram_kb` sets the RAM size selected when the model is chosen; leave it
+blank to inherit the hardware profile default (128 KiB for MSX2, 512 KiB for
+the Omega). It accepts any size the hardware supports and is editable in the
+machine model editor.
 
 An Omega-style model can replace all four individual firmware paths with one
 exact 512 KiB EEPROM image. Use `hardware = omega-msx2` to enable the Omega

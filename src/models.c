@@ -199,6 +199,7 @@ void model_catalog_defaults(ModelCatalog *catalog) {
     add_default(catalog, "omega-msx2", "Omega MSX2",
                 MSX_MODEL_OMEGA_MSX2);
     omega = &catalog->entries[catalog->count - 1];
+    omega->default_ram_kb = 512;
     bundled_rom_path(omega->unified_rom_path,
                      sizeof(omega->unified_rom_path),
                      "rainbios_omega.rom");
@@ -346,6 +347,13 @@ static void set_definition_value(ModelDefinition *definition,
     } else if (strcasecmp(key, "hardware") == 0) {
         if (msx_model_from_name(value, &hardware))
             definition->hardware = hardware;
+    } else if (strcasecmp(key, "default_ram_kb") == 0) {
+        char *end;
+        long ram_kb = strtol(value, &end, 10);
+
+        definition->default_ram_kb =
+            (value[0] && *end == '\0' && ram_kb >= 0 && ram_kb <= 4096)
+            ? (int)ram_kb : 0;
     } else if (strcasecmp(key, "unified_rom") == 0) {
         resolve_path(definition->unified_rom_path,
                      sizeof(definition->unified_rom_path), directory, value);
@@ -566,6 +574,13 @@ bool model_definition_validate(const ModelCatalog *catalog,
     if (definition->unified_rom_bank > 1)
         return validation_error(error, error_size,
                                 "Unified ROM bank must be 0 or 1");
+    if (definition->default_ram_kb < 0 ||
+        (definition->default_ram_kb > 0 &&
+         msx_normalize_ram_kb(definition->hardware,
+                              definition->default_ram_kb) !=
+             definition->default_ram_kb))
+        return validation_error(error, error_size,
+                                "Default RAM is not supported by this hardware");
     if (definition->unified_rom_path[0] &&
         !msx_profile(definition->hardware)->expanded_slots)
         return validation_error(error, error_size,
@@ -678,6 +693,7 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
         char unified_rom[PATH_MAX];
         char floppy_primary[16] = "";
         char floppy_secondary[16] = "";
+        char default_ram[16] = "";
 
         if (!model_definition_validate(
                 catalog, definition, i, false, NULL, 0)) {
@@ -692,6 +708,9 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
         save_path(definition->subrom_path, subrom, sizeof(subrom));
         save_path(definition->disk_rom_path,
                   disk_rom, sizeof(disk_rom));
+        if (definition->default_ram_kb > 0)
+            snprintf(default_ram, sizeof(default_ram), "%d",
+                     definition->default_ram_kb);
         if (definition->floppy.controller !=
                 MSX_FLOPPY_CONTROLLER_NONE) {
             snprintf(floppy_primary, sizeof(floppy_primary), "%d",
@@ -707,6 +726,7 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
                 "[model %s]\n"
                 "name = %s\n"
                 "hardware = %s\n"
+                "default_ram_kb = %s\n"
                 "unified_rom = %s\n"
                 "unified_rom_bank = %u\n"
                 "bios = %s\n"
@@ -718,7 +738,7 @@ int model_catalog_save(const ModelCatalog *catalog, const char *path) {
                 "floppy_secondary_slot = %s\n\n",
                 definition->id, definition->name,
                 msx_model_config_name(definition->hardware),
-                unified_rom, definition->unified_rom_bank,
+                default_ram, unified_rom, definition->unified_rom_bank,
                 bios, logo, subrom, disk_rom,
                 msx_floppy_controller_config_name(
                     definition->floppy.controller),

@@ -944,6 +944,11 @@ int main(void) {
     assert(overlay.model_edit.hardware == MSX_MODEL_GENERIC_MSX2);
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.model_edit_field == 3);
+    assert(overlay.model_edit.default_ram_kb == 0);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.model_edit.default_ram_kb == 256);
+    send_key(&overlay, SDLK_DOWN);
+    assert(overlay.model_edit_field == 4);
     send_key(&overlay, SDLK_RIGHT);
     assert(overlay.model_edit.floppy.controller ==
            MSX_FLOPPY_CONTROLLER_PHILIPS_WD2793);

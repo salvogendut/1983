@@ -24,6 +24,7 @@ int main(void) {
     assert(model);
     assert(model == &catalog.entries[0]);
     assert(model->hardware == MSX_MODEL_OMEGA_MSX2);
+    assert(model->default_ram_kb == 512);
     assert(strstr(model->unified_rom_path,
                   "ROMS/rainbios_omega.rom"));
     assert(model->unified_rom_bank == 0);
@@ -65,6 +66,7 @@ int main(void) {
           "[model custom-msx2]\n"
           "name = My custom MSX2\n"
           "hardware = msx2\n"
+          "default_ram_kb = 256\n"
           "bios = /firmware/msx2.rom\n"
           "subrom = firmware/sub.rom\n"
           "disk_rom = firmware/disk.rom\n"
@@ -117,6 +119,7 @@ int main(void) {
     model = model_catalog_find(&catalog, "custom-msx2");
     assert(model);
     assert(model->hardware == MSX_MODEL_GENERIC_MSX2);
+    assert(model->default_ram_kb == 256);
     assert(strcmp(model->bios_path, "/firmware/msx2.rom") == 0);
     assert(strcmp(model->subrom_path,
                   "diagnostics/firmware/sub.rom") == 0);
@@ -280,6 +283,19 @@ int main(void) {
         error, sizeof(error)));
     assert(strstr(error, "requires a floppy controller"));
 
+    edited.disk_rom_path[0] = '\0';
+    edited.hardware = MSX_MODEL_GENERIC_MSX1;
+    edited.default_ram_kb = 100;
+    assert(!model_definition_validate(
+        &catalog, &edited, (size_t)-1, false,
+        error, sizeof(error)));
+    assert(strstr(error, "Default RAM"));
+    edited.default_ram_kb = 64;
+    assert(model_definition_validate(
+        &catalog, &edited, (size_t)-1, false,
+        error, sizeof(error)));
+    edited.default_ram_kb = 0;
+
     assert(msx_floppy_controller_from_name(
         "Philips", &edited.floppy.controller));
     assert(edited.floppy.controller ==
@@ -295,6 +311,9 @@ int main(void) {
     assert(model);
     assert(strstr(model->bios_path,
                   "/diagnostics/firmware/main.rom"));
+    model = model_catalog_find(&saved, "custom-msx2");
+    assert(model);
+    assert(model->default_ram_kb == 256);
 
     assert(remove(firmware_path) == 0);
     assert(remove(unified_path) == 0);
