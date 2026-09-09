@@ -1003,26 +1003,21 @@ static int z80_step_impl(Z80 *cpu, Z80Bus *bus) {
         case 0xF3: cpu->iff1=cpu->iff2=false; return 4;
         case 0xFB: cpu->iff1=cpu->iff2=true; cpu->ei_delay=true; return 4;
 
-        /* IN / OUT — split-cycle accounting via Z80Bus::tick when available.
-         * konCePCja runs the pre-IO cycles through z80_wait_states BEFORE
-         * the actual IO operation completes (z80.cpp:1357/1479), then the
-         * remaining cycles tick after. We mirror that by tick'ing N cycles
-         * pre-IO (Ia=12 / Oa=12 minus the trailing 0/4 cycles); the
-         * post-IO remainder is processed by the machine scheduler.
-         * NULL tick = a single instruction-sized chunk. */
+        /* Immediate IN/OUT: 4 opcode-fetch + 3 operand-fetch + 4 I/O
+         * T-states. Put both callbacks at the I/O strobe (4+3+1), with
+         * the final three T-states left to the machine scheduler.
+         * Reading at instruction start while OUT pre-ticks eight cycles
+         * incorrectly shortens OUT/EI/RET/IN from 25 to 17 T-states and
+         * can sample the VDP before its read-ahead buffer is ready.
+         * Normal MSX execution supplies tick; NULL keeps chunked execution. */
         case 0xDB: {
             u8 n = FETCH8();
-            /* IN A,(n) is 12 cycles total. Pre-ticking 12 cycles before
-             * the IN regressed sweep to 3/13, so kept as single-chunk. */
+            if (bus->tick) bus->tick(bus->ctx, 8);
             cpu->a = IN((cpu->a<<8)|n);
             return 11;
         }
         case 0xD3: {
             u8 n = FETCH8();
-            /* konCePCja split for OUT (n),A is Oa=8 pre-IO + Oa_=4 post-IO
-             * (z80.cpp:1479). The optional legacy bus hook can pre-tick
-             * eight cycles before the write; normal MSX execution leaves
-             * the hook disabled and uses the standard 11-cycle total. */
             if (bus->tick) bus->tick(bus->ctx, 8);
             OUT((cpu->a<<8)|n, cpu->a);
             return 11;

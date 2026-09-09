@@ -1,6 +1,7 @@
 /1983
 /1983-*.tar.gz
 /test-msx
+/test-z80-io
 /test-kbd
 /test-paste
 /test-vdp

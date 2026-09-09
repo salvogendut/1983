@@ -104,7 +104,8 @@ check_PROGRAMS = test-cartridge$(EXEEXT) test-cassette$(EXEEXT) \
 	test-overlay$(EXEEXT) test-vdp$(EXEEXT) test-v9990$(EXEEXT) \
 	test-psg$(EXEEXT) test-scc$(EXEEXT) test-rtc$(EXEEXT) \
 	test-gifcap$(EXEEXT) test-rs232$(EXEEXT) \
-	test-rs232dev$(EXEEXT) test-serial$(EXEEXT)
+	test-rs232dev$(EXEEXT) test-serial$(EXEEXT) \
+	test-z80-io$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -445,6 +446,13 @@ test_wd2793_OBJECTS = $(am_test_wd2793_OBJECTS)
 test_wd2793_LDADD = $(LDADD)
 test_wd2793_LINK = $(CCLD) $(test_wd2793_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_test_z80_io_OBJECTS =  \
+	diagnostics/test_z80_io-test_z80_io.$(OBJEXT) \
+	src/test_z80_io-z80.$(OBJEXT)
+test_z80_io_OBJECTS = $(am_test_z80_io_OBJECTS)
+test_z80_io_LDADD = $(LDADD)
+test_z80_io_LINK = $(CCLD) $(test_z80_io_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 SCRIPTS = $(dist_noinst_SCRIPTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -489,6 +497,7 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	diagnostics/$(DEPDIR)/test_v9990-test_v9990.Po \
 	diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po \
 	diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po \
+	diagnostics/$(DEPDIR)/test_z80_io-test_z80_io.Po \
 	src/$(DEPDIR)/1983-ata.Po src/$(DEPDIR)/1983-audio.Po \
 	src/$(DEPDIR)/1983-cartridge.Po src/$(DEPDIR)/1983-cassette.Po \
 	src/$(DEPDIR)/1983-config.Po src/$(DEPDIR)/1983-display.Po \
@@ -663,7 +672,8 @@ am__depfiles_remade = diagnostics/$(DEPDIR)/test_ata-test_ata.Po \
 	src/$(DEPDIR)/test_v9990-v9990.Po \
 	src/$(DEPDIR)/test_vdp-vdp.Po \
 	src/$(DEPDIR)/test_wd2793-floppy.Po \
-	src/$(DEPDIR)/test_wd2793-wd2793.Po
+	src/$(DEPDIR)/test_wd2793-wd2793.Po \
+	src/$(DEPDIR)/test_z80_io-z80.Po
 am__mv = mv -f
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -695,7 +705,7 @@ SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_serial_SOURCES) $(test_sunrise_SOURCES) \
 	$(test_tc8566_SOURCES) $(test_unapinet_SOURCES) \
 	$(test_v9990_SOURCES) $(test_vdp_SOURCES) \
-	$(test_wd2793_SOURCES)
+	$(test_wd2793_SOURCES) $(test_z80_io_SOURCES)
 DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_cartridge_SOURCES) $(test_cassette_SOURCES) \
 	$(test_config_SOURCES) $(test_floppy_SOURCES) \
@@ -710,7 +720,7 @@ DIST_SOURCES = $(1983_SOURCES) $(test_ata_SOURCES) \
 	$(test_serial_SOURCES) $(test_sunrise_SOURCES) \
 	$(test_tc8566_SOURCES) $(test_unapinet_SOURCES) \
 	$(test_v9990_SOURCES) $(test_vdp_SOURCES) \
-	$(test_wd2793_SOURCES)
+	$(test_wd2793_SOURCES) $(test_z80_io_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -1180,6 +1190,9 @@ noinst_HEADERS = \
 1983_DEPENDENCIES = $(WIN_RC_OBJ)
 CLEANFILES = icons/1983-rc.o
 TESTS = $(check_PROGRAMS) diagnostics/test-cli.sh
+test_z80_io_SOURCES = diagnostics/test_z80_io.c src/z80.c
+test_z80_io_CPPFLAGS = -I$(top_srcdir)/src
+test_z80_io_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
 test_cartridge_SOURCES = diagnostics/test_cartridge.c src/cartridge.c src/scc.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
 test_cartridge_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
@@ -2028,6 +2041,15 @@ src/test_wd2793-wd2793.$(OBJEXT): src/$(am__dirstamp) \
 test-wd2793$(EXEEXT): $(test_wd2793_OBJECTS) $(test_wd2793_DEPENDENCIES) $(EXTRA_test_wd2793_DEPENDENCIES) 
 	@rm -f test-wd2793$(EXEEXT)
 	$(AM_V_CCLD)$(test_wd2793_LINK) $(test_wd2793_OBJECTS) $(test_wd2793_LDADD) $(LIBS)
+diagnostics/test_z80_io-test_z80_io.$(OBJEXT):  \
+	diagnostics/$(am__dirstamp) \
+	diagnostics/$(DEPDIR)/$(am__dirstamp)
+src/test_z80_io-z80.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+test-z80-io$(EXEEXT): $(test_z80_io_OBJECTS) $(test_z80_io_DEPENDENCIES) $(EXTRA_test_z80_io_DEPENDENCIES)
+	@rm -f test-z80-io$(EXEEXT)
+	$(AM_V_CCLD)$(test_z80_io_LINK) $(test_z80_io_OBJECTS) $(test_z80_io_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -2065,6 +2087,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_v9990-test_v9990.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@diagnostics/$(DEPDIR)/test_z80_io-test_z80_io.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-ata.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-audio.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/1983-cartridge.Po@am__quote@ # am--include-marker
@@ -2268,6 +2291,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_vdp-vdp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_wd2793-floppy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_wd2793-wd2793.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/test_z80_io-z80.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -5524,6 +5548,34 @@ src/test_wd2793-wd2793.obj: src/wd2793.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/wd2793.c' object='src/test_wd2793-wd2793.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_wd2793_CPPFLAGS) $(CPPFLAGS) $(test_wd2793_CFLAGS) $(CFLAGS) -c -o src/test_wd2793-wd2793.obj `if test -f 'src/wd2793.c'; then $(CYGPATH_W) 'src/wd2793.c'; else $(CYGPATH_W) '$(srcdir)/src/wd2793.c'; fi`
+
+diagnostics/test_z80_io-test_z80_io.o: diagnostics/test_z80_io.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_z80_io_CPPFLAGS) $(CPPFLAGS) $(test_z80_io_CFLAGS) $(CFLAGS) -MT diagnostics/test_z80_io-test_z80_io.o -MD -MP -MF diagnostics/$(DEPDIR)/test_z80_io-test_z80_io.Tpo -c -o diagnostics/test_z80_io-test_z80_io.o `test -f 'diagnostics/test_z80_io.c' || echo '$(srcdir)/'`diagnostics/test_z80_io.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_z80_io-test_z80_io.Tpo diagnostics/$(DEPDIR)/test_z80_io-test_z80_io.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_z80_io.c' object='diagnostics/test_z80_io-test_z80_io.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_z80_io_CPPFLAGS) $(CPPFLAGS) $(test_z80_io_CFLAGS) $(CFLAGS) -c -o diagnostics/test_z80_io-test_z80_io.o `test -f 'diagnostics/test_z80_io.c' || echo '$(srcdir)/'`diagnostics/test_z80_io.c
+
+diagnostics/test_z80_io-test_z80_io.obj: diagnostics/test_z80_io.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_z80_io_CPPFLAGS) $(CPPFLAGS) $(test_z80_io_CFLAGS) $(CFLAGS) -MT diagnostics/test_z80_io-test_z80_io.obj -MD -MP -MF diagnostics/$(DEPDIR)/test_z80_io-test_z80_io.Tpo -c -o diagnostics/test_z80_io-test_z80_io.obj `if test -f 'diagnostics/test_z80_io.c'; then $(CYGPATH_W) 'diagnostics/test_z80_io.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_z80_io.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) diagnostics/$(DEPDIR)/test_z80_io-test_z80_io.Tpo diagnostics/$(DEPDIR)/test_z80_io-test_z80_io.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='diagnostics/test_z80_io.c' object='diagnostics/test_z80_io-test_z80_io.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_z80_io_CPPFLAGS) $(CPPFLAGS) $(test_z80_io_CFLAGS) $(CFLAGS) -c -o diagnostics/test_z80_io-test_z80_io.obj `if test -f 'diagnostics/test_z80_io.c'; then $(CYGPATH_W) 'diagnostics/test_z80_io.c'; else $(CYGPATH_W) '$(srcdir)/diagnostics/test_z80_io.c'; fi`
+
+src/test_z80_io-z80.o: src/z80.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_z80_io_CPPFLAGS) $(CPPFLAGS) $(test_z80_io_CFLAGS) $(CFLAGS) -MT src/test_z80_io-z80.o -MD -MP -MF src/$(DEPDIR)/test_z80_io-z80.Tpo -c -o src/test_z80_io-z80.o `test -f 'src/z80.c' || echo '$(srcdir)/'`src/z80.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_z80_io-z80.Tpo src/$(DEPDIR)/test_z80_io-z80.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/z80.c' object='src/test_z80_io-z80.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_z80_io_CPPFLAGS) $(CPPFLAGS) $(test_z80_io_CFLAGS) $(CFLAGS) -c -o src/test_z80_io-z80.o `test -f 'src/z80.c' || echo '$(srcdir)/'`src/z80.c
+
+src/test_z80_io-z80.obj: src/z80.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_z80_io_CPPFLAGS) $(CPPFLAGS) $(test_z80_io_CFLAGS) $(CFLAGS) -MT src/test_z80_io-z80.obj -MD -MP -MF src/$(DEPDIR)/test_z80_io-z80.Tpo -c -o src/test_z80_io-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/test_z80_io-z80.Tpo src/$(DEPDIR)/test_z80_io-z80.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/z80.c' object='src/test_z80_io-z80.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_z80_io_CPPFLAGS) $(CPPFLAGS) $(test_z80_io_CFLAGS) $(CFLAGS) -c -o src/test_z80_io-z80.obj `if test -f 'src/z80.c'; then $(CYGPATH_W) 'src/z80.c'; else $(CYGPATH_W) '$(srcdir)/src/z80.c'; fi`
 install-dist_cbiosDATA: $(dist_cbios_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(dist_cbios_DATA)'; test -n "$(cbiosdir)" || list=; \
@@ -6177,6 +6229,13 @@ test-serial.log: test-serial$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-z80-io.log: test-z80-io$(EXEEXT)
+	@p='test-z80-io$(EXEEXT)'; \
+	b='test-z80-io'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 diagnostics/test-cli.sh.log: diagnostics/test-cli.sh
 	@p='diagnostics/test-cli.sh'; \
 	b='diagnostics/test-cli.sh'; \
@@ -6459,6 +6518,7 @@ distclean: distclean-am
 	-rm -f diagnostics/$(DEPDIR)/test_v9990-test_v9990.Po
 	-rm -f diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po
 	-rm -f diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po
+	-rm -f diagnostics/$(DEPDIR)/test_z80_io-test_z80_io.Po
 	-rm -f src/$(DEPDIR)/1983-ata.Po
 	-rm -f src/$(DEPDIR)/1983-audio.Po
 	-rm -f src/$(DEPDIR)/1983-cartridge.Po
@@ -6662,6 +6722,7 @@ distclean: distclean-am
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-floppy.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-wd2793.Po
+	-rm -f src/$(DEPDIR)/test_z80_io-z80.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -6742,6 +6803,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f diagnostics/$(DEPDIR)/test_v9990-test_v9990.Po
 	-rm -f diagnostics/$(DEPDIR)/test_vdp-test_vdp.Po
 	-rm -f diagnostics/$(DEPDIR)/test_wd2793-test_wd2793.Po
+	-rm -f diagnostics/$(DEPDIR)/test_z80_io-test_z80_io.Po
 	-rm -f src/$(DEPDIR)/1983-ata.Po
 	-rm -f src/$(DEPDIR)/1983-audio.Po
 	-rm -f src/$(DEPDIR)/1983-cartridge.Po
@@ -6945,6 +7007,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f src/$(DEPDIR)/test_vdp-vdp.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-floppy.Po
 	-rm -f src/$(DEPDIR)/test_wd2793-wd2793.Po
+	-rm -f src/$(DEPDIR)/test_z80_io-z80.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

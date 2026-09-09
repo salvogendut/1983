@@ -97,7 +97,12 @@ icons/1983-rc.o: $(srcdir)/icons/1983.rc $(srcdir)/icons/1983.ico
 CLEANFILES = icons/1983-rc.o
 
 check_PROGRAMS = test-cartridge test-cassette test-ata test-floppy test-wd2793 test-tc8566 test-sunrise test-scsi test-sdcard test-sd-mapper test-megaflash test-unapinet test-config test-models test-msx test-gamepad test-kbd test-paste test-overlay test-vdp test-v9990 test-psg test-scc test-rtc test-gifcap test-rs232 test-rs232dev test-serial
+check_PROGRAMS += test-z80-io
 TESTS = $(check_PROGRAMS) diagnostics/test-cli.sh
+test_z80_io_SOURCES = diagnostics/test_z80_io.c src/z80.c
+test_z80_io_CPPFLAGS = -I$(top_srcdir)/src
+test_z80_io_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic
+
 test_cartridge_SOURCES = diagnostics/test_cartridge.c src/cartridge.c src/scc.c
 test_cartridge_CPPFLAGS = -I$(top_srcdir)/src
 test_cartridge_CFLAGS = $(AM_CFLAGS) -Wall -Wextra -Wpedantic

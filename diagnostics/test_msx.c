@@ -7,6 +7,76 @@
 
 static u64 vdp_frame_hash(const MsxVdp *vdp);
 
+/* A tiny original fixture for OUT/EI/RET/IN, the boundary exposed by
+ * RainBIOS #170. No external BIOS, extra delay, or read retry is needed. */
+static void test_first_vram_read_after_set_address(void) {
+    MsxMachine *msx = malloc(sizeof(*msx));
+    u8 bios[MSX_BIOS_SIZE] = {0};
+    const u8 program[] = {
+        0xd3, 0x99,             /* OUT (99),A: second read-address byte */
+        0xfb,                   /* EI */
+        0xc9,                   /* RET to 0004 */
+        0xdb, 0x98,             /* IN A,(98): first/only VRAM read */
+        0x32, 0x00, 0xc0,       /* LD (C000),A */
+        0x76,                   /* HALT */
+    };
+    assert(msx);
+    memcpy(bios, program, sizeof(program));
+    for (unsigned pal = 0; pal < 2; ++pal) {
+        unsigned scanlines = pal ? MSX_PAL_SCANLINES : MSX_NTSC_SCANLINES;
+        unsigned frame_cycles = MSX_CPU_HZ / (pal ? 50 : 60);
+        unsigned line_cycles = (frame_cycles + scanlines - 1) / scanlines;
+        msx_init(msx, MSX_MODEL_GENERIC_MSX2,
+                 pal ? MSX_REGION_PAL : MSX_REGION_NTSC, 128);
+        assert(msx_install_bios(msx, bios, sizeof(bios)) == 0);
+        /* Sweep every CPU-cycle offset over one line, well inside the
+         * active text display, including the slowest prefetch slots. */
+        for (unsigned phase = 0; phase < line_cycles; ++phase) {
+            msx_reset(msx);
+            msx_io_write(msx, 0xa8, 0xc0); /* BIOS page 0, RAM page 3 */
+            msx_memory_write(msx, 0xffff, 0x80); /* Slot 3-2 RAM in page 3 */
+            msx_io_write(msx, 0x99, 0x70); /* Display-enabled text mode */
+            msx_io_write(msx, 0x99, 0x81);
+            msx->vdp.vram[0x0a08] = 0x38; /* Fixture's known font byte */
+            msx->vdp.read_buffer = 0;
+            msx->cpu.a = 0x0a;
+            msx->cpu.sp = 0xc100;
+            msx_memory_write(msx, 0xc100, 4);
+            msx_memory_write(msx, 0xc101, 0);
+            assert(msx_memory_read(msx, 0xc100) == 4);
+            vdp_begin_frame(&msx->vdp, frame_cycles, scanlines);
+            msx->bus.tick(msx, (int)(96 * frame_cycles / scanlines + phase));
+            if (msx->vdp.status2 & 0x40) {
+                fprintf(stderr, "fixture outside display: pal=%u phase=%u tick=%u cycle=%u R9=%02X\n",
+                        pal, phase, msx->vdp.vram_frame_tick,
+                        msx->vdp.timing_cycle, msx->vdp.registers[9]);
+                abort();
+            }
+            msx_io_write(msx, 0x99, 0x08); /* First address byte */
+
+            u64 start = msx->cycles;
+            for (unsigned instruction = 0; instruction < 6; ++instruction) {
+                int total = z80_step(&msx->cpu, &msx->bus);
+                assert(msx->bus_ticked_in_step <= total);
+                int remaining = total - msx->bus_ticked_in_step;
+                if (remaining) msx->bus.tick(msx, remaining);
+            }
+            assert(msx->cycles - start == 53);
+            assert(msx->cpu.halted);
+            assert(msx->cpu.pc == sizeof(program));
+            if (msx_memory_read(msx, 0xc000) != 0x38) {
+                fprintf(stderr, "first VRAM read failed: %s phase=%u value=%02X\n",
+                        pal ? "PAL" : "NTSC", phase,
+                        msx_memory_read(msx, 0xc000));
+                abort();
+            }
+        }
+        msx_destroy(msx);
+    }
+    free(msx);
+    puts("first VRAM read: 457 PAL/NTSC active-text scanline phases passed");
+}
+
 static void write_vdp_ppm_if_requested(const MsxVdp *vdp) {
     const char *path = getenv("MSX_CBIOS_PPM");
     FILE *file;
@@ -1913,6 +1983,7 @@ int main(void) {
     assert(!msx_powergraph_v9990_connected(&msx));
     assert(strcmp(msx_video_output_name(&msx), "V9958") == 0);
 
+    test_first_vram_read_after_set_address();
     test_slot_bus_and_cpu();
     test_dual_cartridge_slots_and_mapper_reset();
     test_sunrise_cartridge_slot_bus();
