@@ -23,7 +23,7 @@ int main(void) {
     model = model_catalog_find(&catalog, "omega-msx2");
     assert(model);
     assert(model == &catalog.entries[0]);
-    assert(model->hardware == MSX_MODEL_GENERIC_MSX2);
+    assert(model->hardware == MSX_MODEL_OMEGA_MSX2);
     assert(strstr(model->unified_rom_path,
                   "ROMS/rainbios_omega.rom"));
     assert(model->unified_rom_bank == 0);

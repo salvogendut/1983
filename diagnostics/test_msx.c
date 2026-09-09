@@ -585,6 +585,70 @@ static void test_omega_unified_rom_slot_map(void) {
     assert(remove(rom_path) == 0);
 }
 
+static void test_omega_mapper_full_decode(void) {
+    MsxMachine *msx = malloc(sizeof(*msx));
+
+    assert(msx);
+    msx_init(msx, MSX_MODEL_OMEGA_MSX2, MSX_REGION_PAL, 512);
+    assert(msx->profile->mapper_full_decode);
+    assert(msx_has_memory_mapper(msx));
+    assert(msx_default_ram_kb(MSX_MODEL_OMEGA_MSX2) == 512);
+
+    /* Map primary slot 3 and expanded subslot 2 (mapper RAM) into page 0. */
+    msx_io_write(msx, 0xa8, 0xff);
+    msx_memory_write(msx, 0xffff, 0xaa);
+
+    /* A populated segment (31 < 32) round-trips a write. */
+    msx_io_write(msx, 0xfc, 0x1f);
+    msx_memory_write(msx, 0x0000, 0x5a);
+    assert(msx_memory_read(msx, 0x0000) == 0x5a);
+
+    /* An unpopulated segment (32) reads open bus and ignores writes. */
+    msx_io_write(msx, 0xfc, 0x20);
+    assert(msx_memory_read(msx, 0x0000) == 0xff);
+    msx_memory_write(msx, 0x0000, 0x5a);
+    assert(msx_memory_read(msx, 0x0000) == 0xff);
+
+    /* The mapper port reads back the full 8-bit value, unmasked. */
+    assert(msx_io_read(msx, 0xfc) == 0x20);
+
+    /* Segment 255 is also unmapped, yet still reads back in full. */
+    msx_io_write(msx, 0xfc, 0xff);
+    assert(msx_memory_read(msx, 0x0000) == 0xff);
+    assert(msx_io_read(msx, 0xfc) == 0xff);
+
+    /* Segment 31 still holds its earlier write. */
+    msx_io_write(msx, 0xfc, 0x1f);
+    assert(msx_memory_read(msx, 0x0000) == 0x5a);
+
+    msx_destroy(msx);
+    free(msx);
+}
+
+static void test_omega_mapper_mirrors_on_standard_msx2(void) {
+    MsxMachine *msx = malloc(sizeof(*msx));
+
+    assert(msx);
+    msx_init(msx, MSX_MODEL_GENERIC_MSX2, MSX_REGION_PAL, 512);
+    assert(!msx->profile->mapper_full_decode);
+
+    /* Map primary slot 3 and expanded subslot 2 (mapper RAM) into page 0. */
+    msx_io_write(msx, 0xa8, 0xff);
+    msx_memory_write(msx, 0xffff, 0xaa);
+
+    /* On a standard mapper, segment 32 masks to segment 0 (mirroring), and
+     * the register reads back masked to the installed segment count with the
+     * unused high bits set. */
+    msx_io_write(msx, 0xfc, 0x00);
+    msx_memory_write(msx, 0x0000, 0x5a);
+    msx_io_write(msx, 0xfc, 0x20);
+    assert(msx_memory_read(msx, 0x0000) == 0x5a);
+    assert(msx_io_read(msx, 0xfc) == 0xe0);
+
+    msx_destroy(msx);
+    free(msx);
+}
+
 static void test_omega_unified_boot_if_available(void) {
     const char *rom_path = getenv("MSX_OMEGA_UNIFIED_ROM");
     const char *bank_text = getenv("MSX_OMEGA_UNIFIED_ROM_BANK");
@@ -1992,6 +2056,8 @@ int main(void) {
     test_ascii8_cpu_boot_checkpoint();
     test_atomic_firmware_set_and_eject();
     test_omega_unified_rom_slot_map();
+    test_omega_mapper_full_decode();
+    test_omega_mapper_mirrors_on_standard_msx2();
     test_omega_unified_boot_if_available();
     test_msx2_configured_floppy_slots_and_firmware();
     test_model_change_reset_preserves_floppy();

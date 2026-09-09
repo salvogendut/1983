@@ -3,12 +3,13 @@
 
 [machine]
 model = omega-msx2
-hardware = msx2
+hardware = omega-msx2
 region = pal
 # MSX1 uses its fixed TMS9918-family VDP; MSX2 accepts v9938 or v9958.
 vdp = v9958
-# Supported selections extend through 4096 KiB.
-memory_kb = 128
+# Supported selections extend through 4096 KiB. The Omega mapper decodes all
+# eight segment bits; segments at or beyond the installed RAM read open bus.
+memory_kb = 512
 
 [firmware]
 # Omega EEPROM image: 0 selects its lower 256 KiB JP1 bank, 1 the upper.
