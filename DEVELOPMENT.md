@@ -121,11 +121,13 @@ profiles. A `[model id]` entry supplies `name`, `hardware`, `unified_rom`,
 Paths are resolved relative to that file. An exact 512 KiB Omega unified ROM
 maps one selected 256 KiB JP1 bank into slot 0 and expanded slots 3-0, 3-1,
 and 3-3; it is mutually exclusive with all four individual firmware paths.
-A user can add any number of named models which reuse an implemented hardware
-layout without recompiling 1983. The parser caps the catalogue at 64 valid
-entries, ignores unknown hardware layouts and duplicate IDs, and falls back
-to five built-in entries, including the ready-to-run Omega MSX2 and C-BIOS
-machines, when no valid file is available.
+The Omega layout is selected with `hardware = omega-msx2`, which enables the
+full-decode memory mapper and a 512 KiB RAM default. A user can add any
+number of named models which reuse an implemented hardware layout without
+recompiling 1983. The parser caps the catalogue at 64 valid entries, ignores
+unknown hardware layouts and duplicate IDs, and falls back to five built-in
+entries, including the ready-to-run Omega MSX2 and C-BIOS machines, when no
+valid file is available.
 
 **Advanced > Machine model editor**, behind the existing Tinker gate, writes
 the same format through `model_catalog_save()`. It edits a copy, validates
@@ -166,6 +168,16 @@ The generic MSX1 layout exposes mapper ports when more than 64 KiB is
 selected. SD Mapper V2 and MegaFlashROM RAM remain distinct devices and
 combine their mapper-port output with the internal mapper using the bus's
 wired-AND semantics.
+
+Standard MSX mappers mask the segment register to the installed RAM size, so
+out-of-range segments mirror lower banks. The Omega (`omega-msx2`) instead
+decodes all eight mapper-address bits: the segment register stores and reads
+back the full byte, and a segment at or beyond the populated RAM addresses an
+unpopulated bank that reads open bus (`FFh`) while writes are ignored. The
+`mapper_full_decode` profile flag selects this behavior; it is set only on
+the Omega profile. `mapper_segment_mapped()` in `src/msx.c` gates the four
+mapper RAM read/write sites, while the `FC`-`FF` port handlers bypass the
+mask for both write and readback when the flag is set.
 
 `config_cartridge_slot_owner()` is the shared authority for physical
 cartridge-port reservations. Sunrise IDE, SD Mapper V2, MegaFlashROM SCC+ SD,

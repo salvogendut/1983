@@ -528,7 +528,7 @@ int main(void) {
     assert(overlay.machine_row == 5);
     send_key(&overlay, SDLK_ESCAPE);
     assert(overlay.state == OVERLAY_STATE_MENU);
-    assert(config.model == MSX_MODEL_GENERIC_MSX2);
+    assert(config.model == MSX_MODEL_OMEGA_MSX2);
     assert(!overlay.dirty);
 
     send_key(&overlay, SDLK_DOWN);
@@ -544,9 +544,9 @@ int main(void) {
     send_key(&overlay, SDLK_DOWN);
     assert(overlay.row == 3);
     send_key(&overlay, SDLK_RETURN);
-    assert(config.memory_kb == 256);
-    assert(msx.ram_kb == 256);
-    for (int step = 0; step < 4; ++step)
+    assert(config.memory_kb == 1024);
+    assert(msx.ram_kb == 1024);
+    for (int step = 0; step < 2; ++step)
         send_key(&overlay, SDLK_RETURN);
     assert(config.memory_kb == 4096);
     assert(msx.ram_kb == 4096);

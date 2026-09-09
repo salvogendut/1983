@@ -185,7 +185,7 @@ static void ensure_parent(const char *path) {
 
 void config_defaults(Config *config) {
     memset(config, 0, sizeof(*config));
-    config->model = MSX_MODEL_GENERIC_MSX2;
+    config->model = MSX_MODEL_OMEGA_MSX2;
     snprintf(config->machine_id, sizeof(config->machine_id),
              "omega-msx2");
     config->region = MSX_REGION_PAL;

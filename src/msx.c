@@ -47,6 +47,18 @@ static const MsxProfile profiles[MSX_MODEL_COUNT] = {
         .psg_variant = PSG_VARIANT_YM2149,
         .requires_subrom = true,
     },
+    [MSX_MODEL_OMEGA_MSX2] = {
+        .model = MSX_MODEL_OMEGA_MSX2,
+        .name = "Omega MSX2",
+        .default_ram_kb = 512,
+        .vram_kb = 128,
+        .expanded_slots = true,
+        .memory_mapper = true,
+        .mapper_full_decode = true,
+        .rtc = true,
+        .psg_variant = PSG_VARIANT_YM2149,
+        .requires_subrom = true,
+    },
 };
 
 static const int msx1_ram_sizes[] = {
@@ -413,6 +425,8 @@ const char *msx_model_config_name(MsxModel model) {
             return "msx2";
         case MSX_MODEL_PHILIPS_NMS8250:
             return "nms8250";
+        case MSX_MODEL_OMEGA_MSX2:
+            return "omega-msx2";
         case MSX_MODEL_COUNT:
             break;
     }
@@ -439,12 +453,18 @@ bool msx_model_from_name(const char *name, MsxModel *model) {
         *model = MSX_MODEL_PHILIPS_NMS8250;
         return true;
     }
+    if (strcasecmp(name, "omega") == 0 ||
+        strcasecmp(name, "omega-msx2") == 0) {
+        *model = MSX_MODEL_OMEGA_MSX2;
+        return true;
+    }
     return false;
 }
 
 bool msx_model_is_msx2(MsxModel model) {
     return model == MSX_MODEL_GENERIC_MSX2 ||
-           model == MSX_MODEL_PHILIPS_NMS8250;
+           model == MSX_MODEL_PHILIPS_NMS8250 ||
+           model == MSX_MODEL_OMEGA_MSX2;
 }
 
 const char *msx_floppy_controller_name(MsxFloppyController controller) {
@@ -946,17 +966,34 @@ static size_t mapper_ram_size(const MsxMachine *msx) {
     return size;
 }
 
+static size_t mapper_segment_count(const MsxMachine *msx) {
+    return mapper_ram_size(msx) / 0x4000;
+}
+
 static u8 mapper_segment_mask(const MsxMachine *msx) {
-    size_t segments = mapper_ram_size(msx) / 0x4000;
+    size_t segments = mapper_segment_count(msx);
 
     return segments ? (u8)(segments - 1) : 0;
 }
 
+/*
+ * Standard MSX mappers mask the segment register to the installed RAM size,
+ * so out-of-range segments mirror lower banks. The Omega decodes all eight
+ * mapper-address bits: a segment at or beyond the populated RAM addresses an
+ * unpopulated bank and reads back open bus.
+ */
+static bool mapper_segment_mapped(const MsxMachine *msx, unsigned page) {
+    if (!msx->profile->mapper_full_decode)
+        return true;
+    return msx->mapper_segment[page] < mapper_segment_count(msx);
+}
+
 static size_t mapper_address(const MsxMachine *msx, u16 address) {
     unsigned page = address >> 14;
-    u8 segment = msx->mapper_segment[page] &
-                 mapper_segment_mask(msx);
+    u8 segment = msx->mapper_segment[page];
 
+    if (!msx->profile->mapper_full_decode)
+        segment &= mapper_segment_mask(msx);
     return (size_t)segment * 0x4000 + (address & 0x3fff);
 }
 
@@ -1064,15 +1101,21 @@ u8 msx_memory_read(MsxMachine *msx, u16 address) {
             unsigned secondary;
 
             if (!slot_is_expanded(msx, primary)) {
-                if (msx_has_memory_mapper(msx))
+                if (msx_has_memory_mapper(msx)) {
+                    if (!mapper_segment_mapped(msx, address >> 14))
+                        return 0xff;
                     return msx->ram[mapper_address(msx, address)];
+                }
                 return read_plain_ram(msx, address);
             }
             secondary = selected_subslot(msx, primary, address);
             if (secondary == 0 && msx->subrom_loaded)
                 return msx->subrom[address & 0x3fff];
-            if (secondary == 2 && msx_has_memory_mapper(msx))
+            if (secondary == 2 && msx_has_memory_mapper(msx)) {
+                if (!mapper_segment_mapped(msx, address >> 14))
+                    return 0xff;
                 return msx->ram[mapper_address(msx, address)];
+            }
             break;
         }
         default:
@@ -1125,14 +1168,17 @@ void msx_memory_write(MsxMachine *msx, u16 address, u8 value) {
     if (primary != 3)
         return;
     if (!slot_is_expanded(msx, primary)) {
-        if (msx_has_memory_mapper(msx))
-            msx->ram[mapper_address(msx, address)] = value;
-        else
+        if (msx_has_memory_mapper(msx)) {
+            if (mapper_segment_mapped(msx, address >> 14))
+                msx->ram[mapper_address(msx, address)] = value;
+        } else {
             write_plain_ram(msx, address, value);
+        }
         return;
     }
     secondary = selected_subslot(msx, primary, address);
-    if (secondary == 2 && msx_has_memory_mapper(msx))
+    if (secondary == 2 && msx_has_memory_mapper(msx) &&
+        mapper_segment_mapped(msx, address >> 14))
         msx->ram[mapper_address(msx, address)] = value;
 }
 
@@ -1210,7 +1256,9 @@ u8 msx_io_read(MsxMachine *msx, u16 port) {
             u8 result = 0xff;
 
             if (msx_has_memory_mapper(msx))
-                result &= msx->mapper_segment[low & 3] |
+                result &= msx->profile->mapper_full_decode
+                    ? msx->mapper_segment[low & 3]
+                    : msx->mapper_segment[low & 3] |
                           (u8)~mapper_segment_mask(msx);
             if (msx_sd_mapper_connected(msx))
                 result &= sd_mapper_io_read(
@@ -1349,7 +1397,8 @@ void msx_io_write(MsxMachine *msx, u16 port, u8 value) {
         case 0xff:
             if (msx_has_memory_mapper(msx))
                 msx->mapper_segment[low & 3] =
-                    value & mapper_segment_mask(msx);
+                    msx->profile->mapper_full_decode
+                        ? value : value & mapper_segment_mask(msx);
             if (msx_sd_mapper_connected(msx))
                 sd_mapper_io_write(
                     &msx->sd_mapper, low & 3, value);

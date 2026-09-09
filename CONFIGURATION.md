@@ -37,12 +37,14 @@ floppy_secondary_slot = 3
 ```
 
 An Omega-style model can replace all four individual firmware paths with one
-exact 512 KiB EEPROM image:
+exact 512 KiB EEPROM image. Use `hardware = omega-msx2` to enable the Omega
+full-decode memory mapper (segments at or beyond the installed RAM read open
+bus instead of mirroring) and its 512 KiB RAM default:
 
 ```ini
 [model my-omega]
 name = My Omega MSX2
-hardware = msx2
+hardware = omega-msx2
 unified_rom = ROMS/my-omega-512k.bin
 unified_rom_bank = 0
 bios =

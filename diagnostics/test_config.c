@@ -13,9 +13,9 @@ int main(void) {
 
     config_defaults(&config);
     assert(strcmp(config.machine_id, "omega-msx2") == 0);
-    assert(config.model == MSX_MODEL_GENERIC_MSX2);
+    assert(config.model == MSX_MODEL_OMEGA_MSX2);
     assert(config.vdp_type == MSX_VDP_V9958);
-    assert(config.memory_kb == 128);
+    assert(config.memory_kb == 512);
     assert(!config.unified_rom_path[0]);
     assert(config.unified_rom_bank == 0);
     assert(!config.bios_path[0]);

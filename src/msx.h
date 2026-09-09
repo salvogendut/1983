@@ -66,6 +66,7 @@ typedef enum {
     MSX_MODEL_GENERIC_MSX1 = 0,
     MSX_MODEL_GENERIC_MSX2,
     MSX_MODEL_PHILIPS_NMS8250,
+    MSX_MODEL_OMEGA_MSX2,
     MSX_MODEL_COUNT
 } MsxModel;
 
@@ -100,6 +101,7 @@ typedef struct {
     int        vram_kb;
     bool       expanded_slots;
     bool       memory_mapper;
+    bool       mapper_full_decode;
     bool       rtc;
     PsgVariant psg_variant;
     bool       requires_subrom;

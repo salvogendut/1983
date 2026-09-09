@@ -197,7 +197,7 @@ void model_catalog_defaults(ModelCatalog *catalog) {
     model_catalog_user_path(catalog->edit_path,
                             sizeof(catalog->edit_path));
     add_default(catalog, "omega-msx2", "Omega MSX2",
-                MSX_MODEL_GENERIC_MSX2);
+                MSX_MODEL_OMEGA_MSX2);
     omega = &catalog->entries[catalog->count - 1];
     bundled_rom_path(omega->unified_rom_path,
                      sizeof(omega->unified_rom_path),
