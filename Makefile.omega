@@ -1,0 +1,85 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Local Omega EEPROM recipes. The generated mixed ROMs deliberately remain
+# ignored by Git because they combine the redistributable RainBIOS firmware
+# with firmware supplied by the user.
+#
+# Put the MSXmakers "Omega_cocinando_ROM" directory under ROMS/, or point at
+# an existing copy:
+#
+#   make -f Makefile.omega \
+#       OMEGA_COOKBOOK_DIR=/path/to/Omega_cocinando_ROM
+#
+# The 512 KiB EEPROM contains two JP1-selectable 256 KiB banks. Each bank is
+# four consecutive 64 KiB physical-slot images: slot 0, slot 3-0, slot 3-1,
+# and slot 3-3. A cartridge image beginning at CPU address 4000h therefore
+# starts one 16 KiB page into its selected 64 KiB slot image.
+
+OUTPUT_DIR ?= ROMS
+RAINBIOS_OMEGA ?= ROMS/rainbios_omega.rom
+DIAG_ROM ?= ROMS/diag.rom
+OMEGA_COOKBOOK_DIR ?= $(CURDIR)/ROMS/Omega_cocinando_ROM
+OMEGA_JAPAN_BANK ?= $(OMEGA_COOKBOOK_DIR)/256k/256k_msx2p_jp_disco_fm_xbasic.bin
+
+RAINBIOS_MSXJAPAN_ROM := $(OUTPUT_DIR)/omega-1-rainbios-2-msxjapan.rom
+RAINBIOS_DIAG_ROM := $(OUTPUT_DIR)/omega-1-rainbios-2-diag.rom
+
+ROM_SIZE := 524288
+BANK_SIZE := 262144
+PAGE_SIZE := 16384
+# Upper bank (16 pages), slot 3-1 (8 pages), cartridge address 4000h (1 page).
+DIAG_PAGE := 25
+
+.DELETE_ON_ERROR:
+.PHONY: all mixed-omega-roms check help
+
+all: mixed-omega-roms check
+
+mixed-omega-roms: $(RAINBIOS_MSXJAPAN_ROM) $(RAINBIOS_DIAG_ROM)
+
+$(OUTPUT_DIR):
+	mkdir -p $@
+
+$(RAINBIOS_MSXJAPAN_ROM): $(RAINBIOS_OMEGA) $(OMEGA_JAPAN_BANK) | $(OUTPUT_DIR)
+	@set -eu; \
+	test "$$(wc -c < "$(RAINBIOS_OMEGA)")" -eq $(ROM_SIZE) || { \
+		echo "RainBIOS Omega ROM must be exactly 512 KiB" >&2; exit 1; }; \
+	test "$$(wc -c < "$(OMEGA_JAPAN_BANK)")" -eq $(BANK_SIZE) || { \
+		echo "Japanese Omega bank must be exactly 256 KiB" >&2; exit 1; }; \
+	temporary="$@.tmp"; trap 'rm -f "$$temporary"' EXIT HUP INT TERM; \
+	dd if="$(RAINBIOS_OMEGA)" of="$$temporary" bs=$(BANK_SIZE) count=1 2>/dev/null; \
+	dd if="$(OMEGA_JAPAN_BANK)" of="$$temporary" bs=$(BANK_SIZE) seek=1 conv=notrunc 2>/dev/null; \
+	test "$$(wc -c < "$$temporary")" -eq $(ROM_SIZE); \
+	mv "$$temporary" "$@"; trap - EXIT HUP INT TERM
+
+$(RAINBIOS_DIAG_ROM): $(RAINBIOS_OMEGA) $(DIAG_ROM) | $(OUTPUT_DIR)
+	@set -eu; \
+	test "$$(wc -c < "$(RAINBIOS_OMEGA)")" -eq $(ROM_SIZE) || { \
+		echo "RainBIOS Omega ROM must be exactly 512 KiB" >&2; exit 1; }; \
+	test "$$(wc -c < "$(DIAG_ROM)")" -eq 32768 || { \
+		echo "Diagnostic cartridge ROM must be exactly 32 KiB" >&2; exit 1; }; \
+	temporary="$@.tmp"; trap 'rm -f "$$temporary"' EXIT HUP INT TERM; \
+	cp "$(RAINBIOS_OMEGA)" "$$temporary"; \
+	dd if="$(DIAG_ROM)" of="$$temporary" bs=$(PAGE_SIZE) seek=$(DIAG_PAGE) conv=notrunc 2>/dev/null; \
+	test "$$(wc -c < "$$temporary")" -eq $(ROM_SIZE); \
+	mv "$$temporary" "$@"; trap - EXIT HUP INT TERM
+
+check: mixed-omega-roms
+	@test "$$(wc -c < "$(RAINBIOS_MSXJAPAN_ROM)")" -eq $(ROM_SIZE)
+	@test "$$(wc -c < "$(RAINBIOS_DIAG_ROM)")" -eq $(ROM_SIZE)
+	@cmp -n $(BANK_SIZE) "$(RAINBIOS_OMEGA)" "$(RAINBIOS_MSXJAPAN_ROM)"
+	@cmp -n $(BANK_SIZE) "$(RAINBIOS_OMEGA)" "$(RAINBIOS_DIAG_ROM)"
+	@dd if="$(RAINBIOS_MSXJAPAN_ROM)" bs=$(BANK_SIZE) skip=1 count=1 2>/dev/null | \
+		cmp - "$(OMEGA_JAPAN_BANK)"
+	@dd if="$(RAINBIOS_DIAG_ROM)" bs=$(PAGE_SIZE) skip=$(DIAG_PAGE) count=2 2>/dev/null | \
+		cmp - "$(DIAG_ROM)"
+	@printf '%s\n' "Verified two 512 KiB mixed Omega ROMs in $(OUTPUT_DIR)."
+
+help:
+	@printf '%s\n' \
+		"Build local, untracked mixed Omega EEPROM images:" \
+		"  make -f Makefile.omega OMEGA_COOKBOOK_DIR=/path/to/Omega_cocinando_ROM" \
+		"" \
+		"Outputs:" \
+		"  $(RAINBIOS_MSXJAPAN_ROM)" \
+		"  $(RAINBIOS_DIAG_ROM)"

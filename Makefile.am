@@ -278,6 +278,7 @@ dist_icon512_DATA = icons/512x512/apps/io.github.salvogendut.Emulator1983.png
 
 EXTRA_DIST = \
 	LICENSE \
+	Makefile.omega \
 	README.md \
 	USAGE.md \
 	CONTROLS.md \
