@@ -115,19 +115,21 @@ contain independent external cartridge devices, and slot 3 contains RAM.
 Each cartridge can be linear, ASCII8, ASCII16, Konami, or Konami SCC.
 
 `1983-models.conf` provides the data-driven layer above these hardware
-profiles. A `[model id]` entry supplies `name`, `hardware`, `unified_rom`,
-`unified_rom_bank`, `bios`, `logo`, `subrom`, `disk_rom`,
+profiles. A `[model id]` entry supplies `name`, `hardware`, `default_ram_kb`,
+`unified_rom`, `unified_rom_bank`, `bios`, `logo`, `subrom`, `disk_rom`,
 `floppy_controller`, `floppy_primary_slot`, and `floppy_secondary_slot`.
-Paths are resolved relative to that file. An exact 512 KiB Omega unified ROM
-maps one selected 256 KiB JP1 bank into slot 0 and expanded slots 3-0, 3-1,
-and 3-3; it is mutually exclusive with all four individual firmware paths.
-The Omega layout is selected with `hardware = omega-msx2`, which enables the
-full-decode memory mapper and a 512 KiB RAM default. A user can add any
-number of named models which reuse an implemented hardware layout without
-recompiling 1983. The parser caps the catalogue at 64 valid entries, ignores
-unknown hardware layouts and duplicate IDs, and falls back to five built-in
-entries, including the ready-to-run Omega MSX2 and C-BIOS machines, when no
-valid file is available.
+Paths are resolved relative to that file. `default_ram_kb` (blank to inherit
+the hardware profile default) sets the RAM selected when the model is chosen
+and is editable in the machine model editor. An exact 512 KiB Omega unified
+ROM maps one selected 256 KiB JP1 bank into slot 0 and expanded slots 3-0,
+3-1, and 3-3; it is mutually exclusive with all four individual firmware
+paths. The Omega layout is selected with `hardware = omega-msx2`, which
+enables the full-decode memory mapper and a 512 KiB RAM default. A user can
+add any number of named models which reuse an implemented hardware layout
+without recompiling 1983. The parser caps the catalogue at 64 valid entries,
+ignores unknown hardware layouts and duplicate IDs, and falls back to five
+built-in entries, including the ready-to-run Omega MSX2 and C-BIOS machines,
+when no valid file is available.
 
 **Advanced > Machine model editor**, behind the existing Tinker gate, writes
 the same format through `model_catalog_save()`. It edits a copy, validates

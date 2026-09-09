@@ -959,7 +959,9 @@ int main(int argc, char **argv) {
         config.floppy = definition->floppy;
         snprintf(config.machine_id, sizeof(config.machine_id),
                  "%s", definition->id);
-        config.memory_kb = msx_default_ram_kb(config.model);
+        config.memory_kb = definition->default_ram_kb > 0
+            ? definition->default_ram_kb
+            : msx_default_ram_kb(config.model);
         snprintf(config.unified_rom_path,
                  sizeof(config.unified_rom_path), "%s",
                  definition->unified_rom_path);

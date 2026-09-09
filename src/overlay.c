@@ -21,7 +21,7 @@
 #define OVERLAY_VALUE_X 188
 #define OVERLAY_FIRST_Y 48
 #define OVERLAY_RENDER_SCALE 1.5f
-#define MODEL_EDITOR_FIELDS 12
+#define MODEL_EDITOR_FIELDS 13
 #define MODEL_EDITOR_VISIBLE_ROWS 15
 
 #define OVERLAY_ABOUT_TEXT "1983 MSX/MSX2 emulator (c) 2026 salvogendut"
@@ -116,6 +116,7 @@ enum {
     MODEL_FIELD_ID = 0,
     MODEL_FIELD_NAME,
     MODEL_FIELD_HARDWARE,
+    MODEL_FIELD_DEFAULT_RAM,
     MODEL_FIELD_FLOPPY_CONTROLLER,
     MODEL_FIELD_FLOPPY_PRIMARY_SLOT,
     MODEL_FIELD_FLOPPY_SECONDARY_SLOT,
@@ -2534,7 +2535,9 @@ static bool select_machine(Overlay *overlay, bool preserve_runtime_ram) {
     int target_ram = preserve_runtime_ram &&
                      definition->hardware == config->model
                    ? config->memory_kb
-                   : msx_default_ram_kb(definition->hardware);
+                   : definition->default_ram_kb > 0
+                     ? definition->default_ram_kb
+                     : msx_default_ram_kb(definition->hardware);
     bool rtc_changed;
 
     target_config.model = definition->hardware;
@@ -2806,6 +2809,7 @@ static void normalize_model_edit_floppy(ModelDefinition *definition) {
 
 static bool model_field_is_choice(int field) {
     return field == MODEL_FIELD_HARDWARE ||
+           field == MODEL_FIELD_DEFAULT_RAM ||
            field == MODEL_FIELD_FLOPPY_CONTROLLER ||
            field == MODEL_FIELD_FLOPPY_PRIMARY_SLOT ||
            field == MODEL_FIELD_FLOPPY_SECONDARY_SLOT ||
@@ -2825,6 +2829,15 @@ static void change_model_choice(Overlay *overlay, int direction) {
                 hardware = 0;
             definition->hardware = (MsxModel)hardware;
             normalize_model_edit_floppy(definition);
+            break;
+        }
+        case MODEL_FIELD_DEFAULT_RAM: {
+            int current = definition->default_ram_kb > 0
+                ? definition->default_ram_kb
+                : msx_default_ram_kb(definition->hardware);
+
+            definition->default_ram_kb =
+                msx_next_ram_kb(definition->hardware, current, direction);
             break;
         }
         case MODEL_FIELD_FLOPPY_CONTROLLER: {
@@ -5143,6 +5156,7 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
                         overlay, overlay->model_edit_field);
                     break;
                 case MODEL_FIELD_HARDWARE:
+                case MODEL_FIELD_DEFAULT_RAM:
                 case MODEL_FIELD_FLOPPY_CONTROLLER:
                 case MODEL_FIELD_FLOPPY_PRIMARY_SLOT:
                 case MODEL_FIELD_FLOPPY_SECONDARY_SLOT:
@@ -6050,6 +6064,7 @@ static const char *model_field_name(int field) {
         case MODEL_FIELD_ID:       return "ID";
         case MODEL_FIELD_NAME:     return "Display name";
         case MODEL_FIELD_HARDWARE: return "Hardware";
+        case MODEL_FIELD_DEFAULT_RAM: return "Default RAM";
         case MODEL_FIELD_FLOPPY_CONTROLLER:
             return "FDC controller";
         case MODEL_FIELD_FLOPPY_PRIMARY_SLOT:
@@ -6084,6 +6099,15 @@ static void model_field_value(const Overlay *overlay, int field,
                      msx_model_name(overlay->model_edit.hardware),
                      msx_model_config_name(
                          overlay->model_edit.hardware));
+            break;
+        case MODEL_FIELD_DEFAULT_RAM:
+            if (overlay->model_edit.default_ram_kb > 0)
+                snprintf(value, value_size, "%d KB",
+                         overlay->model_edit.default_ram_kb);
+            else
+                snprintf(value, value_size, "%d KB (default)",
+                         msx_default_ram_kb(
+                             overlay->model_edit.hardware));
             break;
         case MODEL_FIELD_FLOPPY_CONTROLLER:
             snprintf(value, value_size, "%s",
@@ -6232,7 +6256,7 @@ static void render_model_edit(const Overlay *overlay,
 
     for (int field = 0; field < MODEL_EDITOR_FIELDS; ++field) {
         char value[PATH_MAX + 64];
-        float y = 52.0f + (float)field * 25.0f;
+        float y = 52.0f + (float)field * 24.0f;
         bool selected = field == overlay->model_edit_field;
 
         model_field_value(overlay, field, value, sizeof(value));
