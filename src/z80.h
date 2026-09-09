@@ -53,8 +53,11 @@ typedef struct {
     void (*mem_write)(void *ctx, u16 addr, u8 val);
     u8   (*io_read)  (void *ctx, u16 port);
     void (*io_write) (void *ctx, u16 port, u8 val);
-    /* Optional inherited mid-instruction bus hook. 1983 currently leaves
-     * both fields NULL and advances peripherals at machine-frame boundaries. */
+    /* Optional mid-instruction peripheral clock, enabled by the MSX bus.
+     * The callback accumulates cycles in ticked_in_step; z80_step resets
+     * that counter and returns the TOTAL instruction duration. The caller
+     * advances only the unticked remainder. Both fields may be NULL for
+     * consumers which advance peripherals once per complete instruction. */
     void (*tick)    (void *ctx, int cycles);
     int  *ticked_in_step;
     void *ctx;

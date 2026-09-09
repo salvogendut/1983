@@ -520,6 +520,62 @@ openMSX's measured
 [V9938 VRAM timings](https://openmsx.org/vdp-vram-timing/vdp-timing.html)
 and [part II](https://openmsx.org/vdp-vram-timing/vdp-timing-2.html).
 
+## Immediate CPU I/O timing (issue #171)
+
+Immediate `IN A,(n)` and `OUT (n),A` invoke the device at the same I/O strobe,
+eight T-states into the instruction: four for opcode fetch, three for the
+operand, and one to reach the strobe. Each still returns an 11-T-state total.
+The MSX bus advances peripherals before the callback and the frame loop
+accounts only for the remaining three T-states. A consumer without the
+optional tick hook retains instruction-sized clocking.
+
+Previously IN ran its callback at instruction start while OUT pre-ticked
+eight cycles. This reduced the OUT/EI/RET/IN device-access interval from 25
+to 17 T-states. In the unchanged RainBIOS main-CHGMOD probe that sampled a
+V9938 text-mode prefetch two VDP clocks early, returning `00h` even though
+VRAM already contained the expected font byte `38h`. See
+[1983 #171](https://github.com/salvogendut/1983/issues/171) and
+[RainBIOS #170](https://github.com/salvogendut/rainbios/issues/170).
+
+The timing follows the immediate I/O machine cycles and bus diagram in the
+[Zilog Z80 CPU User Manual](https://www.zilog.com/docs/z80/um0080.pdf)
+(instruction pages 295/306 and diagram page 11). As a behavioral cross-check,
+[openMSX's Z80 timing definitions](https://github.com/openMSX/openMSX/blob/master/src/cpu/Z80.hh)
+also place immediate IN and OUT at equal offsets. openMSX additionally models
+the MSX M1 wait; this narrow fix does not add M1 waits, revise ED/block-I/O
+timing, or qualify the optional legacy cycle-table mode. No general CPU
+cycle-accuracy or real-hardware qualification is implied.
+
+Regression coverage, validated 2026-09-09 against a baseline of `5fce06f`:
+
+- `test-z80-io`: 96 cases check equal callback phase, unchanged instruction
+  totals, 16-bit port addressing, data, both all-clear/all-set flags, counter
+  reset, following-NOP accounting, and the null-hook path.
+- `test-msx`: an original ROM-free OUT/EI/RET/IN fixture reads a known byte
+  exactly once, sweeping 228 NTSC and 229 PAL active-text CPU positions.
+  Both the CPU test and the machine first-read test fail with the old CPU;
+  the fixed CPU passes all 457 machine positions.
+- Full `make check`: all 30 programs pass, also with the optional bundled
+  C-BIOS and Omega boot checkpoints enabled.
+- RainBIOS `e28ff2f`: original `test-1983-main-chgmod`,
+  `test-1983-msx2-subrom-services`, and `test-1983-chgmod` pass. The first
+  font read is `38h`; no retry, firmware padding or VDP shortcut is added.
+- GEOBENCH private Screen 6/7 images, updated RainBIOS Omega, read-only
+  Sunrise storage: three Clock/Calculator lifecycle cycles plus 50 short
+  Desk open/cancel cycles per mode pass (243/273 checks). Normal user media
+  and the emulator's bundled ROMs are unchanged.
+
+Local investigation evidence is retained under `.local/evidence/` in the
+issue worktree: `z80-io-before.log`, `msx-before.log`, `check-with-roms.log`,
+`rainbios-probes.log`, `openmsx-controls.log` (independent unchanged-firmware
+controls), and `geobench-mode{6,7}/result.json`. The external firmware and
+GEOBENCH checks remain optional integration evidence, not build dependencies.
+
+```sh
+make check
+MSX_CBIOS_DIR=ROMS MSX_OMEGA_UNIFIED_ROM=ROMS/rainbios_omega.rom make check
+```
+
 ## PSG audio
 
 The machine core contains a host-independent AY-3-8910/YM2149 PSG. Generic
