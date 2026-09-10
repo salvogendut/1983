@@ -3,7 +3,7 @@ set -eu
 
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 rainbios=${1:-"$root/../rainbios"}
-revision=16b7149882c98da0157a6a999c45f0149292c323
+revision=00e6fe99aec1f419ebcfab473c8dc2ebfeccc7b5
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT HUP INT TERM
 
@@ -34,9 +34,9 @@ check_rom() {
     printf '%s  %s\n' "$expected" "$source" | sha256sum -c -
 }
 
-check_rom 242b49aa5b04f50d77b5ba0f561cc81e48ad956e58241b76ff992712b03c4322 \
+check_rom 1b7e7ebfdf691fad72e2409f5615b5a7a05df61bfe80e4b98410a34b5feb68ef \
     "$rainbios/build/rainbios_msx1.rom"
-check_rom 991f994b829c03e09f47183b932c17730f2d6a5b10ff628128a426efe66df937 \
+check_rom 2aa867fa0a66543dcebf0ebe8f6b0b3522384405e6a45ba6a48c65d6ae9dc0d6 \
     "$rainbios/build/rainbios_msx2.rom"
 check_rom 7b06e3e10990d2d815cf8b9a640e689167ab47b0f90df821cb48d0e7158049a0 \
     "$rainbios/build/rainbios_msx2_sub.rom"
@@ -50,7 +50,7 @@ python3 "$root/tools/build-omega-unified-rom.py" \
     "$rainbios/build/rainbios_msx2.rom" \
     "$rainbios/build/rainbios_msx2_sub.rom" \
     "$rainbios/build/rainbios_disk.rom"
-check_rom 0c33ea9d4f5efa9330071c1f240410bd61a4ae19b9db5da410e48049c8c2bd59 \
+check_rom 72931f79ce085f38ea114705f6a8959e3b39c36899e59e41dafa8cf718f41693 \
     "$work/rainbios_omega.rom"
 
 install -m 0644 "$rainbios/build/rainbios_msx1.rom" \
