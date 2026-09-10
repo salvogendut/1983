@@ -13,7 +13,7 @@ profile:
   rainbios_nms8250_disk.rom   Philips WD2793 disk ROM, 16 KiB
 
 They were built from RainBIOS commit
-00e6fe99aec1f419ebcfab473c8dc2ebfeccc7b5:
+c084e6bc1aa371a891045d5e914eb5d17593914d:
 
   https://github.com/salvogendut/rainbios
 
@@ -42,11 +42,11 @@ either emulated JP1 bank boots identically. See:
 
 SHA-256:
 
-  1b7e7ebfdf691fad72e2409f5615b5a7a05df61bfe80e4b98410a34b5feb68ef  rainbios_msx1.rom
-  2aa867fa0a66543dcebf0ebe8f6b0b3522384405e6a45ba6a48c65d6ae9dc0d6  rainbios_msx2.rom
+  f12b676360a3f47494f3598bff9bc7ccd42f3fcd23468e1ce008e8a18a533a89  rainbios_msx1.rom
+  41d5380aca869826f852984bcfc4e33d87bb4308dd484056a0c1fcb0d5bd5ce1  rainbios_msx2.rom
   7b06e3e10990d2d815cf8b9a640e689167ab47b0f90df821cb48d0e7158049a0  rainbios_msx2_sub.rom
   ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_disk.rom
-  72931f79ce085f38ea114705f6a8959e3b39c36899e59e41dafa8cf718f41693  rainbios_omega.rom
+  8b777452a2aa7a2c055e9dec4f33f4c4720acc0c0039352f5286815c23ec4cad  rainbios_omega.rom
   ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_nms8250_disk.rom
 
 Licensing and attribution
@@ -68,12 +68,12 @@ The combined MSX2 main ROM is an aggregate of separately licensed components:
   ZX0 decoder                       ZX0 ecde3a2ae05061fe06469ed46df81a33b7de7d86
                                                                    BSD-3-Clause
   Z80 interpreter core              bbcbasic-z80-msx                Zlib-style
-                                     9eff44008fcf6d2eab915afcfe93b44f8817acb0
+                                     c9ed73ddd228f1dae8528f39ce590511ece7d00d
   MSX platform adapters             same bbcbasic-z80-msx revision  BSD-3-Clause
 
 The embedded companion payload's expected SHA-256 at that source revision is:
 
-  51d818506d32e1e407be1ebda44efd65f9ea6a91d58ee9c4e8af4d9ddecb3bcd
+  5f8d03ea3c9a3ae4b7113ae6d4799fdb1d4800cc4777fd5ffcbac35ad24a5027
 
 The permissive source licenses do not grant permission to use the BBC BASIC
 name. RainBIOS records that the upstream naming permission is not transferable
@@ -208,4 +208,4 @@ otherwise supplies its public-license fallback, without warranty. The full
 legal code is available in the pinned RainBIOS source tree at:
 
   LICENSES/CC0-1.0.txt
-  https://github.com/salvogendut/rainbios/blob/00e6fe99aec1f419ebcfab473c8dc2ebfeccc7b5/LICENSES/CC0-1.0.txt
+  https://github.com/salvogendut/rainbios/blob/c084e6bc1aa371a891045d5e914eb5d17593914d/LICENSES/CC0-1.0.txt
