@@ -6,8 +6,10 @@ const path = require('path');
 const create1983 = require('./dist/1983.js');
 
 async function main() {
+  const output = [];
   const module = await create1983({
     locateFile: file => path.join(__dirname, 'dist', file),
+    print: line => output.push(String(line)),
   });
 
   assert.strictEqual(
@@ -104,6 +106,37 @@ async function main() {
     module.HEAPU32.subarray(pixelStart, pixelStart + pixelCount)
   );
   assert(colors.size > 1, 'Omega RainBIOS must render a non-blank boot display');
+
+  assert.strictEqual(
+    module.ccall(
+      'poc_paste_text', 'number', ['string'], [
+        '10 MODE 8\n' +
+        '20 A%=INKEY(1000)\n' +
+        '30 MODE 0\n' +
+        '40 PRINT "BITMAP KEY ";A%\n' +
+        'RUN\n',
+      ]
+    ),
+    0,
+    'the embedded BASIC bitmap-key regression program must enter the paste queue'
+  );
+  for (let frame = 0; frame < 600 && module._poc_paste_active(); ++frame)
+    module._poc_step();
+  assert.strictEqual(
+    module._poc_paste_active(), 0,
+    'the bitmap-key regression program must finish pasting'
+  );
+  module._poc_key(4, 1); // SDL scancode A.
+  for (let frame = 0; frame < 8; ++frame) module._poc_step();
+  module._poc_key(4, 0);
+  for (let frame = 0; frame < 90; ++frame) module._poc_step();
+  output.length = 0;
+  module._poc_dump_screen_text();
+  assert.match(
+    output.join('\n'),
+    /BITMAP KEY\s+97/,
+    'a physical A key must end BASIC INKEY in Screen 8 and return ASCII 97'
+  );
 
   module.FS.writeFile('/omega-test.dsk', new Uint8Array(737280));
   assert.strictEqual(
