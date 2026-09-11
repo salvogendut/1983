@@ -3,11 +3,11 @@ set -eu
 
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 rainbios=${1:-"$root/../rainbios"}
-revision=80f38dddba7af0a0cd4d3bc8e910e15de13347c1
+revision=54a2591b8455651722ae7dfad07d7c9460d30065
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT HUP INT TERM
 
-if test ! -d "$rainbios/.git"; then
+if test ! -e "$rainbios/.git"; then
     echo "RainBIOS checkout not found: $rainbios" >&2
     echo "usage: $0 [PATH_TO_RAINBIOS]" >&2
     exit 1
@@ -34,15 +34,15 @@ check_rom() {
     printf '%s  %s\n' "$expected" "$source" | sha256sum -c -
 }
 
-check_rom 909858df594cc78c776c354866b9b88be8d9ef1e7b5cc69294fba644412f7145 \
+check_rom a1eaaf6230c51e669d5842d6038bc0abe3f6b890cc9f6c6d881ad582d03f8d66 \
     "$rainbios/build/rainbios_msx1.rom"
-check_rom 8a9242c76c8ca88c92b544f119c477f46f8659661b755096a96cb0bb950c64ca \
+check_rom 68378ab2bb94452f2151b6b5a2d18f3315cd196830b09b7548b4a5828f64b9a0 \
     "$rainbios/build/rainbios_msx2.rom"
 check_rom 7b06e3e10990d2d815cf8b9a640e689167ab47b0f90df821cb48d0e7158049a0 \
     "$rainbios/build/rainbios_msx2_sub.rom"
-check_rom ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc \
+check_rom 7e934d5fcbf107be355e4cd171ef4430f40723b4039947d8de4b5ac82a0e8db9 \
     "$rainbios/build/rainbios_disk.rom"
-check_rom ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc \
+check_rom 7e934d5fcbf107be355e4cd171ef4430f40723b4039947d8de4b5ac82a0e8db9 \
     "$rainbios/build/rainbios_nms8250_disk.rom"
 
 python3 "$root/tools/build-omega-unified-rom.py" \
@@ -50,7 +50,7 @@ python3 "$root/tools/build-omega-unified-rom.py" \
     "$rainbios/build/rainbios_msx2.rom" \
     "$rainbios/build/rainbios_msx2_sub.rom" \
     "$rainbios/build/rainbios_disk.rom"
-check_rom 6df25ff1333ab23dbe22e026890d0b31009af4faf1604e4f368d8b09e36a4f75 \
+check_rom 8dfbfea24f2ef836403a3186e9e50bc75f5b1320b48ac6fe36abb2cef10f37bd \
     "$work/rainbios_omega.rom"
 
 install -m 0644 "$rainbios/build/rainbios_msx1.rom" \
