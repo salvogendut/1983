@@ -13,7 +13,7 @@ profile:
   rainbios_nms8250_disk.rom   Philips WD2793 disk ROM, 16 KiB
 
 They were built from RainBIOS commit
-c084e6bc1aa371a891045d5e914eb5d17593914d:
+54a2591b8455651722ae7dfad07d7c9460d30065:
 
   https://github.com/salvogendut/rainbios
 
@@ -42,12 +42,12 @@ either emulated JP1 bank boots identically. See:
 
 SHA-256:
 
-  f12b676360a3f47494f3598bff9bc7ccd42f3fcd23468e1ce008e8a18a533a89  rainbios_msx1.rom
-  41d5380aca869826f852984bcfc4e33d87bb4308dd484056a0c1fcb0d5bd5ce1  rainbios_msx2.rom
+  a1eaaf6230c51e669d5842d6038bc0abe3f6b890cc9f6c6d881ad582d03f8d66  rainbios_msx1.rom
+  68378ab2bb94452f2151b6b5a2d18f3315cd196830b09b7548b4a5828f64b9a0  rainbios_msx2.rom
   7b06e3e10990d2d815cf8b9a640e689167ab47b0f90df821cb48d0e7158049a0  rainbios_msx2_sub.rom
-  ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_disk.rom
-  8b777452a2aa7a2c055e9dec4f33f4c4720acc0c0039352f5286815c23ec4cad  rainbios_omega.rom
-  ef6c94e7a8896ddc3109cc20b260e2c11d56a37e6baeeed23bb72dca69421cbc  rainbios_nms8250_disk.rom
+  7e934d5fcbf107be355e4cd171ef4430f40723b4039947d8de4b5ac82a0e8db9  rainbios_disk.rom
+  8dfbfea24f2ef836403a3186e9e50bc75f5b1320b48ac6fe36abb2cef10f37bd  rainbios_omega.rom
+  7e934d5fcbf107be355e4cd171ef4430f40723b4039947d8de4b5ac82a0e8db9  rainbios_nms8250_disk.rom
 
 Licensing and attribution
 -------------------------
@@ -67,13 +67,24 @@ The combined MSX2 main ROM is an aggregate of separately licensed components:
   Generated boot-logo data          RainBIOS src/logo-simple.png    CC0-1.0
   ZX0 decoder                       ZX0 ecde3a2ae05061fe06469ed46df81a33b7de7d86
                                                                    BSD-3-Clause
-  Z80 interpreter core              bbcbasic-z80-msx                Zlib-style
-                                     c9ed73ddd228f1dae8528f39ce590511ece7d00d
+  Z80 interpreter core              R. T. Russell, via David Given's Zlib-style
+                                     CP/Mish source subtree and
+                                     bbcbasic-z80-msx
+                                     f9034e91a78e741e1cff513515e1ebd70f4f6c9c
   MSX platform adapters             same bbcbasic-z80-msx revision  BSD-3-Clause
 
 The embedded companion payload's expected SHA-256 at that source revision is:
 
-  5f8d03ea3c9a3ae4b7113ae6d4799fdb1d4800cc4777fd5ffcbac35ad24a5027
+  06d7935ee22650e89c6526bb4b0d457e320060f17ebf809fe220f719d1e15fc5
+
+The MSX port is derived from the BBC BASIC source subtree in David Given's
+CP/Mish project:
+
+  https://github.com/davidgiven/cpmish/tree/master/third_party/bbcbasic
+
+BBC BASIC for Z80 was originally written by R. T. Russell:
+
+  http://www.rtrussell.co.uk/bbcbasic/z80basic.html
 
 The permissive source licenses do not grant permission to use the BBC BASIC
 name. RainBIOS records that the upstream naming permission is not transferable
