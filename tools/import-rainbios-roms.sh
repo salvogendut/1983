@@ -3,7 +3,7 @@ set -eu
 
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 rainbios=${1:-"$root/../rainbios"}
-revision=54a2591b8455651722ae7dfad07d7c9460d30065
+revision=e5affb11364038a37f6f4f19530404f3861f8a7e
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT HUP INT TERM
 
@@ -20,8 +20,8 @@ if test "$actual" != "$revision"; then
     echo "actual:   $actual" >&2
     exit 1
 fi
-if test -n "$(git -C "$rainbios" status --porcelain)"; then
-    echo "RainBIOS checkout must be clean for a reproducible import" >&2
+if test -n "$(git -C "$rainbios" status --porcelain --untracked-files=no)"; then
+    echo "RainBIOS tracked files must be clean for a reproducible import" >&2
     exit 1
 fi
 
@@ -34,15 +34,15 @@ check_rom() {
     printf '%s  %s\n' "$expected" "$source" | sha256sum -c -
 }
 
-check_rom a1eaaf6230c51e669d5842d6038bc0abe3f6b890cc9f6c6d881ad582d03f8d66 \
+check_rom 12b3a887cfacb7e1e2657069f9ef780ef2cded06fb75188220ff3f193dcb4d5d \
     "$rainbios/build/rainbios_msx1.rom"
-check_rom 68378ab2bb94452f2151b6b5a2d18f3315cd196830b09b7548b4a5828f64b9a0 \
+check_rom 3a2cee3c13f009022b42c19ddec567f3241da0fdc5d6137b019baca222c5d56e \
     "$rainbios/build/rainbios_msx2.rom"
 check_rom 7b06e3e10990d2d815cf8b9a640e689167ab47b0f90df821cb48d0e7158049a0 \
     "$rainbios/build/rainbios_msx2_sub.rom"
-check_rom 7e934d5fcbf107be355e4cd171ef4430f40723b4039947d8de4b5ac82a0e8db9 \
+check_rom c3b277043c35435df986afa2abf71dd2f99311ea3aa8cd167cccbc7e597a87bc \
     "$rainbios/build/rainbios_disk.rom"
-check_rom 7e934d5fcbf107be355e4cd171ef4430f40723b4039947d8de4b5ac82a0e8db9 \
+check_rom c3b277043c35435df986afa2abf71dd2f99311ea3aa8cd167cccbc7e597a87bc \
     "$rainbios/build/rainbios_nms8250_disk.rom"
 
 python3 "$root/tools/build-omega-unified-rom.py" \
@@ -50,7 +50,7 @@ python3 "$root/tools/build-omega-unified-rom.py" \
     "$rainbios/build/rainbios_msx2.rom" \
     "$rainbios/build/rainbios_msx2_sub.rom" \
     "$rainbios/build/rainbios_disk.rom"
-check_rom 8dfbfea24f2ef836403a3186e9e50bc75f5b1320b48ac6fe36abb2cef10f37bd \
+check_rom 41d22fca0a49b7640a817f35e85fc75472c1b2af31a3ced28a86c1d6ead1d761 \
     "$work/rainbios_omega.rom"
 
 install -m 0644 "$rainbios/build/rainbios_msx1.rom" \

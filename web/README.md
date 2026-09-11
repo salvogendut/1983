@@ -151,6 +151,7 @@ and both SD Mapper cards can be mounted at startup:
     http://127.0.0.1:1983/?cartridge=media/game.rom&cartridge2=media/tool.rom
     http://127.0.0.1:1983/?disk=media/thisdisk.dsk
     http://127.0.0.1:1983/?disk=media/thisdisk.dsk&autorun=load.bas
+    https://emulator.example/?disk=https%3A%2F%2Fcdn.example%2Fdemo.dsk
     http://127.0.0.1:1983/?machine=omega-msx2&ide=media/symbos.img
     http://127.0.0.1:1983/?machine=omega-msx2&unifiedrom=media/omega.rom&extensions=scsi&scsirom=media/SCSI.ROM.BIN&scsi=media/MSXDOS2.img
 
@@ -170,6 +171,10 @@ its WD2793 controller. Drive A is mounted before one automatic reset, so a
 bootable disk starts without an `autorun` parameter. An explicit `machine=msx1`
 combined with a `disk` reports that the selected machine has no floppy
 controller instead of silently changing profiles.
+
+The `disk` value may be a same-site relative path or an absolute HTTP/HTTPS
+URL. Absolute values must be URL-encoded when embedded in the page query, as
+in the example above; a cross-origin host must permit the fetch with CORS.
 
 The `extensions` parameter accepts `sunrise`, `scsi`, `sdmapper`, `powergraph`,
 and `unapi` as a comma-separated list. An explicit list overrides stored
