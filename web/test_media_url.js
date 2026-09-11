@@ -33,6 +33,17 @@ assert.deepStrictEqual(media, {
 });
 
 media = parseStartupMedia(
+  '?disk=https%3A%2F%2Fcdn.example.test%2Fdisks%2Fdemo.dsk',
+  base
+);
+assert.strictEqual(media.disk, 'https://cdn.example.test/disks/demo.dsk');
+assert.strictEqual(
+  filenameFromUrl(media.disk, 'disk.dsk'),
+  'demo.dsk',
+  'a remote HTTP floppy URL keeps its display filename'
+);
+
+media = parseStartupMedia(
   '?cartridge=https%3A%2F%2Fcdn.example.test%2Fgames%2FSonic.cpr',
   base
 );
