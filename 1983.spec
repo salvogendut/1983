@@ -1,5 +1,5 @@
 Name:           1983
-Version:        0.5.0
+Version:        0.6.0
 Release:        1%{?dist}
 Summary:        Generic MSX and MSX2 emulator
 
@@ -68,6 +68,12 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/io.github
 %{_datadir}/%{name}/ROMS/rainbios_omega.rom
 
 %changelog
+* Mon Sep 14 2026 Salvatore Bognanni <salvogendut@gmail.com> - 0.6.0-1
+- Add selectable PAL/NTSC output and clipboard paste to the WebAssembly UI.
+- Add configurable SDL HIDAPI handling and correct immediate Z80 input timing.
+- Improve Omega full-decode mapper emulation and per-model default RAM sizing.
+- Refresh RainBIOS firmware with bitmap, media, FAT12, and catalogue fixes.
+
 * Wed Sep 02 2026 Salvatore Bognanni <salvogendut@gmail.com> - 0.5.0-1
 - Add bootable NCR/Z5380 MSX SCSI emulation to native and WebAssembly builds.
 - Add selectable 30h/D0h SCSI I/O ranges and bundle both controller ROMs.
