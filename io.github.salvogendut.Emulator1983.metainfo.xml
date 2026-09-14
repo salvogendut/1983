@@ -28,6 +28,16 @@
   <url type="bugtracker">https://github.com/salvogendut/1983/issues</url>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.6.0" date="2026-09-14">
+      <description>
+        <p>
+          Adds selectable PAL and NTSC output and clipboard paste to the
+          browser edition, configurable SDL HIDAPI handling, corrected Z80
+          input timing, improved Omega memory-mapper and model configuration,
+          and refreshed RainBIOS firmware with bitmap and storage fixes.
+        </p>
+      </description>
+    </release>
     <release version="0.5.0" date="2026-09-02">
       <description>
         <p>
