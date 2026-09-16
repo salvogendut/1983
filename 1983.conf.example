@@ -39,7 +39,7 @@ main_input = joy_port_a
 joy_port_a = joystick
 joy_port_b = joystick
 # SDL direct HID backend; false uses the native OS joystick driver.
-joystick_hidapi = false
+joystick_hidapi = true
 
 [media]
 cartridge1 =

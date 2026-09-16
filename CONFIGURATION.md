@@ -5,6 +5,14 @@ and in the application-data directory on Windows. `--config PATH` selects an
 isolated configuration. [`1983.conf.example`](1983.conf.example) documents the
 available settings.
 
+With **General > Tinker** enabled, **Advanced > Reset to defaults** restores
+`1983.conf` to the same settings used by a fresh installation. This includes
+selecting the bundled Omega MSX2 profile as the default machine and enabling
+Joystick HIDAPI. The action clears mounted media, extensions, chooser history,
+and other saved preferences, but it never edits or removes the separate
+`1983-models.conf` machine catalogue. A confirmation dialog is shown before
+the reset is applied.
+
 ## RTC and CMOS persistence
 
 RTC files follow the selected configuration file, so isolated configurations
