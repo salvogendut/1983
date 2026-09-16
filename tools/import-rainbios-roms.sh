@@ -3,7 +3,7 @@ set -eu
 
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 rainbios=${1:-"$root/../rainbios"}
-revision=b4d28b8e7e28054ad41530ff9bc26f5494da14f2
+revision=c55c75dcff6a0745cc54526d7e3a561cb641789c
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT HUP INT TERM
 
