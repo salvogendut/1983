@@ -201,7 +201,7 @@ void config_defaults(Config *config) {
     config->main_input = INPUT_PORT_A;
     config->joy_port_device[0] = JOY_PORT_JOYSTICK;
     config->joy_port_device[1] = JOY_PORT_JOYSTICK;
-    config->joystick_hidapi = false;
+    config->joystick_hidapi = true;
     config->notifications = NOTIFY_MODE_SCREEN;
     config->rtc_persistence = true;
     config->floppy_image_mode = FLOPPY_IMAGE_READ_ONLY;

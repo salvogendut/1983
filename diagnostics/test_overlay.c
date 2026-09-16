@@ -229,6 +229,119 @@ static void test_vdp_presentation_geometry(void) {
     free(pixels);
 }
 
+static void test_reset_to_defaults(Display *display,
+                                   const char *machine_bios_path,
+                                   const char *machine_unified_rom_path) {
+    static const char catalog_marker[] =
+        "# reset must not rewrite the machine catalogue\n";
+    const char *config_path =
+        "diagnostics/test-reset-defaults.tmp";
+    const char *catalog_path =
+        "diagnostics/test-reset-models.conf";
+    static Config config;
+    static Config loaded;
+    static ModelCatalog reset_models;
+    static ModelCatalog models_before;
+    static MsxMachine msx;
+    static Overlay overlay;
+    FILE *file;
+    char marker[sizeof(catalog_marker)] = { 0 };
+
+    model_catalog_defaults(&reset_models);
+    snprintf(reset_models.entries[
+                 model_catalog_index(&reset_models, "omega-msx2")].
+                 unified_rom_path,
+             PATH_MAX, "%s", machine_unified_rom_path);
+    snprintf(reset_models.edit_path,
+             sizeof(reset_models.edit_path), "%s", catalog_path);
+    models_before = reset_models;
+    file = fopen(catalog_path, "wb");
+    assert(file);
+    assert(fwrite(catalog_marker, 1, sizeof(catalog_marker) - 1,
+                  file) == sizeof(catalog_marker) - 1);
+    assert(fclose(file) == 0);
+
+    config_defaults(&config);
+    config.model = MSX_MODEL_GENERIC_MSX1;
+    config.vdp_type = MSX_VDP_TMS9918;
+    config.memory_kb = 64;
+    snprintf(config.machine_id, sizeof(config.machine_id), "cbios");
+    snprintf(config.bios_path, sizeof(config.bios_path), "%s",
+             machine_bios_path);
+    config.unified_rom_path[0] = '\0';
+    config.audio_volume = 10;
+    config.joystick_hidapi = false;
+    config.tinker = true;
+    snprintf(config.file_chooser_dir[CONFIG_FILE_CHOOSER_CASSETTE],
+             PATH_MAX, "/tmp/not-a-default");
+    snprintf(config.path, sizeof(config.path), "%s", config_path);
+
+    msx_init(&msx, config.model, config.region, config.memory_kb);
+    assert(msx_load_firmware_set(
+               &msx, machine_bios_path, "", "", "") == 0);
+    overlay_init(&overlay, &config, &reset_models,
+                 display, &msx, NULL, NULL);
+
+    send_key(&overlay, SDLK_F9);
+    send_key(&overlay, SDLK_RIGHT);
+    send_key(&overlay, SDLK_RIGHT);
+    assert(overlay.section == OVERLAY_ADVANCED);
+    for (int row = 0; row < 19; ++row)
+        send_key(&overlay, SDLK_DOWN);
+
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_RESET_DEFAULTS);
+    assert(config.model == MSX_MODEL_GENERIC_MSX1);
+    assert(!config.joystick_hidapi);
+    send_key(&overlay, SDLK_ESCAPE);
+    assert(overlay.state == OVERLAY_STATE_MENU);
+    assert(config.model == MSX_MODEL_GENERIC_MSX1);
+
+    send_key(&overlay, SDLK_RETURN);
+    assert(overlay.state == OVERLAY_STATE_RESET_DEFAULTS);
+    send_key(&overlay, SDLK_RETURN);
+    assert(!overlay.visible);
+    assert(config.model == MSX_MODEL_OMEGA_MSX2);
+    assert(strcmp(config.machine_id, "omega-msx2") == 0);
+    assert(config.memory_kb == 512);
+    assert(config.joystick_hidapi);
+    assert(!config.tinker);
+    assert(config.audio_volume == 80);
+    assert(!config.file_chooser_dir[
+               CONFIG_FILE_CHOOSER_CASSETTE][0]);
+    assert(strcmp(config.path, config_path) == 0);
+    assert(strcmp(config.unified_rom_path,
+                  reset_models.entries[
+                      model_catalog_index(
+                          &reset_models, "omega-msx2")].
+                      unified_rom_path) == 0);
+    assert(msx.profile->model == MSX_MODEL_OMEGA_MSX2);
+    assert(msx.unified_rom_loaded);
+    assert(overlay_take_machine_reset_request(&overlay));
+
+    config_load(&loaded, config_path);
+    assert(loaded.model == MSX_MODEL_OMEGA_MSX2);
+    assert(strcmp(loaded.machine_id, "omega-msx2") == 0);
+    assert(loaded.memory_kb == 512);
+    assert(loaded.joystick_hidapi);
+    assert(!loaded.tinker);
+    assert(!loaded.file_chooser_dir[
+               CONFIG_FILE_CHOOSER_CASSETTE][0]);
+
+    assert(memcmp(&reset_models, &models_before,
+                  sizeof(reset_models)) == 0);
+    file = fopen(catalog_path, "rb");
+    assert(file);
+    assert(fread(marker, 1, sizeof(catalog_marker) - 1, file) ==
+           sizeof(catalog_marker) - 1);
+    assert(fclose(file) == 0);
+    assert(strcmp(marker, catalog_marker) == 0);
+
+    assert(remove(config_path) == 0);
+    assert(remove(catalog_path) == 0);
+    msx_destroy(&msx);
+}
+
 int main(void) {
     static const u8 cassette_image[] = {
         0x1f, 0xa6, 0xde, 0xba, 0xcc, 0x13, 0x7d, 0x74,
@@ -1844,6 +1957,9 @@ int main(void) {
         assert(memcmp(active_bios, msx.bios, sizeof(active_bios)) == 0);
         assert(overlay.dirty == active_dirty);
     }
+
+    test_reset_to_defaults(&display, machine_bios_path,
+                           machine_unified_rom_path);
 
     assert(remove(editor_path) == 0);
     assert(remove(machine_bios_path) == 0);

@@ -108,6 +108,7 @@ enum {
     ADVANCED_NOTIFICATIONS,
     ADVANCED_DEBUG,
     ADVANCED_JOYSTICK_HIDAPI,
+    ADVANCED_RESET_DEFAULTS,
     ADVANCED_VERSION,
     ADVANCED_ROWS
 };
@@ -1121,6 +1122,10 @@ static void item_text(const Overlay *overlay, int row,
                     snprintf(value, value_size, "%s [restart to apply]",
                              toggle_name(config->joystick_hidapi));
                     break;
+                case ADVANCED_RESET_DEFAULTS:
+                    snprintf(label, label_size, "Reset to defaults");
+                    snprintf(value, value_size, "[Enter]");
+                    break;
                 case ADVANCED_VERSION:
                     snprintf(label, label_size, "Version");
                     snprintf(value, value_size, "%s (git %s)",
@@ -1380,20 +1385,32 @@ static void restore_cartridges(Overlay *overlay) {
     }
 }
 
-static void restore_firmware(Overlay *overlay) {
-    const Config *current = overlay->config;
+static bool restore_firmware(Overlay *overlay,
+                             const Config *current) {
     const Config *saved = &overlay->saved;
     bool changed =
         current->model != saved->model ||
         strcmp(current->machine_id, saved->machine_id) != 0 ||
+        strcmp(current->unified_rom_path,
+               saved->unified_rom_path) != 0 ||
+        current->unified_rom_bank != saved->unified_rom_bank ||
         strcmp(current->bios_path, saved->bios_path) != 0 ||
         strcmp(current->logo_path, saved->logo_path) != 0 ||
         strcmp(current->subrom_path, saved->subrom_path) != 0 ||
         strcmp(current->disk_rom_path, saved->disk_rom_path) != 0;
 
     if (!changed)
-        return;
-    if (!saved->bios_path[0]) {
+        return true;
+    if (saved->unified_rom_path[0]) {
+        if (msx_load_omega_unified_rom(
+                overlay->msx, saved->unified_rom_path,
+                saved->unified_rom_bank) != 0) {
+            msx_eject_firmware(overlay->msx);
+            notify_post("Could not restore unified firmware for %s",
+                        msx_model_name(saved->model));
+            return false;
+        }
+    } else if (!saved->bios_path[0]) {
         msx_eject_firmware(overlay->msx);
     } else if (msx_load_firmware_set(
                    overlay->msx, saved->bios_path,
@@ -1402,7 +1419,9 @@ static void restore_firmware(Overlay *overlay) {
         msx_eject_firmware(overlay->msx);
         notify_post("Could not restore firmware for %s",
                     msx_model_name(saved->model));
+        return false;
     }
+    return true;
 }
 
 static bool restore_sunrise(Overlay *overlay) {
@@ -1795,6 +1814,138 @@ static bool restore_floppies(Overlay *overlay) {
     return true;
 }
 
+static bool restore_rs232(Overlay *overlay) {
+    const Config *current = overlay->config;
+    const Config *saved = &overlay->saved;
+    int saved_slot = cartridge_extension_slot(saved, "RS-232C");
+    bool changed =
+        current->rs232 != saved->rs232 ||
+        strcmp(current->rs232_rom_path,
+               saved->rs232_rom_path) != 0 ||
+        msx_rs232_connected(overlay->msx) !=
+            (saved->rs232 && saved->rs232_rom_path[0]) ||
+        (msx_rs232_connected(overlay->msx) &&
+         msx_rs232_slot(overlay->msx) != saved_slot);
+
+    if (changed) {
+        if (msx_eject_rs232(overlay->msx) != 0) {
+            notify_post("Could not restore RS-232C");
+            return false;
+        }
+        if (saved->rs232 && saved->rs232_rom_path[0] &&
+            (saved_slot < 0 || msx_load_rs232(
+                 overlay->msx, (unsigned)saved_slot,
+                 saved->rs232_rom_path) != 0)) {
+            notify_post("Could not restore the RS-232C ROM");
+            return false;
+        }
+        overlay->machine_reset_requested = true;
+    }
+    if (overlay->rs232dev)
+        rs232dev_set_enabled(overlay->rs232dev, saved->rs232);
+    return true;
+}
+
+static bool restore_saved_config(Overlay *overlay) {
+    Config current = *overlay->config;
+
+    if (!restore_megaflash(overlay))
+        return false;
+    discard_pending_megaflash_state(overlay);
+    if (!restore_sd_mapper(overlay))
+        return false;
+    if (!restore_sunrise(overlay))
+        return false;
+    if (!restore_scsi(overlay))
+        return false;
+    restore_cartridges(overlay);
+    if (!restore_rs232(overlay))
+        return false;
+    if (!restore_cdx2(overlay))
+        return false;
+    if (!restore_rdf600(overlay))
+        return false;
+    restore_cassette(overlay);
+    *overlay->config = overlay->saved;
+    apply_config(overlay);
+    if (!restore_firmware(overlay, &current))
+        return false;
+    if (!restore_floppies(overlay))
+        return false;
+    return true;
+}
+
+static void prepare_default_config(Overlay *overlay, Config *defaults) {
+    const ModelDefinition *definition;
+    char config_path[PATH_MAX];
+
+    snprintf(config_path, sizeof(config_path), "%s",
+             overlay->config->path);
+    config_defaults(defaults);
+    snprintf(defaults->path, sizeof(defaults->path), "%s",
+             config_path);
+
+    definition = model_catalog_find(
+        overlay->models, defaults->machine_id);
+    if (!definition)
+        definition = model_catalog_find_hardware(
+            overlay->models, defaults->model);
+    if (!definition)
+        return;
+
+    defaults->model = definition->hardware;
+    defaults->vdp_type = msx_default_vdp_type(definition->hardware);
+    defaults->floppy = definition->floppy;
+    defaults->memory_kb = definition->default_ram_kb > 0
+        ? definition->default_ram_kb
+        : msx_default_ram_kb(definition->hardware);
+    snprintf(defaults->machine_id, sizeof(defaults->machine_id),
+             "%s", definition->id);
+    snprintf(defaults->unified_rom_path,
+             sizeof(defaults->unified_rom_path), "%s",
+             definition->unified_rom_path);
+    defaults->unified_rom_bank = definition->unified_rom_bank;
+    snprintf(defaults->bios_path, sizeof(defaults->bios_path), "%s",
+             definition->bios_path);
+    snprintf(defaults->logo_path, sizeof(defaults->logo_path), "%s",
+             definition->logo_path);
+    snprintf(defaults->subrom_path, sizeof(defaults->subrom_path), "%s",
+             definition->subrom_path);
+    snprintf(defaults->disk_rom_path,
+             sizeof(defaults->disk_rom_path), "%s",
+             definition->disk_rom_path);
+    config_normalize(defaults);
+}
+
+static void reset_to_defaults(Overlay *overlay) {
+    Config previous = overlay->saved;
+    Config defaults;
+
+    prepare_default_config(overlay, &defaults);
+    overlay->saved = defaults;
+    if (!restore_saved_config(overlay)) {
+        overlay->saved = previous;
+        (void)restore_saved_config(overlay);
+        overlay->state = OVERLAY_STATE_MENU;
+        notify_post("Could not restore the default configuration");
+        return;
+    }
+    overlay->machine_reset_requested = true;
+    if (config_save(overlay->config) != 0) {
+        overlay->saved = previous;
+        (void)restore_saved_config(overlay);
+        overlay->state = OVERLAY_STATE_MENU;
+        notify_post("Could not save the default configuration");
+        return;
+    }
+
+    overlay->saved = *overlay->config;
+    overlay->visible = false;
+    overlay->dirty = false;
+    overlay->state = OVERLAY_STATE_MENU;
+    notify_post("Defaults restored; restart 1983 to apply Joystick HIDAPI");
+}
+
 static void close_overlay(Overlay *overlay, bool save) {
     if (overlay->state == OVERLAY_STATE_MODEL_TEXT &&
         overlay->display && overlay->display->window)
@@ -1837,25 +1988,7 @@ static void close_overlay(Overlay *overlay, bool save) {
             }
         }
     } else {
-        if (!restore_megaflash(overlay))
-            return;
-        discard_pending_megaflash_state(overlay);
-        if (!restore_sd_mapper(overlay))
-            return;
-        if (!restore_sunrise(overlay))
-            return;
-        if (!restore_scsi(overlay))
-            return;
-        restore_cartridges(overlay);
-        if (!restore_cdx2(overlay))
-            return;
-        if (!restore_rdf600(overlay))
-            return;
-        restore_cassette(overlay);
-        restore_firmware(overlay);
-        *overlay->config = overlay->saved;
-        apply_config(overlay);
-        if (!restore_floppies(overlay))
+        if (!restore_saved_config(overlay))
             return;
     }
     overlay->visible = false;
@@ -4706,6 +4839,9 @@ static void activate_item(Overlay *overlay) {
                                 config->joystick_hidapi
                                 ? "enabled" : "disabled");
                     break;
+                case ADVANCED_RESET_DEFAULTS:
+                    overlay->state = OVERLAY_STATE_RESET_DEFAULTS;
+                    return;
                 case ADVANCED_VERSION:
                     return;
             }
@@ -4861,6 +4997,15 @@ bool overlay_handle_event(Overlay *overlay, const SDL_Event *event) {
             close_overlay(overlay, true);
         } else if (key == SDLK_ESCAPE || key == SDLK_N) {
             close_overlay(overlay, false);
+        }
+        return true;
+    }
+    if (overlay->state == OVERLAY_STATE_RESET_DEFAULTS) {
+        if (key == SDLK_RETURN || key == SDLK_KP_ENTER ||
+            key == SDLK_Y) {
+            reset_to_defaults(overlay);
+        } else if (key == SDLK_ESCAPE || key == SDLK_N) {
+            overlay->state = OVERLAY_STATE_MENU;
         }
         return true;
     }
@@ -5507,7 +5652,7 @@ static const char *section_hint(const Overlay *overlay) {
             }
             return "Enter enables/disables; Space edits; Delete clears.";
         case OVERLAY_ADVANCED:
-            return "Machine models, RTC/media safety, and diagnostics.";
+            return "Machine models, reset, RTC/media safety, and diagnostics.";
         case OVERLAY_SECTION_COUNT:
             break;
     }
@@ -6906,6 +7051,32 @@ static void overlay_render_content(const Overlay *overlay,
         ui_draw_text(renderer,
                      box_x + (box_w - (float)strlen(line2) * 8.0f) * 0.5f,
                      box_y + 36.0f, line2, 220, 220, 120);
+    }
+
+    if (overlay->state == OVERLAY_STATE_RESET_DEFAULTS) {
+        const char *line1 = "Reset 1983.conf to defaults?";
+        const char *line2 = "Machine models will not be changed.";
+        const char *line3 = "Enter/Y = Reset     Esc/N = Cancel";
+        float box_w = 420.0f;
+        float box_h = 82.0f;
+        float box_x = (view_w - box_w) * 0.5f;
+        float box_y = (view_h - box_h) * 0.5f;
+
+        ui_fill_rect(renderer, 0.0f, 0.0f, view_w, view_h,
+                     0, 0, 0, 130);
+        ui_fill_rect(renderer, box_x, box_y, box_w, box_h,
+                     20, 22, 52, 255);
+        ui_draw_rect(renderer, box_x, box_y, box_w, box_h,
+                     90, 110, 220);
+        ui_draw_text(renderer,
+                     box_x + (box_w - (float)strlen(line1) * 8.0f) * 0.5f,
+                     box_y + 10.0f, line1, 255, 255, 255);
+        ui_draw_text(renderer,
+                     box_x + (box_w - (float)strlen(line2) * 8.0f) * 0.5f,
+                     box_y + 32.0f, line2, 170, 220, 190);
+        ui_draw_text(renderer,
+                     box_x + (box_w - (float)strlen(line3) * 8.0f) * 0.5f,
+                     box_y + 56.0f, line3, 220, 220, 120);
     }
 
     /* ---- About dialog ---- */

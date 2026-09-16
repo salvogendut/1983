@@ -64,7 +64,7 @@ int main(void) {
     assert(config.main_input == INPUT_PORT_A);
     assert(config.joy_port_device[0] == JOY_PORT_JOYSTICK);
     assert(config.joy_port_device[1] == JOY_PORT_JOYSTICK);
-    assert(!config.joystick_hidapi);
+    assert(config.joystick_hidapi);
     assert(!config.extra_hardware);
     assert(config.rtc_persistence);
     assert(!config.cassette_audible_monitor);

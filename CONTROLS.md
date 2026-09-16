@@ -32,6 +32,8 @@ Left/Right change section, Up/Down select, Enter activates, F9 saves, Escape
 closes (or offers to discard). In **Extensions**, Enter toggles a device,
 Space edits its settings, Delete clears saved settings. **General > Extra
 Hardware** reveals Extensions; **General > Tinker** reveals Advanced.
+Advanced includes a confirmed **Reset to defaults** action for `1983.conf`;
+the separate machine-model catalogue is preserved.
 
 ## GIF capture
 
